@@ -2,7 +2,7 @@
 
 [build]
   command = "npm run build"
-  publish = ".output/public"
+  # No publish directory needed - Netlify preset handles this automatically
 
 [build.environment]
   NODE_VERSION = "20"

@@ -118,44 +118,10 @@ export const useAccessoriesStore = defineStore('accessories', () => {
   // OEM model images
   const oemModels = ref<OEMModel[]>([]);
   const modelsWithImages = ref<HyundaiModel[]>([]);
-  
-  // Cart state (persisted to localStorage) - only on client
+
+  // Cart state (persisted via pinia-plugin-persistedstate)
   const cartItems = ref<CartItem[]>([]);
   const showCart = ref(false);
-  
-  // Initialize cart from localStorage on client
-  if (process.client) {
-    const stored = localStorage.getItem('accessories-cart');
-    if (stored) {
-      try {
-        cartItems.value = JSON.parse(stored);
-      } catch (e) {
-        console.error('Failed to parse cart from localStorage:', e);
-      }
-    }
-    
-    const storedModel = localStorage.getItem('accessories-selected-model');
-    if (storedModel) {
-      try {
-        selectedModel.value = JSON.parse(storedModel);
-      } catch (e) {
-        console.error('Failed to parse selected model from localStorage:', e);
-      }
-    }
-    
-    // Watch for changes and persist to localStorage
-    watch(cartItems, (newCart) => {
-      localStorage.setItem('accessories-cart', JSON.stringify(newCart));
-    }, { deep: true });
-    
-    watch(selectedModel, (newModel) => {
-      if (newModel) {
-        localStorage.setItem('accessories-selected-model', JSON.stringify(newModel));
-      } else {
-        localStorage.removeItem('accessories-selected-model');
-      }
-    });
-  }
   
   // Filters
   const selectedCategory = ref<string | null>(null);
@@ -402,7 +368,7 @@ export const useAccessoriesStore = defineStore('accessories', () => {
     searchQuery,
     showOnlyPopular,
     sortBy,
-    
+
     // Getters
     availableModels,
     modelsByCategory,
@@ -411,7 +377,7 @@ export const useAccessoriesStore = defineStore('accessories', () => {
     cartItemCount,
     isInCart,
     getAccessoryById,
-    
+
     // Actions
     selectModel,
     fetchAccessories,
@@ -427,5 +393,9 @@ export const useAccessoriesStore = defineStore('accessories', () => {
     togglePopularFilter,
     resetFilters,
   };
+}, {
+  persist: {
+    paths: ['cartItems', 'selectedModel'],
+  },
 });
 

@@ -1,17 +1,12 @@
 <template>
   <div class="accessories-model min-h-screen bg-slate-50 text-slate-900">
+    <!-- Breadcrumb -->
+    <AccessoriesBreadcrumb :model="modelData?.name" />
+
     <!-- Hero Section -->
     <section class="relative overflow-hidden bg-gradient-to-br from-[#001E50] via-[#002A6B] to-[#003580]">
       <div class="absolute inset-0 bg-grid-pattern opacity-10"></div>
       <div class="relative mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16">
-        <nav class="mb-4 flex items-center gap-2 text-sm text-white/60" aria-label="Breadcrumb">
-          <NuxtLink to="/" class="transition-colors hover:text-white">Home</NuxtLink>
-          <span>›</span>
-          <NuxtLink to="/accessories" class="transition-colors hover:text-white">Accessories</NuxtLink>
-          <span>›</span>
-          <span class="text-white">{{ modelData?.name || 'Model' }}</span>
-        </nav>
-        
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex items-center gap-5">
             <div class="flex h-20 w-28 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
@@ -28,29 +23,47 @@
           </div>
           
           <!-- Cart Button -->
-          <button
-            class="flex items-center gap-3 rounded-2xl bg-white/10 px-6 py-4 backdrop-blur-sm transition-all hover:bg-white/20"
-            @click="accessoriesStore.toggleCart(true)"
-          >
-            <div class="relative">
-              <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span 
-                v-if="accessoriesStore.cartItemCount > 0"
-                class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white"
-              >
-                {{ accessoriesStore.cartItemCount }}
-              </span>
-            </div>
-            <div class="text-left">
-              <div class="text-sm font-semibold text-white">Your Cart</div>
-              <div class="text-xs text-white/70">
-                {{ accessoriesStore.cartItemCount }} item{{ accessoriesStore.cartItemCount !== 1 ? 's' : '' }} · 
-                ${{ formatPrice(accessoriesStore.cartTotal) }}
+          <ClientOnly>
+            <button
+              class="flex items-center gap-3 rounded-2xl bg-white/10 px-6 py-4 backdrop-blur-sm transition-all hover:bg-white/20"
+              @click="accessoriesStore.toggleCart(true)"
+            >
+              <div class="relative">
+                <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span
+                  v-if="accessoriesStore.cartItemCount > 0"
+                  class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white"
+                >
+                  {{ accessoriesStore.cartItemCount }}
+                </span>
               </div>
-            </div>
-          </button>
+              <div class="text-left">
+                <div class="text-sm font-semibold text-white">Your Cart</div>
+                <div class="text-xs text-white/70">
+                  {{ accessoriesStore.cartItemCount }} item{{ accessoriesStore.cartItemCount !== 1 ? 's' : '' }} ·
+                  ${{ formatPrice(accessoriesStore.cartTotal) }}
+                </div>
+              </div>
+            </button>
+            <template #fallback>
+              <button
+                class="flex items-center gap-3 rounded-2xl bg-white/10 px-6 py-4 backdrop-blur-sm transition-all hover:bg-white/20"
+                disabled
+              >
+                <div class="relative">
+                  <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <div class="text-sm font-semibold text-white">Your Cart</div>
+                  <div class="text-xs text-white/70">0 items · $0.00</div>
+                </div>
+              </button>
+            </template>
+          </ClientOnly>
         </div>
       </div>
     </section>
@@ -302,18 +315,61 @@ import { HYUNDAI_MODELS } from '~/stores/accessories';
 
 const route = useRoute();
 const accessoriesStore = useAccessoriesStore();
+const config = useRuntimeConfig();
 
 // Get model from route
 const modelSlug = computed(() => route.params.model as string);
 const modelData = computed(() => HYUNDAI_MODELS.find(m => m.slug === modelSlug.value));
 
-// SEO
+// Enhanced SEO
 useSeoMeta({
-  title: () => `${modelData.value?.name || 'Hyundai'} Accessories | Sale Hyundai`,
-  description: () => `Shop genuine Hyundai ${modelData.value?.name || ''} accessories. Interior, exterior, cargo and protection accessories with 5-year warranty.`,
+  title: () => `${modelData.value?.name || 'Hyundai'} Accessories | Genuine Parts | Sale Hyundai`,
+  description: () => `Shop genuine Hyundai ${modelData.value?.name || ''} accessories at Sale Hyundai Victoria. Interior, exterior, cargo, roof racks, tow bars & protection accessories. 5-year warranty. Expert fitting available.`,
   ogTitle: () => `${modelData.value?.name || 'Hyundai'} Accessories | Sale Hyundai`,
-  ogDescription: () => `Shop genuine Hyundai ${modelData.value?.name || ''} accessories.`,
+  ogDescription: () => `Genuine ${modelData.value?.name || 'Hyundai'} accessories - roof racks, tow bars, alloy wheels & more. 5-year warranty.`,
+  ogImage: () => modelData.value?.image || 'https://www.hyundai.com/content/dam/hyundai/au/en/owning/accessories/Hyunda_Accessories_KONA_NLine_RoofRack_800x600.jpg',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: () => `${modelData.value?.name || 'Hyundai'} Accessories | Sale Hyundai`,
+  twitterDescription: () => `Shop genuine ${modelData.value?.name || 'Hyundai'} accessories. 5-year warranty.`,
 });
+
+useHead({
+  link: [
+    {
+      rel: 'canonical',
+      href: () => `${config.public.siteUrl}/accessories/${modelSlug.value}`,
+    },
+  ],
+});
+
+// Structured Data
+useSchemaOrg([
+  {
+    '@type': 'Product',
+    'name': () => `${modelData.value?.name} Accessories`,
+    'description': () => `Genuine Hyundai accessories for ${modelData.value?.name}`,
+    'brand': {
+      '@type': 'Brand',
+      'name': 'Hyundai',
+    },
+    'offers': {
+      '@type': 'AggregateOffer',
+      'priceCurrency': 'AUD',
+      'availability': 'https://schema.org/InStock',
+      'seller': {
+        '@type': 'AutoDealer',
+        'name': 'Sale Hyundai',
+        'address': {
+          '@type': 'PostalAddress',
+          'addressLocality': 'Sale',
+          'addressRegion': 'VIC',
+          'addressCountry': 'AU',
+        },
+      },
+    },
+  },
+]);
 
 // Modal state
 const showDetailModal = ref(false);

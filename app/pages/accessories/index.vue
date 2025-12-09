@@ -1,14 +1,11 @@
 <template>
   <div class="accessories-shop min-h-screen bg-white text-[#1a1a1a]">
+    <!-- Breadcrumb -->
+    <AccessoriesBreadcrumb />
+
     <!-- Hero Section - OEM Style -->
     <section class="accessories-hero-section">
       <div class="hero-content-wrapper">
-        <nav class="breadcrumb-nav" aria-label="Breadcrumb">
-          <NuxtLink to="/" class="breadcrumb-link">Home</NuxtLink>
-          <span class="breadcrumb-separator">›</span>
-          <span class="breadcrumb-current">Accessories</span>
-        </nav>
-        
         <div class="hero-main-content">
           <div class="hero-text">
             <h1 class="hero-title">Hyundai Genuine Accessories.</h1>
@@ -21,29 +18,47 @@
           </div>
           
           <!-- Cart Button -->
-          <button
-            class="cart-button"
-            @click="accessoriesStore.toggleCart(true)"
-          >
-            <div class="relative">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span 
-                v-if="accessoriesStore.cartItemCount > 0"
-                class="cart-badge"
-              >
-                {{ accessoriesStore.cartItemCount }}
-              </span>
-            </div>
-            <div class="text-left">
-              <div class="cart-label">Your Cart</div>
-              <div class="cart-summary">
-                {{ accessoriesStore.cartItemCount }} item{{ accessoriesStore.cartItemCount !== 1 ? 's' : '' }} · 
-                ${{ formatPrice(accessoriesStore.cartTotal) }}
+          <ClientOnly>
+            <button
+              class="cart-button"
+              @click="accessoriesStore.toggleCart(true)"
+            >
+              <div class="relative">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span
+                  v-if="accessoriesStore.cartItemCount > 0"
+                  class="cart-badge"
+                >
+                  {{ accessoriesStore.cartItemCount }}
+                </span>
               </div>
-            </div>
-          </button>
+              <div class="text-left">
+                <div class="cart-label">Your Cart</div>
+                <div class="cart-summary">
+                  {{ accessoriesStore.cartItemCount }} item{{ accessoriesStore.cartItemCount !== 1 ? 's' : '' }} ·
+                  ${{ formatPrice(accessoriesStore.cartTotal) }}
+                </div>
+              </div>
+            </button>
+            <template #fallback>
+              <button
+                class="cart-button"
+                disabled
+              >
+                <div class="relative">
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div class="text-left">
+                  <div class="cart-label">Your Cart</div>
+                  <div class="cart-summary">0 items · $0.00</div>
+                </div>
+              </button>
+            </template>
+          </ClientOnly>
         </div>
       </div>
     </section>
@@ -476,15 +491,46 @@
 <script setup lang="ts">
 import type { Accessory, AccessoryPack, HyundaiModel } from '~/stores/accessories';
 
-// SEO
+const accessoriesStore = useAccessoriesStore();
+
+// Enhanced SEO
+const config = useRuntimeConfig();
+
 useSeoMeta({
-  title: 'Hyundai Genuine Accessories | Sale Hyundai',
-  description: 'Shop Hyundai Genuine Accessories for your vehicle. Explore interior, exterior, cargo and protection accessories. All backed by a 5-year warranty.',
+  title: 'Hyundai Genuine Accessories | Sale Hyundai Victoria',
+  description: 'Shop Hyundai Genuine Accessories for your vehicle at Sale Hyundai. Explore interior, exterior, cargo, roof racks, alloy wheels and protection accessories. All backed by a 5-year warranty. Expert fitting available.',
   ogTitle: 'Hyundai Genuine Accessories | Sale Hyundai',
-  ogDescription: 'Shop Hyundai Genuine Accessories for your vehicle. Explore interior, exterior, cargo and protection accessories.',
+  ogDescription: 'Shop Hyundai Genuine Accessories - roof racks, tow bars, alloy wheels, interior accessories & more. 5-year warranty. Expert fitting.',
+  ogImage: 'https://www.hyundai.com/content/dam/hyundai/au/en/owning/accessories/Hyunda_Accessories_KONA_NLine_RoofRack_800x600.jpg',
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: 'Hyundai Genuine Accessories | Sale Hyundai',
+  twitterDescription: 'Shop Hyundai Genuine Accessories. 5-year warranty on all accessories.',
 });
 
-const accessoriesStore = useAccessoriesStore();
+useHead({
+  link: [
+    {
+      rel: 'canonical',
+      href: `${config.public.siteUrl}/accessories`,
+    },
+  ],
+});
+
+useSchemaOrg([
+  {
+    '@type': 'ItemList',
+    'name': 'Hyundai Genuine Accessories',
+    'description': 'Complete range of Hyundai Genuine Accessories for all models',
+    'numberOfItems': () => accessoriesStore.availableModels.length,
+    'itemListElement': () => accessoriesStore.availableModels.map((model, index) => ({
+      '@type': 'ListItem',
+      'position': index + 1,
+      'name': `${model.name} Accessories`,
+      'url': `${config.public.siteUrl}/accessories/${model.slug}`,
+    })),
+  },
+]);
 
 // Modal state
 const showDetailModal = ref(false);
@@ -554,7 +600,8 @@ const scrollToModelSelector = () => {
 
 // Methods
 const handleModelSelect = async (model: HyundaiModel) => {
-  await accessoriesStore.selectModel(model);
+  // Navigate to the model-specific page instead of loading accessories on index page
+  await navigateTo(`/accessories/${model.slug}`);
 };
 
 const changeModel = () => {
@@ -651,33 +698,6 @@ onMounted(async () => {
 .hero-content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.breadcrumb-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 24px;
-}
-
-.breadcrumb-link {
-  color: #666;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.breadcrumb-link:hover {
-  color: #1a1a1a;
-}
-
-.breadcrumb-separator {
-  color: #999;
-}
-
-.breadcrumb-current {
-  color: #1a1a1a;
 }
 
 .hero-main-content {

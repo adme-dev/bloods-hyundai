@@ -291,4 +291,14 @@ export const usePriceBuilderStore = defineStore('priceBuilder', {
       this.error = null;
     },
   },
+  persist: {
+    paths: [
+      'selectedModel',
+      'selectedVariant',
+      'accessories',
+      'accessoryPacks',
+      'financeOptions',
+      'tradeIn',
+    ],
+  },
 });

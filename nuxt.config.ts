@@ -6,12 +6,19 @@ export default defineNuxtConfig({
   // Modules (sitemap disabled in dev for memory optimization)
   modules: [
     '@pinia/nuxt',
+    'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
     'nuxt-gtag',
     '@nuxtjs/seo', // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
     '@fedorae/nuxt-uikit', // UIkit loaded globally
     '@unocss/nuxt', // UnoCSS/Tailwind utilities - used globally for all pages
   ],
+
+  // Pinia Persisted State configuration
+  piniaPluginPersistedstate: {
+    storage: 'localStorage',
+    debug: process.env.NODE_ENV === 'development',
+  },
 
   // Nuxt SEO configuration
   site: {
@@ -136,8 +143,20 @@ export default defineNuxtConfig({
     '/payment-success': { ssr: false },
     
     // Accessories store - SSR for SEO, cache for 1 hour
-    '/accessories': { ssr: true, isr: 3600 },
-    '/accessories/**': { ssr: true, isr: 3600 },
+    '/accessories': {
+      ssr: true,
+      isr: 3600,
+      headers: {
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      },
+    },
+    '/accessories/**': {
+      ssr: true,
+      isr: 3600,
+      headers: {
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      },
+    },
   },
 
   // App config
