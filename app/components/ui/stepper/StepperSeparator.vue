@@ -1,0 +1,17 @@
+<script setup lang="ts">
+import type { HTMLAttributes } from 'vue'
+import { StepperSeparator, type StepperSeparatorProps } from 'radix-vue'
+import { cn } from '~/lib/utils'
+
+const props = defineProps<StepperSeparatorProps & { class?: HTMLAttributes['class'] }>()
+</script>
+
+<template>
+  <StepperSeparator
+    v-bind="props"
+    :class="cn(
+      'bg-muted group-data-[state=completed]:bg-primary',
+      props.class,
+    )"
+  />
+</template>

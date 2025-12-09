@@ -1,0 +1,64 @@
+/**
+ * SCSS Variables
+ * Migrated from src/assets/styles/_variables.scss
+ */
+
+// Brand colors
+// Hyundai Blue - using darker shade #001E50 (matches navigation) instead of #002c5f
+$primary: #001E50;
+$primary-light: #00aad2;
+$secondary: #e63312;
+
+// Neutrals
+$dark: #1a1a1a;
+$muted: #666666;
+$light: #f5f5f5;
+$white: #ffffff;
+
+// Status colors
+$success: #2fbc05;
+$warning: #f0ad4e;
+$danger: #e63312;
+
+// Spacing scale
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-xxl: 3rem;
+
+// Breakpoints (matching UIkit)
+$breakpoint-s: 640px;
+$breakpoint-m: 960px;
+$breakpoint-l: 1200px;
+$breakpoint-xl: 1600px;
+
+// Typography
+$font-family-base: 'Hyundai Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-size-base: 16px;
+$font-size-sm: 14px;
+$font-size-lg: 18px;
+$line-height-base: 1.5;
+
+// Borders
+$border-radius: 4px;
+$border-radius-lg: 8px;
+$border-radius-pill: 50px;
+
+// Shadows
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+// Z-index scale
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-modal-backdrop: 400;
+$z-modal: 500;
+$z-popover: 600;
+$z-tooltip: 700;
+
+
+

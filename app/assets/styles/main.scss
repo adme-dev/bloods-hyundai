@@ -1,0 +1,558 @@
+/**
+ * Main SCSS file for Nuxt 4 project
+ * Import variables and mixins, then add global styles
+ */
+
+// sass:color, sass:math, variables and mixins are auto-imported via nuxt.config.ts
+// @use "variables" as *;
+// @use "mixins" as *;
+
+// ============================================
+// CSS CUSTOM PROPERTIES
+// ============================================
+
+:root {
+  // Primary brand colors (Hyundai)
+  // Using #001E50 - darker navy blue that matches Hyundai's actual brand color
+  --color-primary: #001E50;
+  --color-primary-light: #00aad2;
+  --color-secondary: #e63312;
+
+  // Neutrals
+  --color-dark: #1a1a1a;
+  --color-muted: #666666;
+  --color-light: #f5f5f5;
+  --color-white: #ffffff;
+
+  // Status colors
+  --color-success: #2fbc05;
+  --color-warning: #f0ad4e;
+  --color-danger: #e63312;
+
+  // Spacing
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-xxl: 3rem;
+
+  // Typography
+  --font-family-base: 'Hyundai Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.5;
+
+  // Borders
+  --border-radius: 4px;
+  --border-radius-lg: 8px;
+
+  // Shadows
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  // ============================================
+  // SHADCN/UI CSS VARIABLES
+  // ============================================
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83% 16%; // Hyundai navy blue #001E50
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83% 16%; // Hyundai navy blue
+  --radius: 0.5rem;
+}
+
+// ============================================
+// GLOBAL RESETS & BASE
+// ============================================
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: var(--font-size-base);
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family-base);
+  line-height: var(--line-height-base);
+  color: var(--color-dark);
+  background-color: var(--color-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ============================================
+// SHADCN BASE STYLES
+// ============================================
+
+// Apply border-box and prevent horizontal overflow
+* {
+  border-color: hsl(var(--border));
+}
+
+// Body defaults for shadcn
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+// ============================================
+// UTILITY CLASSES (UIkit compatibility)
+// ============================================
+
+// Use .uk- prefix for UIkit overrides to avoid conflict with Tailwind/shadcn
+.uk-text-primary {
+  color: var(--color-primary) !important;
+}
+
+.uk-text-secondary {
+  color: var(--color-secondary) !important;
+}
+
+.text-blue {
+  color: var(--color-primary-light) !important;
+}
+
+.uk-bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.uk-bg-secondary {
+  background-color: var(--color-secondary) !important;
+}
+
+.border-radius-50 {
+  border-radius: 50px !important;
+}
+
+// ============================================
+// COMPONENT OVERRIDES
+// ============================================
+
+// UIkit comprehensive theme overrides
+// These override UIkit's default styles to match Hyundai brand colors
+
+// Buttons
+.uk-button-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border-color: var(--color-primary);
+
+  &:hover,
+  &:focus {
+    background-color: color.adjust(#001E50, $lightness: -10%);
+    border-color: color.adjust(#001E50, $lightness: -10%);
+    color: var(--color-white);
+  }
+
+  &:active {
+    background-color: color.adjust(#001E50, $lightness: -15%);
+    border-color: color.adjust(#001E50, $lightness: -15%);
+  }
+}
+
+.uk-button-secondary {
+  background-color: var(--color-secondary);
+  color: var(--color-white);
+  border-color: var(--color-secondary);
+
+  &:hover,
+  &:focus {
+    background-color: color.adjust(#e63312, $lightness: -10%);
+    border-color: color.adjust(#e63312, $lightness: -10%);
+    color: var(--color-white);
+  }
+
+  &:active {
+    background-color: color.adjust(#e63312, $lightness: -15%);
+    border-color: color.adjust(#e63312, $lightness: -15%);
+  }
+}
+
+// Links - use Active Blue (#00aad2)
+// Only style text links, exclude buttons, images, toolbar/footer links, and specific UIkit classes
+a:not(.uk-button):not(.uk-link-muted):not(.uk-link-text):not(.uk-navbar-item):not(.uk-card-media):not(.uk-card-media-top):not(.uk-card-media-bottom):not(.toolbar-link):not(.footer-wrap a):not(.uk-light a):not(.uk-background-primary a):not(.uk-background-secondary a):not(.uk-section-primary a):not(.uk-section-secondary a):not(.no-link-style) {
+  color: var(--color-primary-light);
+
+  &:hover {
+    color: color.adjust(#00aad2, $lightness: -10%);
+  }
+}
+
+// Primary navigation links should use their own text colors (black), not the global link color
+.primary-nav a {
+  color: inherit !important;
+  
+  &:hover {
+    color: inherit !important;
+  }
+}
+
+// Prevent link color override for card titles
+a.no-link-style {
+  color: inherit !important;
+  
+  &:hover {
+    color: var(--color-primary) !important;
+  }
+}
+
+// Don't apply link colors to images or image containers
+a img {
+  color: inherit !important;
+}
+
+// Image containers should not inherit link colors
+.uk-card-media,
+.uk-card-media-top,
+.uk-card-media-bottom,
+.uk-inline,
+.uk-background-cover {
+  a {
+    color: inherit !important;
+    
+    img {
+      color: inherit !important;
+    }
+  }
+}
+
+// Background images should not be affected
+a[style*="background-image"],
+a[style*="backgroundImage"],
+[style*="background-image"],
+[style*="backgroundImage"] {
+  color: inherit !important;
+}
+
+.uk-link-muted {
+  color: var(--color-muted);
+
+  &:hover {
+    color: var(--color-primary-light);
+  }
+}
+
+// Cards
+.uk-card-default {
+  background-color: var(--color-white);
+  color: var(--color-dark);
+  border-color: rgba(0, 0, 0, 0.1);
+
+  .uk-card-title {
+    color: var(--color-dark);
+  }
+}
+
+.uk-card-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+
+  .uk-card-title {
+    color: var(--color-white);
+  }
+}
+
+.uk-card-secondary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+
+  .uk-card-title {
+    color: var(--color-white);
+  }
+}
+
+// Badges
+.uk-badge {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+// Navbar
+.uk-navbar-nav > li > a {
+  color: var(--color-dark);
+
+  &:hover,
+  &:focus {
+    color: var(--color-primary-light);
+  }
+}
+
+.uk-navbar-nav > li.uk-active > a {
+  color: var(--color-primary-light);
+}
+
+// Dropdown
+.uk-navbar-dropdown {
+  background-color: var(--color-white);
+  color: var(--color-dark);
+}
+
+.uk-navbar-dropdown-nav > li > a {
+  color: var(--color-dark);
+
+  &:hover,
+  &:focus {
+    color: var(--color-primary-light);
+  }
+}
+
+.uk-navbar-dropdown-nav > li.uk-active > a {
+  color: var(--color-primary-light);
+}
+
+// Ensure white text on dark backgrounds (toolbar, footer, sections)
+.toolbar,
+.toolbar a,
+.toolbar-link,
+.uk-background-primary,
+.uk-background-primary a,
+.uk-background-secondary,
+.uk-background-secondary a,
+.uk-section-primary,
+.uk-section-primary a,
+.uk-section-secondary,
+.uk-section-secondary a,
+.uk-light,
+.uk-light a {
+  color: #ffffff !important;
+}
+
+// Footer links should be white on dark background
+.footer-wrap a {
+  color: #ffffff !important;
+  
+  &:hover {
+    color: #ffffff !important;
+  }
+}
+
+// Sections
+.uk-section-primary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+// Secondary sections should be navy blue (not red) - used for headers, footers, etc.
+.uk-section-secondary {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+.uk-section-muted {
+  background-color: var(--color-light);
+}
+
+// Background utilities
+.uk-background-primary {
+  background-color: var(--color-primary) !important;
+}
+
+// Secondary background should be navy blue (not red) - used for dark sections
+.uk-background-secondary {
+  background-color: var(--color-primary) !important;
+}
+
+// Text utilities
+.uk-text-primary {
+  color: var(--color-primary) !important;
+}
+
+.uk-text-secondary {
+  color: var(--color-secondary) !important;
+}
+
+// Progress bars
+.uk-progress-bar {
+  background-color: var(--color-primary);
+}
+
+// Tabs
+.uk-tab > .uk-active > a {
+  color: var(--color-primary-light);
+  border-color: var(--color-primary-light);
+}
+
+.uk-tab > li > a:hover {
+  color: var(--color-primary-light);
+}
+
+// Form inputs focus
+.uk-input:focus,
+.uk-select:focus,
+.uk-textarea:focus {
+  border-color: var(--color-primary-light);
+}
+
+.uk-checkbox:checked,
+.uk-radio:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+// Alert components
+.uk-alert-primary {
+  background-color: color.adjust(color.mix(white, #001E50, 40%), $lightness: 20%);
+  color: var(--color-primary);
+}
+
+.uk-alert-success {
+  background-color: color.adjust(color.mix(white, #2fbc05, 40%), $lightness: 25%);
+  color: var(--color-success);
+}
+
+.uk-alert-warning {
+  background-color: color.adjust(color.mix(white, #f0ad4e, 45%), $lightness: 15%);
+  color: var(--color-warning);
+}
+
+.uk-alert-danger {
+  background-color: color.adjust(color.mix(white, #e63312, 40%), $lightness: 20%);
+  color: var(--color-danger);
+}
+
+// Modal
+.uk-modal-header {
+  background-color: var(--color-white);
+}
+
+.uk-modal-body {
+  background-color: var(--color-white);
+}
+
+.uk-modal-footer {
+  background-color: var(--color-light);
+}
+
+// Offcanvas
+.uk-offcanvas-bar {
+  background-color: var(--color-white);
+  color: var(--color-dark);
+}
+
+// Marker
+.uk-marker {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+}
+
+// Totop
+.uk-totop {
+  background-color: var(--color-primary);
+  color: var(--color-white);
+
+  &:hover {
+    background-color: color.adjust(#001E50, $lightness: -10%);
+    color: var(--color-white);
+  }
+}
+
+// Element Plus overrides
+.el-button--primary {
+  --el-button-bg-color: var(--color-primary);
+  --el-button-border-color: var(--color-primary);
+}
+
+// ============================================
+// LOADING INDICATOR
+// ============================================
+
+.loading-indicator {
+  position: relative;
+
+  &.is-loading {
+    &::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+// ============================================
+// TRANSITIONS
+// ============================================
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+}
+
+// ============================================
+// SHADCN ANIMATIONS
+// ============================================
+
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+
+// Animation classes for radix components
+[data-state="open"] {
+  animation: accordion-down 0.2s ease-out;
+}
+
+[data-state="closed"] {
+  animation: accordion-up 0.2s ease-out;
+}
+
+// Ensure proper z-index for popovers/selects
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}
+
+// ============================================
+// RESPONSIVE HELPERS
+// ============================================
+
+@media (max-width: 959px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+}
+
+
+

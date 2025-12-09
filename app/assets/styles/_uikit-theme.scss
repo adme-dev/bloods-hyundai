@@ -1,0 +1,140 @@
+/**
+ * UIkit Theme Customization for Hyundai Brand
+ * 
+ * This file overrides UIkit's default SCSS variables to match
+ * Hyundai's official brand colors and typography.
+ * 
+ * Hyundai Brand Colors:
+ * - Primary Blue: #002c5f (Hyundai Blue)
+ * - Active Blue: #00aad2 (Active Blue - for links, accents)
+ * - Active Red: #e63312 (Secondary/Accent)
+ * 
+ * Note: UIkit variables must be defined BEFORE importing UIkit
+ * This file should be imported before UIkit's main SCSS files.
+ */
+
+// Import our brand variables
+@use "variables" as *;
+
+// ============================================
+// UIKIT GLOBAL VARIABLES OVERRIDES
+// ============================================
+
+// Primary brand color (Hyundai Blue)
+$global-primary-background: $primary !default; // #002c5f
+
+// Secondary background (dark)
+$global-secondary-background: $dark !default; // #1a1a1a
+
+// Link colors (Active Blue)
+$global-link-color: $primary-light !default; // #00aad2
+$global-link-hover-color: color.adjust($primary-light, $lightness: -10%) !default;
+
+// Typography - Hyundai Sans font family
+$global-font-family: $font-family-base !default;
+
+// Text colors
+$global-color: $muted !default; // #666666
+$global-emphasis-color: $dark !default; // #1a1a1a
+$global-muted-color: $muted !default; // #666666
+
+// Background colors
+$global-background: $white !default; // #ffffff
+$global-muted-background: $light !default; // #f5f5f5
+
+// Success, Warning, Danger colors (keeping UIkit defaults or using brand colors)
+$global-success-background: $success !default; // #2fbc05
+$global-warning-background: $warning !default; // #f0ad4e
+$global-danger-background: $danger !default; // #e63312 (same as secondary)
+
+// Inverse colors (for dark backgrounds)
+$global-inverse-color: $white !default; // #ffffff
+
+// ============================================
+// UIKIT COMPONENT-SPECIFIC OVERRIDES
+// ============================================
+
+// Button colors
+$button-primary-background: $global-primary-background !default;
+$button-primary-color: $global-inverse-color !default;
+$button-primary-hover-background: color.adjust($global-primary-background, $lightness: -10%) !default;
+$button-primary-hover-color: $global-inverse-color !default;
+$button-primary-active-background: color.adjust($global-primary-background, $lightness: -15%) !default;
+$button-primary-active-color: $global-inverse-color !default;
+
+$button-secondary-background: $secondary !default;
+$button-secondary-color: $global-inverse-color !default;
+$button-secondary-hover-background: color.adjust($secondary, $lightness: -10%) !default;
+$button-secondary-hover-color: $global-inverse-color !default;
+
+// Card component
+$card-default-background: $global-background !default;
+$card-default-color: $global-color !default;
+$card-default-title-color: $global-emphasis-color !default;
+$card-default-hover-background: $global-muted-background !default;
+
+// Badge component
+$badge-background: $global-primary-background !default;
+$badge-color: $global-inverse-color !default;
+
+// Navbar component
+$navbar-nav-item-color: $global-emphasis-color !default;
+$navbar-nav-item-hover-color: $global-link-color !default;
+$navbar-nav-item-active-color: $global-link-color !default;
+$navbar-dropdown-background: $global-background !default;
+$navbar-dropdown-color: $global-color !default;
+
+// Link component
+$base-link-color: $global-link-color !default;
+$base-link-hover-color: $global-link-hover-color !default;
+
+// Alert component
+$alert-primary-background: color.adjust(color.mix(white, $global-primary-background, 40%), $lightness: 20%) !default;
+$alert-primary-color: $global-primary-background !default;
+
+// Section component
+$section-default-background: $global-background !default;
+$section-muted-background: $global-muted-background !default;
+$section-primary-background: $global-primary-background !default;
+$section-primary-color: $global-inverse-color !default;
+$section-secondary-background: $global-secondary-background !default;
+$section-secondary-color: $global-inverse-color !default;
+
+// Form components
+$form-focus-color: $global-link-color !default;
+$form-focus-border: $global-link-color !default;
+
+// Modal component
+$modal-header-background: $global-background !default;
+$modal-body-background: $global-background !default;
+$modal-footer-background: $global-muted-background !default;
+
+// Offcanvas component
+$offcanvas-bar-background: $global-background !default;
+$offcanvas-bar-color-mode: none !default;
+
+// Dropdown component
+$dropdown-background: $global-background !default;
+$dropdown-color: $global-color !default;
+
+// Tab component
+$tab-item-color: $global-color !default;
+$tab-item-hover-color: $global-link-color !default;
+$tab-item-active-color: $global-emphasis-color !default;
+$tab-item-active-border: $global-link-color !default;
+
+// Progress component
+$progress-bar-background: $global-primary-background !default;
+
+// Marker component
+$marker-background: $global-primary-background !default;
+$marker-color: $global-inverse-color !default;
+
+// Totop component
+$totop-color: $global-inverse-color !default;
+$totop-hover-color: $global-inverse-color !default;
+$totop-active-color: $global-inverse-color !default;
+$totop-background: $global-primary-background !default;
+$totop-hover-background: color.adjust($global-primary-background, $lightness: -10%) !default;
+$totop-active-background: color.adjust($global-primary-background, $lightness: -15%) !default;
+
