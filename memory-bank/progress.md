@@ -16,18 +16,27 @@
 ## What's In Progress
 
 ### Enquiry Management System
-- 📝 PRD created and documented
-- 📝 Database schema designed
-- ⏳ NEON database setup (not started)
-- ⏳ Drizzle ORM integration (not started)
+- ✅ PRD created and documented
+- ✅ Database schema designed
+- ✅ **NEON database setup (COMPLETED - December 9, 2025)**
+  - Multi-tenant schema created on development branch
+  - 7 core tables: dealer_groups, dealers, users, enquiries, enquiry_notes, enquiry_activity_log, email_logs
+  - Row-Level Security (RLS) policies enabled
+  - Sale Hyundai seeded as first dealer
+  - API key generated: `dk_live_salehyundai_eec059c8d8de7e8affc864e9`
+- ⏳ Drizzle ORM integration (next step)
 - ⏳ Staff dashboard (not started)
 
 ## What's Left to Build
 
 ### Phase 1: Database Foundation
-- [ ] Create NEON PostgreSQL database
+- [x] **Create NEON PostgreSQL database** ✅
+  - Project: green-tooth-34908352 (Hyundai-Dealer)
+  - Development branch configured with full schema
+  - Production branch ready for migration
 - [ ] Install Drizzle ORM
-- [ ] Create schema migrations
+- [ ] Create Drizzle schema definitions
+- [ ] Implement tenant middleware
 - [ ] Implement `/api/enquiry` endpoint
 - [ ] Update forms to use new endpoint
 
@@ -78,3 +87,6 @@
 - `/memory-bank/projectbrief.md` - Project overview
 - `/memory-bank/techContext.md` - Technical stack details
 - `/memory-bank/activeContext.md` - Current work focus
+- `/DATABASE_SETUP.md` - **NEW** Complete database setup documentation
+- `/MCP_SETUP.md` - Neon MCP Server configuration guide
+- `/mcp.json` - MCP server configuration file

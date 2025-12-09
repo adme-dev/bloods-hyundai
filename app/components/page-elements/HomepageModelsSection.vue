@@ -53,17 +53,7 @@
                 {{ category }}
               </button>
             </nav>
-            <div class="mt-8 pt-6 border-t border-gray-200">
-              <NuxtLink
-                to="/vehicles"
-                class="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors group"
-              >
-                <svg class="h-4 w-4 mr-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                View All Models
-              </NuxtLink>
-            </div>
+
           </div>
 
           <!-- Right Content: Desktop Models Grid -->
@@ -145,21 +135,13 @@
                       :to="`/calculator/${model.slug}`"
                       class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
                     >
-                      <span>Build</span>
+                      <span>Range / Build</span>
                       <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                       </svg>
                     </NuxtLink>
 
-                    <NuxtLink
-                      :to="`/vehicles`"
-                      class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
-                    >
-                      <span>Range</span>
-                      <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </NuxtLink>
+
                   </div>
                 </div>
               </div>
@@ -291,21 +273,12 @@
                             :to="`/calculator/${model.slug}`"
                             class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
                           >
-                            <span>Build</span>
+                            <span>Range / Build</span>
                             <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                           </NuxtLink>
 
-                          <NuxtLink
-                            :to="`/vehicles`"
-                            class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
-                          >
-                            <span>Range</span>
-                            <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                          </NuxtLink>
                         </div>
                       </div>
                     </div>

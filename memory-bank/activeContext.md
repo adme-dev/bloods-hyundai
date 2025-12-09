@@ -21,9 +21,13 @@ Additionally, developing an **Accessories Store R&D App** to showcase Hyundai Ge
 - Added route rules for SSR with 1-hour ISR cache
 
 ## In Progress
-- Planning implementation of NEON database with multi-tenant schema
-- Designing tenant resolution middleware (subdomain-based)
-- Preparing dealer API key authentication system
+- ✅ **NEON database setup completed (December 9, 2025)**
+  - Multi-tenant schema fully implemented on development branch
+  - Row-Level Security (RLS) policies active
+  - Sale Hyundai dealer seeded with API key
+- 🔄 Next: Drizzle ORM integration
+- 🔄 Next: Tenant resolution middleware implementation
+- 🔄 Next: `/api/enquiry` endpoint with API key authentication
 
 ## Architecture Decisions
 
@@ -52,13 +56,14 @@ Additionally, developing an **Accessories Store R&D App** to showcase Hyundai Ge
 ## Next Steps
 
 ### Phase 1: Multi-Tenant Foundation (Week 1-2)
-1. Set up NEON PostgreSQL database
-2. Create multi-tenant schema (`dealers`, `users`, `enquiries`, etc.)
-3. Implement Row-Level Security policies
-4. Build tenant-aware API middleware
-5. Create `/api/enquiry` endpoint with API key validation
-6. Seed Sale Hyundai as first dealer
-7. Update Sale Hyundai website to use new endpoint
+1. ✅ Set up NEON PostgreSQL database
+2. ✅ Create multi-tenant schema (`dealers`, `users`, `enquiries`, etc.)
+3. ✅ Implement Row-Level Security policies
+4. ✅ Seed Sale Hyundai as first dealer
+5. 🔄 **NEXT**: Install Drizzle ORM and create schema definitions
+6. 🔄 **NEXT**: Build tenant-aware API middleware
+7. 🔄 **NEXT**: Create `/api/enquiry` endpoint with API key validation
+8. 🔄 **NEXT**: Update Sale Hyundai website to use new endpoint
 
 ### Phase 2: Authentication & Dashboard (Week 2-3)
 1. Implement JWT auth with `dealer_id` claim
