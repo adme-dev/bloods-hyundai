@@ -1,0 +1,159 @@
+{
+  "models": [
+    {
+      "name": "Tucson",
+      "slug": "tucson",
+      "category": "SUV",
+      "groupId": "990EEC2C-4AFE-4AD2-B016-73BCD2EB5B44"
+    },
+    {
+      "name": "Kona",
+      "slug": "kona",
+      "category": "SUV",
+      "groupId": "9F6AA9F2-17C6-4148-B47B-1054467C933B"
+    },
+    {
+      "name": "Venue",
+      "slug": "venue",
+      "category": "SUV",
+      "groupId": "4AEAFF7A-088F-4686-AE85-CEF84E83D8EE"
+    },
+    {
+      "name": "Santa Fe",
+      "slug": "santa-fe",
+      "category": "SUV",
+      "groupId": "B58EB7A1-CD96-435C-A728-8E7748FE7520"
+    },
+    {
+      "name": "Palisade",
+      "slug": "palisade",
+      "category": "SUV",
+      "groupId": "A15B22F2-30DE-4B8C-8A95-9E814662ECDD"
+    },
+    {
+      "name": "IONIQ 9",
+      "slug": "ioniq9",
+      "category": "Electric",
+      "groupId": "IONIQ9_GROUP_ID"
+    },
+    {
+      "name": "IONIQ 5",
+      "slug": "ioniq5",
+      "category": "Electric",
+      "groupId": "IONIQ5_GROUP_ID"
+    },
+    {
+      "name": "IONIQ 5 N",
+      "slug": "ioniq5-n",
+      "category": "Electric",
+      "groupId": "IONIQ5N_GROUP_ID"
+    },
+    {
+      "name": "IONIQ 6",
+      "slug": "ioniq6",
+      "category": "Electric",
+      "groupId": "IONIQ6_GROUP_ID"
+    },
+    {
+      "name": "INSTER",
+      "slug": "inster",
+      "category": "Electric",
+      "groupId": "INSTER_GROUP_ID"
+    },
+    {
+      "name": "i30",
+      "slug": "i30",
+      "category": "Hatch",
+      "groupId": "C4994B0D-A89D-4113-B6CD-B5D9352512C3"
+    },
+    {
+      "name": "i30 N Line",
+      "slug": "i30-n-line",
+      "category": "Hatch",
+      "groupId": "I30_N_LINE_GROUP_ID"
+    },
+    {
+      "name": "i30 Sedan",
+      "slug": "i30-sedan",
+      "category": "Sedan",
+      "groupId": "I30_SEDAN_GROUP_ID"
+    },
+    {
+      "name": "Sonata N Line",
+      "slug": "sonata-n-line",
+      "category": "Sedan",
+      "groupId": "SONATA_N_LINE_GROUP_ID"
+    },
+    {
+      "name": "i30 N",
+      "slug": "i30-n",
+      "category": "Performance",
+      "groupId": "I30N_GROUP_ID"
+    },
+    {
+      "name": "i30 Sedan N",
+      "slug": "i30-sedan-n",
+      "category": "Performance",
+      "groupId": "I30_SEDAN_N_GROUP_ID"
+    },
+    {
+      "name": "i20 N",
+      "slug": "i20-n",
+      "category": "Performance",
+      "groupId": "I20N_GROUP_ID"
+    },
+    {
+      "name": "Staria",
+      "slug": "staria",
+      "category": "Van",
+      "groupId": "E14E5076-A170-4F6C-86EF-AEF77027B46A"
+    },
+    {
+      "name": "Staria Load",
+      "slug": "staria-load",
+      "category": "Van",
+      "groupId": "E14E5076-A170-4F6C-86EF-AEF77027B46A"
+    }
+  ],
+  "categories": [
+    {
+      "id": "SUV",
+      "name": "SUVs & People Movers",
+      "order": 1
+    },
+    {
+      "id": "Electric",
+      "name": "Electric",
+      "order": 2
+    },
+    {
+      "id": "Hatch",
+      "name": "Hatch",
+      "order": 3,
+      "displayGroupWith": "Sedan",
+      "displayName": "Hatch & Sedans"
+    },
+    {
+      "id": "Sedan",
+      "name": "Sedan",
+      "order": 4,
+      "displayGroupWith": "Hatch",
+      "displayName": "Hatch & Sedans"
+    },
+    {
+      "id": "Performance",
+      "name": "Performance",
+      "order": 5
+    },
+    {
+      "id": "Van",
+      "name": "Vans & Trucks",
+      "order": 6
+    }
+  ],
+  "meta": {
+    "source": "https://www.hyundai.com/au/en/owning/accessories",
+    "lastUpdated": "2025-12-09",
+    "totalModels": 19
+  }
+}

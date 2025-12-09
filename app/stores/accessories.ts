@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import { slugify } from '~/utils';
+import hyundaiModelsData from '~/data/hyundai-models.json';
 
 /**
  * Accessories store - handles Hyundai Genuine Accessories data and cart functionality
@@ -68,33 +70,12 @@ export interface HyundaiModel {
 const OEM_CDN_URL = 'https://hyundaioem.b-cdn.net';
 
 // Known Hyundai models with their accessories group IDs
-export const HYUNDAI_MODELS: HyundaiModel[] = [
-  // SUVs
-  { name: 'Tucson', slug: 'tucson', groupId: '990EEC2C-4AFE-4AD2-B016-73BCD2EB5B44', category: 'SUV' },
-  { name: 'Kona', slug: 'kona', groupId: '9F6AA9F2-17C6-4148-B47B-1054467C933B', category: 'SUV' },
-  { name: 'Venue', slug: 'venue', groupId: '4AEAFF7A-088F-4686-AE85-CEF84E83D8EE', category: 'SUV' },
-  { name: 'Santa Fe', slug: 'santa-fe', groupId: 'B58EB7A1-CD96-435C-A728-8E7748FE7520', category: 'SUV' },
-  { name: 'Palisade', slug: 'palisade', groupId: 'A15B22F2-30DE-4B8C-8A95-9E814662ECDD', category: 'SUV' },
-  
-  // Electric
-  { name: 'IONIQ 5', slug: 'ioniq5', groupId: 'IONIQ5_GROUP_ID', category: 'Electric' },
-  { name: 'IONIQ 6', slug: 'ioniq6', groupId: 'IONIQ6_GROUP_ID', category: 'Electric' },
-  { name: 'IONIQ 5 N', slug: 'ioniq5n', groupId: 'IONIQ5N_GROUP_ID', category: 'Electric' },
-  { name: 'INSTER', slug: 'inster', groupId: 'INSTER_GROUP_ID', category: 'Electric' },
-  
-  // Hatch & Sedan
-  { name: 'i30', slug: 'i30', groupId: 'C4994B0D-A89D-4113-B6CD-B5D9352512C3', category: 'Hatch' },
-  { name: 'i30 Sedan', slug: 'i30-sedan', groupId: 'I30_SEDAN_GROUP_ID', category: 'Sedan' },
-  
-  // Performance
-  { name: 'i30 N', slug: 'i30n', groupId: 'I30N_GROUP_ID', category: 'Performance' },
-  { name: 'i30 Sedan N', slug: 'i30-sedan-n', groupId: 'I30_SEDAN_N_GROUP_ID', category: 'Performance' },
-  { name: 'i20 N', slug: 'i20n', groupId: 'I20N_GROUP_ID', category: 'Performance' },
-  
-  // Vans
-  { name: 'Staria', slug: 'staria', groupId: 'E14E5076-A170-4F6C-86EF-AEF77027B46A', category: 'Van' },
-  { name: 'Staria Load', slug: 'staria-load', groupId: 'E14E5076-A170-4F6C-86EF-AEF77027B46A', category: 'Van' },
-];
+// Load models from JSON data and ensure slugs are generated from titles
+export const HYUNDAI_MODELS: HyundaiModel[] = (hyundaiModelsData.models as HyundaiModel[]).map(model => ({
+  ...model,
+  // Ensure slug is generated from model name/title for consistent routing
+  slug: slugify(model.name),
+}));
 
 // OEM model data from CDN
 interface OEMModel {

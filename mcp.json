@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "neon-green-tooth": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@neondatabase/mcp-server-neon",
+        "start",
+        "napi_yc8jal6i73k469jcxb2fqzmlsrcy4lghkc4ijn2cqu656g5ofqkd6kqfjdt79e03"
+      ],
+      "env": {
+        "NEON_PROJECT_ID": "green-tooth-34908352"
+      }
+    }
+  }
+}

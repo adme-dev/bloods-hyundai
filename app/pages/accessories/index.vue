@@ -65,21 +65,28 @@
 
 
 
-    <!-- Model Selector Section - OEM Style -->
+    <!-- Model Selector Section - Hyundai OEM Style -->
     <section v-if="!accessoriesStore.selectedModel" id="model-selector" class="model-selector-section">
       <div class="model-selector-content">
-        <!-- Category Tabs -->
-        <div class="category-tabs">
+        <!-- Category Tabs - Hyundai Style -->
+        <nav class="category-tabs-nav">
+          <button
+            class="category-tab"
+            :class="{ 'active': selectedModelCategory === null }"
+            @click="selectedModelCategory = null"
+          >
+            All
+          </button>
           <button
             v-for="category in modelCategories"
-            :key="category"
+            :key="category.key"
             class="category-tab"
-            :class="{ 'active': selectedModelCategory === category }"
-            @click="selectedModelCategory = selectedModelCategory === category ? null : category"
+            :class="{ 'active': selectedModelCategory === category.key }"
+            @click="selectedModelCategory = category.key"
           >
-            {{ category }}
+            {{ category.display }}
           </button>
-        </div>
+        </nav>
 
         <ModelSelector
           :models="filteredModelsByCategory"
@@ -535,18 +542,43 @@ const popularCategories = [
   },
 ];
 
-// Model categories
+// Model categories in specific order matching Hyundai website
+// Note: 'Hatch' and 'Sedan' are combined into one "Hatch & Sedans" tab
 const modelCategories = computed(() => {
   const cats = new Set(accessoriesStore.availableModels.map(m => m.category));
-  return Array.from(cats).sort();
+  
+  // Define display order with combined categories
+  const categories: { key: string; display: string; matches: string[] }[] = [
+    { key: 'SUV', display: 'SUVs & People Movers', matches: ['SUV'] },
+    { key: 'Electric', display: 'Electric', matches: ['Electric'] },
+    { key: 'HatchSedan', display: 'Hatch & Sedans', matches: ['Hatch', 'Sedan'] },
+    { key: 'Performance', display: 'Performance', matches: ['Performance'] },
+    { key: 'Van', display: 'Vans & Trucks', matches: ['Van'] },
+    { key: 'Hybrid', display: 'Hybrid', matches: ['Hybrid'] },
+  ];
+  
+  // Only return categories that have models
+  return categories.filter(cat => cat.matches.some(m => cats.has(m as any)));
 });
+
+// Category display names
+const getCategoryDisplayName = (category: { key: string; display: string }): string => {
+  return category.display;
+};
 
 // Filtered models by category
 const filteredModelsByCategory = computed(() => {
   if (!selectedModelCategory.value) {
     return accessoriesStore.availableModels;
   }
-  return accessoriesStore.availableModels.filter(m => m.category === selectedModelCategory.value);
+  
+  // Get the category matches
+  const category = modelCategories.value.find(c => c.key === selectedModelCategory.value);
+  if (!category) {
+    return accessoriesStore.availableModels;
+  }
+  
+  return accessoriesStore.availableModels.filter(m => category.matches.includes(m.category));
 });
 
 // Computed
@@ -567,7 +599,8 @@ const scrollToModelSelector = () => {
 
 // Methods
 const handleModelSelect = async (model: HyundaiModel) => {
-  // Navigate to the model-specific page instead of loading accessories on index page
+  // Navigate to the model-specific page using slugged title
+  // Model slug is already normalized from model name in the store
   await navigateTo(`/accessories/${model.slug}`);
 };
 
@@ -621,20 +654,10 @@ const formatPrice = (price: number) => {
   return price.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
-// Check for model in URL query and fetch OEM model images
+// Fetch OEM model images on mount
 onMounted(async () => {
   // Fetch OEM model images for the selector
   await accessoriesStore.fetchOEMModels();
-  
-  const route = useRoute();
-  const modelSlug = route.query.model as string;
-  
-  if (modelSlug) {
-    const model = accessoriesStore.availableModels.find(m => m.slug === modelSlug);
-    if (model) {
-      handleModelSelect(model);
-    }
-  }
 });
 </script>
 
@@ -817,8 +840,8 @@ onMounted(async () => {
 
 /* Model Selector Section */
 .model-selector-section {
-  background: #f5f5f5;
-  padding: 60px 20px;
+  background: #fff;
+  padding: 40px 20px 80px;
 }
 
 .model-selector-content {
@@ -826,35 +849,37 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
-.category-tabs {
+.category-tabs-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 0;
   margin-bottom: 40px;
   justify-content: center;
+  border-bottom: 2px solid #e0e0e0;
 }
 
 .category-tab {
-  padding: 10px 24px;
-  font-size: 14px;
+  padding: 16px 24px;
+  font-size: 15px;
   font-weight: 600;
-  color: #666;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  color: #333;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
+  position: relative;
+  margin-bottom: -2px;
 }
 
 .category-tab:hover {
-  border-color: #002c5f;
   color: #002c5f;
 }
 
 .category-tab.active {
-  background: #002c5f;
-  color: #fff;
-  border-color: #002c5f;
+  color: #002c5f;
+  border-bottom-color: #002c5f;
 }
 
 /* Responsive */
@@ -1284,8 +1309,21 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
 
-  .category-tabs {
+  .category-tabs-nav {
     justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .category-tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-tab {
+    padding: 14px 20px;
+    font-size: 14px;
   }
 
   .selected-model-header {

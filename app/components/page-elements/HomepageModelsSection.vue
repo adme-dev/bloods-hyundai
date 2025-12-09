@@ -1,6 +1,6 @@
 <template>
   <section class="homepage-models-section py-16 bg-gray-50">
-    <div class="uk-container">
+    <div class="mx-auto container">
       <!-- Section Header -->
       <div class="text-center mb-12">
         <h2 class="text-3xl font-bold text-gray-900 mb-4">
@@ -487,7 +487,7 @@ onClickOutside(categoryDropdownRef, () => {
 
 /* Mobile scroller specific styles */
 @media (max-width: 1023px) {
-  .homepage-models-section .uk-container {
+  .homepage-models-section .container {
     padding-left: 1rem;
     padding-right: 1rem;
   }
