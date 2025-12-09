@@ -63,37 +63,7 @@
       </div>
     </section>
 
-    <!-- Popular Accessories Section - OEM Style -->
-    <section v-if="!accessoriesStore.selectedModel" class="popular-accessories-section">
-      <div class="popular-accessories-content">
-        <h2 class="popular-accessories-title">Popular accessories.</h2>
-        <p class="popular-accessories-description">
-          What personal touches would you like to add to your Hyundai? From floor mats that keep weekend sand and mud off your carpets, 
-          to roof racks for your sports gear, every item in our Genuine Accessories range is engineered to fit, match and work with your Hyundai perfectly.
-        </p>
-        
-        <div class="popular-categories-grid">
-          <div 
-            v-for="category in popularCategories" 
-            :key="category.id"
-            class="popular-category-card"
-            @click="scrollToModelSelector"
-          >
-            <div class="category-image-wrapper">
-              <img 
-                :src="category.image" 
-                :alt="category.name"
-                class="category-image"
-                loading="lazy"
-              >
-            </div>
-            <h3 class="category-name">{{ category.name }}</h3>
-            <p class="category-description">{{ category.description }}</p>
-            <a class="category-link" href="#model-selector">Learn more</a>
-          </div>
-        </div>
-      </div>
-    </section>
+
 
     <!-- Model Selector Section - OEM Style -->
     <section v-if="!accessoriesStore.selectedModel" id="model-selector" class="model-selector-section">
@@ -132,7 +102,6 @@
                   :alt="accessoriesStore.selectedModel.name"
                   class="model-header-image"
                 >
-                <span v-else class="model-header-placeholder">{{ getCategoryEmoji(accessoriesStore.selectedModel.category) }}</span>
               </div>
               <div class="model-info-text">
                 <h2 class="model-title">{{ accessoriesStore.selectedModel.name }}</h2>
@@ -284,7 +253,6 @@
             <!-- Value Packs Section -->
             <div v-if="accessoriesStore.accessoryPacks.length > 0 && !accessoriesStore.selectedCategory" class="mb-8">
               <h3 class="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-                <span class="text-xl">💰</span>
                 Value Packs
                 <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                   Save more
@@ -306,7 +274,6 @@
             <!-- Accessories Grid -->
             <div v-if="accessoriesStore.filteredAccessories.length > 0">
               <h3 v-if="accessoriesStore.accessoryPacks.length > 0 && !accessoriesStore.selectedCategory" class="mb-2 flex items-center gap-2 text-base font-bold text-slate-900">
-                <span class="text-lg">🛒</span>
                 Individual Accessories
               </h3>
               <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -604,11 +571,14 @@ const handleModelSelect = async (model: HyundaiModel) => {
   await navigateTo(`/accessories/${model.slug}`);
 };
 
-const changeModel = () => {
+const changeModel = async () => {
   accessoriesStore.selectedModel = null;
   accessoriesStore.accessories = [];
   accessoriesStore.accessoryPacks = [];
   accessoriesStore.resetFilters();
+  
+  // Navigate back to the main accessories page
+  await navigateTo('/accessories');
 };
 
 const handleAddToCart = (accessory: Accessory) => {
@@ -649,19 +619,6 @@ const handleEnquire = () => {
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-};
-
-const getCategoryEmoji = (category: string): string => {
-  const emojis: Record<string, string> = {
-    'SUV': '🚙',
-    'Electric': '⚡',
-    'Hatch': '🚗',
-    'Sedan': '🚘',
-    'Performance': '🏎️',
-    'Van': '🚐',
-    'Hybrid': '🌿',
-  };
-  return emojis[category] || '🚗';
 };
 
 // Check for model in URL query and fetch OEM model images

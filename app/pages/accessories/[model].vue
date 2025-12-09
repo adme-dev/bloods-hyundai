@@ -10,13 +10,13 @@
         <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex items-center gap-5">
             <div class="flex h-20 w-28 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
-              <span class="text-4xl">{{ getCategoryEmoji(modelData?.category || '') }}</span>
+              <component :is="getCategoryIcon(modelData?.category || '')" :size="48" :stroke-width="1.5" class="text-white" />
             </div>
             <div>
-              <h1 class="text-3xl font-bold text-white md:text-4xl">
+              <h1 class="text-3xl font-bold text-white md:text-4xl m-0">
                 {{ modelData?.name }} Accessories
               </h1>
-              <p class="mt-1 text-lg text-white/80">
+              <p class="mt-1 text-lg text-white/80 m-0">
                 Genuine Hyundai accessories for your {{ modelData?.name }}
               </p>
             </div>
@@ -201,16 +201,16 @@
               Clear Filters
             </button>
 
-            <!-- Change Model Link -->
-            <NuxtLink
-              to="/accessories"
+            <!-- Change Model Button -->
+            <button
               class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50"
+              @click="changeModel"
             >
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
               Change Model
-            </NuxtLink>
+            </button>
           </div>
         </aside>
 
@@ -226,7 +226,6 @@
           <!-- Value Packs Section -->
           <div v-if="accessoriesStore.accessoryPacks.length > 0 && !accessoriesStore.selectedCategory" class="mb-8">
             <h3 class="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-              <span class="text-xl">💰</span>
               Value Packs for {{ modelData?.name }}
               <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
                 Save more
@@ -248,7 +247,6 @@
           <!-- Accessories Grid -->
           <div v-if="accessoriesStore.filteredAccessories.length > 0">
             <h3 v-if="accessoriesStore.accessoryPacks.length > 0 && !accessoriesStore.selectedCategory" class="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
-              <span class="text-xl">🛒</span>
               Individual Accessories
             </h3>
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -312,6 +310,7 @@
 <script setup lang="ts">
 import type { Accessory, AccessoryPack } from '~/stores/accessories';
 import { HYUNDAI_MODELS } from '~/stores/accessories';
+import { Car, Zap, CarFront, Truck, Gauge, Bus, Leaf } from 'lucide-vue-next';
 
 const route = useRoute();
 const accessoriesStore = useAccessoriesStore();
@@ -424,21 +423,32 @@ const handleEnquire = () => {
   });
 };
 
+const changeModel = async () => {
+  // Clear the store state
+  accessoriesStore.selectedModel = null;
+  accessoriesStore.accessories = [];
+  accessoriesStore.accessoryPacks = [];
+  accessoriesStore.resetFilters();
+  
+  // Navigate back to the main accessories page
+  await navigateTo('/accessories');
+};
+
 const formatPrice = (price: number) => {
   return price.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
-const getCategoryEmoji = (category: string): string => {
-  const emojis: Record<string, string> = {
-    'SUV': '🚙',
-    'Electric': '⚡',
-    'Hatch': '🚗',
-    'Sedan': '🚘',
-    'Performance': '🏎️',
-    'Van': '🚐',
-    'Hybrid': '🌿',
+const getCategoryIcon = (category: string) => {
+  const icons: Record<string, any> = {
+    'SUV': Truck,
+    'Electric': Zap,
+    'Hatch': Car,
+    'Sedan': CarFront,
+    'Performance': Gauge,
+    'Van': Bus,
+    'Hybrid': Leaf,
   };
-  return emojis[category] || '🚗';
+  return icons[category] || Car;
 };
 
 // Load accessories on mount

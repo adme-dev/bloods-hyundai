@@ -29,13 +29,11 @@
         <!-- Model Image -->
         <div class="model-image-wrapper">
           <img
-            v-if="model.image"
-            :src="model.image"
+            :src="model.image || '/images/placeholder-car.png'"
             :alt="model.name"
             class="model-image"
             loading="lazy"
           >
-          <span v-else class="model-placeholder">{{ getCategoryEmoji(model.category) }}</span>
         </div>
 
         <!-- Model Name -->
@@ -98,19 +96,6 @@ const filteredModels = computed(() => {
 
   return result;
 });
-
-const getCategoryEmoji = (category: string): string => {
-  const emojis: Record<string, string> = {
-    'SUV': '🚙',
-    'Electric': '⚡',
-    'Hatch': '🚗',
-    'Sedan': '🚘',
-    'Performance': '🏎️',
-    'Van': '🚐',
-    'Hybrid': '🌿',
-  };
-  return emojis[category] || '🚗';
-};
 
 const getCategoryClass = (category: string): string => {
   const classes: Record<string, string> = {

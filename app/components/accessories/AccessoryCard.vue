@@ -40,7 +40,7 @@
 
       <!-- Name -->
       <h3 
-        class="mb-2 line-clamp-2 cursor-pointer text-lg font-bold leading-snug text-slate-900 transition-colors hover:text-primary"
+        class="m-0 line-clamp-2 cursor-pointer text-lg font-bold leading-snug text-slate-900 transition-colors hover:text-primary"
         @click="$emit('view-details', accessory)"
       >
         {{ accessory.name }}

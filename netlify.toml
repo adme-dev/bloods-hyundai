@@ -2,6 +2,7 @@
 
 [build]
   command = "npm run build"
+   publish = "dist"
   # No publish directory needed - Netlify preset handles this automatically
 
 [build.environment]

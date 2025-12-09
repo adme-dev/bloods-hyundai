@@ -82,8 +82,8 @@
               </div>
 
               <!-- Details -->
-              <div class="flex flex-1 flex-col">
-                <div class="flex items-start justify-between gap-2">
+              <div class="flex flex-1 flex-col pt-2">
+                <div class="flex items-start justify-between gap-2 pb-2">
                   <div class="flex-1">
                     <div class="flex items-start justify-between gap-2">
                       <div>
@@ -93,7 +93,7 @@
                         >
                           Value Pack
                         </span>
-                        <h4 class="line-clamp-2 text-sm font-semibold text-slate-900">
+                        <h4 class="line-clamp-2 text-sm font-semibold text-slate-900 m-0">
                           {{ item.accessory.name }}
                         </h4>
                       </div>
@@ -110,7 +110,7 @@
                   </button>
                 </div>
 
-                <div class="mt-auto flex items-end justify-between">
+                <div class="flex justify-between">
                   <!-- Quantity Controls -->
                   <div class="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50">
                     <button
