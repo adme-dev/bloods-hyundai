@@ -48,3 +48,4 @@ After this change, the deployment should succeed. The site will work with:
 - [Nitro Netlify Preset](https://nitro.unjs.io/deploy/providers/netlify)
 - [Nuxt 4 Migration Guide](https://nuxt.com/docs/getting-started/upgrade)
 
+

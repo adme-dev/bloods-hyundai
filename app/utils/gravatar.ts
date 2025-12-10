@@ -233,3 +233,4 @@ export function getInitials(firstName?: string, lastName?: string): string {
   const last = lastName?.charAt(0)?.toUpperCase() || '';
   return first + last || '?';
 }
+

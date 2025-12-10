@@ -570,3 +570,4 @@ API: https://www.hyundai.com/content/api/au/hyundai/v3/accessories?groupId={grou
 - Active Context: `memory-bank/activeContext.md`
 - Progress: `memory-bank/progress.md`
 
+

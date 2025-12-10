@@ -10,3 +10,4 @@ const props = defineProps<SelectSeparatorProps & { class?: HTMLAttributes['class
   <SelectSeparator :class="cn('-mx-1 my-1 h-px bg-muted', props.class)" />
 </template>
 
+

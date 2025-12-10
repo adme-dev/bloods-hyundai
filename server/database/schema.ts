@@ -736,3 +736,4 @@ export type NewServiceSlot = typeof serviceSlots.$inferInsert;
 export type ServiceBlockedDate = typeof serviceBlockedDates.$inferSelect;
 export type NewServiceBlockedDate = typeof serviceBlockedDates.$inferInsert;
 
+

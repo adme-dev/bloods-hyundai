@@ -105,3 +105,4 @@ npm run preview
 - Forms currently submit to external WordPress API, migration to NEON planned
 - Some pages use ISR (incremental static regeneration) for performance
 
+

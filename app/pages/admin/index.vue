@@ -1352,3 +1352,4 @@ function getWorkloadBadgeVariant(level: string): 'default' | 'secondary' | 'outl
   return variants[level] || 'outline';
 }
 </script>
+

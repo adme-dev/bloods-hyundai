@@ -23,3 +23,4 @@ const forwarded = useForwardProps(props)
   </StepperIndicator>
 </template>
 
+

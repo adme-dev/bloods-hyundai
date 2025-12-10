@@ -14,3 +14,4 @@ export function calculateWeeklyPayment(price: number, annualInterestRate = 9.8, 
   return (payment * 12) / 52;
 }
 
+

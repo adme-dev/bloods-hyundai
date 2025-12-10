@@ -75,3 +75,4 @@ This means:
 **You don't need Frankenstyle** - your current setup is already handling conflicts properly. Frankenstyle would be useful if you were starting a new project, but migrating now would add unnecessary complexity without significant benefits.
 
 
+
