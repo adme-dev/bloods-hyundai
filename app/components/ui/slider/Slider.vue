@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { SliderRange, SliderRoot, SliderThumb, SliderTrack, type SliderRootProps } from 'radix-vue'
+import { SliderRange, SliderRoot, SliderThumb, SliderTrack, type SliderRootProps } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = defineProps<SliderRootProps & { class?: HTMLAttributes['class'] }>()
@@ -29,4 +29,5 @@ const emits = defineEmits<{
     />
   </SliderRoot>
 </template>
+
 

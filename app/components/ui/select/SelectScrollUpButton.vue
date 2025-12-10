@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { SelectScrollUpButton, type SelectScrollUpButtonProps } from 'radix-vue'
+import { SelectScrollUpButton, type SelectScrollUpButtonProps } from 'reka-ui'
 import { ChevronUp } from 'lucide-vue-next'
 import { cn } from '~/lib/utils'
 
@@ -14,3 +14,4 @@ const props = defineProps<SelectScrollUpButtonProps & { class?: HTMLAttributes['
     <ChevronUp class="h-4 w-4" />
   </SelectScrollUpButton>
 </template>
+

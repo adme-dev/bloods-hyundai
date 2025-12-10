@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { StepperTitle, type StepperTitleProps } from 'radix-vue'
+import { StepperTitle, type StepperTitleProps } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = defineProps<StepperTitleProps & { class?: HTMLAttributes['class'] }>()
@@ -18,3 +18,4 @@ const props = defineProps<StepperTitleProps & { class?: HTMLAttributes['class'] 
     <slot />
   </StepperTitle>
 </template>
+

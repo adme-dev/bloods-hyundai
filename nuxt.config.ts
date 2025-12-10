@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     '@nuxtjs/seo', // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
     '@fedorae/nuxt-uikit', // UIkit loaded globally
     '@unocss/nuxt', // UnoCSS/Tailwind utilities - used globally for all pages
+    '@nuxtjs/tailwindcss', // Tailwind CSS for admin dashboard
   ],
 
   // Pinia Persisted State configuration
@@ -54,6 +55,7 @@ export default defineNuxtConfig({
     // Server-only (private)
     jwtSecret: process.env.NUXT_JWT_SECRET || '',
     stripeSecretKey: process.env.NUXT_STRIPE_SECRET_KEY || '',
+    sendgridApiKey: process.env.SENDGRID_API_KEY || '',
 
     // Public (exposed to client)
     public: {
@@ -198,6 +200,7 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-12-05',
 });
+
 
 
 

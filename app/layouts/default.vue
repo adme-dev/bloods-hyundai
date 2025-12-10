@@ -17,7 +17,6 @@
       <LazyVehicleModels />
       <LazyGlobalSearch />
       <LazyMobileSiteMenu />
-      <LazyNavModels />
     </footer>
 
     <LazyCallQuickLinks />

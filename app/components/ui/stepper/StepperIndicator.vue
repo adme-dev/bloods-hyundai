@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { StepperIndicator, type StepperIndicatorProps, useForwardProps } from 'radix-vue'
+import { StepperIndicator, type StepperIndicatorProps, useForwardProps } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = defineProps<StepperIndicatorProps & { class?: HTMLAttributes['class'] }>()
@@ -22,3 +22,4 @@ const forwarded = useForwardProps(props)
     <slot />
   </StepperIndicator>
 </template>
+

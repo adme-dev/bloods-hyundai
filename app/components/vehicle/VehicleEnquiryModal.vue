@@ -729,32 +729,32 @@ const submitForm = async () => {
 
   try {
     const vehicle = props.vehicle;
+    const nameParts = form.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
     
-    // Prepare vehicle data without Comments
-    const vehicleData = vehicle ? { ...vehicle } : {};
-    delete vehicleData.Comments;
-    
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: form.name,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_5: vehicle?.stockid || '',
-          input_6: form.finance ? 'Yes I\'m interested in finance.' : '',
-          input_7: form.tradeIn ? 'Yes I have a vehicle to trade in' : '',
-          input_17: form.testDrive ? 'Yes I would like a test drive' : '',
-          input_8: getDisplay(vehicle?.condition) || '',
-          input_9: getDisplay(vehicle?.make) || '',
-          input_10: getDisplay(vehicle?.model) || '',
-          input_11: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || '',
-          input_12: `${vehicle?.stockid || ''}/${vehicle?.slug || ''}`,
-          input_16: JSON.stringify(vehicleData),
-          input_26: 'Stock Enquiry Page',
+        type: 'vehicle',
+        firstName,
+        lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        message: form.message || undefined,
+        vehicleInfo: {
+          condition: getDisplay(vehicle?.condition) || undefined,
+          make: getDisplay(vehicle?.make) || undefined,
+          model: getDisplay(vehicle?.model) || undefined,
+          variant: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || undefined,
+          stockId: String(vehicle?.stockid || ''),
+          price: vehicle?.price || undefined,
         },
-        formid: mainStore.site?.forms?.carsales || 'carsales'
+        tradeIn: form.tradeIn ? {} : undefined,
+        testDrive: form.testDrive,
+        financeInterest: form.finance,
+        source: 'vehicle-enquiry-modal',
       }
     });
 
@@ -769,12 +769,13 @@ const submitForm = async () => {
       wants_test_drive: form.testDrive,
     });
 
-    // GTM tracking (legacy - keep for backwards compatibility)
+    // GTM tracking
     if (typeof window !== 'undefined' && (window as any).dataLayer) {
       (window as any).dataLayer.push({
-        event: 'FormSub Vehicle',
-        formName: 'Vehicle Enquiry Modal',
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         stockId: vehicle?.stockid,
         vehicleTitle: vehicleTitle.value,
         testDrive: form.testDrive,

@@ -24,3 +24,4 @@ useSeoMeta({
 await navigateTo(`/car-sales?make=${encodeURIComponent(make.toLowerCase())}&model=${encodeURIComponent(model.toLowerCase())}&year_min=${year}&year_max=${year}`, { replace: true });
 </script>
 
+

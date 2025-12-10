@@ -319,19 +319,27 @@ const submitForm = async () => {
   isSending.value = true;
 
   try {
-    await $fetch(`${config.public.apiUrl}/form`, {
+    // Map form type to API type
+    const typeMap: Record<string, string> = {
+      sales: 'vehicle',
+      parts: 'parts',
+      finance: 'finance',
+      service: 'service',
+      general: 'contact',
+    };
+
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_27: form.lastName,
-          input_28: props.formType,
-          input_29: form.registration,
-        },
-        formid: mainStore.site?.forms?.contact,
+        type: typeMap[props.formType] || 'contact',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        message: form.message || undefined,
+        vehicleInfo: form.registration ? { registration: form.registration } : undefined,
+        source: `contact-page-${props.formType}`,
       },
     });
 
@@ -339,22 +347,23 @@ const submitForm = async () => {
     isSent.value = true;
 
     // Track in GTM
-    if (process.client && window.dataLayer) {
-      window.dataLayer.push({
-        event: `FormSub ${props.formType}`,
-        formName: `Form ${props.formType}`,
+    if (process.client && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: `FormSubmission`,
+        formType: props.formType,
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         firstName: form.firstName,
-        secondName: form.lastName,
+        lastName: form.lastName,
         email: form.email,
         phone: form.phone,
         message: form.message,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Form submission error:', error);
     isSending.value = false;
-    errors.value = ['Something went wrong. Please try again.'];
+    errors.value = [error?.data?.message || 'Something went wrong. Please try again.'];
   }
 };
 
@@ -371,3 +380,4 @@ const resetForm = () => {
   errors.value = [];
 };
 </script>
+

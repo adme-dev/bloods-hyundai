@@ -267,3 +267,4 @@ The Neon MCP server provides these capabilities:
 - [Neon API Keys](https://console.neon.tech/app/settings/api-keys)
 - [MCP Documentation](https://modelcontextprotocol.io/)
 - [Neon Documentation](https://neon.tech/docs)
+

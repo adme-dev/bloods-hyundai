@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { TabsTrigger, type TabsTriggerProps } from 'radix-vue'
+import { TabsTrigger, type TabsTriggerProps } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = defineProps<TabsTriggerProps & { class?: HTMLAttributes['class'] }>()
@@ -17,4 +17,5 @@ const props = defineProps<TabsTriggerProps & { class?: HTMLAttributes['class'] }
     <slot />
   </TabsTrigger>
 </template>
+
 

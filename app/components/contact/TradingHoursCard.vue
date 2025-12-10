@@ -146,3 +146,4 @@ const currentPhone = computed(() => {
   return dept?.phone || departments.value.sales?.phone || '(03) 5144 2877';
 });
 </script>
+

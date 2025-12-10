@@ -87,3 +87,4 @@ Navigation components (`PrimaryNav.vue`, `MobileNav.vue`) use UIkit classes but 
 3. Test vehicle pages still work with UIkit
 4. Test non-vehicle pages work without UIkit
 
+

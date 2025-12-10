@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { StepperSeparator, type StepperSeparatorProps } from 'radix-vue'
+import { StepperSeparator, type StepperSeparatorProps } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = defineProps<StepperSeparatorProps & { class?: HTMLAttributes['class'] }>()
@@ -15,3 +15,4 @@ const props = defineProps<StepperSeparatorProps & { class?: HTMLAttributes['clas
     )"
   />
 </template>
+

@@ -1067,3 +1067,4 @@ const currentFilterQuery = computed(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(96, 165, 250, 0.2);
 }
 </style>
+

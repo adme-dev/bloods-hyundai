@@ -77,7 +77,10 @@
             <!-- Form Column -->
             <div class="lg:col-span-3">
               <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
+                <!-- Use ServiceForm for service tab -->
+                <ServiceForm v-if="tab.value === 'service'" />
                 <ContactFormCard 
+                  v-else
                   :form-type="tab.value" 
                   :site-name="siteName"
                   :show-registration="tab.value === 'parts'"
@@ -113,6 +116,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import ContactFormCard from '~/components/contact/ContactFormCard.vue';
 import TradingHoursCard from '~/components/contact/TradingHoursCard.vue';
 import PostContent from '~/components/content/PostContent.vue';
+import ServiceForm from '~/components/page-elements/ServiceForm.vue';
 
 // Store
 const mainStore = useMainStore();
@@ -156,7 +160,7 @@ const lmct = computed(() => mainStore.site?.lmct || '6106');
 const departments = computed(() => mainStore.site?.departments || {});
 
 // Tab state
-const activeTab = ref('sales');
+const activeTab = ref('general');
 
 // Tab configuration
 const tabs = [

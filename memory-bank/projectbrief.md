@@ -52,3 +52,4 @@ Sale Hyundai is a Nuxt 3 website for a Hyundai car dealership in Sale, Victoria,
 - Must work with existing WordPress API for some content
 - Must integrate with dealer's existing CRM (future phase)
 - Netlify deployment constraints (serverless functions)
+

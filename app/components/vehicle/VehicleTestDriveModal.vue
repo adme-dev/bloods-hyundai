@@ -301,26 +301,33 @@ const submitForm = async () => {
 
   try {
     const vehicle = props.vehicle;
+    const nameParts = form.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
     
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: form.name,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_5: vehicle?.stockid || '',
-          input_6: form.preferredDate,
-          input_7: form.preferredTime || 'Not specified',
-          input_8: getDisplay(vehicle?.condition) || '',
-          input_9: getDisplay(vehicle?.make) || '',
-          input_10: getDisplay(vehicle?.model) || '',
-          input_11: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || '',
-          input_12: `${vehicle?.stockid || ''}/${vehicle?.slug || ''}`,
-          input_26: 'Vehicle Test Drive Request',
+        type: 'test_drive',
+        firstName,
+        lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        message: form.message || `Test drive request for ${form.preferredDate}${form.preferredTime ? ` at ${form.preferredTime}` : ''}`,
+        vehicleInfo: {
+          condition: getDisplay(vehicle?.condition) || undefined,
+          make: getDisplay(vehicle?.make) || undefined,
+          model: getDisplay(vehicle?.model) || undefined,
+          variant: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || undefined,
+          stockId: String(vehicle?.stockid || ''),
         },
-        formid: mainStore.site?.forms?.testdrive || 'testdrive'
+        serviceInfo: {
+          preferredDate: form.preferredDate,
+          preferredTime: form.preferredTime || undefined,
+        },
+        testDrive: true,
+        source: 'vehicle-test-drive-modal',
       }
     });
 
@@ -329,9 +336,10 @@ const submitForm = async () => {
     // GTM tracking
     if (typeof window !== 'undefined' && (window as any).dataLayer) {
       (window as any).dataLayer.push({
-        event: 'FormSub TestDrive',
-        formName: 'Vehicle Test Drive Modal',
+        event: 'FormSubmission',
+        formType: 'test_drive',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         stockId: vehicle?.stockid,
         vehicleTitle: vehicleTitle.value,
         preferredDate: form.preferredDate,
@@ -729,3 +737,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+

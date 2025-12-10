@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { StepperRoot, type StepperRootEmits, type StepperRootProps, useForwardPropsEmits } from 'radix-vue'
+import { StepperRoot, type StepperRootEmits, type StepperRootProps, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = withDefaults(defineProps<StepperRootProps & { class?: HTMLAttributes['class'] }>(), {
@@ -17,3 +17,4 @@ const forwarded = useForwardPropsEmits(props, emits)
     <slot />
   </StepperRoot>
 </template>
+

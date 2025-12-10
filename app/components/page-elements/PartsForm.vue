@@ -231,33 +231,36 @@ const submitForm = async () => {
   isSubmitting.value = true;
 
   try {
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.partDescription,
-          input_5: form.vehicleMake,
-          input_6: form.vehicleModel,
-          input_7: form.vehicleYear,
-          input_8: form.registration,
-          input_9: form.vin,
-          input_10: form.partNumber,
+        type: 'parts',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        message: `Part Request: ${form.partDescription}${form.partNumber ? `\nPart Number: ${form.partNumber}` : ''}`,
+        vehicleInfo: {
+          make: form.vehicleMake,
+          model: form.vehicleModel || undefined,
+          year: form.vehicleYear ? parseInt(form.vehicleYear) : undefined,
+          registration: form.registration || undefined,
+          vin: form.vin || undefined,
         },
-        formid: mainStore.site?.forms?.parts || 'parts'
+        source: 'parts-form',
       }
     });
 
     isSubmitted.value = true;
 
     // GTM tracking
-    if (typeof window !== 'undefined' && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub Parts',
-        formName: 'Parts Form',
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'parts',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
@@ -287,6 +290,7 @@ const submitForm = async () => {
   }
 }
 </style>
+
 
 
 

@@ -288,9 +288,7 @@ onUnmounted(() => {
 }
 
 .page-header {
-  padding: 2rem 0;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .cars-container {
@@ -639,3 +637,4 @@ onUnmounted(() => {
   }
 }
 </style>
+

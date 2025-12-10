@@ -172,39 +172,43 @@ const handleSubmit = async () => {
   submitting.value = true;
 
   try {
-    let message = form.message;
-    
-    if (form.testDrive) {
-      message += '\n\n[Request: Test Drive]';
-    }
-    
-    if (form.tradeIn) {
-      message += `\n\n[Trade-in: ${form.tradeInYear} ${form.tradeInMake} ${form.tradeInModel}]`;
-    }
-
-    await $fetch(`${config.public.apiUrl}/form`, {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: message,
-          input_27: form.lastName,
-          input_28: `vehicle-enquiry-${vehicleInfo.value?.stockId}`,
-          input_29: vehicleTitle.value,
-        },
-        formid: 'vehicle-enquiry',
+        type: 'vehicle',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        postcode: form.postcode || undefined,
+        message: form.message || undefined,
+        vehicleInfo: vehicleInfo.value ? {
+          condition: vehicleInfo.value.condition || undefined,
+          make: vehicleInfo.value.make || undefined,
+          model: vehicleInfo.value.model || undefined,
+          year: vehicleInfo.value.year ? parseInt(vehicleInfo.value.year) : undefined,
+          price: vehicleInfo.value.price ? parseInt(vehicleInfo.value.price) : undefined,
+          stockId: vehicleInfo.value.stockId || undefined,
+        } : undefined,
+        tradeIn: form.tradeIn ? {
+          make: form.tradeInMake || undefined,
+          model: form.tradeInModel || undefined,
+          year: form.tradeInYear ? parseInt(form.tradeInYear) : undefined,
+        } : undefined,
+        testDrive: form.testDrive,
+        source: 'vehicle-enquire-page',
       },
     });
 
     submitted.value = true;
 
-    if (process.client && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub vehicle-enquiry',
-        formName: 'Vehicle Enquiry',
+    if (process.client && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         vehicle: vehicleTitle.value,
       });
     }
@@ -227,6 +231,7 @@ useSiteMeta({
   min-height: 80vh;
 }
 </style>
+
 
 
 

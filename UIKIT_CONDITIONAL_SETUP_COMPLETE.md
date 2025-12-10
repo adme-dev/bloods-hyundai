@@ -120,3 +120,4 @@ Verify:
 - [ ] Test Tailwind utilities on homepage
 - [ ] Verify no console errors
 
+

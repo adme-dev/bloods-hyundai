@@ -13,3 +13,4 @@ export function calculateWeeklyPayment(price: number, annualInterestRate = 9.8, 
   const payment = i !== 1 ? (price * monthlyInterestRate * i) / (i - 1) : 0;
   return (payment * 12) / 52;
 }
+

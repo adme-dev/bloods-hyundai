@@ -233,12 +233,11 @@
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="space-y-2">
                   <Label for="dropOffDate">Preferred Drop Off Date <span class="text-red-500">*</span></Label>
-                  <Input 
-                    id="dropOffDate" 
-                    type="date"
+                  <DatePicker 
                     v-model="form.dropOffDate" 
-                    :min="minDate"
-                    :class="{ 'border-red-500': errors.dropOffDate }"
+                    :min-date="minDate"
+                    placeholder="Select drop off date"
+                    :class="errors.dropOffDate ? 'border-red-500' : ''"
                   />
                   <p v-if="errors.dropOffDate" class="text-sm text-red-500">{{ errors.dropOffDate }}</p>
                 </div>
@@ -259,11 +258,10 @@
                 
                 <div class="space-y-2">
                   <Label for="pickUpDate">Preferred Pick Up Date</Label>
-                  <Input 
-                    id="pickUpDate" 
-                    type="date"
+                  <DatePicker 
                     v-model="form.pickUpDate" 
-                    :min="form.dropOffDate || minDate"
+                    :min-date="form.dropOffDate || minDate"
+                    placeholder="Select pick up date"
                   />
                 </div>
                 
@@ -290,38 +288,38 @@
                 </h4>
                 
                 <div class="space-y-3">
-                  <div class="flex items-center space-x-3">
-                    <Checkbox 
-                      id="scheduledService"
-                      :checked="form.scheduledService"
-                      @update:checked="form.scheduledService = $event"
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      v-model="form.scheduledService"
+                      class="h-4 w-4 rounded border-gray-300 text-[#001E50] focus:ring-[#001E50] focus:ring-offset-0"
                     />
-                    <Label for="scheduledService" class="font-normal cursor-pointer">
+                    <span class="font-normal text-gray-700">
                       Booking in for Scheduled Service
-                    </Label>
-                  </div>
+                    </span>
+                  </label>
                   
-                  <div class="flex items-center space-x-3">
-                    <Checkbox 
-                      id="previouslyServiced"
-                      :checked="form.previouslyServiced"
-                      @update:checked="form.previouslyServiced = $event"
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      v-model="form.previouslyServiced"
+                      class="h-4 w-4 rounded border-gray-300 text-[#001E50] focus:ring-[#001E50] focus:ring-offset-0"
                     />
-                    <Label for="previouslyServiced" class="font-normal cursor-pointer">
+                    <span class="font-normal text-gray-700">
                       My vehicle has been serviced by {{ siteName }} in the past
-                    </Label>
-                  </div>
+                    </span>
+                  </label>
                   
-                  <div class="flex items-center space-x-3">
-                    <Checkbox 
-                      id="otherRepairs"
-                      :checked="form.otherRepairs"
-                      @update:checked="form.otherRepairs = $event"
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      v-model="form.otherRepairs"
+                      class="h-4 w-4 rounded border-gray-300 text-[#001E50] focus:ring-[#001E50] focus:ring-offset-0"
                     />
-                    <Label for="otherRepairs" class="font-normal cursor-pointer">
+                    <span class="font-normal text-gray-700">
                       Booking In For Other Repairs
-                    </Label>
-                  </div>
+                    </span>
+                  </label>
                 </div>
               </div>
 
@@ -516,8 +514,8 @@ import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
-import { Checkbox } from '~/components/ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { DatePicker } from '~/components/ui/date-picker'
 import { Stepper, StepperItem, StepperSeparator, StepperTitle, StepperDescription, StepperTrigger } from '~/components/ui/stepper'
 
 // Runtime config
@@ -670,41 +668,52 @@ const handleStepSubmit = async () => {
       ? `${formatDate(form.pickUpDate)}${form.pickUpTime ? ` at ${form.pickUpTime}` : ''}`
       : ''
 
-    const payload = {
-      input_2: form.firstName,
-      input_21: form.lastName,
-      input_3: form.phone,
-      input_6: form.email,
-      input_17: form.serviceRequests,
-      input_10: form.vehicleMake,
-      input_11: form.vehicleModel,
-      input_13: form.vehicleRego,
-      input_38: form.vehicleYear,
-      input_40: form.vehicleVin,
-      input_39: form.vehicleOdometer,
-      input_42: dropOffDateTime,
-      input_49: pickUpDateTime,
-      input_24_1: form.scheduledService ? 'Booking in for Scheduled Service' : '',
-      input_24_4: form.previouslyServiced ? `My vehicle has been serviced by ${siteName.value} in the past` : '',
-      input_24_5: form.otherRepairs ? 'Booking In For Other Repairs' : '',
-    }
-    
-    await $fetch(`${config.public.apiUrl}/form`, {
+    // Build service types array
+    const serviceTypes: string[] = []
+    if (form.scheduledService) serviceTypes.push('Scheduled Service')
+    if (form.previouslyServiced) serviceTypes.push('Previously Serviced')
+    if (form.otherRepairs) serviceTypes.push('Other Repairs')
+
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload,
-        formid: config.public.serviceFormId || 'service',
+        type: 'service',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        message: form.serviceRequests || undefined,
+        serviceInfo: {
+          serviceType: serviceTypes.join(', ') || 'General Service',
+          preferredDate: form.dropOffDate,
+          preferredTime: form.dropOffTime || undefined,
+          registration: form.vehicleRego,
+          odometer: form.vehicleOdometer,
+          vehicleMake: form.vehicleMake,
+          vehicleModel: form.vehicleModel,
+          vehicleYear: form.vehicleYear,
+        },
+        vehicleInfo: {
+          make: form.vehicleMake,
+          model: form.vehicleModel,
+          year: form.vehicleYear ? parseInt(form.vehicleYear) : undefined,
+          registration: form.vehicleRego,
+          vin: form.vehicleVin || undefined,
+        },
+        source: 'service-booking-form',
       },
     })
     
     submitted.value = true
     
     // Track in GTM
-    if (process.client && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub Service',
-        formName: 'Service Form',
+    if (process.client && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'service',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,

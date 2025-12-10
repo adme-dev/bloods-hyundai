@@ -321,19 +321,26 @@ const submitForm = async () => {
   isSending.value = true;
 
   try {
-    await $fetch(`${config.public.apiUrl}/form`, {
+    // Map form type to API type
+    const typeMap: Record<string, string> = {
+      contact_form: 'contact',
+      parts_form: 'parts',
+      service_form: 'service',
+      finance_form: 'finance',
+    };
+
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_27: form.lastName,
-          input_28: props.formType || route.params.slug,
-          input_29: form.registration,
-        },
-        formid: mainStore.site?.forms?.contact,
+        type: typeMap[props.activeHoursTab] || props.formType || 'contact',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        message: form.message || undefined,
+        vehicleInfo: form.registration ? { registration: form.registration } : undefined,
+        source: route.path,
       },
     });
 
@@ -341,19 +348,20 @@ const submitForm = async () => {
     isSent.value = true;
 
     // Track in GTM
-    if (process.client && window.dataLayer) {
-      window.dataLayer.push({
-        event: `FormSub ${route.params.slug || 'contact'}`,
-        formName: `Form ${route.params.slug || 'contact'}`,
+    if (process.client && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: `FormSubmission`,
+        formType: props.formType || 'contact',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         firstName: form.firstName,
-        secondName: form.lastName,
+        lastName: form.lastName,
         email: form.email,
         phone: form.phone,
         message: form.message,
       });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Form submission error:', error);
     isSending.value = false;
   }
@@ -373,6 +381,7 @@ const submitForm = async () => {
   border: 1px solid #ff002f;
 }
 </style>
+
 
 
 

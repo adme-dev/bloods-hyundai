@@ -207,38 +207,45 @@ const submitForm = async () => {
   hasErrors.value = false;
   isSubmitting.value = true;
 
-  const vehicleInfo = props.vehicle 
-    ? `${props.vehicle.condition?.displayValue?.[0] || ''} ${props.vehicle.year?.displayValue?.[0] || ''} ${props.vehicle.make?.displayValue?.[0] || ''} ${props.vehicle.model?.displayValue?.[0] || ''}`
-    : '';
-
   try {
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_5: form.postcode,
-          input_6: props.vehicle?.stockid || props.stockId || '',
-          input_7: vehicleInfo,
-          input_8: props.vehicle?.price || '',
-          input_9: hasTradeIn.value ? `${form.tradeMake} ${form.tradeModel} ${form.tradeYear}` : '',
-          input_10: form.financeInterest ? 'Yes' : 'No',
-        },
-        formid: mainStore.site?.forms?.vehicle_enquiry || 'vehicle_enquiry'
+        type: 'vehicle',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        postcode: form.postcode || undefined,
+        message: form.message || undefined,
+        vehicleInfo: props.vehicle ? {
+          condition: props.vehicle.condition?.displayValue?.[0] || undefined,
+          make: props.vehicle.make?.displayValue?.[0] || undefined,
+          model: props.vehicle.model?.displayValue?.[0] || undefined,
+          year: props.vehicle.year?.displayValue?.[0] ? parseInt(props.vehicle.year.displayValue[0]) : undefined,
+          price: props.vehicle.price || undefined,
+          stockId: String(props.vehicle.stockid || props.stockId || ''),
+        } : undefined,
+        tradeIn: hasTradeIn.value ? {
+          make: form.tradeMake || undefined,
+          model: form.tradeModel || undefined,
+          year: form.tradeYear ? parseInt(form.tradeYear) : undefined,
+        } : undefined,
+        financeInterest: form.financeInterest,
+        source: 'vehicle-enquiry-form',
       }
     });
 
     isSubmitted.value = true;
 
     // GTM tracking
-    if (typeof window !== 'undefined' && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub Vehicle Enquiry',
-        formName: 'Vehicle Enquiry',
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         stockId: props.vehicle?.stockid || props.stockId,
         vehicleTitle: props.vehicle?.title,
         hasTradeIn: hasTradeIn.value,
@@ -270,6 +277,7 @@ const submitForm = async () => {
   }
 }
 </style>
+
 
 
 

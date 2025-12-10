@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { StepperTrigger, type StepperTriggerProps } from 'radix-vue'
+import { StepperTrigger, type StepperTriggerProps } from 'reka-ui'
 import { cn } from '~/lib/utils'
 
 const props = defineProps<StepperTriggerProps & { class?: HTMLAttributes['class'] }>()
@@ -17,3 +17,4 @@ const props = defineProps<StepperTriggerProps & { class?: HTMLAttributes['class'
     <slot />
   </StepperTrigger>
 </template>
+

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { CheckboxIndicator, CheckboxRoot, type CheckboxRootEmits, type CheckboxRootProps } from 'radix-vue'
+import { CheckboxIndicator, CheckboxRoot, type CheckboxRootEmits, type CheckboxRootProps } from 'reka-ui'
 import { Check } from 'lucide-vue-next'
 import { cn } from '~/lib/utils'
 
@@ -22,3 +22,4 @@ const emits = defineEmits<CheckboxRootEmits>()
     </CheckboxIndicator>
   </CheckboxRoot>
 </template>
+

@@ -288,3 +288,4 @@ onMounted(() => {
   background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);
 }
 </style>
+

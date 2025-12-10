@@ -5,7 +5,7 @@ import {
   SelectItemIndicator,
   type SelectItemProps,
   SelectItemText,
-} from 'radix-vue'
+} from 'reka-ui'
 import { Check } from 'lucide-vue-next'
 import { cn } from '~/lib/utils'
 
@@ -31,3 +31,4 @@ const props = defineProps<SelectItemProps & { class?: HTMLAttributes['class'] }>
     </SelectItemText>
   </SelectItem>
 </template>
+

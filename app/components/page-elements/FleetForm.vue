@@ -280,35 +280,47 @@ const submitForm = async () => {
   isSubmitting.value = true;
 
   try {
-    await $fetch('/api/form', {
+    // Build message with fleet details
+    const fleetDetails = [
+      `Company: ${form.companyName}`,
+      form.abn ? `ABN: ${form.abn}` : null,
+      form.industry ? `Industry: ${form.industry}` : null,
+      form.fleetSize ? `Current Fleet Size: ${form.fleetSize}` : null,
+      form.vehiclesRequired ? `Vehicles Required: ${form.vehiclesRequired}` : null,
+      form.vehicleType ? `Vehicle Type: ${form.vehicleType}` : null,
+      form.modelsInterested.length ? `Models Interested: ${form.modelsInterested.join(', ')}` : null,
+      form.requirements ? `Requirements: ${form.requirements}` : null,
+      form.contactPreference ? 'Contact Preference: Phone' : 'Contact Preference: Email',
+    ].filter(Boolean).join('\n');
+
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.companyName,
-          input_5: form.abn,
-          input_6: form.industry,
-          input_7: form.fleetSize,
-          input_8: form.vehiclesRequired,
-          input_9: form.vehicleType,
-          input_10: form.modelsInterested.join(', '),
-          input_11: form.requirements,
-          input_12: form.contactPreference ? 'Phone preferred' : 'Email preferred',
+        type: 'vehicle',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        message: fleetDetails,
+        vehicleInfo: {
+          condition: 'new',
+          make: 'Hyundai',
+          model: form.modelsInterested.length ? form.modelsInterested[0] : undefined,
         },
-        formid: mainStore.site?.forms?.fleet || 'fleet'
+        source: 'fleet-form',
       }
     });
 
     isSubmitted.value = true;
 
     // GTM tracking
-    if (typeof window !== 'undefined' && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub Fleet',
-        formName: 'Fleet Form',
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         companyName: form.companyName,
         fleetSize: form.fleetSize,
       });
@@ -354,6 +366,7 @@ const resetForm = () => {
   margin-right: 8px;
 }
 </style>
+
 
 
 

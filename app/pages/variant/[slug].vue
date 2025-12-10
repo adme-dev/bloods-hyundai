@@ -174,31 +174,37 @@ const handleSubmit = async () => {
   submitting.value = true;
 
   try {
-    const config = useRuntimeConfig();
-
-    await $fetch(`${config.public.apiUrl}/form`, {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.comments,
-          input_27: form.lastName,
-          input_28: `variant-enquiry-${slug.value}`,
-          input_29: variant.value?.name,
-        },
-        formid: 'variant-enquiry',
+        type: 'vehicle',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        postcode: form.postcode || undefined,
+        message: form.comments || undefined,
+        vehicleInfo: variant.value ? {
+          condition: 'new',
+          make: 'Hyundai',
+          model: variant.value.name,
+          variant: variant.value.variant,
+        } : undefined,
+        testDrive: form.testDrive,
+        source: `variant-page-${slug.value}`,
       },
     });
 
     submitted.value = true;
 
-    if (process.client && window.dataLayer) {
-      window.dataLayer.push({
-        event: `FormSub variant-enquiry`,
-        formName: `Form variant-enquiry ${variant.value?.name}`,
+    if (process.client && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
+        variant: variant.value?.name,
       });
     }
   } catch (error) {
@@ -208,6 +214,7 @@ const handleSubmit = async () => {
   }
 };
 </script>
+
 
 
 

@@ -730,19 +730,24 @@ const handleSubmit = async () => {
   submitting.value = true;
 
   try {
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: `${form.firstName} ${form.lastName}`,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_27: form.lastName,
-          input_28: `offer-${offerId.value}`,
-          input_29: `${offer.value?.model} - ${offer.value?.variantName}`,
+        type: 'vehicle',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        message: form.message || undefined,
+        vehicleInfo: {
+          condition: 'new',
+          make: 'Hyundai',
+          model: offer.value?.model,
+          variant: offer.value?.variantName,
+          price: offer.value?.offerAmount ? parseInt(offer.value.offerAmount.replace(/[^0-9]/g, '')) : undefined,
         },
-        formid: 'offer-enquiry',
+        source: `offer-page-${offerId.value}`,
       },
     });
 
@@ -750,9 +755,10 @@ const handleSubmit = async () => {
 
     if (import.meta.client && (window as any).dataLayer) {
       (window as any).dataLayer.push({
-        event: 'FormSub offer-enquiry',
-        formName: `Offer Enquiry - ${offer.value?.model}`,
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         offerModel: offer.value?.model,
         offerVariant: offer.value?.variantName,
       });

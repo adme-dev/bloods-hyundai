@@ -7,7 +7,7 @@ import {
   SelectPortal,
   SelectViewport,
   useForwardPropsEmits,
-} from 'radix-vue'
+} from 'reka-ui'
 import { SelectScrollDownButton, SelectScrollUpButton } from '.'
 import { cn } from '~/lib/utils'
 
@@ -49,3 +49,4 @@ const forwarded = useForwardPropsEmits(props, emits)
     </SelectContent>
   </SelectPortal>
 </template>
+

@@ -591,26 +591,23 @@ const submitForm = async () => {
   isSubmitting.value = true;
 
   try {
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_5: `${form.firstName} ${form.lastName}`,
-          input_3: form.phone,
-          input_4: form.email,
-          input_19: form.message,
-          input_6: form.lastName,
-          input_11: priceDisplay.value,
-          input_12: formatCurrency(downPayment.value),
-          input_13: formatCurrency(tradeIn.value),
-          input_20: length.value,
-          input_21: `${rate.value}%`,
-          input_22: currentPayment.value,
-          input_23: headline.value,
-          input_24: vehicleId.value,
+        type: 'finance',
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        message: form.message || `Finance enquiry: ${currentPayment.value}/month, ${length.value} term, ${rate.value}% rate`,
+        vehicleInfo: {
+          stockId: vehicleId.value,
+          price: priceNumber.value,
         },
-        formid: mainStore.site?.forms?.finance || 'finance'
-      }
+        financeInterest: true,
+        source: 'finance-calculator-page',
+      },
     });
 
     isSubmitted.value = true;
@@ -618,9 +615,10 @@ const submitForm = async () => {
     // GTM tracking
     if (typeof window !== 'undefined' && (window as any).dataLayer) {
       (window as any).dataLayer.push({
-        event: 'FormSub Vehicle Finance',
-        formName: 'Vehicle Finance Form',
+        event: 'FormSubmission',
+        formType: 'finance',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         vehicleId: vehicleId.value,
         vehicleName: headline.value,
         vehiclePrice: priceNumber.value,

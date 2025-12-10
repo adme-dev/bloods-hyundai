@@ -104,3 +104,4 @@ npm run preview
 - shadcn-vue components in `app/components/ui/` follow Vue port conventions
 - Forms currently submit to external WordPress API, migration to NEON planned
 - Some pages use ISR (incremental static regeneration) for performance
+

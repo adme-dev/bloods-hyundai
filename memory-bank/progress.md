@@ -15,29 +15,35 @@
 
 ## What's In Progress
 
-### Enquiry Management System
+### Enquiry Management System - BACKEND COMPLETE! ✅
 - ✅ PRD created and documented
 - ✅ Database schema designed
-- ✅ **NEON database setup (COMPLETED - December 9, 2025)**
-  - Multi-tenant schema created on development branch
-  - 7 core tables: dealer_groups, dealers, users, enquiries, enquiry_notes, enquiry_activity_log, email_logs
-  - Row-Level Security (RLS) policies enabled
-  - Sale Hyundai seeded as first dealer
-  - API key generated: `dk_live_salehyundai_eec059c8d8de7e8affc864e9`
-- ⏳ Drizzle ORM integration (next step)
-- ⏳ Staff dashboard (not started)
+- ✅ **NEON database setup** (both dev + production branches)
+- ✅ **Drizzle ORM integration** (complete schema with relations)
+- ✅ **Authentication system** (JWT, bcrypt, login/logout/me endpoints)
+- ✅ **Admin API endpoints** (enquiries list, detail, analytics)
+- ✅ **Form submission API** (all enquiry types supported)
+- ✅ **Admin user seeded** (admin@salehyundai.com.au / Admin123!)
+- 🔄 **Frontend UI** (API ready, Vue components needed)
 
 ## What's Left to Build
 
 ### Phase 1: Database Foundation
 - [x] **Create NEON PostgreSQL database** ✅
   - Project: green-tooth-34908352 (Hyundai-Dealer)
-  - Development branch configured with full schema
-  - Production branch ready for migration
-- [ ] Install Drizzle ORM
-- [ ] Create Drizzle schema definitions
-- [ ] Implement tenant middleware
-- [ ] Implement `/api/enquiry` endpoint
+  - Development and production branches configured
+  - Both branches have full schema and Sale Hyundai seeded
+- [x] **Install Drizzle ORM** ✅
+  - drizzle-orm, @neondatabase/serverless, drizzle-kit
+- [x] **Create Drizzle schema definitions** ✅
+  - Complete TypeScript schema in `server/database/schema.ts`
+  - All 7 tables with relations and type exports
+- [x] **Implement tenant middleware** ✅
+  - `server/middleware/tenant.ts` for RLS context
+- [x] **Implement `/api/enquiry` endpoint** ✅
+  - API key authentication
+  - Stores all enquiry types
+  - Activity logging
 - [ ] Update forms to use new endpoint
 
 ### Phase 2: Authentication

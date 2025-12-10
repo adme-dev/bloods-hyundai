@@ -197,38 +197,42 @@ const submitForm = async () => {
 
   try {
     const vehicle = props.item;
+    const nameParts = form.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
     
-    await $fetch('/api/form', {
+    // Submit to the new Neon database API
+    const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        payload: {
-          input_1: form.name,
-          input_2: form.phone,
-          input_3: form.email,
-          input_4: form.message,
-          input_5: vehicle?.stockid || props.itemStock,
-          input_6: form.finance ? 'Yes I\'m interested in finance.' : '',
-          input_7: form.tradeIn ? 'Yes I have a vehicle to trade in' : '',
-          input_17: form.testDrive ? 'Yes I would like a test drive' : '',
-          input_8: vehicle?.condition?.displayValue?.[0] || props.condition || '',
-          input_9: vehicle?.make?.displayValue?.[0] || '',
-          input_10: vehicle?.model?.displayValue?.[0] || '',
-          input_11: vehicle?.badge?.displayValue?.[0] || '',
-          input_12: `${vehicle?.stockid || props.itemStock}/${vehicle?.slug || ''}`,
-          input_26: 'Stock Enquiry Page',
+        type: 'vehicle',
+        firstName,
+        lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        message: form.message || undefined,
+        vehicleInfo: {
+          condition: vehicle?.condition?.displayValue?.[0] || props.condition || undefined,
+          make: vehicle?.make?.displayValue?.[0] || undefined,
+          model: vehicle?.model?.displayValue?.[0] || undefined,
+          stockId: String(vehicle?.stockid || props.itemStock || ''),
         },
-        formid: mainStore.site?.forms?.carsales || 'carsales'
+        tradeIn: form.tradeIn ? {} : undefined,
+        testDrive: form.testDrive,
+        financeInterest: form.finance,
+        source: 'vehicle-single-form',
       }
     });
 
     isSent.value = true;
 
     // GTM tracking
-    if (typeof window !== 'undefined' && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub Vehicle',
-        formName: 'Vehicle Enquiry',
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: 'FormSubmission',
+        formType: 'vehicle',
         formStatus: 'submitted',
+        enquiryId: response.enquiry.id,
         stockId: vehicle?.stockid || props.itemStock,
         vehicleTitle: vehicle?.title,
         testDrive: form.testDrive,
@@ -274,6 +278,7 @@ const resetForm = () => {
   }
 }
 </style>
+
 
 
 

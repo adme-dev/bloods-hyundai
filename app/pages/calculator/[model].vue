@@ -269,29 +269,13 @@
           </section>
 
           <!-- Genuine Accessories -->
-          <section class="config-section accessories-section">
+          <section v-if="!accessoriesLoading && accessoriesData && (accessoriesData.accessories?.length || accessoriesData.accessoryPacks?.length)" class="config-section accessories-section">
             <h2 class="section-title">Genuine Accessories.</h2>
             <button class="benefits-link" @click="showGenuineBenefitsModal = true">
               The benefits of genuine <span class="arrow">></span>
             </button>
             
-            <!-- Loading state -->
-            <div v-if="accessoriesLoading" class="accessories-loading">
-              <div class="loading-spinner-small"></div>
-              <p>Loading accessories...</p>
-            </div>
-            
-            <!-- No accessories available -->
-            <div v-else-if="!accessoriesData || (!accessoriesData.accessories?.length && !accessoriesData.accessoryPacks?.length)" class="accessories-empty">
-              <p>Accessories information is currently unavailable for this model.</p>
-              <a href="https://www.hyundai.com/au/en/owning/accessories" target="_blank" class="accessories-link">
-                Browse all Hyundai Accessories <span class="arrow">></span>
-              </a>
-            </div>
-            
-            <!-- Accessories available -->
-            <template v-else>
-              <div class="accessories-summary">
+            <div class="accessories-summary">
                 <h3 class="accessories-subtitle">Featured</h3>
                 <p class="selected-count">{{ selectedAccessories.length }} selected (${{ formatPrice(accessoriesTotalPrice) }})</p>
               </div>
@@ -348,10 +332,9 @@
               </div>
             </div>
             
-              <button class="view-all-accessories-btn" @click="showAccessoriesModal = true">
-                View all accessories <span class="arrow">></span>
-              </button>
-            </template>
+            <button class="view-all-accessories-btn" @click="showAccessoriesModal = true">
+              View all accessories <span class="arrow">></span>
+            </button>
           </section>
 
           <!-- Accessories Modal -->
