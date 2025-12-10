@@ -24,7 +24,13 @@ export default defineEventHandler(async (event) => {
           firstName: users.firstName,
           lastName: users.lastName,
           role: users.role,
+          department: users.department,
+          status: users.status,
           isActive: users.isActive,
+          emailVerified: users.emailVerified,
+          invitedAt: users.invitedAt,
+          activatedAt: users.activatedAt,
+          lastLogin: users.lastLogin,
           createdAt: users.createdAt,
         })
         .from(users)

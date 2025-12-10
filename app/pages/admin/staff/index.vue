@@ -6,7 +6,7 @@
         <p class="text-sm text-muted-foreground">Manage your dealership team and their access levels</p>
       </div>
       <Button @click="openAddModal">
-        <Plus class="mr-2 h-4 w-4" /> Add staff member
+        <UserPlus class="mr-2 h-4 w-4" /> Invite staff member
       </Button>
     </div>
 
@@ -35,12 +35,13 @@
         </SelectContent>
       </Select>
       <Select v-model="filterStatus">
-        <SelectTrigger class="w-[140px]">
+        <SelectTrigger class="w-[160px]">
           <SelectValue placeholder="All Status" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Status</SelectItem>
           <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="invited">Invited (Pending)</SelectItem>
           <SelectItem value="inactive">Inactive</SelectItem>
         </SelectContent>
       </Select>
@@ -88,12 +89,27 @@
                 </span>
               </TableCell>
               <TableCell>
-                <Badge :variant="member.isActive ? 'default' : 'outline'">
-                  {{ member.isActive ? 'Active' : 'Inactive' }}
+                <Badge :variant="getStatusBadgeVariant(member)">
+                  {{ getStatusLabel(member) }}
                 </Badge>
+                <p v-if="member.status === 'invited' && member.invitedAt" class="text-xs text-muted-foreground mt-1">
+                  Invited {{ formatRelativeTime(member.invitedAt) }}
+                </p>
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
+                  <!-- Resend Invitation (for invited users) -->
+                  <Button
+                    v-if="member.status === 'invited'"
+                    variant="outline"
+                    size="icon"
+                    @click="resendInvitation(member)"
+                    :disabled="resending === member.id"
+                    title="Resend Invitation"
+                  >
+                    <Mail v-if="resending !== member.id" class="h-4 w-4" />
+                    <span v-else class="animate-spin">⏳</span>
+                  </Button>
                   <Button variant="outline" size="icon" @click="openEditModal(member)">
                     <PenSquare class="h-4 w-4" />
                   </Button>
@@ -137,8 +153,8 @@
     <Dialog :open="showAddModal" @update:open="showAddModal = $event">
       <DialogContent class="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Staff Member</DialogTitle>
-          <DialogDescription>Add a new team member to your dealership.</DialogDescription>
+          <DialogTitle>Invite Staff Member</DialogTitle>
+          <DialogDescription>Send an invitation to a new team member. They'll receive an email to set up their account.</DialogDescription>
         </DialogHeader>
         <form @submit.prevent="addStaff" class="space-y-4">
           <div class="grid gap-4 sm:grid-cols-2">
@@ -154,6 +170,7 @@
           <div class="space-y-2">
             <Label>Email</Label>
             <Input v-model="formData.email" type="email" required />
+            <p class="text-xs text-muted-foreground">An invitation will be sent to this email address.</p>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">
@@ -186,17 +203,21 @@
               </Select>
             </div>
           </div>
-          <div class="space-y-2">
-            <Label>Temporary Password</Label>
-            <Input v-model="formData.password" type="password" minlength="8" required />
-            <p class="text-xs text-muted-foreground">Minimum 8 characters. User should change on first login.</p>
+          <div class="rounded-lg bg-blue-50 p-4 border border-blue-100">
+            <div class="flex items-start gap-3">
+              <Mail class="h-5 w-5 text-blue-600 mt-0.5" />
+              <div class="text-sm">
+                <p class="font-medium text-blue-900">Invitation Process</p>
+                <p class="text-blue-700 mt-1">The staff member will receive an email with a link to set their own password and activate their account. The invitation expires in 7 days.</p>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" @click="showAddModal = false">
               Cancel
             </Button>
             <Button type="submit" :disabled="saving">
-              {{ saving ? 'Adding...' : 'Add Staff' }}
+              {{ saving ? 'Sending...' : 'Send Invitation' }}
             </Button>
           </DialogFooter>
         </form>
@@ -287,7 +308,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { Plus, PenSquare, Power, Search } from 'lucide-vue-next';
+import { UserPlus, PenSquare, Power, Search, Mail } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Input } from '~/components/ui/input';
@@ -369,7 +390,8 @@ const filteredStaff = computed(() => {
 
     // Status filter
     if (filterStatus.value !== 'all') {
-      if (filterStatus.value === 'active' && !member.isActive) return false;
+      if (filterStatus.value === 'active' && member.status !== 'active') return false;
+      if (filterStatus.value === 'invited' && member.status !== 'invited') return false;
       if (filterStatus.value === 'inactive' && member.isActive) return false;
     }
 
@@ -382,6 +404,9 @@ const showAddModal = ref(false);
 const showEditModal = ref(false);
 const saving = ref(false);
 
+// Resending state
+const resending = ref<string | null>(null);
+
 // Form data for add modal
 const formData = ref({
   firstName: '',
@@ -389,7 +414,6 @@ const formData = ref({
   email: '',
   department: 'sales',
   role: 'sales',
-  password: '',
 });
 
 // Form data for edit modal
@@ -498,6 +522,36 @@ const getRoleBadgeVariant = (role: string) => {
   return variants[role] || 'outline';
 };
 
+// Get status badge variant
+const getStatusBadgeVariant = (member: any): 'default' | 'secondary' | 'outline' | 'destructive' => {
+  if (!member.isActive) return 'destructive';
+  if (member.status === 'invited') return 'secondary';
+  if (member.status === 'active') return 'default';
+  return 'outline';
+};
+
+// Get status label
+const getStatusLabel = (member: any): string => {
+  if (!member.isActive) return 'Inactive';
+  if (member.status === 'invited') return 'Invited';
+  if (member.status === 'active') return 'Active';
+  return member.status || 'Unknown';
+};
+
+// Format relative time
+const formatRelativeTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  return date.toLocaleDateString('en-AU');
+};
+
 // Get initials for avatar
 const getInitials = (member: any) => {
   return `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
@@ -511,7 +565,6 @@ const openAddModal = () => {
     email: '',
     department: 'sales',
     role: 'sales',
-    password: '',
   };
   showAddModal.value = true;
 };
@@ -531,34 +584,73 @@ const openEditModal = (member: any) => {
   showEditModal.value = true;
 };
 
-// Add new staff member
+// Add new staff member (send invitation)
 const addStaff = async () => {
   saving.value = true;
   try {
-    await $fetch('/api/admin/staff', {
+    const response = await $fetch<{ success: boolean; emailSent: boolean; message: string }>('/api/admin/staff', {
       method: 'POST',
       body: {
         firstName: formData.value.firstName,
         lastName: formData.value.lastName,
         email: formData.value.email,
         role: formData.value.role,
-        password: formData.value.password,
+        department: formData.value.department,
       },
     });
     showAddModal.value = false;
-    toast.success(
-      `${formData.value.firstName} ${formData.value.lastName} has been added to your team.`,
-      'Staff member added'
-    );
+    
+    if (response.emailSent) {
+      toast.success(
+        `An invitation email has been sent to ${formData.value.email}.`,
+        'Invitation sent'
+      );
+    } else {
+      toast.success(
+        `${formData.value.firstName} ${formData.value.lastName} has been added. Note: The invitation email could not be sent automatically.`,
+        'Staff member added'
+      );
+    }
     refresh();
   } catch (err: any) {
     console.error('Failed to add staff:', err);
     toast.error(
-      err.data?.message || 'An error occurred while adding the staff member.',
-      'Failed to add staff'
+      err.data?.message || 'An error occurred while sending the invitation.',
+      'Failed to invite staff'
     );
   } finally {
     saving.value = false;
+  }
+};
+
+// Resend invitation
+const resendInvitation = async (member: any) => {
+  resending.value = member.id;
+  try {
+    const response = await $fetch<{ success: boolean; emailSent: boolean; message: string }>(`/api/admin/staff/${member.id}/resend-invitation`, {
+      method: 'POST',
+    });
+    
+    if (response.emailSent) {
+      toast.success(
+        `A new invitation email has been sent to ${member.email}.`,
+        'Invitation resent'
+      );
+    } else {
+      toast.success(
+        response.message,
+        'Invitation updated'
+      );
+    }
+    refresh();
+  } catch (err: any) {
+    console.error('Failed to resend invitation:', err);
+    toast.error(
+      err.data?.message || 'Failed to resend invitation.',
+      'Error'
+    );
+  } finally {
+    resending.value = null;
   }
 };
 

@@ -77,7 +77,7 @@ export const users = pgTable('users', {
   
   // Authentication
   email: varchar('email', { length: 255 }).notNull(),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  passwordHash: varchar('password_hash', { length: 255 }), // Nullable for invited users who haven't set password yet
   
   // Profile
   firstName: varchar('first_name', { length: 100 }).notNull(),
@@ -89,9 +89,17 @@ export const users = pgTable('users', {
   department: varchar('department', { length: 50 }),
   permissions: jsonb('permissions').default([]).notNull(),
   
-  // Status
+  // Status: 'invited' | 'active' | 'inactive'
+  status: varchar('status', { length: 20 }).default('invited').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   emailVerified: boolean('email_verified').default(false).notNull(),
+  
+  // Invitation & Activation
+  invitationToken: varchar('invitation_token', { length: 100 }),
+  invitationTokenExpiry: timestamp('invitation_token_expiry', { withTimezone: true }),
+  invitedAt: timestamp('invited_at', { withTimezone: true }),
+  invitedBy: uuid('invited_by'),
+  activatedAt: timestamp('activated_at', { withTimezone: true }),
   
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -100,6 +108,7 @@ export const users = pgTable('users', {
 }, (table) => ({
   dealerIdx: index('idx_users_dealer').on(table.dealerId),
   emailIdx: index('idx_users_email').on(table.email),
+  invitationTokenIdx: index('idx_users_invitation_token').on(table.invitationToken),
   // Unique constraint: same email can exist at different dealers
   uniqueDealerEmail: uniqueIndex('users_dealer_id_email_key').on(table.dealerId, table.email),
 }));

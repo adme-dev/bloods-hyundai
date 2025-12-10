@@ -1,7 +1,11 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db, withTenantContext } from '../../../utils/db';
-import { users } from '../../../database/schema';
-import { hashPassword } from '../../../utils/password';
+import { users, dealers } from '../../../database/schema';
+import { 
+  generateInvitationToken, 
+  getInvitationTokenExpiry, 
+  sendStaffInvitationEmail 
+} from '../../../utils/staffEmail';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -23,12 +27,13 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-  const { email, firstName, lastName, role, password } = body;
+  const { email, firstName, lastName, role, department } = body;
 
-  if (!email || !firstName || !lastName || !role || !password) {
+  // Password is no longer required - staff will set it via invitation
+  if (!email || !firstName || !lastName || !role) {
     throw createError({
       statusCode: 400,
-      message: 'All fields are required',
+      message: 'Email, first name, last name, and role are required',
     });
   }
 
@@ -53,48 +58,90 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Check if email already exists
+    // Check if email already exists for this dealer
     const existing = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(and(eq(users.email, email), eq(users.dealerId, dealerId)))
       .limit(1);
 
     if (existing.length > 0) {
       throw createError({
         statusCode: 400,
-        message: 'Email already exists',
+        message: 'A staff member with this email already exists',
       });
     }
 
-    // Hash password
-    const passwordHash = await hashPassword(password);
+    // Get dealer info for the email
+    const [dealer] = await db
+      .select()
+      .from(dealers)
+      .where(eq(dealers.id, dealerId))
+      .limit(1);
 
-    // Create user
-    let newUser;
+    if (!dealer) {
+      throw createError({
+        statusCode: 404,
+        message: 'Dealer not found',
+      });
+    }
+
+    // Generate invitation token
+    const invitationToken = generateInvitationToken();
+    const invitationTokenExpiry = getInvitationTokenExpiry();
+
+    // Create user with 'invited' status (no password yet)
+    let newUser: any;
     await withTenantContext(dealerId, async () => {
       const [created] = await db.insert(users).values({
         dealerId,
-        email,
-        passwordHash,
+        email: email.toLowerCase().trim(),
         firstName,
         lastName,
         role,
+        department: department || null,
+        status: 'invited',
         isActive: true,
+        emailVerified: false,
+        invitationToken,
+        invitationTokenExpiry,
+        invitedAt: new Date(),
+        invitedBy: user.id,
       }).returning();
 
       newUser = created;
     });
 
+    // Build activation link
+    const config = useRuntimeConfig();
+    const baseUrl = config.public?.siteUrl || process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const activationLink = `${baseUrl}/admin/activate?token=${invitationToken}`;
+
+    // Send invitation email
+    const emailSent = await sendStaffInvitationEmail({
+      recipientEmail: email,
+      recipientName: firstName,
+      inviterName: `${user.firstName} ${user.lastName}`,
+      dealerName: dealer.name,
+      role,
+      activationLink,
+      expiresIn: '7 days',
+    }, dealerId);
+
     return { 
       success: true,
+      emailSent,
       user: {
         id: newUser.id,
         email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         role: newUser.role,
+        status: newUser.status,
       },
+      message: emailSent 
+        ? `Invitation sent to ${email}` 
+        : `Staff member created. Invitation email could not be sent - please share the activation link manually.`,
     };
   } catch (error: any) {
     console.error('Error creating staff member:', error);
