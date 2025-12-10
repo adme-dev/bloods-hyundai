@@ -5,6 +5,28 @@
       <h1 class="text-3xl font-semibold tracking-tight">Settings</h1>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="pending" class="flex items-center justify-center py-12">
+      <div class="flex flex-col items-center gap-3">
+        <Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />
+        <p class="text-sm text-muted-foreground">Loading settings...</p>
+      </div>
+    </div>
+
+    <!-- Error State -->
+    <Alert v-else-if="error" variant="destructive">
+      <AlertCircle class="h-4 w-4" />
+      <AlertTitle>Error loading settings</AlertTitle>
+      <AlertDescription>
+        {{ error.message || 'Failed to load dealer settings. Please try again.' }}
+        <Button variant="outline" size="sm" class="mt-2" @click="refresh">
+          <RefreshCw class="mr-2 h-4 w-4" /> Retry
+        </Button>
+      </AlertDescription>
+    </Alert>
+
+    <!-- Content -->
+    <template v-else>
     <div class="grid gap-6 lg:grid-cols-3">
       <Card class="lg:col-span-2">
         <CardHeader>
@@ -154,12 +176,13 @@
         </form>
       </DialogContent>
     </Dialog>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
-import { Copy, Eye, EyeOff, KeyRound } from 'lucide-vue-next';
+import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
@@ -180,7 +203,7 @@ definePageMeta({
   middleware: 'auth',
 });
 
-const { data } = await useFetch('/api/admin/settings');
+const { data, pending, error, refresh } = await useFetch('/api/admin/settings');
 const dealer = computed(() => data.value?.dealer);
 
 const showApiKey = ref(false);

@@ -1,13 +1,26 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-6">
+    <!-- Header -->
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p class="text-sm text-muted-foreground">Welcome back, {{ greetingName }}</p>
         <h1 class="text-3xl font-semibold tracking-tight">Dashboard</h1>
       </div>
       <div class="flex flex-wrap items-center gap-3">
+        <Select v-model="dateRange">
+          <SelectTrigger class="w-[160px]">
+            <SelectValue placeholder="Select range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="quarter">This Quarter</SelectItem>
+          </SelectContent>
+        </Select>
         <Button variant="outline" size="sm" @click="refresh">
-          <RefreshCw class="mr-2 h-4 w-4" /> Refresh stats
+          <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': pending }" />
+          Refresh
         </Button>
         <Button as-child>
           <NuxtLink to="/admin/enquiries">
@@ -17,58 +30,700 @@
       </div>
     </div>
 
-    <!-- Stats -->
+    <!-- Overview Stats -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card v-for="card in statCards" :key="card.label">
+      <Card>
         <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">{{ card.label }}</CardTitle>
-          <component :is="card.icon" class="h-4 w-4 text-muted-foreground" />
+          <CardTitle class="text-sm font-medium">Total Enquiries</CardTitle>
+          <Inbox class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-3xl font-bold">{{ card.value }}</div>
-          <p class="text-xs text-muted-foreground">{{ card.helper }}</p>
+          <div class="text-3xl font-bold">{{ data?.overview?.total || 0 }}</div>
+          <p class="text-xs text-muted-foreground">All-time recorded</p>
         </CardContent>
       </Card>
-    </div>
 
-    <div class="grid gap-6 lg:grid-cols-3">
-      <Card class="lg:col-span-2">
-        <CardHeader class="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Pipeline overview</CardTitle>
-            <CardDescription>How enquiries are distributed by status</CardDescription>
-          </div>
-          <Badge variant="outline">{{ statusBreakdown.length }} statuses</Badge>
+      <Card>
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">New Today</CardTitle>
+          <Activity class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="space-y-4">
-            <div
-              v-for="status in statusBreakdown"
-              :key="status.status"
-              class="flex items-center justify-between rounded-lg border border-dashed border-muted px-4 py-3"
-            >
-              <div class="flex items-center gap-3">
-                <Badge :variant="status.badge">{{ status.label }}</Badge>
-                <span class="text-sm text-muted-foreground">{{ status.description }}</span>
-              </div>
-              <div class="text-lg font-semibold">{{ status.count }}</div>
-            </div>
-            <p v-if="statusBreakdown.length === 0" class="text-sm text-muted-foreground">
-              No status data available yet. Once enquiries start flowing in, you’ll see them here.
-            </p>
+          <div class="text-3xl font-bold">{{ data?.overview?.newToday || 0 }}</div>
+          <div class="flex items-center gap-1 text-xs">
+            <TrendingUp v-if="(data?.overview?.dailyChange || 0) > 0" class="h-3 w-3 text-green-500" />
+            <TrendingDown v-else-if="(data?.overview?.dailyChange || 0) < 0" class="h-3 w-3 text-red-500" />
+            <Minus v-else class="h-3 w-3 text-muted-foreground" />
+            <span :class="getTrendClass(data?.overview?.dailyChange)">
+              {{ formatTrend(data?.overview?.dailyChange) }} vs yesterday
+            </span>
           </div>
         </CardContent>
       </Card>
 
       <Card>
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">This Week</CardTitle>
+          <Calendar class="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">{{ data?.overview?.thisWeek || 0 }}</div>
+          <div class="flex items-center gap-1 text-xs">
+            <TrendingUp v-if="(data?.overview?.weeklyChange || 0) > 0" class="h-3 w-3 text-green-500" />
+            <TrendingDown v-else-if="(data?.overview?.weeklyChange || 0) < 0" class="h-3 w-3 text-red-500" />
+            <Minus v-else class="h-3 w-3 text-muted-foreground" />
+            <span :class="getTrendClass(data?.overview?.weeklyChange)">
+              {{ formatTrend(data?.overview?.weeklyChange) }} vs last week
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Needs Attention</CardTitle>
+          <AlertCircle class="h-4 w-4 text-amber-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">{{ data?.overview?.pipeline?.unassigned || 0 }}</div>
+          <p class="text-xs text-muted-foreground">Unassigned enquiries</p>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- ===================== SALES COMMAND CENTER ===================== -->
+    <!-- Alert Banner for Urgent Items -->
+    <div v-if="data?.followUpAlerts?.totalAlerts > 0" class="rounded-lg border-l-4 border-red-500 bg-red-50 dark:bg-red-950/30 p-4">
+      <div class="flex items-start gap-3">
+        <AlertTriangle class="h-5 w-5 text-red-500 mt-0.5" />
+        <div class="flex-1">
+          <h3 class="font-semibold text-red-800 dark:text-red-200">Action Required</h3>
+          <p class="text-sm text-red-700 dark:text-red-300">
+            {{ data.followUpAlerts.overdue }} leads awaiting response
+            <span v-if="data.followUpAlerts.criticalOverdue > 0" class="font-semibold">
+              ({{ data.followUpAlerts.criticalOverdue }} critical - over 48 hours)
+            </span>
+          </p>
+        </div>
+        <Button variant="destructive" size="sm" as-child>
+          <NuxtLink to="/admin/enquiries?status=new&sort=oldest">
+            View Overdue <ArrowRight class="ml-1 h-4 w-4" />
+          </NuxtLink>
+        </Button>
+      </div>
+    </div>
+
+    <!-- Sales Performance & Targets -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card class="border-l-4 border-l-blue-500">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Monthly Leads</CardTitle>
+          <Target class="h-4 w-4 text-blue-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">{{ data?.salesPerformance?.thisMonth?.leads || 0 }}</div>
+          <div class="mt-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-muted-foreground">Target: {{ data?.salesPerformance?.targets?.monthlyLeads || 50 }}</span>
+              <span :class="getTargetProgressClass(data?.salesPerformance?.thisMonth?.leads, data?.salesPerformance?.targets?.monthlyLeads)">
+                {{ getTargetProgress(data?.salesPerformance?.thisMonth?.leads, data?.salesPerformance?.targets?.monthlyLeads) }}%
+              </span>
+            </div>
+            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                class="h-full rounded-full bg-blue-500 transition-all"
+                :style="{ width: `${Math.min(getTargetProgress(data?.salesPerformance?.thisMonth?.leads, data?.salesPerformance?.targets?.monthlyLeads), 100)}%` }"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="border-l-4 border-l-green-500">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Conversions</CardTitle>
+          <CheckCircle class="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">{{ data?.salesPerformance?.thisMonth?.conversions || 0 }}</div>
+          <div class="mt-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-muted-foreground">Target: {{ data?.salesPerformance?.targets?.monthlyConversions || 15 }}</span>
+              <span :class="getTargetProgressClass(data?.salesPerformance?.thisMonth?.conversions, data?.salesPerformance?.targets?.monthlyConversions)">
+                {{ getTargetProgress(data?.salesPerformance?.thisMonth?.conversions, data?.salesPerformance?.targets?.monthlyConversions) }}%
+              </span>
+            </div>
+            <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                class="h-full rounded-full bg-green-500 transition-all"
+                :style="{ width: `${Math.min(getTargetProgress(data?.salesPerformance?.thisMonth?.conversions, data?.salesPerformance?.targets?.monthlyConversions), 100)}%` }"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="border-l-4 border-l-purple-500">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Conversion Rate</CardTitle>
+          <Percent class="h-4 w-4 text-purple-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">{{ data?.salesPerformance?.thisMonth?.conversionRate || 0 }}%</div>
+          <div class="flex items-center gap-1 text-xs mt-1">
+            <TrendingUp v-if="(data?.salesPerformance?.monthOverMonthChange || 0) > 0" class="h-3 w-3 text-green-500" />
+            <TrendingDown v-else-if="(data?.salesPerformance?.monthOverMonthChange || 0) < 0" class="h-3 w-3 text-red-500" />
+            <Minus v-else class="h-3 w-3 text-muted-foreground" />
+            <span :class="getTrendClass(data?.salesPerformance?.monthOverMonthChange)">
+              {{ formatTrend(data?.salesPerformance?.monthOverMonthChange) }} vs last month
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="border-l-4 border-l-pink-500">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Accessories Revenue</CardTitle>
+          <ShoppingCart class="h-4 w-4 text-pink-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">${{ formatCurrency(data?.salesPerformance?.thisMonth?.accessoriesValue) }}</div>
+          <p class="text-xs text-muted-foreground mt-1">
+            {{ data?.salesPerformance?.thisMonth?.withAccessories || 0 }} enquiries with add-ons
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Hot Leads & Conversion Funnel Row -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Hot Leads -->
+      <Card class="lg:col-span-2">
         <CardHeader>
-          <CardTitle>Quick actions</CardTitle>
-          <CardDescription>Shortcuts to common admin tasks</CardDescription>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <Flame class="h-5 w-5 text-orange-500" />
+                Hot Leads
+              </CardTitle>
+              <CardDescription>High-priority leads with buying signals</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" as-child>
+              <NuxtLink to="/admin/enquiries?priority=high,urgent">View All</NuxtLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div v-if="data?.hotLeads?.length" class="divide-y">
+            <div
+              v-for="lead in data.hotLeads.slice(0, 5)"
+              :key="lead.id"
+              class="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50"
+            >
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <Avatar class="h-9 w-9">
+                    <AvatarImage :src="getGravatarUrl(lead.email)" :alt="lead.customer" />
+                    <AvatarFallback>{{ getInitials(lead.customer) }}</AvatarFallback>
+                  </Avatar>
+                  <div
+                    class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    :class="getLeadScoreClass(lead.score)"
+                  >
+                    {{ lead.score }}
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ lead.customer }}</span>
+                    <Badge v-if="lead.priority === 'urgent'" variant="destructive" class="text-[10px]">Urgent</Badge>
+                    <Badge v-else-if="lead.priority === 'high'" variant="default" class="text-[10px]">High</Badge>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span v-if="lead.vehicle">{{ lead.vehicle }}</span>
+                    <span v-if="lead.variant" class="text-muted-foreground/70">{{ lead.variant }}</span>
+                  </div>
+                  <div class="flex gap-2 mt-1">
+                    <Badge v-if="lead.signals?.testDrive" variant="outline" class="text-[10px] gap-1">
+                      <CalendarCheck class="h-3 w-3" /> Test Drive
+                    </Badge>
+                    <Badge v-if="lead.signals?.financeInterest" variant="outline" class="text-[10px] gap-1">
+                      <DollarSign class="h-3 w-3" /> Finance
+                    </Badge>
+                    <Badge v-if="lead.signals?.hasAccessories" variant="outline" class="text-[10px] gap-1">
+                      <Package class="h-3 w-3" /> +${{ formatCurrency(lead.signals?.accessoriesValue) }}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-muted-foreground">{{ formatTimeAgo(lead.createdAt) }}</span>
+                <Button variant="default" size="sm" as-child>
+                  <NuxtLink :to="`/admin/enquiries/${lead.id}`">
+                    <Phone class="mr-1 h-3 w-3" /> Contact
+                  </NuxtLink>
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div v-else class="px-6 py-8 text-center text-sm text-muted-foreground">
+            No hot leads at the moment
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Conversion Funnel -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <Filter class="h-5 w-5" />
+            Sales Funnel
+          </CardTitle>
+          <CardDescription>This month's conversion pipeline</CardDescription>
         </CardHeader>
         <CardContent class="space-y-3">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span>Total Leads</span>
+              <span class="font-semibold">{{ data?.conversionFunnel?.totalLeads || 0 }}</span>
+            </div>
+            <div class="h-3 w-full rounded-full bg-blue-500" />
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span>Contacted</span>
+              <span class="font-semibold">{{ data?.conversionFunnel?.contacted || 0 }} ({{ data?.conversionFunnel?.contactedRate || 0 }}%)</span>
+            </div>
+            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                class="h-full rounded-full bg-cyan-500 transition-all"
+                :style="{ width: `${data?.conversionFunnel?.contactedRate || 0}%` }"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span>Test Drive Booked</span>
+              <span class="font-semibold">{{ data?.conversionFunnel?.testDriveBooked || 0 }} ({{ data?.conversionFunnel?.testDriveRate || 0 }}%)</span>
+            </div>
+            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                class="h-full rounded-full bg-purple-500 transition-all"
+                :style="{ width: `${data?.conversionFunnel?.testDriveRate || 0}%` }"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span>Finance Applied</span>
+              <span class="font-semibold">{{ data?.conversionFunnel?.financeApplied || 0 }} ({{ data?.conversionFunnel?.financeRate || 0 }}%)</span>
+            </div>
+            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                class="h-full rounded-full bg-yellow-500 transition-all"
+                :style="{ width: `${data?.conversionFunnel?.financeRate || 0}%` }"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-semibold">Converted</span>
+              <span class="font-bold text-green-600">{{ data?.conversionFunnel?.converted || 0 }} ({{ data?.conversionFunnel?.conversionRate || 0 }}%)</span>
+            </div>
+            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                class="h-full rounded-full bg-green-500 transition-all"
+                :style="{ width: `${data?.conversionFunnel?.conversionRate || 0}%` }"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Overdue Follow-ups -->
+    <div v-if="data?.followUpAlerts?.overdueEnquiries?.length" class="grid gap-6">
+      <Card class="border-red-200 dark:border-red-900">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2 text-red-600">
+                <Clock class="h-5 w-5" />
+                Overdue Responses
+              </CardTitle>
+              <CardDescription>These leads have been waiting over 24 hours</CardDescription>
+            </div>
+            <Badge variant="destructive">{{ data.followUpAlerts.overdue }} overdue</Badge>
+          </div>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="divide-y">
+            <div
+              v-for="enquiry in data.followUpAlerts.overdueEnquiries"
+              :key="enquiry.id"
+              class="flex items-center justify-between px-6 py-3 bg-red-50/50 dark:bg-red-950/20"
+            >
+              <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+                  <Clock class="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ enquiry.customer }}</span>
+                    <Badge variant="outline" class="text-[10px]">{{ enquiry.typeLabel }}</Badge>
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    <span v-if="enquiry.vehicle">{{ enquiry.vehicle }} • </span>
+                    <span class="text-red-600 font-semibold">Waiting {{ enquiry.hoursWaiting }}h</span>
+                  </div>
+                </div>
+              </div>
+              <Button variant="destructive" size="sm" as-child>
+                <NuxtLink :to="`/admin/enquiries/${enquiry.id}`">
+                  Respond Now
+                </NuxtLink>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Department Cards -->
+    <div>
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Department Overview</h2>
+        <Button variant="ghost" size="sm" as-child>
+          <NuxtLink to="/admin/forms">View all forms <ArrowRight class="ml-2 h-4 w-4" /></NuxtLink>
+        </Button>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card
+          v-for="dept in sortedDepartments"
+          :key="dept.type"
+          class="cursor-pointer transition-colors hover:border-primary/50"
+          @click="navigateToEnquiries(dept.type)"
+        >
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div class="flex items-center gap-2">
+              <div
+                class="flex h-8 w-8 items-center justify-center rounded-lg"
+                :class="getDeptBgClass(dept.color)"
+              >
+                <component :is="getDeptIcon(dept.icon)" class="h-4 w-4" :class="getDeptTextClass(dept.color)" />
+              </div>
+              <CardTitle class="text-sm font-medium">{{ dept.label }}</CardTitle>
+            </div>
+            <Badge v-if="dept.new > 0" variant="destructive" class="h-5 px-1.5 text-[10px]">
+              {{ dept.new }} new
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div class="flex items-baseline justify-between">
+              <div class="text-2xl font-bold">{{ dept.total }}</div>
+              <div class="flex items-center gap-1 text-xs">
+                <TrendingUp v-if="dept.weeklyChange > 0" class="h-3 w-3 text-green-500" />
+                <TrendingDown v-else-if="dept.weeklyChange < 0" class="h-3 w-3 text-red-500" />
+                <span :class="getTrendClass(dept.weeklyChange)">
+                  {{ formatTrend(dept.weeklyChange) }}
+                </span>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+              <span>This week: {{ dept.thisWeek }}</span>
+              <span v-if="dept.avgResponseHours !== null">
+                Avg: {{ formatResponseTime(dept.avgResponseHours) }}
+              </span>
+            </div>
+            <div v-if="dept.conversionRate > 0" class="mt-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-muted-foreground">Conversion</span>
+                <span class="font-medium">{{ dept.conversionRate }}%</span>
+              </div>
+              <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full rounded-full transition-all"
+                  :class="getConversionBarClass(dept.conversionRate)"
+                  :style="{ width: `${Math.min(dept.conversionRate, 100)}%` }"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Pipeline & Trend Chart -->
+      <Card class="lg:col-span-2">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle>Enquiry Trends</CardTitle>
+              <CardDescription>Last 14 days activity</CardDescription>
+            </div>
+            <div class="flex gap-1">
+              <Button
+                v-for="chartType in chartTypes"
+                :key="chartType.value"
+                variant="ghost"
+                size="sm"
+                :class="{ 'bg-muted': selectedChartType === chartType.value }"
+                @click="selectedChartType = chartType.value"
+              >
+                {{ chartType.label }}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="h-[280px]">
+            <div v-if="data?.dailyTrend?.length" class="flex h-full items-end gap-1">
+              <div
+                v-for="day in data.dailyTrend"
+                :key="day.date"
+                class="group relative flex-1"
+              >
+                <div
+                  class="w-full rounded-t bg-primary/80 transition-colors hover:bg-primary"
+                  :style="{ height: `${getBarHeight(day)}%`, minHeight: day.total > 0 ? '4px' : '0' }"
+                />
+                <div class="absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-background group-hover:block">
+                  {{ day.total }} enquiries
+                </div>
+                <div class="mt-1 text-center text-[10px] text-muted-foreground">
+                  {{ formatChartDate(day.date) }}
+                </div>
+              </div>
+            </div>
+            <div v-else class="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No trend data available yet
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Response Metrics -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Response Performance</CardTitle>
+          <CardDescription>This month's metrics</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">Avg Response Time</span>
+              <span class="font-semibold">
+                {{ data?.responseMetrics?.avgHours ? formatResponseTime(data.responseMetrics.avgHours) : 'N/A' }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">Median Response</span>
+              <span class="font-semibold">
+                {{ data?.responseMetrics?.medianHours ? formatResponseTime(data.responseMetrics.medianHours) : 'N/A' }}
+              </span>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div class="space-y-3">
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">Responded within 1 hour</span>
+                <span class="font-semibold">{{ data?.responseMetrics?.within1hRate || 0 }}%</span>
+              </div>
+              <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full rounded-full bg-green-500 transition-all"
+                  :style="{ width: `${data?.responseMetrics?.within1hRate || 0}%` }"
+                />
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">Responded within 24 hours</span>
+                <span class="font-semibold">{{ data?.responseMetrics?.within24hRate || 0 }}%</span>
+              </div>
+              <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full rounded-full bg-blue-500 transition-all"
+                  :style="{ width: `${data?.responseMetrics?.within24hRate || 0}%` }"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <h4 class="mb-2 text-sm font-medium">Traffic Sources</h4>
+            <div class="space-y-2">
+              <div
+                v-for="source in data?.sources || []"
+                :key="source.source"
+                class="flex items-center justify-between text-sm"
+              >
+                <span class="capitalize text-muted-foreground">{{ source.source }}</span>
+                <Badge variant="secondary">{{ source.count }}</Badge>
+              </div>
+              <p v-if="!data?.sources?.length" class="text-xs text-muted-foreground">
+                No source data available
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Second Row -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Pipeline Status -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Pipeline Status</CardTitle>
+          <CardDescription>Current enquiry distribution</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-3">
+          <div
+            v-for="status in pipelineStatuses"
+            :key="status.key"
+            class="flex items-center justify-between rounded-lg border border-dashed px-4 py-3"
+          >
+            <div class="flex items-center gap-3">
+              <Badge :variant="status.variant">{{ status.label }}</Badge>
+              <span class="text-sm text-muted-foreground">{{ status.description }}</span>
+            </div>
+            <div class="text-lg font-semibold">{{ data?.overview?.pipeline?.[status.key] || 0 }}</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Recent Activity -->
+      <Card class="lg:col-span-2">
+        <CardHeader class="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest enquiries across all departments</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" as-child>
+            <NuxtLink to="/admin/enquiries">View all</NuxtLink>
+          </Button>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="divide-y">
+            <div
+              v-for="enquiry in data?.recentEnquiries || []"
+              :key="enquiry.id"
+              class="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50"
+            >
+              <div class="flex items-center gap-3">
+                <Avatar class="h-9 w-9">
+                  <AvatarImage :src="getGravatarUrl(enquiry.email)" :alt="enquiry.customer" />
+                  <AvatarFallback>{{ getInitials(enquiry.customer) }}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ enquiry.customer }}</span>
+                    <Badge variant="outline" class="text-[10px]">{{ enquiry.typeLabel }}</Badge>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{{ enquiry.email }}</span>
+                    <span v-if="enquiry.vehicle">• {{ enquiry.vehicle }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <Badge :variant="getStatusVariant(enquiry.status)">
+                  {{ formatStatus(enquiry.status) }}
+                </Badge>
+                <span class="text-xs text-muted-foreground">
+                  {{ formatTimeAgo(enquiry.createdAt) }}
+                </span>
+                <Button variant="ghost" size="icon" as-child>
+                  <NuxtLink :to="`/admin/enquiries/${enquiry.id}`">
+                    <ArrowRight class="h-4 w-4" />
+                  </NuxtLink>
+                </Button>
+              </div>
+            </div>
+            <div v-if="!data?.recentEnquiries?.length" class="px-6 py-8 text-center text-sm text-muted-foreground">
+              No recent enquiries
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Staff Performance & Quick Actions -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Staff Leaderboard -->
+      <Card class="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Team Performance</CardTitle>
+          <CardDescription>This month's enquiry handling metrics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table v-if="data?.staffPerformance?.length">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Staff Member</TableHead>
+                <TableHead class="text-center">Assigned</TableHead>
+                <TableHead class="text-center">Closed</TableHead>
+                <TableHead class="text-center">Closure Rate</TableHead>
+                <TableHead class="text-right">Avg Response</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="staff in data.staffPerformance" :key="staff.id">
+                <TableCell class="font-medium">{{ staff.name }}</TableCell>
+                <TableCell class="text-center">{{ staff.assigned }}</TableCell>
+                <TableCell class="text-center">{{ staff.closed }}</TableCell>
+                <TableCell class="text-center">
+                  <Badge :variant="staff.closureRate >= 70 ? 'default' : staff.closureRate >= 40 ? 'secondary' : 'outline'">
+                    {{ staff.closureRate }}%
+                  </Badge>
+                </TableCell>
+                <TableCell class="text-right">
+                  {{ staff.avgResponseHours ? formatResponseTime(staff.avgResponseHours) : 'N/A' }}
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <div v-else class="py-8 text-center text-sm text-muted-foreground">
+            No staff performance data available yet
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Quick Actions -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common admin tasks</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-2">
           <Button variant="secondary" class="w-full justify-start" as-child>
-            <NuxtLink to="/admin/enquiries">
-              <Inbox class="mr-2 h-4 w-4" /> Review incoming enquiries
+            <NuxtLink to="/admin/enquiries?status=new">
+              <Inbox class="mr-2 h-4 w-4" />
+              Review new enquiries
+              <Badge v-if="data?.overview?.pipeline?.new" variant="destructive" class="ml-auto">
+                {{ data.overview.pipeline.new }}
+              </Badge>
+            </NuxtLink>
+          </Button>
+          <Button variant="secondary" class="w-full justify-start" as-child>
+            <NuxtLink to="/admin/enquiries?assigned=unassigned">
+              <UserPlus class="mr-2 h-4 w-4" />
+              Assign pending enquiries
+              <Badge v-if="data?.overview?.pipeline?.unassigned" variant="outline" class="ml-auto">
+                {{ data.overview.pipeline.unassigned }}
+              </Badge>
             </NuxtLink>
           </Button>
           <Button variant="secondary" class="w-full justify-start" as-child>
@@ -78,14 +733,348 @@
           </Button>
           <Button variant="secondary" class="w-full justify-start" as-child>
             <NuxtLink to="/admin/settings/routing">
-              <GitBranch class="mr-2 h-4 w-4" /> Adjust routing rules
+              <GitBranch class="mr-2 h-4 w-4" /> Routing rules
+            </NuxtLink>
+          </Button>
+          <Separator class="my-2" />
+          <Button variant="outline" class="w-full justify-start" as-child>
+            <NuxtLink to="/admin/settings">
+              <Settings class="mr-2 h-4 w-4" /> Account settings
             </NuxtLink>
           </Button>
           <Button variant="outline" class="w-full justify-start" as-child>
-            <NuxtLink to="/admin/settings">
-              <Settings class="mr-2 h-4 w-4" /> Update account settings
+            <NuxtLink to="/admin/settings/targets">
+              <Target class="mr-2 h-4 w-4" /> Sales targets
             </NuxtLink>
           </Button>
+          <Button variant="outline" class="w-full justify-start" as-child>
+            <NuxtLink to="/admin/settings/email">
+              <Mail class="mr-2 h-4 w-4" /> Email configuration
+            </NuxtLink>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Staff Workload Distribution -->
+    <div v-if="data?.staffWorkload?.length" class="grid gap-6">
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <Users class="h-5 w-5" />
+                Staff Workload Distribution
+              </CardTitle>
+              <CardDescription>Current open assignments by team member</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" as-child>
+              <NuxtLink to="/admin/staff">Manage Staff</NuxtLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              v-for="staff in data.staffWorkload"
+              :key="staff.id"
+              class="rounded-lg border p-4"
+              :class="getWorkloadBorderClass(staff.workloadLevel)"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <h4 class="font-semibold">{{ staff.name }}</h4>
+                  <p class="text-sm text-muted-foreground">{{ staff.openEnquiries }} open enquiries</p>
+                </div>
+                <Badge :variant="getWorkloadBadgeVariant(staff.workloadLevel)">
+                  {{ staff.workloadLevel }}
+                </Badge>
+              </div>
+
+              <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="rounded bg-blue-50 dark:bg-blue-950/30 p-2">
+                  <div class="font-semibold text-blue-600">{{ staff.breakdown.new }}</div>
+                  <div class="text-muted-foreground">New</div>
+                </div>
+                <div class="rounded bg-yellow-50 dark:bg-yellow-950/30 p-2">
+                  <div class="font-semibold text-yellow-600">{{ staff.breakdown.inProgress }}</div>
+                  <div class="text-muted-foreground">In Progress</div>
+                </div>
+                <div class="rounded bg-cyan-50 dark:bg-cyan-950/30 p-2">
+                  <div class="font-semibold text-cyan-600">{{ staff.breakdown.contacted }}</div>
+                  <div class="text-muted-foreground">Contacted</div>
+                </div>
+              </div>
+
+              <div v-if="staff.highPriority > 0" class="mt-3 flex items-center gap-2 text-xs text-red-600">
+                <AlertCircle class="h-3 w-3" />
+                {{ staff.highPriority }} high priority
+              </div>
+
+              <div v-if="staff.oldestEnquiryHours" class="mt-2 text-xs text-muted-foreground">
+                Oldest: {{ formatResponseTime(staff.oldestEnquiryHours) }} ago
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Vehicle Catalog & Test Drives Section -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      <!-- Vehicle Catalog Overview -->
+      <Card class="lg:col-span-2">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <Car class="h-5 w-5" />
+                New Vehicle Lineup
+              </CardTitle>
+              <CardDescription>Hyundai model range and customer interest</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" as-child>
+              <NuxtLink to="/test-drive">View Catalog</NuxtLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div v-if="data?.vehicleCatalog" class="space-y-4">
+            <!-- Catalog Stats -->
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div class="rounded-lg border bg-muted/30 p-3 text-center">
+                <div class="text-2xl font-bold">{{ data.vehicleCatalog.totalModels }}</div>
+                <div class="text-xs text-muted-foreground">Total Models</div>
+              </div>
+              <div class="rounded-lg border bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ data.vehicleCatalog.highlights?.electric || 0 }}</div>
+                <div class="text-xs text-muted-foreground">Electric</div>
+              </div>
+              <div class="rounded-lg border bg-green-50 dark:bg-green-950/30 p-3 text-center">
+                <div class="text-2xl font-bold text-green-600">{{ data.vehicleCatalog.highlights?.hybrid || 0 }}</div>
+                <div class="text-xs text-muted-foreground">Hybrid</div>
+              </div>
+              <div class="rounded-lg border bg-orange-50 dark:bg-orange-950/30 p-3 text-center">
+                <div class="text-2xl font-bold text-orange-600">{{ data.vehicleCatalog.highlights?.suv || 0 }}</div>
+                <div class="text-xs text-muted-foreground">SUVs</div>
+              </div>
+            </div>
+
+            <!-- New Models Badge -->
+            <div v-if="data.vehicleCatalog.newModels > 0" class="flex items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-4 py-2">
+              <Sparkles class="h-4 w-4 text-primary" />
+              <span class="text-sm">
+                <span class="font-semibold">{{ data.vehicleCatalog.newModels }}</span> new 2025 models available
+              </span>
+              <Badge v-if="data.vehicleCatalog.withOffers > 0" variant="secondary" class="ml-auto">
+                {{ data.vehicleCatalog.withOffers }} with offers
+              </Badge>
+            </div>
+
+            <!-- Top Models by Interest -->
+            <div v-if="data?.vehicleInterest?.length">
+              <h4 class="mb-3 text-sm font-medium">Customer Interest by Model</h4>
+              <div class="space-y-2">
+                <div
+                  v-for="(model, index) in data.vehicleInterest.slice(0, 5)"
+                  :key="model.model"
+                  class="flex items-center gap-3"
+                >
+                  <span class="w-4 text-xs text-muted-foreground">{{ index + 1 }}</span>
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <span class="font-medium">{{ model.model }}</span>
+                      <span class="text-sm text-muted-foreground">{{ model.enquiries }} enquiries</span>
+                    </div>
+                    <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        class="h-full rounded-full bg-primary transition-all"
+                        :style="{ width: `${getModelInterestWidth(model.enquiries)}%` }"
+                      />
+                    </div>
+                    <div class="mt-1 flex gap-3 text-xs text-muted-foreground">
+                      <span v-if="model.testDrives > 0">
+                        <CalendarCheck class="inline h-3 w-3" /> {{ model.testDrives }} test drives
+                      </span>
+                      <span v-if="model.withFinance > 0">
+                        <DollarSign class="inline h-3 w-3" /> {{ model.withFinance }} finance interest
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="py-4 text-center text-sm text-muted-foreground">
+              No vehicle interest data yet
+            </div>
+          </div>
+          <div v-else class="py-8 text-center text-sm text-muted-foreground">
+            Loading vehicle catalog...
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Test Drive Requests -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <CalendarCheck class="h-5 w-5" />
+            Test Drives
+          </CardTitle>
+          <CardDescription>This month's booking requests</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <!-- Test Drive Stats -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-lg border p-3 text-center">
+              <div class="text-2xl font-bold">{{ data?.testDrives?.total || 0 }}</div>
+              <div class="text-xs text-muted-foreground">Total Requests</div>
+            </div>
+            <div class="rounded-lg border p-3 text-center">
+              <div class="text-2xl font-bold text-cyan-600">{{ data?.testDrives?.thisWeek || 0 }}</div>
+              <div class="text-xs text-muted-foreground">This Week</div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">Pending</span>
+              <Badge variant="default">{{ data?.testDrives?.pending || 0 }}</Badge>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">Confirmed</span>
+              <Badge variant="secondary">{{ data?.testDrives?.confirmed || 0 }}</Badge>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-muted-foreground">Completed</span>
+              <Badge variant="outline">{{ data?.testDrives?.completed || 0 }}</Badge>
+            </div>
+          </div>
+
+          <Separator />
+
+          <!-- Upcoming Test Drives -->
+          <div>
+            <h4 class="mb-2 text-sm font-medium">Recent Requests</h4>
+            <div v-if="data?.testDrives?.upcoming?.length" class="space-y-2">
+              <div
+                v-for="td in data.testDrives.upcoming"
+                :key="td.id"
+                class="flex items-center justify-between rounded-lg border p-2 text-sm"
+              >
+                <div>
+                  <div class="font-medium">{{ td.customer }}</div>
+                  <div class="text-xs text-muted-foreground">{{ td.vehicle }} {{ td.variant }}</div>
+                </div>
+                <Button variant="ghost" size="icon" as-child>
+                  <NuxtLink :to="`/admin/enquiries/${td.id}`">
+                    <ArrowRight class="h-4 w-4" />
+                  </NuxtLink>
+                </Button>
+              </div>
+            </div>
+            <div v-else class="py-4 text-center text-xs text-muted-foreground">
+              No pending test drive requests
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Accessories & Offers Section -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- Accessories Analytics -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <Sparkles class="h-5 w-5" />
+            Accessories Interest
+          </CardTitle>
+          <CardDescription>Accessory purchases with vehicle enquiries</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="grid grid-cols-3 gap-4">
+            <div class="rounded-lg border bg-pink-50 dark:bg-pink-950/30 p-3 text-center">
+              <div class="text-2xl font-bold text-pink-600">{{ data?.accessoriesAnalytics?.enquiriesWithAccessories || 0 }}</div>
+              <div class="text-xs text-muted-foreground">With Accessories</div>
+            </div>
+            <div class="rounded-lg border p-3 text-center">
+              <div class="text-2xl font-bold">${{ formatCurrency(data?.accessoriesAnalytics?.avgCartValue) }}</div>
+              <div class="text-xs text-muted-foreground">Avg Cart Value</div>
+            </div>
+            <div class="rounded-lg border p-3 text-center">
+              <div class="text-2xl font-bold">{{ data?.accessoriesAnalytics?.avgItemCount || 0 }}</div>
+              <div class="text-xs text-muted-foreground">Avg Items</div>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-dashed p-4">
+            <div class="flex items-start gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 dark:bg-pink-950">
+                <Package class="h-5 w-5 text-pink-600" />
+              </div>
+              <div>
+                <h4 class="font-medium">Popular Categories</h4>
+                <p class="text-sm text-muted-foreground">
+                  Roof racks, protection packs, cargo solutions, and towing accessories are commonly requested.
+                </p>
+                <Button variant="link" size="sm" class="mt-2 h-auto p-0" as-child>
+                  <NuxtLink to="/admin/enquiries?type=accessories">
+                    View accessory enquiries <ArrowRight class="ml-1 h-3 w-3" />
+                  </NuxtLink>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Current Offers -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <Tag class="h-5 w-5" />
+            Current Offers
+          </CardTitle>
+          <CardDescription>Active OEM promotions and deals</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div v-if="data?.currentOffers?.hasActiveOffers" class="space-y-4">
+            <div class="flex items-center gap-4 rounded-lg border bg-green-50 dark:bg-green-950/30 p-4">
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+                <Tag class="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-green-600">
+                  {{ data.currentOffers.totalOffers || data.currentOffers.modelsWithOffers?.length || 0 }}
+                </div>
+                <div class="text-sm text-muted-foreground">Active Offers</div>
+              </div>
+            </div>
+
+            <div v-if="data.currentOffers.modelsWithOffers?.length">
+              <h4 class="mb-2 text-sm font-medium">Models with Offers</h4>
+              <div class="flex flex-wrap gap-2">
+                <Badge
+                  v-for="model in data.currentOffers.modelsWithOffers.slice(0, 8)"
+                  :key="model"
+                  variant="secondary"
+                >
+                  {{ model }}
+                </Badge>
+              </div>
+            </div>
+
+            <Button variant="outline" class="w-full" as-child>
+              <a href="https://www.hyundai.com/au/en/offers" target="_blank" rel="noopener">
+                View All Offers <ExternalLink class="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+          </div>
+          <div v-else class="py-8 text-center">
+            <Tag class="mx-auto h-10 w-10 text-muted-foreground/50" />
+            <p class="mt-2 text-sm text-muted-foreground">No active offers at the moment</p>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -93,11 +1082,53 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
-import { RefreshCw, MailPlus, Inbox, Users, GitBranch, Settings, Clock3, CheckCircle2, BarChart3, Activity } from 'lucide-vue-next';
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import {
+  RefreshCw,
+  MailPlus,
+  Inbox,
+  Activity,
+  Calendar,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ArrowRight,
+  Users,
+  UserPlus,
+  GitBranch,
+  Settings,
+  Mail,
+  Car,
+  MessageSquare,
+  DollarSign,
+  Wrench,
+  Package,
+  CalendarCheck,
+  ArrowLeftRight,
+  Sparkles,
+  Truck,
+  Tag,
+  ExternalLink,
+  // Sales Command Center icons
+  AlertTriangle,
+  Target,
+  CheckCircle,
+  Percent,
+  ShoppingCart,
+  Flame,
+  Phone,
+  Filter,
+  Clock,
+} from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
+import { Separator } from '~/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { getGravatarUrl } from '~/utils/gravatar';
 
 definePageMeta({
   layout: 'admin',
@@ -107,92 +1138,217 @@ definePageMeta({
 const userState = useState<any>('auth-user');
 const greetingName = computed(() => {
   if (!userState.value) return 'team';
-  return `${userState.value.firstName || ''} ${userState.value.lastName || ''}`.trim();
+  return `${userState.value.firstName || ''} ${userState.value.lastName || ''}`.trim() || 'team';
 });
 
-const { data: stats, refresh } = await useFetch('/api/admin/analytics/overview');
+const dateRange = ref('week');
+const selectedChartType = ref('total');
 
-const total = computed(() => stats.value?.total || 0);
-const newToday = computed(() => stats.value?.newToday || 0);
-const pendingCount = computed(() => {
-  if (!stats.value?.byStatus) return 0;
-  const pending = stats.value.byStatus.find((s: any) => ['new', 'pending', 'in_progress'].includes(s.status));
-  return pending ? Number(pending.count) : 0;
+const chartTypes = [
+  { value: 'total', label: 'All' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'service', label: 'Service' },
+];
+
+const { data, pending, refresh } = await useFetch('/api/admin/analytics/dashboard');
+
+// Auto-refresh every 30 seconds
+let refreshInterval: ReturnType<typeof setInterval>;
+onMounted(() => {
+  refreshInterval = setInterval(() => refresh(), 30000);
 });
-const closedCount = computed(() => {
-  if (!stats.value?.byStatus) return 0;
-  const closed = stats.value.byStatus.find((s: any) => s.status === 'closed');
-  return closed ? Number(closed.count) : 0;
+onUnmounted(() => {
+  if (refreshInterval) clearInterval(refreshInterval);
 });
 
-const statCards = computed(() => [
-  {
-    label: 'Total enquiries',
-    value: total.value,
-    helper: 'All-time recorded enquiries',
-    icon: Inbox,
-  },
-  {
-    label: 'New today',
-    value: newToday.value,
-    helper: 'Submissions in the last 24h',
-    icon: Activity,
-  },
-  {
-    label: 'In progress',
-    value: pendingCount.value,
-    helper: 'Awaiting action',
-    icon: Clock3,
-  },
-  {
-    label: 'Closed',
-    value: closedCount.value,
-    helper: 'Successfully resolved',
-    icon: CheckCircle2,
-  },
-]);
+const sortedDepartments = computed(() => {
+  if (!data.value?.departments) return [];
+  return [...data.value.departments].sort((a, b) => b.total - a.total);
+});
 
-const statusBreakdown = computed(() => {
-  if (!stats.value?.byStatus) return [];
-  const badgeMap: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+const pipelineStatuses = [
+  { key: 'new', label: 'New', description: 'Just arrived', variant: 'default' as const },
+  { key: 'inProgress', label: 'In Progress', description: 'Being handled', variant: 'secondary' as const },
+  { key: 'contacted', label: 'Contacted', description: 'Customer reached', variant: 'outline' as const },
+  { key: 'closed', label: 'Closed', description: 'Completed', variant: 'outline' as const },
+];
+
+const iconMap: Record<string, any> = {
+  Car,
+  MessageSquare,
+  DollarSign,
+  Wrench,
+  Package,
+  CalendarCheck,
+  ArrowLeftRight,
+  Sparkles,
+  Truck,
+  Mail: Inbox,
+};
+
+function getDeptIcon(icon: string) {
+  return iconMap[icon] || Inbox;
+}
+
+function getDeptBgClass(color: string): string {
+  const classes: Record<string, string> = {
+    blue: 'bg-blue-100 dark:bg-blue-950',
+    gray: 'bg-gray-100 dark:bg-gray-800',
+    green: 'bg-green-100 dark:bg-green-950',
+    orange: 'bg-orange-100 dark:bg-orange-950',
+    purple: 'bg-purple-100 dark:bg-purple-950',
+    cyan: 'bg-cyan-100 dark:bg-cyan-950',
+    yellow: 'bg-yellow-100 dark:bg-yellow-950',
+    pink: 'bg-pink-100 dark:bg-pink-950',
+    indigo: 'bg-indigo-100 dark:bg-indigo-950',
+  };
+  return classes[color] || 'bg-muted';
+}
+
+function getDeptTextClass(color: string): string {
+  const classes: Record<string, string> = {
+    blue: 'text-blue-600 dark:text-blue-400',
+    gray: 'text-gray-600 dark:text-gray-400',
+    green: 'text-green-600 dark:text-green-400',
+    orange: 'text-orange-600 dark:text-orange-400',
+    purple: 'text-purple-600 dark:text-purple-400',
+    cyan: 'text-cyan-600 dark:text-cyan-400',
+    yellow: 'text-yellow-600 dark:text-yellow-400',
+    pink: 'text-pink-600 dark:text-pink-400',
+    indigo: 'text-indigo-600 dark:text-indigo-400',
+  };
+  return classes[color] || 'text-muted-foreground';
+}
+
+function getTrendClass(change: number | undefined): string {
+  if (!change) return 'text-muted-foreground';
+  return change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-muted-foreground';
+}
+
+function formatTrend(change: number | undefined): string {
+  if (!change) return '0%';
+  return `${change > 0 ? '+' : ''}${change}%`;
+}
+
+function formatResponseTime(hours: number): string {
+  if (hours < 1) {
+    return `${Math.round(hours * 60)}m`;
+  }
+  if (hours < 24) {
+    return `${Math.round(hours)}h`;
+  }
+  return `${Math.round(hours / 24)}d`;
+}
+
+function getConversionBarClass(rate: number): string {
+  if (rate >= 70) return 'bg-green-500';
+  if (rate >= 40) return 'bg-yellow-500';
+  return 'bg-red-500';
+}
+
+function getBarHeight(day: { total: number }): number {
+  if (!data.value?.dailyTrend) return 0;
+  const maxTotal = Math.max(...data.value.dailyTrend.map((d: any) => d.total), 1);
+  return (day.total / maxTotal) * 100;
+}
+
+function formatChartDate(date: string): string {
+  return new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+function formatTimeAgo(date: string): string {
+  const diff = Date.now() - new Date(date).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function getStatusVariant(status: string): 'default' | 'secondary' | 'outline' | 'destructive' {
+  const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
     new: 'default',
-    pending: 'outline',
     in_progress: 'secondary',
     contacted: 'outline',
-    closed: 'default',
+    closed: 'outline',
   };
-  const labelMap: Record<string, string> = {
+  return map[status] || 'outline';
+}
+
+function formatStatus(status: string): string {
+  const statuses: Record<string, string> = {
     new: 'New',
-    pending: 'Pending',
-    in_progress: 'In progress',
+    in_progress: 'In Progress',
     contacted: 'Contacted',
     closed: 'Closed',
   };
-  const descriptionMap: Record<string, string> = {
-    new: 'Just arrived',
-    pending: 'Waiting on response',
-    in_progress: 'Actively handled',
-    contacted: 'Customer contacted',
-    closed: 'Completed workflow',
+  return statuses[status] || status;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+function navigateToEnquiries(type: string) {
+  navigateTo(`/admin/enquiries?type=${type}`);
+}
+
+function formatCurrency(value: number | undefined): string {
+  if (!value || isNaN(value)) return '0';
+  return value.toLocaleString('en-AU', { maximumFractionDigits: 0 });
+}
+
+function getModelInterestWidth(enquiries: number): number {
+  if (!data.value?.vehicleInterest?.length) return 0;
+  const maxEnquiries = Math.max(...data.value.vehicleInterest.map((m: any) => m.enquiries), 1);
+  return (enquiries / maxEnquiries) * 100;
+}
+
+// Sales Command Center helpers
+function getTargetProgress(current: number | undefined, target: number | undefined): number {
+  if (!current || !target) return 0;
+  return Math.round((current / target) * 100);
+}
+
+function getTargetProgressClass(current: number | undefined, target: number | undefined): string {
+  const progress = getTargetProgress(current, target);
+  if (progress >= 100) return 'text-green-600 font-semibold';
+  if (progress >= 75) return 'text-blue-600';
+  if (progress >= 50) return 'text-yellow-600';
+  return 'text-red-600';
+}
+
+function getLeadScoreClass(score: number): string {
+  if (score >= 80) return 'bg-green-500';
+  if (score >= 60) return 'bg-blue-500';
+  if (score >= 40) return 'bg-yellow-500';
+  return 'bg-gray-400';
+}
+
+// Staff Workload helpers
+function getWorkloadBorderClass(level: string): string {
+  const classes: Record<string, string> = {
+    low: 'border-green-200 dark:border-green-900',
+    moderate: 'border-blue-200 dark:border-blue-900',
+    high: 'border-yellow-200 dark:border-yellow-900',
+    overloaded: 'border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20',
   };
-  return stats.value.byStatus.map((item: any) => ({
-    status: item.status,
-    count: Number(item.count),
-    badge: badgeMap[item.status] || 'outline',
-    label: labelMap[item.status] || item.status,
-    description: descriptionMap[item.status] || 'Status update',
-  }));
-});
+  return classes[level] || '';
+}
 
-// Refresh stats every 30 seconds
-onMounted(() => {
-  const interval = setInterval(() => {
-    refresh();
-  }, 30000);
-  
-  onUnmounted(() => {
-    clearInterval(interval);
-  });
-});
+function getWorkloadBadgeVariant(level: string): 'default' | 'secondary' | 'outline' | 'destructive' {
+  const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+    low: 'outline',
+    moderate: 'secondary',
+    high: 'default',
+    overloaded: 'destructive',
+  };
+  return variants[level] || 'outline';
+}
 </script>
-

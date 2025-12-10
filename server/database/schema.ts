@@ -338,6 +338,362 @@ export const emailLogsRelations = relations(emailLogs, ({ one }) => ({
 }));
 
 // ============================================================================
+// CUSTOMERS (Customer accounts for portal access)
+// ============================================================================
+
+export const customers = pgTable('customers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Authentication
+  email: varchar('email', { length: 255 }).notNull(),
+  passwordHash: varchar('password_hash', { length: 255 }),
+
+  // Profile
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }).notNull(),
+  phone: varchar('phone', { length: 20 }),
+
+  // Address
+  address: text('address'),
+  suburb: varchar('suburb', { length: 100 }),
+  state: varchar('state', { length: 20 }),
+  postcode: varchar('postcode', { length: 10 }),
+
+  // Status
+  isActive: boolean('is_active').default(true).notNull(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
+  verificationToken: varchar('verification_token', { length: 100 }),
+  resetToken: varchar('reset_token', { length: 100 }),
+  resetTokenExpiry: timestamp('reset_token_expiry', { withTimezone: true }),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  lastLogin: timestamp('last_login', { withTimezone: true }),
+}, (table) => ({
+  dealerIdx: index('idx_customers_dealer').on(table.dealerId),
+  emailIdx: index('idx_customers_email').on(table.email),
+  uniqueDealerEmail: uniqueIndex('customers_dealer_id_email_key').on(table.dealerId, table.email),
+}));
+
+// ============================================================================
+// CUSTOMER VEHICLES (Registered vehicles for customers)
+// ============================================================================
+
+export const customerVehicles = pgTable('customer_vehicles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+
+  // Vehicle identification
+  make: varchar('make', { length: 100 }).notNull(),
+  model: varchar('model', { length: 100 }).notNull(),
+  year: varchar('year', { length: 4 }),
+  registration: varchar('registration', { length: 20 }),
+  vin: varchar('vin', { length: 20 }),
+
+  // Vehicle details
+  color: varchar('color', { length: 50 }),
+  engineType: varchar('engine_type', { length: 50 }),
+  transmission: varchar('transmission', { length: 50 }),
+
+  // Current state
+  currentOdometer: varchar('current_odometer', { length: 20 }),
+  lastServiceDate: timestamp('last_service_date', { withTimezone: true }),
+  nextServiceDue: timestamp('next_service_due', { withTimezone: true }),
+
+  // Notes
+  notes: text('notes'),
+
+  // Status
+  isActive: boolean('is_active').default(true).notNull(),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_customer_vehicles_dealer').on(table.dealerId),
+  customerIdx: index('idx_customer_vehicles_customer').on(table.customerId),
+  regoIdx: index('idx_customer_vehicles_rego').on(table.registration),
+}));
+
+// ============================================================================
+// SERVICE APPOINTMENTS (Service bookings and appointments)
+// ============================================================================
+
+export const serviceAppointments = pgTable('service_appointments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Linked records
+  customerId: uuid('customer_id').references(() => customers.id),
+  vehicleId: uuid('vehicle_id').references(() => customerVehicles.id),
+  enquiryId: uuid('enquiry_id').references(() => enquiries.id),
+
+  // Customer details (denormalized for quick access)
+  customerFirstName: varchar('customer_first_name', { length: 100 }).notNull(),
+  customerLastName: varchar('customer_last_name', { length: 100 }).notNull(),
+  customerEmail: varchar('customer_email', { length: 255 }).notNull(),
+  customerPhone: varchar('customer_phone', { length: 20 }),
+
+  // Vehicle details (denormalized)
+  vehicleMake: varchar('vehicle_make', { length: 100 }).notNull(),
+  vehicleModel: varchar('vehicle_model', { length: 100 }).notNull(),
+  vehicleYear: varchar('vehicle_year', { length: 4 }),
+  vehicleRegistration: varchar('vehicle_registration', { length: 20 }),
+  vehicleVin: varchar('vehicle_vin', { length: 20 }),
+  vehicleOdometer: varchar('vehicle_odometer', { length: 20 }),
+
+  // Appointment scheduling
+  scheduledDate: timestamp('scheduled_date', { withTimezone: true }).notNull(),
+  scheduledTime: varchar('scheduled_time', { length: 10 }),
+  estimatedDuration: varchar('estimated_duration', { length: 50 }),
+
+  // Drop-off / Pick-up
+  dropOffDate: timestamp('drop_off_date', { withTimezone: true }),
+  dropOffTime: varchar('drop_off_time', { length: 10 }),
+  pickUpDate: timestamp('pick_up_date', { withTimezone: true }),
+  pickUpTime: varchar('pick_up_time', { length: 10 }),
+  actualDropOff: timestamp('actual_drop_off', { withTimezone: true }),
+  actualPickUp: timestamp('actual_pick_up', { withTimezone: true }),
+
+  // Service details
+  serviceType: varchar('service_type', { length: 100 }).notNull(),
+  serviceDescription: text('service_description'),
+  customerNotes: text('customer_notes'),
+  internalNotes: text('internal_notes'),
+
+  // Service options
+  isScheduledService: boolean('is_scheduled_service').default(false),
+  isPreviouslyServiced: boolean('is_previously_serviced').default(false),
+  hasOtherRepairs: boolean('has_other_repairs').default(false),
+  requiresLoanCar: boolean('requires_loan_car').default(false),
+  loanCarProvided: boolean('loan_car_provided').default(false),
+
+  // Status & workflow
+  status: varchar('status', { length: 30 }).default('pending').notNull(),
+  // pending, confirmed, in_progress, awaiting_parts, completed, cancelled, no_show
+  priority: varchar('priority', { length: 20 }).default('normal').notNull(),
+
+  // Assignment
+  assignedTechnicianId: uuid('assigned_technician_id').references(() => users.id),
+  assignedServiceAdvisorId: uuid('assigned_service_advisor_id').references(() => users.id),
+
+  // Costing
+  estimatedCost: varchar('estimated_cost', { length: 20 }),
+  actualCost: varchar('actual_cost', { length: 20 }),
+  quoteSent: boolean('quote_sent').default(false),
+  quoteApproved: boolean('quote_approved').default(false),
+  invoiceNumber: varchar('invoice_number', { length: 50 }),
+
+  // Completion
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedOdometer: varchar('completed_odometer', { length: 20 }),
+  workPerformed: text('work_performed'),
+  partsUsed: jsonb('parts_used'),
+
+  // Customer communication
+  reminderSent: boolean('reminder_sent').default(false),
+  confirmationSent: boolean('confirmation_sent').default(false),
+  completionNotified: boolean('completion_notified').default(false),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_service_appointments_dealer').on(table.dealerId),
+  customerIdx: index('idx_service_appointments_customer').on(table.customerId),
+  vehicleIdx: index('idx_service_appointments_vehicle').on(table.vehicleId),
+  scheduledDateIdx: index('idx_service_appointments_scheduled').on(table.scheduledDate),
+  statusIdx: index('idx_service_appointments_status').on(table.status),
+  technicianIdx: index('idx_service_appointments_technician').on(table.assignedTechnicianId),
+}));
+
+// ============================================================================
+// SERVICE HISTORY (Completed service records)
+// ============================================================================
+
+export const serviceHistory = pgTable('service_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Linked records
+  appointmentId: uuid('appointment_id').references(() => serviceAppointments.id),
+  customerId: uuid('customer_id').references(() => customers.id),
+  vehicleId: uuid('vehicle_id').references(() => customerVehicles.id),
+
+  // Service details
+  serviceDate: timestamp('service_date', { withTimezone: true }).notNull(),
+  serviceType: varchar('service_type', { length: 100 }).notNull(),
+  odometerReading: varchar('odometer_reading', { length: 20 }),
+
+  // Work performed
+  workPerformed: text('work_performed').notNull(),
+  partsReplaced: jsonb('parts_replaced'),
+  recommendations: text('recommendations'),
+
+  // Technician info
+  technicianId: uuid('technician_id').references(() => users.id),
+  technicianName: varchar('technician_name', { length: 200 }),
+
+  // Costing
+  laborCost: varchar('labor_cost', { length: 20 }),
+  partsCost: varchar('parts_cost', { length: 20 }),
+  totalCost: varchar('total_cost', { length: 20 }),
+  invoiceNumber: varchar('invoice_number', { length: 50 }),
+
+  // Next service
+  nextServiceDue: timestamp('next_service_due', { withTimezone: true }),
+  nextServiceOdometer: varchar('next_service_odometer', { length: 20 }),
+
+  // Documents
+  documents: jsonb('documents'),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_service_history_dealer').on(table.dealerId),
+  customerIdx: index('idx_service_history_customer').on(table.customerId),
+  vehicleIdx: index('idx_service_history_vehicle').on(table.vehicleId),
+  serviceDateIdx: index('idx_service_history_date').on(table.serviceDate),
+}));
+
+// ============================================================================
+// SERVICE SLOTS (Available time slots for booking)
+// ============================================================================
+
+export const serviceSlots = pgTable('service_slots', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Day and time
+  dayOfWeek: varchar('day_of_week', { length: 10 }).notNull(), // monday, tuesday, etc.
+  startTime: varchar('start_time', { length: 10 }).notNull(), // HH:MM format
+  endTime: varchar('end_time', { length: 10 }).notNull(),
+
+  // Capacity
+  maxAppointments: varchar('max_appointments', { length: 5 }).default('3').notNull(),
+
+  // Status
+  isActive: boolean('is_active').default(true).notNull(),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_service_slots_dealer').on(table.dealerId),
+  dayIdx: index('idx_service_slots_day').on(table.dayOfWeek),
+}));
+
+// ============================================================================
+// SERVICE BLOCKED DATES (Holidays, closures)
+// ============================================================================
+
+export const serviceBlockedDates = pgTable('service_blocked_dates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  blockedDate: timestamp('blocked_date', { withTimezone: true }).notNull(),
+  reason: varchar('reason', { length: 200 }),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_service_blocked_dates_dealer').on(table.dealerId),
+  dateIdx: index('idx_service_blocked_dates_date').on(table.blockedDate),
+}));
+
+// ============================================================================
+// ADDITIONAL RELATIONS
+// ============================================================================
+
+export const customersRelations = relations(customers, ({ one, many }) => ({
+  dealer: one(dealers, {
+    fields: [customers.dealerId],
+    references: [dealers.id],
+  }),
+  vehicles: many(customerVehicles),
+  appointments: many(serviceAppointments),
+  serviceHistory: many(serviceHistory),
+}));
+
+export const customerVehiclesRelations = relations(customerVehicles, ({ one, many }) => ({
+  dealer: one(dealers, {
+    fields: [customerVehicles.dealerId],
+    references: [dealers.id],
+  }),
+  customer: one(customers, {
+    fields: [customerVehicles.customerId],
+    references: [customers.id],
+  }),
+  appointments: many(serviceAppointments),
+  serviceHistory: many(serviceHistory),
+}));
+
+export const serviceAppointmentsRelations = relations(serviceAppointments, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [serviceAppointments.dealerId],
+    references: [dealers.id],
+  }),
+  customer: one(customers, {
+    fields: [serviceAppointments.customerId],
+    references: [customers.id],
+  }),
+  vehicle: one(customerVehicles, {
+    fields: [serviceAppointments.vehicleId],
+    references: [customerVehicles.id],
+  }),
+  enquiry: one(enquiries, {
+    fields: [serviceAppointments.enquiryId],
+    references: [enquiries.id],
+  }),
+  technician: one(users, {
+    fields: [serviceAppointments.assignedTechnicianId],
+    references: [users.id],
+  }),
+  serviceAdvisor: one(users, {
+    fields: [serviceAppointments.assignedServiceAdvisorId],
+    references: [users.id],
+  }),
+}));
+
+export const serviceHistoryRelations = relations(serviceHistory, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [serviceHistory.dealerId],
+    references: [dealers.id],
+  }),
+  appointment: one(serviceAppointments, {
+    fields: [serviceHistory.appointmentId],
+    references: [serviceAppointments.id],
+  }),
+  customer: one(customers, {
+    fields: [serviceHistory.customerId],
+    references: [customers.id],
+  }),
+  vehicle: one(customerVehicles, {
+    fields: [serviceHistory.vehicleId],
+    references: [customerVehicles.id],
+  }),
+  technician: one(users, {
+    fields: [serviceHistory.technicianId],
+    references: [users.id],
+  }),
+}));
+
+export const serviceSlotsRelations = relations(serviceSlots, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [serviceSlots.dealerId],
+    references: [dealers.id],
+  }),
+}));
+
+export const serviceBlockedDatesRelations = relations(serviceBlockedDates, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [serviceBlockedDates.dealerId],
+    references: [dealers.id],
+  }),
+}));
+
+// ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 
@@ -361,4 +717,22 @@ export type NewEnquiryActivityLog = typeof enquiryActivityLog.$inferInsert;
 
 export type EmailLog = typeof emailLogs.$inferSelect;
 export type NewEmailLog = typeof emailLogs.$inferInsert;
+
+export type Customer = typeof customers.$inferSelect;
+export type NewCustomer = typeof customers.$inferInsert;
+
+export type CustomerVehicle = typeof customerVehicles.$inferSelect;
+export type NewCustomerVehicle = typeof customerVehicles.$inferInsert;
+
+export type ServiceAppointment = typeof serviceAppointments.$inferSelect;
+export type NewServiceAppointment = typeof serviceAppointments.$inferInsert;
+
+export type ServiceHistory = typeof serviceHistory.$inferSelect;
+export type NewServiceHistory = typeof serviceHistory.$inferInsert;
+
+export type ServiceSlot = typeof serviceSlots.$inferSelect;
+export type NewServiceSlot = typeof serviceSlots.$inferInsert;
+
+export type ServiceBlockedDate = typeof serviceBlockedDates.$inferSelect;
+export type NewServiceBlockedDate = typeof serviceBlockedDates.$inferInsert;
 

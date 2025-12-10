@@ -201,6 +201,7 @@ const handleNotificationClick = async () => {
 const navLinks = [
   { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
   { label: 'Enquiries', href: '/admin/enquiries', icon: 'Inbox' },
+  { label: 'Service', href: '/admin/service', icon: 'Wrench' },
   { label: 'Forms', href: '/admin/forms', icon: 'FileText' },
   { label: 'Staff', href: '/admin/staff', icon: 'Users' },
   { label: 'Settings', href: '/admin/settings', icon: 'Settings' },

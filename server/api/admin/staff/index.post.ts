@@ -32,10 +32,23 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!['dealer_admin', 'sales', 'service', 'parts'].includes(role)) {
+  const validRoles = [
+    'dealer_admin',
+    'general_manager',
+    'sales_manager',
+    'sales',
+    'finance_manager',
+    'service_manager',
+    'service_advisor',
+    'technician',
+    'parts_manager',
+    'parts',
+  ];
+
+  if (!validRoles.includes(role)) {
     throw createError({
       statusCode: 400,
-      message: 'Invalid role',
+      message: `Invalid role. Must be one of: ${validRoles.join(', ')}`,
     });
   }
 
