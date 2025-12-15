@@ -74,7 +74,8 @@ interface SubmitResult {
 export function useEnquiryForm() {
   const config = useRuntimeConfig();
   const route = useRoute();
-  
+  const { getUtmParams } = useUtmParams();
+
   const isSubmitting = ref(false);
   const isSubmitted = ref(false);
   const submitError = ref<string | null>(null);
@@ -105,9 +106,12 @@ export function useEnquiryForm() {
         testDrive: data.testDrive || false,
         financeInterest: data.financeInterest || false,
         source: data.source || route.path,
-        utmSource: data.utmSource || (route.query.utm_source as string) || undefined,
-        utmMedium: data.utmMedium || (route.query.utm_medium as string) || undefined,
-        utmCampaign: data.utmCampaign || (route.query.utm_campaign as string) || undefined,
+        // Use UTM params composable (gets from URL or sessionStorage)
+        ...getUtmParams(),
+        // Allow explicit UTM overrides
+        ...(data.utmSource && { utmSource: data.utmSource }),
+        ...(data.utmMedium && { utmMedium: data.utmMedium }),
+        ...(data.utmCampaign && { utmCampaign: data.utmCampaign }),
       };
       
       // Submit to the new API
@@ -171,5 +175,9 @@ export function useEnquiryForm() {
     resetState,
   };
 }
+
+
+
+
 
 

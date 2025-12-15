@@ -57,30 +57,8 @@
 
         <div class="flex items-center gap-3">
           <!-- Real-time notification bell -->
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            class="relative"
-            @click="handleNotificationClick"
-          >
-            <Bell class="h-5 w-5" />
-            <span 
-              v-if="newEnquiryCount > 0"
-              class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-pulse"
-            >
-              {{ newEnquiryCount > 9 ? '9+' : newEnquiryCount }}
-            </span>
-            <span 
-              v-if="isConnected"
-              class="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500"
-              title="Real-time updates active"
-            />
-          </Button>
+          <NotificationBell />
 
-          <Button variant="outline" size="sm" @click="refreshUser" class="hidden sm:inline-flex">
-            <RefreshCw class="mr-2 h-4 w-4" />
-            Sync
-          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="flex items-center gap-3">
@@ -102,6 +80,12 @@
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="navigateTo('/admin/settings')">
                 <Settings class="mr-2 h-4 w-4" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="navigateTo('/admin/settings/branding')">
+                <Palette class="mr-2 h-4 w-4" /> Branding & Social
+              </DropdownMenuItem>
+              <DropdownMenuItem @click="navigateTo('/admin/media')">
+                <Image class="mr-2 h-4 w-4" /> Media Library
               </DropdownMenuItem>
               <DropdownMenuItem @click="navigateTo('/admin/settings/email')">
                 <Mail class="mr-2 h-4 w-4" /> Email Settings
@@ -127,12 +111,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from '#imports';
-import { Menu, LogOut, Settings, GitBranch, RefreshCw, Bell, Mail } from 'lucide-vue-next';
+import { Menu, LogOut, Settings, GitBranch, Mail, Palette, Image } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Separator } from '~/components/ui/separator';
+import NotificationBell from '~/components/admin/NotificationBell.vue';
 import {
   Sheet,
   SheetContent,
@@ -152,57 +137,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 const route = useRoute();
 
-// Real-time enquiry updates - state
-const newEnquiryCount = ref(0);
-const isConnected = ref(false);
-let clearNewCountFn: () => void = () => {};
-let requestNotificationPermissionFn: () => Promise<boolean> = async () => false;
-
-// Initialize real-time updates only on client after mount
-onMounted(async () => {
-  if (process.client) {
-    try {
-      const { useRealtimeEnquiries } = await import('~/composables/useRealtimeEnquiries');
-      const realtime = useRealtimeEnquiries({
-        pollInterval: 5000,
-        onNewEnquiry: (enquiry) => {
-          console.log('🔔 New enquiry:', enquiry.firstName, enquiry.lastName);
-          newEnquiryCount.value = realtime.newCount.value;
-        },
-      });
-      
-      // Sync initial state
-      isConnected.value = realtime.isConnected.value;
-      newEnquiryCount.value = realtime.newCount.value;
-      
-      // Store functions
-      clearNewCountFn = realtime.clearNewCount;
-      requestNotificationPermissionFn = realtime.requestNotificationPermission;
-      
-      // Watch for changes
-      watch(() => realtime.newCount.value, (val) => { newEnquiryCount.value = val; });
-      watch(() => realtime.isConnected.value, (val) => { isConnected.value = val; });
-    } catch (e) {
-      console.error('Failed to initialize real-time updates:', e);
-    }
-  }
-});
-
-const handleNotificationClick = async () => {
-  if (newEnquiryCount.value > 0) {
-    clearNewCountFn();
-    newEnquiryCount.value = 0;
-    await navigateTo('/admin/enquiries');
-  } else {
-    // Request notification permission if not granted
-    await requestNotificationPermissionFn();
-  }
-};
 const navLinks = [
   { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
   { label: 'Enquiries', href: '/admin/enquiries', icon: 'Inbox' },
+  { label: 'Customers', href: '/admin/customers', icon: 'UserCheck' },
   { label: 'Service', href: '/admin/service', icon: 'Wrench' },
   { label: 'Forms', href: '/admin/forms', icon: 'FileText' },
+  { label: 'Media', href: '/admin/media', icon: 'Image' },
   { label: 'Staff', href: '/admin/staff', icon: 'Users' },
   { label: 'Settings', href: '/admin/settings', icon: 'Settings' },
 ];
@@ -231,10 +172,6 @@ const userInitials = computed(() => {
 
 const userEmail = computed(() => userState.value?.email || 'admin@salehyundai.com');
 
-const refreshUser = async () => {
-  await fetchUser();
-};
-
 const fetchUser = async () => {
   try {
     const { data } = await useFetch('/api/auth/me');
@@ -257,5 +194,9 @@ const handleLogout = async () => {
   }
 };
 </script>
+
+
+
+
 
 

@@ -303,11 +303,13 @@ const formDefinitions = [
   },
 ];
 
-// Merge form definitions with stats
+// Merge form definitions with stats (including isActive from database)
 const forms = computed(() => {
   const stats = statsData.value?.formStats || {};
   return formDefinitions.map(form => ({
     ...form,
+    // Override isActive with value from database (stats API fetches from dealer settings)
+    isActive: stats[form.slug]?.isActive ?? form.isActive,
     entries: stats[form.slug]?.total || 0,
     weeklyEntries: stats[form.slug]?.weekly || 0,
     weeklyChange: stats[form.slug]?.weeklyChange || 0,
@@ -335,5 +337,9 @@ const previewForm = (form: any) => {
   window.open(routes[form.slug] || '/', '_blank');
 };
 </script>
+
+
+
+
 
 

@@ -197,6 +197,8 @@
 
 <script setup lang="ts">
 const mainStore = useMainStore();
+const { trackPartsEnquiry } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
 const partsPhone = computed(() => mainStore.site?.departments?.parts?.phone || '');
@@ -249,23 +251,20 @@ const submitForm = async () => {
           vin: form.vin || undefined,
         },
         source: 'parts-form',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       }
     });
 
     isSubmitted.value = true;
 
-    // GTM tracking
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'parts',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-      });
-    }
+    // Track conversion with enhanced analytics
+    trackPartsEnquiry({
+      form_location: 'parts_form_page',
+      enquiry_id: response.enquiry.id,
+      has_registration: !!form.registration,
+      has_message: !!form.partDescription,
+    });
   } catch (error) {
     console.error('Form submission error:', error);
   } finally {
@@ -290,6 +289,8 @@ const submitForm = async () => {
   }
 }
 </style>
+
+
 
 
 

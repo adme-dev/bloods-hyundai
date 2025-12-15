@@ -1,6 +1,11 @@
 /**
- * Analytics composable for tracking events via Google Analytics 4 (gtag)
- * Uses the nuxt-gtag module
+ * Analytics composable for tracking events via Google Analytics 4 (gtag) and Facebook Pixel
+ * Uses the nuxt-gtag module and custom Facebook Pixel integration
+ *
+ * Data Layer Events:
+ * - Form submissions (all types)
+ * - Vehicle interactions
+ * - Conversion tracking for Google Ads and Facebook Ads
  */
 
 interface VehicleData {
@@ -9,14 +14,16 @@ interface VehicleData {
   make?: string;
   model?: string;
   badge?: string;
+  variant?: string;
   year?: string | number;
   price?: number;
   condition?: string;
+  colour?: string;
 }
 
 interface EnquiryEventData {
   vehicle?: VehicleData;
-  source: 'stock_param' | 'card_click' | 'detail_page' | 'gallery';
+  source: 'stock_param' | 'card_click' | 'detail_page' | 'gallery' | 'calculator' | 'homepage';
   page_url?: string;
 }
 
@@ -26,17 +33,146 @@ interface FormSubmissionData {
   has_trade_in?: boolean;
   interested_in_finance?: boolean;
   wants_test_drive?: boolean;
+  enquiry_id?: string;
 }
+
+// Extended form types for all dealership forms
+type FormType =
+  | 'vehicle_enquiry'
+  | 'test_drive'
+  | 'contact'
+  | 'service'
+  | 'parts'
+  | 'finance'
+  | 'fleet'
+  | 'accessories'
+  | 'sell_my_car'
+  | 'calculator_enquiry';
+
+interface BaseFormData {
+  form_type: FormType;
+  form_location?: string;
+  enquiry_id?: string;
+  page_url?: string;
+}
+
+interface VehicleEnquiryData extends BaseFormData {
+  form_type: 'vehicle_enquiry' | 'calculator_enquiry';
+  vehicle?: VehicleData;
+  has_trade_in?: boolean;
+  trade_in_vehicle?: {
+    make?: string;
+    model?: string;
+    year?: string | number;
+  };
+  interested_in_finance?: boolean;
+  finance_interest?: boolean;
+  wants_test_drive?: boolean;
+  has_applied_offers?: boolean;
+  applied_offers_count?: number;
+  has_accessories?: boolean;
+  accessories_count?: number;
+  accessories_value?: number;
+  has_message?: boolean;
+  configuration?: {
+    has_option_pack?: boolean;
+    has_colour_upgrade?: boolean;
+    has_prepaid_service?: boolean;
+    total_configured_price?: number;
+  };
+}
+
+interface TestDriveData extends BaseFormData {
+  form_type: 'test_drive';
+  vehicle?: VehicleData;
+  preferred_date?: string;
+  preferred_time?: string;
+}
+
+interface ContactFormData extends BaseFormData {
+  form_type: 'contact';
+  department?: string;
+  has_message?: boolean;
+}
+
+interface ServiceFormData extends BaseFormData {
+  form_type: 'service';
+  service_type?: string;
+  vehicle_make?: string;
+  vehicle_model?: string;
+  vehicle_year?: string;
+  preferred_date?: string;
+  preferred_time?: string;
+}
+
+interface PartsFormData extends BaseFormData {
+  form_type: 'parts';
+  has_registration?: boolean;
+  has_message?: boolean;
+}
+
+interface FinanceFormData extends BaseFormData {
+  form_type: 'finance';
+  vehicle?: VehicleData;
+  loan_amount?: number;
+  deposit_amount?: number;
+  loan_term_months?: number;
+}
+
+interface FleetFormData extends BaseFormData {
+  form_type: 'fleet';
+  company_name?: string;
+  fleet_size?: string;
+  vehicles_interested?: string[];
+}
+
+interface AccessoriesFormData extends BaseFormData {
+  form_type: 'accessories';
+  vehicle_model?: string;
+  items_count: number;
+  total_value: number;
+  has_packs?: boolean;
+  accessories?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    type: string;
+  }>;
+}
+
+interface SellMyCarData extends BaseFormData {
+  form_type: 'sell_my_car';
+  vehicle_make?: string;
+  vehicle_model?: string;
+  vehicle_year?: string;
+  odometer?: number;
+  condition?: string;
+  has_photos?: boolean;
+  photos_count?: number;
+}
+
+type FormEventData =
+  | VehicleEnquiryData
+  | TestDriveData
+  | ContactFormData
+  | ServiceFormData
+  | PartsFormData
+  | FinanceFormData
+  | FleetFormData
+  | AccessoriesFormData
+  | SellMyCarData;
 
 export const useAnalytics = () => {
   const { gtag } = useGtag();
+  const fbPixel = useFacebookPixel();
 
   /**
    * Track when enquiry modal is opened
    */
   const trackEnquiryModalOpen = (data: EnquiryEventData) => {
     const vehicle = data.vehicle;
-    
+
     gtag('event', 'enquiry_modal_open', {
       event_category: 'engagement',
       event_label: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : 'unknown',
@@ -56,6 +192,18 @@ export const useAnalytics = () => {
       value: vehicle?.price || 0,
       currency: 'AUD',
     });
+
+    // Facebook Pixel - AddToCart equivalent for modal open
+    if (vehicle) {
+      fbPixel.trackAddToCart({
+        content_ids: [String(vehicle.stockid || vehicle.identifier || 'unknown')],
+        content_name: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim(),
+        content_type: 'vehicle',
+        content_category: vehicle.condition || 'used',
+        value: vehicle.price || 0,
+        currency: 'AUD',
+      });
+    }
   };
 
   /**
@@ -98,19 +246,37 @@ export const useAnalytics = () => {
         price: vehicle.price || 0,
       }],
     });
+
+    // Facebook Pixel - ViewContent
+    fbPixel.trackViewContent({
+      content_ids: [String(vehicle.stockid || vehicle.identifier || 'unknown')],
+      content_name: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.badge || ''}`.trim(),
+      content_type: 'vehicle',
+      content_category: vehicle.condition || 'used',
+      value: vehicle.price || 0,
+      currency: 'AUD',
+    });
   };
 
   /**
    * Track vehicle search/filter actions
    */
   const trackVehicleSearch = (filters: Record<string, any>, resultsCount: number) => {
+    const searchTerm = Object.entries(filters)
+      .filter(([_, v]) => v && (Array.isArray(v) ? v.length > 0 : true))
+      .map(([k, v]) => `${k}:${Array.isArray(v) ? v.join(',') : v}`)
+      .join(' | ');
+
     gtag('event', 'search', {
       event_category: 'engagement',
-      search_term: Object.entries(filters)
-        .filter(([_, v]) => v && (Array.isArray(v) ? v.length > 0 : true))
-        .map(([k, v]) => `${k}:${Array.isArray(v) ? v.join(',') : v}`)
-        .join(' | '),
+      search_term: searchTerm,
       results_count: resultsCount,
+    });
+
+    // Facebook Pixel - Search
+    fbPixel.trackSearch({
+      search_string: searchTerm,
+      content_category: 'vehicles',
     });
   };
 
@@ -137,14 +303,441 @@ export const useAnalytics = () => {
     });
   };
 
+  // ============================================
+  // COMPREHENSIVE FORM CONVERSION TRACKING
+  // ============================================
+
+  /**
+   * Helper to get conversion value based on form type
+   */
+  const getConversionValue = (formType: FormType, data: FormEventData): number => {
+    // Assign estimated lead values based on form type
+    const baseValues: Record<FormType, number> = {
+      vehicle_enquiry: 500,
+      calculator_enquiry: 750, // Higher intent - configured vehicle
+      test_drive: 1000, // Very high intent
+      finance: 800,
+      contact: 100,
+      service: 200,
+      parts: 150,
+      fleet: 2000, // B2B, higher value
+      accessories: 300,
+      sell_my_car: 400,
+    };
+
+    let value = baseValues[formType] || 100;
+
+    // Add vehicle price context for vehicle-related forms
+    if ('vehicle' in data && data.vehicle?.price) {
+      // Use 1% of vehicle price as additional value indicator
+      value += Math.round(data.vehicle.price * 0.01);
+    }
+
+    // Add accessories value for accessories forms
+    if (formType === 'accessories' && 'total_value' in data) {
+      value += (data as AccessoriesFormData).total_value * 0.1;
+    }
+
+    return value;
+  };
+
+  /**
+   * Push to dataLayer for GTM
+   */
+  const pushToDataLayer = (eventName: string, data: Record<string, any>) => {
+    if (typeof window !== 'undefined' && (window as any).dataLayer) {
+      (window as any).dataLayer.push({
+        event: eventName,
+        ...data,
+      });
+    }
+  };
+
+  /**
+   * Universal form submission tracker
+   * Fires both GA4 event and dataLayer push for GTM
+   */
+  const trackFormSubmission = (data: FormEventData) => {
+    const pageUrl = data.page_url || (typeof window !== 'undefined' ? window.location.href : '');
+    const conversionValue = getConversionValue(data.form_type, data);
+
+    // GA4 generate_lead event (standard conversion event)
+    gtag('event', 'generate_lead', {
+      event_category: 'conversion',
+      event_label: data.form_type,
+      form_type: data.form_type,
+      form_location: data.form_location || 'unknown',
+      enquiry_id: data.enquiry_id || undefined,
+      currency: 'AUD',
+      value: conversionValue,
+      page_url: pageUrl,
+    });
+
+    // Custom form_submission event with full data
+    const { form_type, form_location, enquiry_id, ...restData } = data;
+    gtag('event', 'form_submission', {
+      event_category: 'forms',
+      form_type,
+      form_location,
+      enquiry_id,
+      ...restData,
+    });
+
+    // Push to dataLayer for GTM triggers
+    pushToDataLayer('formSubmission', {
+      formType: data.form_type,
+      formLocation: data.form_location,
+      enquiryId: data.enquiry_id,
+      conversionValue,
+      ...data,
+    });
+
+    // Google Ads conversion tracking
+    gtag('event', 'conversion', {
+      send_to: `form_${data.form_type}`,
+      value: conversionValue,
+      currency: 'AUD',
+    });
+
+    // Facebook Pixel - Lead event for all form submissions
+    fbPixel.trackLead({
+      content_name: data.form_type,
+      content_category: data.form_location || 'website',
+      value: conversionValue,
+      currency: 'AUD',
+    });
+  };
+
+  /**
+   * Track vehicle enquiry form submission
+   */
+  const trackVehicleEnquiry = (data: Omit<VehicleEnquiryData, 'form_type'> & { form_type?: 'vehicle_enquiry' | 'calculator_enquiry' }) => {
+    const formData: VehicleEnquiryData = {
+      form_type: data.form_type || 'vehicle_enquiry',
+      ...data,
+    };
+
+    const vehicle = data.vehicle;
+
+    // Enhanced ecommerce - add_to_cart equivalent for lead gen
+    if (vehicle) {
+      gtag('event', 'add_to_cart', {
+        currency: 'AUD',
+        value: vehicle.price || 0,
+        items: [{
+          item_id: vehicle.stockid || vehicle.identifier || 'unknown',
+          item_name: `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.variant || vehicle.badge || ''}`.trim(),
+          item_brand: vehicle.make || 'Hyundai',
+          item_category: vehicle.condition || 'new',
+          item_variant: vehicle.variant || vehicle.badge,
+          price: vehicle.price || 0,
+          quantity: 1,
+        }],
+      });
+    }
+
+    trackFormSubmission(formData);
+
+    // Facebook Pixel - Vehicle Enquiry with detailed tracking
+    fbPixel.trackVehicleEnquiry({
+      vehicleId: vehicle ? String(vehicle.stockid || vehicle.identifier || '') : undefined,
+      vehicleName: vehicle ? `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim() : undefined,
+      vehicleCategory: (vehicle?.condition as 'new' | 'used' | 'demo') || undefined,
+      price: vehicle?.price,
+      hasTradeIn: data.has_trade_in,
+      hasFinanceInterest: data.interested_in_finance || data.finance_interest,
+    });
+
+    // Track additional configuration details
+    if (data.configuration) {
+      gtag('event', 'vehicle_configured', {
+        event_category: 'calculator',
+        has_option_pack: data.configuration.has_option_pack,
+        has_colour_upgrade: data.configuration.has_colour_upgrade,
+        has_prepaid_service: data.configuration.has_prepaid_service,
+        total_configured_price: data.configuration.total_configured_price,
+      });
+
+      // Facebook Pixel - Calculator enquiry custom event
+      fbPixel.trackCalculatorEnquiry({
+        vehicleName: vehicle ? `${vehicle.make || ''} ${vehicle.model || ''}`.trim() : undefined,
+        configuredPrice: data.configuration.total_configured_price,
+        hasOptionPack: data.configuration.has_option_pack,
+        hasAccessories: data.has_accessories,
+        accessoriesValue: data.accessories_value,
+      });
+    }
+  };
+
+  /**
+   * Track test drive booking
+   */
+  const trackTestDriveBooking = (data: Omit<TestDriveData, 'form_type'>) => {
+    const formData: TestDriveData = {
+      form_type: 'test_drive',
+      ...data,
+    };
+
+    // Test drives are high-intent - track as begin_checkout equivalent
+    if (data.vehicle) {
+      gtag('event', 'begin_checkout', {
+        currency: 'AUD',
+        value: data.vehicle.price || 0,
+        items: [{
+          item_id: data.vehicle.stockid || data.vehicle.identifier || 'unknown',
+          item_name: `${data.vehicle.year || ''} ${data.vehicle.make || ''} ${data.vehicle.model || ''}`.trim(),
+          item_brand: data.vehicle.make || 'Hyundai',
+          price: data.vehicle.price || 0,
+          quantity: 1,
+        }],
+      });
+    }
+
+    trackFormSubmission(formData);
+
+    // Facebook Pixel - Test Drive with high-intent signals
+    fbPixel.trackTestDriveBooking({
+      vehicleId: data.vehicle ? String(data.vehicle.stockid || data.vehicle.identifier || '') : undefined,
+      vehicleName: data.vehicle ? `${data.vehicle.year || ''} ${data.vehicle.make || ''} ${data.vehicle.model || ''}`.trim() : undefined,
+      vehicleCategory: data.vehicle?.condition,
+      price: data.vehicle?.price,
+    });
+  };
+
+  /**
+   * Track contact form submission
+   */
+  const trackContactForm = (data: Omit<ContactFormData, 'form_type'>) => {
+    trackFormSubmission({
+      form_type: 'contact',
+      ...data,
+    });
+
+    // Facebook Pixel - Contact form
+    fbPixel.trackContactForm({
+      department: data.department,
+    });
+  };
+
+  /**
+   * Track service booking form
+   */
+  const trackServiceBooking = (data: Omit<ServiceFormData, 'form_type'>) => {
+    trackFormSubmission({
+      form_type: 'service',
+      ...data,
+    });
+
+    // Additional event for service-specific analytics
+    gtag('event', 'service_booking', {
+      event_category: 'service',
+      service_type: data.service_type,
+      vehicle_make: data.vehicle_make,
+      vehicle_model: data.vehicle_model,
+      preferred_date: data.preferred_date,
+    });
+
+    // Facebook Pixel - Service booking
+    fbPixel.trackServiceBooking({
+      serviceType: data.service_type,
+      vehicleMake: data.vehicle_make,
+      vehicleModel: data.vehicle_model,
+    });
+  };
+
+  /**
+   * Track parts enquiry form
+   */
+  const trackPartsEnquiry = (data: Omit<PartsFormData, 'form_type'>) => {
+    trackFormSubmission({
+      form_type: 'parts',
+      ...data,
+    });
+
+    // Facebook Pixel - Parts enquiry
+    fbPixel.trackPartsEnquiry();
+  };
+
+  /**
+   * Track finance application/enquiry
+   */
+  const trackFinanceEnquiry = (data: Omit<FinanceFormData, 'form_type'>) => {
+    trackFormSubmission({
+      form_type: 'finance',
+      ...data,
+    });
+
+    // Track finance-specific metrics
+    if (data.loan_amount) {
+      gtag('event', 'finance_application', {
+        event_category: 'finance',
+        loan_amount: data.loan_amount,
+        deposit_amount: data.deposit_amount,
+        loan_term_months: data.loan_term_months,
+        vehicle_price: data.vehicle?.price,
+      });
+    }
+
+    // Facebook Pixel - Finance enquiry
+    fbPixel.trackFinanceEnquiry({
+      loanAmount: data.loan_amount,
+      vehiclePrice: data.vehicle?.price,
+      vehicleName: data.vehicle ? `${data.vehicle.make || ''} ${data.vehicle.model || ''}`.trim() : undefined,
+    });
+  };
+
+  /**
+   * Track fleet enquiry
+   */
+  const trackFleetEnquiry = (data: Omit<FleetFormData, 'form_type'>) => {
+    trackFormSubmission({
+      form_type: 'fleet',
+      ...data,
+    });
+
+    // B2B specific tracking
+    gtag('event', 'b2b_lead', {
+      event_category: 'fleet',
+      company_name: data.company_name ? 'provided' : 'not_provided', // Don't send actual company name
+      fleet_size: data.fleet_size,
+      vehicles_interested_count: data.vehicles_interested?.length || 0,
+    });
+
+    // Facebook Pixel - Fleet enquiry (B2B high value)
+    fbPixel.trackFleetEnquiry({
+      companyName: data.company_name,
+      fleetSize: data.fleet_size,
+      vehiclesCount: data.vehicles_interested?.length,
+    });
+  };
+
+  /**
+   * Track accessories quote request
+   */
+  const trackAccessoriesEnquiry = (data: Omit<AccessoriesFormData, 'form_type'>) => {
+    const formData: AccessoriesFormData = {
+      form_type: 'accessories',
+      ...data,
+    };
+
+    trackFormSubmission(formData);
+
+    // Track as ecommerce event
+    gtag('event', 'view_cart', {
+      currency: 'AUD',
+      value: data.total_value,
+      items_count: data.items_count,
+    });
+
+    // Facebook Pixel - Accessories enquiry
+    fbPixel.trackAccessoriesEnquiry({
+      totalValue: data.total_value,
+      itemsCount: data.items_count,
+      vehicleModel: data.vehicle_model,
+    });
+  };
+
+  /**
+   * Track sell my car form
+   */
+  const trackSellMyCar = (data: Omit<SellMyCarData, 'form_type'>) => {
+    trackFormSubmission({
+      form_type: 'sell_my_car',
+      ...data,
+    });
+
+    // Track trade-in lead separately
+    gtag('event', 'trade_in_lead', {
+      event_category: 'sell_my_car',
+      vehicle_make: data.vehicle_make,
+      vehicle_model: data.vehicle_model,
+      vehicle_year: data.vehicle_year,
+      has_photos: data.has_photos,
+      photos_count: data.photos_count,
+      condition: data.condition,
+    });
+
+    // Facebook Pixel - Sell my car
+    fbPixel.trackSellMyCar({
+      vehicleMake: data.vehicle_make,
+      vehicleModel: data.vehicle_model,
+      vehicleYear: data.vehicle_year,
+    });
+  };
+
+  /**
+   * Track form abandonment (call when user leaves form without submitting)
+   */
+  const trackFormAbandonment = (formType: FormType, fieldsCompleted: number, totalFields: number) => {
+    gtag('event', 'form_abandonment', {
+      event_category: 'forms',
+      form_type: formType,
+      fields_completed: fieldsCompleted,
+      total_fields: totalFields,
+      completion_percentage: Math.round((fieldsCompleted / totalFields) * 100),
+    });
+
+    pushToDataLayer('formAbandonment', {
+      formType,
+      fieldsCompleted,
+      totalFields,
+      completionPercentage: Math.round((fieldsCompleted / totalFields) * 100),
+    });
+  };
+
+  /**
+   * Track form field interaction (for funnel analysis)
+   */
+  const trackFormFieldInteraction = (formType: FormType, fieldName: string, action: 'focus' | 'blur' | 'change') => {
+    gtag('event', 'form_field_interaction', {
+      event_category: 'forms',
+      form_type: formType,
+      field_name: fieldName,
+      action,
+    });
+  };
+
+  /**
+   * Track form validation error
+   */
+  const trackFormError = (formType: FormType, fieldName: string, errorType: string) => {
+    gtag('event', 'form_error', {
+      event_category: 'forms',
+      form_type: formType,
+      field_name: fieldName,
+      error_type: errorType,
+    });
+  };
+
   return {
+    // Existing functions
     trackEnquiryModalOpen,
     trackEnquirySubmit,
     trackVehicleView,
     trackVehicleSearch,
     trackPhoneClick,
     trackShare,
+    // New comprehensive form tracking
+    trackFormSubmission,
+    trackVehicleEnquiry,
+    trackTestDriveBooking,
+    trackContactForm,
+    trackServiceBooking,
+    trackPartsEnquiry,
+    trackFinanceEnquiry,
+    trackFleetEnquiry,
+    trackAccessoriesEnquiry,
+    trackSellMyCar,
+    trackFormAbandonment,
+    trackFormFieldInteraction,
+    trackFormError,
+    // Utility
+    pushToDataLayer,
   };
 };
+
+
+
+
 
 

@@ -1,6 +1,6 @@
 import { db } from '../../../utils/db';
-import { enquiries, users, dealers } from '../../../database/schema';
-import { eq, and, gte, lte, sql, desc, isNull, isNotNull, count } from 'drizzle-orm';
+import { enquiries, users, dealers, customerRetentionProfiles, customerTasks, customers } from '../../../database/schema';
+import { eq, and, gte, lte, sql, desc, isNull, isNotNull, count, or } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -308,6 +308,77 @@ export default defineEventHandler(async (event) => {
     .limit(5);
 
   // ============================================================================
+  // MARKETING CHANNEL PERFORMANCE (Enhanced UTM Analytics)
+  // ============================================================================
+
+  const marketingPerformance = await db
+    .select({
+      source: sql<string>`coalesce(${enquiries.utmSource}, 'direct')`,
+      medium: sql<string>`coalesce(${enquiries.utmMedium}, 'none')`,
+      total: sql<number>`count(*)`,
+      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
+      conversionRate: sql<number>`round(count(*) filter (where ${enquiries.status} = 'closed')::numeric / nullif(count(*), 0) * 100, 1)`,
+      avgResponseHours: sql<number>`extract(epoch from avg(case when ${enquiries.contactedAt} is not null then ${enquiries.contactedAt} - ${enquiries.createdAt} end)) / 3600`,
+      withTestDrive: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
+      withFinance: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
+    })
+    .from(enquiries)
+    .where(and(
+      eq(enquiries.dealerId, dealerId),
+      gte(enquiries.createdAt, monthStart)
+    ))
+    .groupBy(sql`1, 2`)
+    .orderBy(desc(sql`count(*)`))
+    .limit(10);
+
+  // Top performing campaigns
+  const topCampaigns = await db
+    .select({
+      campaign: sql<string>`coalesce(${enquiries.utmCampaign}, 'none')`,
+      source: sql<string>`coalesce(${enquiries.utmSource}, 'direct')`,
+      medium: sql<string>`coalesce(${enquiries.utmMedium}, 'none')`,
+      total: sql<number>`count(*)`,
+      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
+      conversionRate: sql<number>`round(count(*) filter (where ${enquiries.status} = 'closed')::numeric / nullif(count(*), 0) * 100, 1)`,
+      withTestDrive: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
+      withFinance: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
+    })
+    .from(enquiries)
+    .where(and(
+      eq(enquiries.dealerId, dealerId),
+      gte(enquiries.createdAt, monthStart),
+      isNotNull(enquiries.utmCampaign)
+    ))
+    .groupBy(sql`1, 2, 3`)
+    .orderBy(desc(sql`count(*)`))
+    .limit(5);
+
+  // Channel summary (grouped by channel type)
+  const [channelSummary] = await db
+    .select({
+      // Organic (google organic, bing organic, etc.)
+      organicTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'organic')`,
+      organicConverted: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'organic' and ${enquiries.status} = 'closed')`,
+      // Paid (cpc, ppc, paid, etc.)
+      paidTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display'))`,
+      paidConverted: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display') and ${enquiries.status} = 'closed')`,
+      // Direct (no UTM or direct)
+      directTotal: sql<number>`count(*) filter (where ${enquiries.utmSource} is null or ${enquiries.utmSource} = 'direct')`,
+      directConverted: sql<number>`count(*) filter (where (${enquiries.utmSource} is null or ${enquiries.utmSource} = 'direct') and ${enquiries.status} = 'closed')`,
+      // Referral (referral medium or social sources)
+      referralTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('referral', 'social') or ${enquiries.utmSource} in ('facebook', 'instagram', 'linkedin', 'twitter'))`,
+      referralConverted: sql<number>`count(*) filter (where (${enquiries.utmMedium} in ('referral', 'social') or ${enquiries.utmSource} in ('facebook', 'instagram', 'linkedin', 'twitter')) and ${enquiries.status} = 'closed')`,
+      // Email
+      emailTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'email' or ${enquiries.utmSource} = 'email')`,
+      emailConverted: sql<number>`count(*) filter (where (${enquiries.utmMedium} = 'email' or ${enquiries.utmSource} = 'email') and ${enquiries.status} = 'closed')`,
+    })
+    .from(enquiries)
+    .where(and(
+      eq(enquiries.dealerId, dealerId),
+      gte(enquiries.createdAt, monthStart)
+    ));
+
+  // ============================================================================
   // PRIORITY BREAKDOWN
   // ============================================================================
 
@@ -554,6 +625,199 @@ export default defineEventHandler(async (event) => {
     .orderBy(desc(enquiries.createdAt))
     .limit(5);
 
+  // ============================================================================
+  // CUSTOMER RETENTION STATS
+  // ============================================================================
+
+  // Total customers count
+  const [customerStats] = await db
+    .select({
+      total: sql<number>`count(*)`,
+      active: sql<number>`count(*) filter (where ${customers.isActive} = true)`,
+      newThisMonth: sql<number>`count(*) filter (where ${customers.createdAt} >= ${monthStart})`,
+    })
+    .from(customers)
+    .where(eq(customers.dealerId, dealerId));
+
+  // At-risk customers (risk level = high or critical)
+  const [atRiskStats] = await db
+    .select({
+      atRisk: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} in ('high', 'critical'))`,
+      critical: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} = 'critical')`,
+    })
+    .from(customerRetentionProfiles)
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true)
+    ));
+
+  // Due follow-ups (tasks due today or overdue)
+  const [taskStats] = await db
+    .select({
+      overdue: sql<number>`count(*) filter (where ${customerTasks.dueDate} < ${todayStart} and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      dueToday: sql<number>`count(*) filter (where ${customerTasks.dueDate} >= ${todayStart} and ${customerTasks.dueDate} < ${new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)} and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      pending: sql<number>`count(*) filter (where ${customerTasks.status} = 'pending')`,
+    })
+    .from(customerTasks)
+    .where(eq(customerTasks.dealerId, dealerId));
+
+  // Lifecycle stage distribution
+  const lifecycleDistribution = await db
+    .select({
+      stage: customerRetentionProfiles.lifecycleStage,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerRetentionProfiles)
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true)
+    ))
+    .groupBy(customerRetentionProfiles.lifecycleStage);
+
+  // Customers needing attention (no contact in 30+ days)
+  const thirtyDaysAgo = new Date(todayStart);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const [noContactStats] = await db
+    .select({
+      count: sql<number>`count(*)`,
+    })
+    .from(customerRetentionProfiles)
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true),
+      or(
+        lte(customerRetentionProfiles.lastContactDate, thirtyDaysAgo),
+        isNull(customerRetentionProfiles.lastContactDate)
+      )
+    ));
+
+  // ============================================================================
+  // ENHANCED RETENTION ANALYTICS
+  // ============================================================================
+
+  // At-risk segmentation with reasons
+  const sixtyDaysAgo = new Date(todayStart);
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const ninetyDaysAgo = new Date(todayStart);
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  const [riskSegmentation] = await db
+    .select({
+      // Contact gap segments
+      noContact90Plus: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} < ${ninetyDaysAgo} or ${customerRetentionProfiles.lastContactDate} is null)`,
+      noContact60to90: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} >= ${ninetyDaysAgo} and ${customerRetentionProfiles.lastContactDate} < ${sixtyDaysAgo})`,
+      noContact30to60: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} >= ${sixtyDaysAgo} and ${customerRetentionProfiles.lastContactDate} < ${thirtyDaysAgo})`,
+      // Risk level breakdown
+      lowRisk: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} = 'low')`,
+      mediumRisk: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} = 'medium')`,
+      highRisk: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} = 'high')`,
+      criticalRisk: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} = 'critical')`,
+      // Engagement score brackets
+      highEngagement: sql<number>`count(*) filter (where cast(${customerRetentionProfiles.engagementScore} as integer) >= 70)`,
+      mediumEngagement: sql<number>`count(*) filter (where cast(${customerRetentionProfiles.engagementScore} as integer) >= 40 and cast(${customerRetentionProfiles.engagementScore} as integer) < 70)`,
+      lowEngagement: sql<number>`count(*) filter (where cast(${customerRetentionProfiles.engagementScore} as integer) < 40)`,
+      // Average scores
+      avgEngagementScore: sql<number>`avg(cast(${customerRetentionProfiles.engagementScore} as integer))`,
+      avgRiskScore: sql<number>`avg(cast(${customerRetentionProfiles.riskScore} as integer))`,
+    })
+    .from(customerRetentionProfiles)
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true)
+    ));
+
+  // Task breakdown by type
+  const taskTypeBreakdown = await db
+    .select({
+      taskType: customerTasks.taskType,
+      total: sql<number>`count(*)`,
+      pending: sql<number>`count(*) filter (where ${customerTasks.status} = 'pending')`,
+      inProgress: sql<number>`count(*) filter (where ${customerTasks.status} = 'in_progress')`,
+      completed: sql<number>`count(*) filter (where ${customerTasks.status} = 'completed')`,
+      overdue: sql<number>`count(*) filter (where ${customerTasks.dueDate} < ${todayStart} and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+    })
+    .from(customerTasks)
+    .where(eq(customerTasks.dealerId, dealerId))
+    .groupBy(customerTasks.taskType);
+
+  // Task priority breakdown
+  const [taskPriorityStats] = await db
+    .select({
+      urgent: sql<number>`count(*) filter (where ${customerTasks.priority} = 'urgent' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      high: sql<number>`count(*) filter (where ${customerTasks.priority} = 'high' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      medium: sql<number>`count(*) filter (where ${customerTasks.priority} = 'medium' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      low: sql<number>`count(*) filter (where ${customerTasks.priority} = 'low' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+    })
+    .from(customerTasks)
+    .where(eq(customerTasks.dealerId, dealerId));
+
+  // Retention strategy distribution
+  const retentionStrategyStats = await db
+    .select({
+      strategy: customerRetentionProfiles.retentionStrategy,
+      count: sql<number>`count(*)`,
+    })
+    .from(customerRetentionProfiles)
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true),
+      isNotNull(customerRetentionProfiles.retentionStrategy)
+    ))
+    .groupBy(customerRetentionProfiles.retentionStrategy);
+
+  // Vehicle interests aggregation
+  const vehicleInterestStats = await db
+    .select({
+      interests: customerRetentionProfiles.vehicleInterests,
+    })
+    .from(customerRetentionProfiles)
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true),
+      isNotNull(customerRetentionProfiles.vehicleInterests)
+    ));
+
+  // Aggregate vehicle interests
+  const vehicleInterestCounts: Record<string, number> = {};
+  for (const row of vehicleInterestStats) {
+    if (Array.isArray(row.interests)) {
+      for (const interest of row.interests as string[]) {
+        vehicleInterestCounts[interest] = (vehicleInterestCounts[interest] || 0) + 1;
+      }
+    }
+  }
+  const topVehicleInterests = Object.entries(vehicleInterestCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([model, count]) => ({ model, count }));
+
+  // Recent high-priority at-risk customers (for quick action list)
+  const atRiskCustomersList = await db
+    .select({
+      customerId: customerRetentionProfiles.customerId,
+      riskLevel: customerRetentionProfiles.riskLevel,
+      riskScore: customerRetentionProfiles.riskScore,
+      lastContactDate: customerRetentionProfiles.lastContactDate,
+      lifecycleStage: customerRetentionProfiles.lifecycleStage,
+      firstName: customers.firstName,
+      lastName: customers.lastName,
+      email: customers.email,
+      phone: customers.phone,
+    })
+    .from(customerRetentionProfiles)
+    .innerJoin(customers, eq(customerRetentionProfiles.customerId, customers.id))
+    .where(and(
+      eq(customerRetentionProfiles.dealerId, dealerId),
+      eq(customerRetentionProfiles.isActive, true),
+      sql`${customerRetentionProfiles.riskLevel} in ('high', 'critical')`
+    ))
+    .orderBy(
+      sql`case ${customerRetentionProfiles.riskLevel} when 'critical' then 1 when 'high' then 2 else 3 end`,
+      desc(sql`cast(${customerRetentionProfiles.riskScore} as integer)`)
+    )
+    .limit(5);
+
   // Wait for catalog data
   const [catalogData, offersData] = await Promise.all([catalogPromise, offersPromise]);
 
@@ -659,6 +923,67 @@ export default defineEventHandler(async (event) => {
       source: s.source,
       count: Number(s.count),
     })),
+    // ========== MARKETING PERFORMANCE ==========
+    marketingPerformance: {
+      channels: marketingPerformance.map(m => ({
+        source: m.source,
+        medium: m.medium,
+        total: Number(m.total),
+        converted: Number(m.converted),
+        conversionRate: Number(m.conversionRate) || 0,
+        avgResponseHours: m.avgResponseHours ? Math.round(Number(m.avgResponseHours) * 10) / 10 : null,
+        withTestDrive: Number(m.withTestDrive),
+        withFinance: Number(m.withFinance),
+        qualityScore: Math.round(((Number(m.withTestDrive) + Number(m.withFinance)) / Math.max(Number(m.total), 1)) * 100),
+      })),
+      topCampaigns: topCampaigns.map(c => ({
+        campaign: c.campaign,
+        source: c.source,
+        medium: c.medium,
+        total: Number(c.total),
+        converted: Number(c.converted),
+        conversionRate: Number(c.conversionRate) || 0,
+        withTestDrive: Number(c.withTestDrive),
+        withFinance: Number(c.withFinance),
+      })),
+      channelSummary: {
+        organic: {
+          total: Number(channelSummary?.organicTotal || 0),
+          converted: Number(channelSummary?.organicConverted || 0),
+          rate: channelSummary?.organicTotal > 0
+            ? Math.round((Number(channelSummary.organicConverted) / Number(channelSummary.organicTotal)) * 100)
+            : 0,
+        },
+        paid: {
+          total: Number(channelSummary?.paidTotal || 0),
+          converted: Number(channelSummary?.paidConverted || 0),
+          rate: channelSummary?.paidTotal > 0
+            ? Math.round((Number(channelSummary.paidConverted) / Number(channelSummary.paidTotal)) * 100)
+            : 0,
+        },
+        direct: {
+          total: Number(channelSummary?.directTotal || 0),
+          converted: Number(channelSummary?.directConverted || 0),
+          rate: channelSummary?.directTotal > 0
+            ? Math.round((Number(channelSummary.directConverted) / Number(channelSummary.directTotal)) * 100)
+            : 0,
+        },
+        referral: {
+          total: Number(channelSummary?.referralTotal || 0),
+          converted: Number(channelSummary?.referralConverted || 0),
+          rate: channelSummary?.referralTotal > 0
+            ? Math.round((Number(channelSummary.referralConverted) / Number(channelSummary.referralTotal)) * 100)
+            : 0,
+        },
+        email: {
+          total: Number(channelSummary?.emailTotal || 0),
+          converted: Number(channelSummary?.emailConverted || 0),
+          rate: channelSummary?.emailTotal > 0
+            ? Math.round((Number(channelSummary.emailConverted) / Number(channelSummary.emailTotal)) * 100)
+            : 0,
+        },
+      },
+    },
     priorities: priorityBreakdown.map(p => ({
       priority: p.priority,
       count: Number(p.count),
@@ -797,6 +1122,81 @@ export default defineEventHandler(async (event) => {
         createdAt: td.createdAt,
         vehicle: td.vehicleInfo ? (td.vehicleInfo as any).model || (td.vehicleInfo as any).make : null,
         variant: td.vehicleInfo ? (td.vehicleInfo as any).variant : null,
+      })),
+    },
+    // ========== CUSTOMER RETENTION ==========
+    customerRetention: {
+      totalCustomers: Number(customerStats?.total || 0),
+      activeCustomers: Number(customerStats?.active || 0),
+      newThisMonth: Number(customerStats?.newThisMonth || 0),
+      atRisk: Number(atRiskStats?.atRisk || 0),
+      critical: Number(atRiskStats?.critical || 0),
+      overdueTasks: Number(taskStats?.overdue || 0),
+      tasksDueToday: Number(taskStats?.dueToday || 0),
+      pendingTasks: Number(taskStats?.pending || 0),
+      noContactIn30Days: Number(noContactStats?.count || 0),
+      lifecycleDistribution: lifecycleDistribution.map(l => ({
+        stage: l.stage,
+        count: Number(l.count),
+      })),
+      // Enhanced analytics
+      riskSegmentation: {
+        byContactGap: {
+          noContact90Plus: Number(riskSegmentation?.noContact90Plus || 0),
+          noContact60to90: Number(riskSegmentation?.noContact60to90 || 0),
+          noContact30to60: Number(riskSegmentation?.noContact30to60 || 0),
+        },
+        byRiskLevel: {
+          low: Number(riskSegmentation?.lowRisk || 0),
+          medium: Number(riskSegmentation?.mediumRisk || 0),
+          high: Number(riskSegmentation?.highRisk || 0),
+          critical: Number(riskSegmentation?.criticalRisk || 0),
+        },
+        byEngagement: {
+          high: Number(riskSegmentation?.highEngagement || 0),
+          medium: Number(riskSegmentation?.mediumEngagement || 0),
+          low: Number(riskSegmentation?.lowEngagement || 0),
+        },
+        averages: {
+          engagementScore: Math.round(Number(riskSegmentation?.avgEngagementScore || 0)),
+          riskScore: Math.round(Number(riskSegmentation?.avgRiskScore || 0)),
+        },
+      },
+      taskBreakdown: {
+        byType: taskTypeBreakdown.map(t => ({
+          type: t.taskType,
+          label: getTaskTypeLabel(t.taskType),
+          total: Number(t.total),
+          pending: Number(t.pending),
+          inProgress: Number(t.inProgress),
+          completed: Number(t.completed),
+          overdue: Number(t.overdue),
+        })),
+        byPriority: {
+          urgent: Number(taskPriorityStats?.urgent || 0),
+          high: Number(taskPriorityStats?.high || 0),
+          medium: Number(taskPriorityStats?.medium || 0),
+          low: Number(taskPriorityStats?.low || 0),
+        },
+      },
+      retentionStrategies: retentionStrategyStats.map(s => ({
+        strategy: s.strategy,
+        label: getRetentionStrategyLabel(s.strategy),
+        count: Number(s.count),
+      })),
+      topVehicleInterests,
+      atRiskCustomers: atRiskCustomersList.map(c => ({
+        id: c.customerId,
+        name: `${c.firstName} ${c.lastName}`,
+        email: c.email,
+        phone: c.phone,
+        riskLevel: c.riskLevel,
+        riskScore: Number(c.riskScore || 0),
+        lastContactDate: c.lastContactDate,
+        lifecycleStage: c.lifecycleStage,
+        daysSinceContact: c.lastContactDate
+          ? Math.floor((now.getTime() - new Date(c.lastContactDate).getTime()) / (1000 * 60 * 60 * 24))
+          : null,
       })),
     },
   };
@@ -1026,4 +1426,39 @@ function calculateWorkloadLevel(openEnquiries: number): 'low' | 'moderate' | 'hi
   if (openEnquiries <= 10) return 'moderate';
   if (openEnquiries <= 15) return 'high';
   return 'overloaded';
+}
+
+// ============================================================================
+// TASK TYPE LABELS
+// ============================================================================
+
+function getTaskTypeLabel(type: string | null): string {
+  const labels: Record<string, string> = {
+    follow_up: 'Follow-up',
+    call: 'Phone Call',
+    email: 'Email',
+    sms: 'SMS',
+    meeting: 'Meeting',
+    service_reminder: 'Service Reminder',
+    trade_in_offer: 'Trade-in Offer',
+    other: 'Other',
+  };
+  return labels[type || 'other'] || type || 'Other';
+}
+
+// ============================================================================
+// RETENTION STRATEGY LABELS
+// ============================================================================
+
+function getRetentionStrategyLabel(strategy: string | null): string {
+  const labels: Record<string, string> = {
+    loyalty: 'Loyalty Program',
+    win_back: 'Win-back Campaign',
+    service_reminder: 'Service Reminder',
+    trade_in: 'Trade-in Offer',
+    referral: 'Referral Program',
+    vip: 'VIP Treatment',
+    standard: 'Standard Follow-up',
+  };
+  return labels[strategy || 'standard'] || strategy || 'Standard';
 }

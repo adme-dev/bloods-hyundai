@@ -1,0 +1,1 @@
+ALTER TABLE "dealers" ADD COLUMN "email_header_bg_color" varchar(7);

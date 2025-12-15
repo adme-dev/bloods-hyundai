@@ -520,6 +520,8 @@ import { Stepper, StepperItem, StepperSeparator, StepperTitle, StepperDescriptio
 
 // Runtime config
 const config = useRuntimeConfig()
+const { trackServiceBooking } = useAnalytics()
+const { getUtmParams } = useUtmParams()
 
 // Site name from runtime config or fallback
 const siteName = computed(() => config.public.siteName || 'Sale Hyundai')
@@ -702,24 +704,24 @@ const handleStepSubmit = async () => {
           vin: form.vehicleVin || undefined,
         },
         source: 'service-booking-form',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       },
     })
-    
+
     submitted.value = true
-    
-    // Track in GTM
-    if (process.client && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'service',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        phone: form.phone,
-      })
-    }
+
+    // Track conversion with enhanced analytics
+    trackServiceBooking({
+      form_location: 'service_booking_page',
+      enquiry_id: response.enquiry.id,
+      service_type: serviceTypes.join(', ') || 'General Service',
+      vehicle_make: form.vehicleMake,
+      vehicle_model: form.vehicleModel,
+      vehicle_year: form.vehicleYear,
+      preferred_date: form.dropOffDate,
+      preferred_time: form.dropOffTime,
+    })
   } catch (error: any) {
     console.error('Form submission error:', error)
     submitError.value = error?.data?.message || 'Something went wrong. Please try again.'
@@ -735,4 +737,6 @@ declare global {
   }
 }
 </script>
+
+
 

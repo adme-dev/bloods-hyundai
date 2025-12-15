@@ -57,6 +57,13 @@ export default defineNuxtConfig({
     stripeSecretKey: process.env.NUXT_STRIPE_SECRET_KEY || '',
     sendgridApiKey: process.env.SENDGRID_API_KEY || '',
 
+    // Cloudflare R2 Storage
+    cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
+    r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+    r2BucketName: process.env.R2_BUCKET_NAME || 'dealer-assets',
+    r2PublicUrl: process.env.R2_PUBLIC_URL || '',
+
     // Public (exposed to client)
     public: {
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Sale Hyundai',
@@ -66,6 +73,10 @@ export default defineNuxtConfig({
       oemCdnUrl: process.env.NUXT_PUBLIC_OEM_CDN_URL || '',
       oemRawCdnUrl: process.env.NUXT_PUBLIC_OEM_RAW_CDN_URL || 'https://hyundaioem.b-cdn.net/raw',
       stripePublishableKey: process.env.NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+      // Dealer API key for CRM integration and R2 uploads
+      dealerApiKey: process.env.NUXT_PUBLIC_DEALER_API_KEY || '',
+      // Facebook Pixel ID for conversion tracking
+      facebookPixelId: process.env.NUXT_PUBLIC_FACEBOOK_PIXEL_ID || '',
     },
   },
 
@@ -200,6 +211,8 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-12-05',
 });
+
+
 
 
 

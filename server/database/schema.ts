@@ -36,8 +36,27 @@ export const dealers = pgTable('dealers', {
   // Branding
   logoUrl: varchar('logo_url', { length: 500 }),
   primaryColor: varchar('primary_color', { length: 7 }),
+  emailHeaderBgColor: varchar('email_header_bg_color', { length: 7 }), // Email header background (e.g., #FFFFFF for white)
   websiteUrl: varchar('website_url', { length: 255 }),
-  
+
+  // Social Media
+  facebookUrl: varchar('facebook_url', { length: 255 }),
+  instagramUrl: varchar('instagram_url', { length: 255 }),
+  linkedinUrl: varchar('linkedin_url', { length: 255 }),
+  youtubeUrl: varchar('youtube_url', { length: 255 }),
+  twitterUrl: varchar('twitter_url', { length: 255 }),
+
+  // Trading Hours (for email footer)
+  tradingHours: jsonb('trading_hours').$type<{
+    monday?: string;
+    tuesday?: string;
+    wednesday?: string;
+    thursday?: string;
+    friday?: string;
+    saturday?: string;
+    sunday?: string;
+  }>(),
+
   // Configuration
   settings: jsonb('settings').default({}).notNull(),
   routingRules: jsonb('routing_rules').default([]).notNull(),
@@ -105,6 +124,9 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   lastLogin: timestamp('last_login', { withTimezone: true }),
+
+  // Notification tracking
+  lastSeenNotificationsAt: timestamp('last_seen_notifications_at', { withTimezone: true }),
 }, (table) => ({
   dealerIdx: index('idx_users_dealer').on(table.dealerId),
   emailIdx: index('idx_users_email').on(table.email),
@@ -157,9 +179,15 @@ export const enquiries = pgTable('enquiries', {
   accessoriesCart: jsonb('accessories_cart'),
   
   // Status & Workflow
-  status: varchar('status', { length: 30 }).default('new').notNull(),
+  // Valid statuses: new_lead, qualified, attempted_contact, appointment_set, showed,
+  // test_drive, negotiating, pending_finance, pending_trade, deposit_taken, sold, lost, dead
+  status: varchar('status', { length: 30 }).default('new_lead').notNull(),
   priority: varchar('priority', { length: 20 }).default('normal').notNull(),
   assignedTo: uuid('assigned_to').references(() => users.id),
+
+  // Lost deal tracking
+  lostReason: varchar('lost_reason', { length: 50 }),
+  lostNotes: text('lost_notes'),
   
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -744,5 +772,347 @@ export type NewServiceSlot = typeof serviceSlots.$inferInsert;
 
 export type ServiceBlockedDate = typeof serviceBlockedDates.$inferSelect;
 export type NewServiceBlockedDate = typeof serviceBlockedDates.$inferInsert;
+
+// ============================================================================
+// CUSTOMER RETENTION PROFILES (CRM/Retention tracking)
+// ============================================================================
+
+export const customerRetentionProfiles = pgTable('customer_retention_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  customerId: uuid('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+
+  // Lifecycle Stage
+  lifecycleStage: varchar('lifecycle_stage', { length: 30 }).default('prospect').notNull(),
+  // prospect, lead, test_drive, negotiating, purchased, service_customer, at_risk, inactive, lost
+
+  // Engagement & Risk Scoring
+  riskScore: varchar('risk_score', { length: 5 }).default('0'), // 0-100
+  riskLevel: varchar('risk_level', { length: 20 }).default('low'), // low, medium, high, critical
+  engagementScore: varchar('engagement_score', { length: 5 }).default('50'), // 0-100
+  lastEngagementDate: timestamp('last_engagement_date', { withTimezone: true }),
+  lastContactDate: timestamp('last_contact_date', { withTimezone: true }),
+  daysSinceContact: varchar('days_since_contact', { length: 10 }),
+
+  // Value Metrics
+  estimatedLifetimeValue: varchar('estimated_lifetime_value', { length: 20 }),
+  totalPurchaseValue: varchar('total_purchase_value', { length: 20 }),
+  totalServiceValue: varchar('total_service_value', { length: 20 }),
+
+  // Vehicle Interest (for prospects/leads)
+  vehicleInterests: jsonb('vehicle_interests').default([]),
+  // [{ model: 'Tucson', trim: 'Highlander', color: 'White', addedAt: timestamp }]
+  estimatedBudget: varchar('estimated_budget', { length: 20 }),
+  purchaseTimeline: varchar('purchase_timeline', { length: 30 }),
+  // immediate, within_30_days, within_90_days, within_6_months, exploring
+  financePreference: varchar('finance_preference', { length: 20 }),
+  // cash, finance, lease, undecided
+
+  // Communication Preferences
+  preferredContactMethod: varchar('preferred_contact_method', { length: 20 }).default('email'),
+  // email, phone, sms
+  doNotCall: boolean('do_not_call').default(false),
+  doNotEmail: boolean('do_not_email').default(false),
+  doNotSms: boolean('do_not_sms').default(false),
+  marketingConsent: boolean('marketing_consent').default(true),
+  consentObtainedDate: timestamp('consent_obtained_date', { withTimezone: true }),
+
+  // Retention Actions
+  lastRetentionAction: varchar('last_retention_action', { length: 100 }),
+  lastRetentionActionDate: timestamp('last_retention_action_date', { withTimezone: true }),
+  retentionStrategy: varchar('retention_strategy', { length: 50 }),
+  // loyalty, win_back, service_reminder, trade_in, referral
+
+  // Tags for segmentation
+  tags: jsonb('tags').default([]),
+  // ['vip', 'fleet', 'repeat-buyer', 'service-only']
+
+  // Notes
+  notes: text('notes'),
+
+  // Status
+  isActive: boolean('is_active').default(true).notNull(),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_retention_profiles_dealer').on(table.dealerId),
+  customerIdx: uniqueIndex('idx_retention_profiles_customer').on(table.customerId),
+  riskLevelIdx: index('idx_retention_profiles_risk_level').on(table.riskLevel),
+  lifecycleIdx: index('idx_retention_profiles_lifecycle').on(table.lifecycleStage),
+}));
+
+// ============================================================================
+// CUSTOMER TASKS (Follow-ups, reminders, to-dos)
+// ============================================================================
+
+export const customerTasks = pgTable('customer_tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Linked records (at least one should be set)
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
+  enquiryId: uuid('enquiry_id').references(() => enquiries.id, { onDelete: 'cascade' }),
+
+  // Task details
+  title: varchar('title', { length: 200 }).notNull(),
+  description: text('description'),
+  taskType: varchar('task_type', { length: 50 }).default('follow_up').notNull(),
+  // follow_up, call, email, sms, meeting, service_reminder, trade_in_offer, other
+  priority: varchar('priority', { length: 20 }).default('normal').notNull(),
+  // low, normal, high, urgent
+
+  // Scheduling
+  dueDate: timestamp('due_date', { withTimezone: true }).notNull(),
+  dueTime: varchar('due_time', { length: 10 }), // HH:MM format
+  reminderDate: timestamp('reminder_date', { withTimezone: true }),
+
+  // Assignment
+  assignedTo: uuid('assigned_to').references(() => users.id),
+  createdBy: uuid('created_by').references(() => users.id),
+
+  // Status
+  status: varchar('status', { length: 20 }).default('pending').notNull(),
+  // pending, in_progress, completed, cancelled, overdue
+
+  // Completion
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  completedBy: uuid('completed_by').references(() => users.id),
+  completionNotes: text('completion_notes'),
+
+  // Outcome tracking (for follow-ups)
+  outcome: varchar('outcome', { length: 50 }),
+  // contacted, left_voicemail, no_answer, not_interested, scheduled_appointment, sale_made
+
+  // Recurrence (for automated tasks)
+  isRecurring: boolean('is_recurring').default(false),
+  recurrencePattern: varchar('recurrence_pattern', { length: 50 }),
+  // daily, weekly, monthly, quarterly, annually
+  nextRecurrenceDate: timestamp('next_recurrence_date', { withTimezone: true }),
+
+  // Automation source
+  isAutoGenerated: boolean('is_auto_generated').default(false),
+  automationRule: varchar('automation_rule', { length: 100 }),
+  // service_reminder_60d, no_contact_30d, post_purchase_7d, birthday
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_customer_tasks_dealer').on(table.dealerId),
+  customerIdx: index('idx_customer_tasks_customer').on(table.customerId),
+  enquiryIdx: index('idx_customer_tasks_enquiry').on(table.enquiryId),
+  assignedIdx: index('idx_customer_tasks_assigned').on(table.assignedTo),
+  dueDateIdx: index('idx_customer_tasks_due_date').on(table.dueDate),
+  statusIdx: index('idx_customer_tasks_status').on(table.status),
+  dealerStatusDueIdx: index('idx_customer_tasks_dealer_status_due').on(table.dealerId, table.status, table.dueDate),
+}));
+
+// ============================================================================
+// CUSTOMER ACTIVITIES (Unified activity/communication log)
+// ============================================================================
+
+export const customerActivities = pgTable('customer_activities', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Linked records
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
+  enquiryId: uuid('enquiry_id').references(() => enquiries.id, { onDelete: 'cascade' }),
+  taskId: uuid('task_id').references(() => customerTasks.id, { onDelete: 'set null' }),
+
+  // Activity details
+  activityType: varchar('activity_type', { length: 50 }).notNull(),
+  // email_sent, email_received, call_outbound, call_inbound, sms_sent, sms_received,
+  // meeting, note, status_change, task_completed, form_submission, service_completed,
+  // purchase, vehicle_added, document_uploaded
+  activityDate: timestamp('activity_date', { withTimezone: true }).defaultNow().notNull(),
+
+  // Content
+  subject: varchar('subject', { length: 255 }),
+  description: text('description'),
+  notes: text('notes'),
+
+  // For calls
+  callDuration: varchar('call_duration', { length: 20 }), // in minutes or HH:MM:SS
+  callOutcome: varchar('call_outcome', { length: 50 }),
+  // connected, voicemail, no_answer, busy, wrong_number
+
+  // For emails (link to email log)
+  emailLogId: uuid('email_log_id').references(() => emailLogs.id),
+
+  // For status changes
+  oldValue: jsonb('old_value'),
+  newValue: jsonb('new_value'),
+
+  // Attribution
+  createdBy: uuid('created_by').references(() => users.id),
+  isSystemGenerated: boolean('is_system_generated').default(false),
+
+  // Metadata
+  metadata: jsonb('metadata').default({}),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_customer_activities_dealer').on(table.dealerId),
+  customerIdx: index('idx_customer_activities_customer').on(table.customerId),
+  enquiryIdx: index('idx_customer_activities_enquiry').on(table.enquiryId),
+  activityDateIdx: index('idx_customer_activities_date').on(table.activityDate),
+  activityTypeIdx: index('idx_customer_activities_type').on(table.activityType),
+  dealerCustomerDateIdx: index('idx_customer_activities_dealer_customer_date').on(table.dealerId, table.customerId, table.activityDate),
+}));
+
+// ============================================================================
+// RETENTION CAMPAIGNS (For bulk outreach)
+// ============================================================================
+
+export const retentionCampaigns = pgTable('retention_campaigns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  // Campaign details
+  name: varchar('name', { length: 200 }).notNull(),
+  description: text('description'),
+  campaignType: varchar('campaign_type', { length: 50 }).notNull(),
+  // email, sms, multi_channel, service_reminder, trade_in, loyalty, win_back
+
+  // Targeting
+  targetSegment: jsonb('target_segment').default({}),
+  // { lifecycleStage: ['at_risk'], riskLevel: ['high'], daysSinceContact: { min: 30 } }
+  targetCount: varchar('target_count', { length: 10 }),
+
+  // Content
+  subject: varchar('subject', { length: 255 }),
+  messageTemplate: text('message_template'),
+  emailTemplateId: varchar('email_template_id', { length: 100 }),
+
+  // Scheduling
+  scheduledDate: timestamp('scheduled_date', { withTimezone: true }),
+  startDate: timestamp('start_date', { withTimezone: true }),
+  endDate: timestamp('end_date', { withTimezone: true }),
+
+  // Status
+  status: varchar('status', { length: 30 }).default('draft').notNull(),
+  // draft, scheduled, in_progress, completed, paused, cancelled
+
+  // Metrics
+  sentCount: varchar('sent_count', { length: 10 }).default('0'),
+  deliveredCount: varchar('delivered_count', { length: 10 }).default('0'),
+  openedCount: varchar('opened_count', { length: 10 }).default('0'),
+  clickedCount: varchar('clicked_count', { length: 10 }).default('0'),
+  respondedCount: varchar('responded_count', { length: 10 }).default('0'),
+  convertedCount: varchar('converted_count', { length: 10 }).default('0'),
+
+  // Attribution
+  createdBy: uuid('created_by').references(() => users.id),
+
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_retention_campaigns_dealer').on(table.dealerId),
+  statusIdx: index('idx_retention_campaigns_status').on(table.status),
+}));
+
+// ============================================================================
+// RETENTION RELATIONS
+// ============================================================================
+
+export const customerRetentionProfilesRelations = relations(customerRetentionProfiles, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [customerRetentionProfiles.dealerId],
+    references: [dealers.id],
+  }),
+  customer: one(customers, {
+    fields: [customerRetentionProfiles.customerId],
+    references: [customers.id],
+  }),
+}));
+
+export const customerTasksRelations = relations(customerTasks, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [customerTasks.dealerId],
+    references: [dealers.id],
+  }),
+  customer: one(customers, {
+    fields: [customerTasks.customerId],
+    references: [customers.id],
+  }),
+  enquiry: one(enquiries, {
+    fields: [customerTasks.enquiryId],
+    references: [enquiries.id],
+  }),
+  assignedUser: one(users, {
+    fields: [customerTasks.assignedTo],
+    references: [users.id],
+  }),
+  creator: one(users, {
+    fields: [customerTasks.createdBy],
+    references: [users.id],
+  }),
+  completer: one(users, {
+    fields: [customerTasks.completedBy],
+    references: [users.id],
+  }),
+}));
+
+export const customerActivitiesRelations = relations(customerActivities, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [customerActivities.dealerId],
+    references: [dealers.id],
+  }),
+  customer: one(customers, {
+    fields: [customerActivities.customerId],
+    references: [customers.id],
+  }),
+  enquiry: one(enquiries, {
+    fields: [customerActivities.enquiryId],
+    references: [enquiries.id],
+  }),
+  task: one(customerTasks, {
+    fields: [customerActivities.taskId],
+    references: [customerTasks.id],
+  }),
+  emailLog: one(emailLogs, {
+    fields: [customerActivities.emailLogId],
+    references: [emailLogs.id],
+  }),
+  creator: one(users, {
+    fields: [customerActivities.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const retentionCampaignsRelations = relations(retentionCampaigns, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [retentionCampaigns.dealerId],
+    references: [dealers.id],
+  }),
+  creator: one(users, {
+    fields: [retentionCampaigns.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// ============================================================================
+// RETENTION TYPE EXPORTS
+// ============================================================================
+
+export type CustomerRetentionProfile = typeof customerRetentionProfiles.$inferSelect;
+export type NewCustomerRetentionProfile = typeof customerRetentionProfiles.$inferInsert;
+
+export type CustomerTask = typeof customerTasks.$inferSelect;
+export type NewCustomerTask = typeof customerTasks.$inferInsert;
+
+export type CustomerActivity = typeof customerActivities.$inferSelect;
+export type NewCustomerActivity = typeof customerActivities.$inferInsert;
+
+export type RetentionCampaign = typeof retentionCampaigns.$inferSelect;
+export type NewRetentionCampaign = typeof retentionCampaigns.$inferInsert;
+
+
+
 
 

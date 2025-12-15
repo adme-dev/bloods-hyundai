@@ -170,6 +170,8 @@
 </template>
 
 <script setup lang="ts">
+import { useAnalytics } from '~/composables/useAnalytics';
+
 interface Vehicle {
   stockid?: string | number;
   slug?: string;
@@ -193,6 +195,8 @@ const emit = defineEmits<{
 }>();
 
 const mainStore = useMainStore();
+const { trackTestDriveBooking } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 // Helper to get display value
 const getDisplay = (field: any): string => {
@@ -328,24 +332,28 @@ const submitForm = async () => {
         },
         testDrive: true,
         source: 'vehicle-test-drive-modal',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       }
     });
 
     isSent.value = true;
 
-    // GTM tracking
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'test_drive',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        stockId: vehicle?.stockid,
-        vehicleTitle: vehicleTitle.value,
-        preferredDate: form.preferredDate,
-        preferredTime: form.preferredTime,
-      });
-    }
+    // Track test drive booking (GA4 + Facebook Pixel + GTM)
+    trackTestDriveBooking({
+      form_location: 'vehicle_test_drive_modal',
+      enquiry_id: response.enquiry.id,
+      vehicle: {
+        stockid: String(vehicle?.stockid || ''),
+        condition: getDisplay(vehicle?.condition),
+        make: getDisplay(vehicle?.make) || 'Hyundai',
+        model: getDisplay(vehicle?.model) || '',
+        variant: getDisplay(vehicle?.variant) || getDisplay(vehicle?.badge) || undefined,
+        year: getDisplay(vehicle?.year) || undefined,
+      },
+      preferred_date: form.preferredDate,
+      preferred_time: form.preferredTime || undefined,
+    });
   } catch (error) {
     console.error('Form submission error:', error);
   } finally {

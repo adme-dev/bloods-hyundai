@@ -431,6 +431,7 @@ const emit = defineEmits<{
 }>();
 
 const mainStore = useMainStore();
+const { getUtmParams } = useUtmParams();
 
 // Embla Carousel refs
 const mainCarouselRef = ref<HTMLElement | null>(null);
@@ -744,17 +745,40 @@ const submitForm = async () => {
         phone: form.phone || undefined,
         message: form.message || undefined,
         vehicleInfo: {
+          // Identifiers
+          stockId: String(vehicle?.stockid || ''),
+
+          // Basic Info
           condition: getDisplay(vehicle?.condition) || undefined,
           make: getDisplay(vehicle?.make) || undefined,
           model: getDisplay(vehicle?.model) || undefined,
           variant: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || undefined,
-          stockId: String(vehicle?.stockid || ''),
+          year: vehicle?.year?.displayValue?.[0] ? parseInt(vehicle.year.displayValue[0]) : (vehicle?.year || undefined),
+
+          // Specifications
+          kms: vehicleKms.value || undefined,
+          transmission: vehicleTransmission.value || undefined,
+          fuel: vehicleFuel.value || undefined,
+          drivetrain: vehicleDrivetrain.value || undefined,
+          body: vehicleBody.value || undefined,
+          colour: vehicleColour.value || undefined,
+          seats: vehicleSeats.value ? parseInt(vehicleSeats.value) : undefined,
+          engine: vehicleEngine.value || undefined,
+
+          // Pricing
           price: vehicle?.price || undefined,
+          priceDisplay: vehiclePrice.value || undefined,
+
+          // Media (for emails/CRM display)
+          thumbnail: vehicleImages.value[0] || undefined,
+          vehicleUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         },
         tradeIn: form.tradeIn ? {} : undefined,
         testDrive: form.testDrive,
         financeInterest: form.finance,
         source: 'vehicle-enquiry-modal',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       }
     });
 

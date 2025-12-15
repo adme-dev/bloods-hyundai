@@ -195,6 +195,541 @@
       </Card>
     </div>
 
+    <!-- Marketing Channel Performance -->
+    <div v-if="data?.marketingPerformance" class="grid gap-6 lg:grid-cols-3">
+      <!-- Channel Summary Cards -->
+      <Card class="lg:col-span-2">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <Megaphone class="h-5 w-5 text-indigo-500" />
+                Marketing Channels
+              </CardTitle>
+              <CardDescription>Lead sources and conversion rates this month</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <!-- Channel Summary Grid -->
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-5 mb-6">
+            <div class="rounded-lg border bg-green-50 dark:bg-green-950/30 p-3 text-center">
+              <Search class="h-4 w-4 mx-auto text-green-600 mb-1" />
+              <div class="text-xl font-bold text-green-600">{{ data.marketingPerformance.channelSummary.organic.total }}</div>
+              <div class="text-[10px] text-muted-foreground">Organic</div>
+              <div v-if="data.marketingPerformance.channelSummary.organic.total > 0" class="text-[10px] text-green-600 font-medium">
+                {{ data.marketingPerformance.channelSummary.organic.rate }}% conv
+              </div>
+            </div>
+            <div class="rounded-lg border bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
+              <MousePointerClick class="h-4 w-4 mx-auto text-blue-600 mb-1" />
+              <div class="text-xl font-bold text-blue-600">{{ data.marketingPerformance.channelSummary.paid.total }}</div>
+              <div class="text-[10px] text-muted-foreground">Paid</div>
+              <div v-if="data.marketingPerformance.channelSummary.paid.total > 0" class="text-[10px] text-blue-600 font-medium">
+                {{ data.marketingPerformance.channelSummary.paid.rate }}% conv
+              </div>
+            </div>
+            <div class="rounded-lg border bg-gray-50 dark:bg-gray-800 p-3 text-center">
+              <Globe class="h-4 w-4 mx-auto text-gray-600 mb-1" />
+              <div class="text-xl font-bold text-gray-600">{{ data.marketingPerformance.channelSummary.direct.total }}</div>
+              <div class="text-[10px] text-muted-foreground">Direct</div>
+              <div v-if="data.marketingPerformance.channelSummary.direct.total > 0" class="text-[10px] text-gray-600 font-medium">
+                {{ data.marketingPerformance.channelSummary.direct.rate }}% conv
+              </div>
+            </div>
+            <div class="rounded-lg border bg-purple-50 dark:bg-purple-950/30 p-3 text-center">
+              <Share2 class="h-4 w-4 mx-auto text-purple-600 mb-1" />
+              <div class="text-xl font-bold text-purple-600">{{ data.marketingPerformance.channelSummary.referral.total }}</div>
+              <div class="text-[10px] text-muted-foreground">Social/Ref</div>
+              <div v-if="data.marketingPerformance.channelSummary.referral.total > 0" class="text-[10px] text-purple-600 font-medium">
+                {{ data.marketingPerformance.channelSummary.referral.rate }}% conv
+              </div>
+            </div>
+            <div class="rounded-lg border bg-amber-50 dark:bg-amber-950/30 p-3 text-center">
+              <Mail class="h-4 w-4 mx-auto text-amber-600 mb-1" />
+              <div class="text-xl font-bold text-amber-600">{{ data.marketingPerformance.channelSummary.email.total }}</div>
+              <div class="text-[10px] text-muted-foreground">Email</div>
+              <div v-if="data.marketingPerformance.channelSummary.email.total > 0" class="text-[10px] text-amber-600 font-medium">
+                {{ data.marketingPerformance.channelSummary.email.rate }}% conv
+              </div>
+            </div>
+          </div>
+
+          <!-- Source/Medium Breakdown -->
+          <div v-if="data.marketingPerformance.channels.length > 0">
+            <h4 class="text-sm font-medium mb-3">Top Sources</h4>
+            <div class="space-y-2">
+              <div
+                v-for="(channel, index) in data.marketingPerformance.channels.slice(0, 5)"
+                :key="`${channel.source}-${channel.medium}`"
+                class="flex items-center gap-3"
+              >
+                <span class="w-5 text-sm font-bold text-muted-foreground">{{ index + 1 }}</span>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium capitalize">{{ channel.source }}</span>
+                      <Badge v-if="channel.medium !== 'none'" variant="outline" class="text-[10px]">{{ channel.medium }}</Badge>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-sm">{{ channel.total }} leads</span>
+                      <Badge
+                        :variant="channel.conversionRate >= 30 ? 'default' : channel.conversionRate >= 15 ? 'secondary' : 'outline'"
+                        class="text-[10px]"
+                      >
+                        {{ channel.conversionRate }}% conv
+                      </Badge>
+                    </div>
+                  </div>
+                  <div class="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      class="h-full rounded-full bg-indigo-500 transition-all"
+                      :style="{ width: `${getChannelWidth(channel.total)}%` }"
+                    />
+                  </div>
+                  <div class="flex gap-3 mt-1 text-[10px] text-muted-foreground">
+                    <span v-if="channel.withTestDrive > 0">
+                      <CalendarCheck class="inline h-3 w-3" /> {{ channel.withTestDrive }} test drives
+                    </span>
+                    <span v-if="channel.withFinance > 0">
+                      <DollarSign class="inline h-3 w-3" /> {{ channel.withFinance }} finance
+                    </span>
+                    <span v-if="channel.qualityScore > 0" class="ml-auto">
+                      Quality: {{ channel.qualityScore }}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="py-4 text-center text-sm text-muted-foreground">
+            No channel data available yet
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Top Campaigns -->
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2">
+            <Zap class="h-5 w-5 text-yellow-500" />
+            Top Campaigns
+          </CardTitle>
+          <CardDescription>Best performing UTM campaigns</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div v-if="data.marketingPerformance.topCampaigns.length > 0" class="space-y-3">
+            <div
+              v-for="campaign in data.marketingPerformance.topCampaigns"
+              :key="campaign.campaign"
+              class="rounded-lg border p-3"
+            >
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="font-medium text-sm">{{ campaign.campaign }}</div>
+                  <div class="text-[10px] text-muted-foreground capitalize">
+                    {{ campaign.source }} / {{ campaign.medium }}
+                  </div>
+                </div>
+                <Badge
+                  :variant="campaign.conversionRate >= 30 ? 'default' : campaign.conversionRate >= 15 ? 'secondary' : 'outline'"
+                >
+                  {{ campaign.conversionRate }}%
+                </Badge>
+              </div>
+              <div class="mt-2 flex items-center justify-between text-xs">
+                <span class="text-muted-foreground">{{ campaign.total }} leads</span>
+                <span class="text-green-600 font-medium">{{ campaign.converted }} converted</span>
+              </div>
+              <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full rounded-full transition-all"
+                  :class="campaign.conversionRate >= 30 ? 'bg-green-500' : campaign.conversionRate >= 15 ? 'bg-yellow-500' : 'bg-gray-400'"
+                  :style="{ width: `${Math.min(campaign.conversionRate, 100)}%` }"
+                />
+              </div>
+            </div>
+          </div>
+          <div v-else class="py-8 text-center">
+            <Zap class="mx-auto h-10 w-10 text-muted-foreground/50" />
+            <p class="mt-2 text-sm text-muted-foreground">No campaign data yet</p>
+            <p class="text-xs text-muted-foreground mt-1">Add UTM parameters to track campaigns</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Customer Retention Quick Stats -->
+    <div v-if="data?.customerRetention" class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card class="border-l-4 border-l-teal-500 cursor-pointer hover:border-teal-600 transition-colors" @click="navigateTo('/admin/customers')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Total Customers</CardTitle>
+          <UserCheck class="h-4 w-4 text-teal-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold">{{ data.customerRetention.totalCustomers }}</div>
+          <p class="text-xs text-muted-foreground">
+            +{{ data.customerRetention.newThisMonth }} this month
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card class="border-l-4 border-l-red-500 cursor-pointer hover:border-red-600 transition-colors" @click="navigateTo('/admin/customers?view=at_risk')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">At-Risk Customers</CardTitle>
+          <HeartCrack class="h-4 w-4 text-red-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold text-red-600">{{ data.customerRetention.atRisk }}</div>
+          <p class="text-xs text-muted-foreground">
+            <span v-if="data.customerRetention.critical > 0" class="text-red-600 font-semibold">
+              {{ data.customerRetention.critical }} critical
+            </span>
+            <span v-else>Need attention</span>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card class="border-l-4 border-l-amber-500 cursor-pointer hover:border-amber-600 transition-colors" @click="navigateTo('/admin/customers?view=due_followup')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">Due Follow-ups</CardTitle>
+          <ClipboardCheck class="h-4 w-4 text-amber-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold text-amber-600">
+            {{ data.customerRetention.tasksDueToday + data.customerRetention.overdueTasks }}
+          </div>
+          <p class="text-xs text-muted-foreground">
+            <span v-if="data.customerRetention.overdueTasks > 0" class="text-red-600 font-semibold">
+              {{ data.customerRetention.overdueTasks }} overdue
+            </span>
+            <span v-else>{{ data.customerRetention.tasksDueToday }} due today</span>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card class="border-l-4 border-l-orange-500 cursor-pointer hover:border-orange-600 transition-colors" @click="navigateTo('/admin/customers')">
+        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle class="text-sm font-medium">No Contact 30+ Days</CardTitle>
+          <UserMinus class="h-4 w-4 text-orange-500" />
+        </CardHeader>
+        <CardContent>
+          <div class="text-3xl font-bold text-orange-600">{{ data.customerRetention.noContactIn30Days }}</div>
+          <p class="text-xs text-muted-foreground">Need re-engagement</p>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Customer Retention Deep Dive Row -->
+    <div v-if="data?.customerRetention" class="grid gap-6 lg:grid-cols-3">
+      <!-- Lifecycle Funnel -->
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <GitMerge class="h-5 w-5 text-teal-500" />
+                Customer Lifecycle
+              </CardTitle>
+              <CardDescription>Journey stage distribution</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" as-child>
+              <NuxtLink to="/admin/customers">View All</NuxtLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-3">
+          <div
+            v-for="stage in lifecycleStagesOrdered"
+            :key="stage.key"
+            class="space-y-1"
+          >
+            <div class="flex items-center justify-between text-sm">
+              <span class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full" :class="getLifecycleColor(stage.key)" />
+                {{ stage.label }}
+              </span>
+              <span class="font-semibold">{{ getLifecycleCount(stage.key) }}</span>
+            </div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                class="h-full rounded-full transition-all"
+                :class="getLifecycleBarColor(stage.key)"
+                :style="{ width: `${getLifecyclePercent(stage.key)}%` }"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Risk Segmentation -->
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <ShieldAlert class="h-5 w-5 text-red-500" />
+                Risk Analysis
+              </CardTitle>
+              <CardDescription>Customer health breakdown</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <!-- Risk Level Distribution -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wide">By Risk Level</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <div class="rounded-lg border bg-green-50 dark:bg-green-950/30 p-2 text-center cursor-pointer hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors" @click="navigateTo('/admin/customers?riskLevel=low')">
+                <div class="text-lg font-bold text-green-600">{{ data.customerRetention.riskSegmentation?.byRiskLevel?.low || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">Low</div>
+              </div>
+              <div class="rounded-lg border bg-yellow-50 dark:bg-yellow-950/30 p-2 text-center cursor-pointer hover:bg-yellow-100 dark:hover:bg-yellow-950/50 transition-colors" @click="navigateTo('/admin/customers?riskLevel=medium')">
+                <div class="text-lg font-bold text-yellow-600">{{ data.customerRetention.riskSegmentation?.byRiskLevel?.medium || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">Medium</div>
+              </div>
+              <div class="rounded-lg border bg-orange-50 dark:bg-orange-950/30 p-2 text-center cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors" @click="navigateTo('/admin/customers?riskLevel=high')">
+                <div class="text-lg font-bold text-orange-600">{{ data.customerRetention.riskSegmentation?.byRiskLevel?.high || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">High</div>
+              </div>
+              <div class="rounded-lg border bg-red-50 dark:bg-red-950/30 p-2 text-center cursor-pointer hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors" @click="navigateTo('/admin/customers?riskLevel=critical')">
+                <div class="text-lg font-bold text-red-600">{{ data.customerRetention.riskSegmentation?.byRiskLevel?.critical || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">Critical</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Gap Breakdown -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wide">By Contact Gap</h4>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">90+ days (critical)</span>
+                <Badge variant="destructive">{{ data.customerRetention.riskSegmentation?.byContactGap?.noContact90Plus || 0 }}</Badge>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">60-90 days</span>
+                <Badge variant="default">{{ data.customerRetention.riskSegmentation?.byContactGap?.noContact60to90 || 0 }}</Badge>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-muted-foreground">30-60 days</span>
+                <Badge variant="secondary">{{ data.customerRetention.riskSegmentation?.byContactGap?.noContact30to60 || 0 }}</Badge>
+              </div>
+            </div>
+          </div>
+
+          <!-- Average Scores -->
+          <div class="rounded-lg border border-dashed p-3">
+            <div class="flex items-center justify-between">
+              <div class="text-center flex-1">
+                <div class="text-2xl font-bold" :class="getEngagementScoreColor(data.customerRetention.riskSegmentation?.averages?.engagementScore)">
+                  {{ data.customerRetention.riskSegmentation?.averages?.engagementScore || 0 }}
+                </div>
+                <div class="text-xs text-muted-foreground">Avg Engagement</div>
+              </div>
+              <Separator orientation="vertical" class="h-10" />
+              <div class="text-center flex-1">
+                <div class="text-2xl font-bold" :class="getRiskScoreColor(data.customerRetention.riskSegmentation?.averages?.riskScore)">
+                  {{ data.customerRetention.riskSegmentation?.averages?.riskScore || 0 }}
+                </div>
+                <div class="text-xs text-muted-foreground">Avg Risk Score</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Task Breakdown & Priority Customers -->
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <ListTodo class="h-5 w-5 text-amber-500" />
+                Follow-up Tasks
+              </CardTitle>
+              <CardDescription>Task breakdown by type</CardDescription>
+            </div>
+            <Button variant="ghost" size="sm" as-child>
+              <NuxtLink to="/admin/customers?view=due_followup">View All</NuxtLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <!-- Task Type Breakdown -->
+          <div class="space-y-2">
+            <div
+              v-for="task in (data.customerRetention.taskBreakdown?.byType || []).slice(0, 5)"
+              :key="task.type"
+              class="flex items-center justify-between text-sm"
+            >
+              <span class="flex items-center gap-2">
+                <component :is="getTaskTypeIcon(task.type)" class="h-4 w-4 text-muted-foreground" />
+                {{ task.label }}
+              </span>
+              <div class="flex items-center gap-2">
+                <Badge v-if="task.overdue > 0" variant="destructive" class="text-[10px]">
+                  {{ task.overdue }} overdue
+                </Badge>
+                <Badge variant="outline">{{ task.pending + task.inProgress }}</Badge>
+              </div>
+            </div>
+            <div v-if="!data.customerRetention.taskBreakdown?.byType?.length" class="text-center text-sm text-muted-foreground py-4">
+              No tasks scheduled
+            </div>
+          </div>
+
+          <!-- Priority Breakdown -->
+          <Separator />
+          <div class="space-y-2">
+            <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wide">By Priority</h4>
+            <div class="grid grid-cols-4 gap-2">
+              <div class="rounded bg-red-100 dark:bg-red-950/30 p-2 text-center">
+                <div class="text-lg font-bold text-red-600">{{ data.customerRetention.taskBreakdown?.byPriority?.urgent || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">Urgent</div>
+              </div>
+              <div class="rounded bg-orange-100 dark:bg-orange-950/30 p-2 text-center">
+                <div class="text-lg font-bold text-orange-600">{{ data.customerRetention.taskBreakdown?.byPriority?.high || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">High</div>
+              </div>
+              <div class="rounded bg-yellow-100 dark:bg-yellow-950/30 p-2 text-center">
+                <div class="text-lg font-bold text-yellow-600">{{ data.customerRetention.taskBreakdown?.byPriority?.medium || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">Medium</div>
+              </div>
+              <div class="rounded bg-gray-100 dark:bg-gray-800 p-2 text-center">
+                <div class="text-lg font-bold text-gray-600">{{ data.customerRetention.taskBreakdown?.byPriority?.low || 0 }}</div>
+                <div class="text-[10px] text-muted-foreground">Low</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- At-Risk Customers List & Vehicle Interest -->
+    <div v-if="data?.customerRetention?.atRiskCustomers?.length || data?.customerRetention?.topVehicleInterests?.length" class="grid gap-6 lg:grid-cols-2">
+      <!-- At-Risk Customer Quick List -->
+      <Card v-if="data.customerRetention.atRiskCustomers?.length" class="border-red-200 dark:border-red-900">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2 text-red-600">
+                <AlertOctagon class="h-5 w-5" />
+                Priority At-Risk Customers
+              </CardTitle>
+              <CardDescription>Highest risk customers needing immediate attention</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" as-child>
+              <NuxtLink to="/admin/customers?view=at_risk">View All</NuxtLink>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="divide-y">
+            <div
+              v-for="customer in data.customerRetention.atRiskCustomers"
+              :key="customer.id"
+              class="flex items-center justify-between px-6 py-3 hover:bg-muted/50 transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <Avatar class="h-9 w-9">
+                    <AvatarImage :src="getGravatarUrl(customer.email)" :alt="customer.name" />
+                    <AvatarFallback>{{ getInitials(customer.name) }}</AvatarFallback>
+                  </Avatar>
+                  <div
+                    class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    :class="customer.riskLevel === 'critical' ? 'bg-red-500' : 'bg-orange-500'"
+                  >
+                    {{ customer.riskScore }}
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ customer.name }}</span>
+                    <Badge :variant="customer.riskLevel === 'critical' ? 'destructive' : 'default'" class="text-[10px]">
+                      {{ customer.riskLevel }}
+                    </Badge>
+                  </div>
+                  <div class="text-xs text-muted-foreground">
+                    <span v-if="customer.daysSinceContact !== null">
+                      Last contact: {{ customer.daysSinceContact }} days ago
+                    </span>
+                    <span v-else>Never contacted</span>
+                    <span class="mx-1">•</span>
+                    <span class="capitalize">{{ customer.lifecycleStage?.replace('_', ' ') }}</span>
+                  </div>
+                </div>
+              </div>
+              <Button variant="destructive" size="sm" as-child>
+                <NuxtLink :to="`/admin/customers/${customer.id}`">
+                  <Phone class="mr-1 h-3 w-3" /> Contact
+                </NuxtLink>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Vehicle Interest & Engagement -->
+      <Card v-if="data.customerRetention.topVehicleInterests?.length">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2">
+                <Car class="h-5 w-5 text-blue-500" />
+                Customer Vehicle Interest
+              </CardTitle>
+              <CardDescription>Top models customers are interested in</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="space-y-3">
+            <div
+              v-for="(interest, index) in data.customerRetention.topVehicleInterests"
+              :key="interest.model"
+              class="flex items-center gap-3"
+            >
+              <span class="w-5 text-sm font-bold text-muted-foreground">{{ index + 1 }}</span>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-medium">{{ interest.model }}</span>
+                  <Badge variant="secondary">{{ interest.count }} customers</Badge>
+                </div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    class="h-full rounded-full bg-blue-500 transition-all"
+                    :style="{ width: `${getVehicleInterestPercent(interest.count)}%` }"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Engagement Distribution -->
+          <Separator />
+          <div class="space-y-2">
+            <h4 class="text-xs font-medium text-muted-foreground uppercase tracking-wide">Engagement Distribution</h4>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-lg border bg-green-50 dark:bg-green-950/30 p-3 text-center">
+                <div class="text-xl font-bold text-green-600">{{ data.customerRetention.riskSegmentation?.byEngagement?.high || 0 }}</div>
+                <div class="text-xs text-muted-foreground">High (70+)</div>
+              </div>
+              <div class="rounded-lg border bg-yellow-50 dark:bg-yellow-950/30 p-3 text-center">
+                <div class="text-xl font-bold text-yellow-600">{{ data.customerRetention.riskSegmentation?.byEngagement?.medium || 0 }}</div>
+                <div class="text-xs text-muted-foreground">Medium (40-69)</div>
+              </div>
+              <div class="rounded-lg border bg-red-50 dark:bg-red-950/30 p-3 text-center">
+                <div class="text-xl font-bold text-red-600">{{ data.customerRetention.riskSegmentation?.byEngagement?.low || 0 }}</div>
+                <div class="text-xs text-muted-foreground">Low (&lt;40)</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
     <!-- Hot Leads & Conversion Funnel Row -->
     <div class="grid gap-6 lg:grid-cols-3">
       <!-- Hot Leads -->
@@ -727,6 +1262,15 @@
             </NuxtLink>
           </Button>
           <Button variant="secondary" class="w-full justify-start" as-child>
+            <NuxtLink to="/admin/customers?view=at_risk">
+              <HeartCrack class="mr-2 h-4 w-4" />
+              At-risk customers
+              <Badge v-if="data?.customerRetention?.atRisk" variant="destructive" class="ml-auto">
+                {{ data.customerRetention.atRisk }}
+              </Badge>
+            </NuxtLink>
+          </Button>
+          <Button variant="secondary" class="w-full justify-start" as-child>
             <NuxtLink to="/admin/staff">
               <Users class="mr-2 h-4 w-4" /> Manage team roster
             </NuxtLink>
@@ -1120,6 +1664,29 @@ import {
   Phone,
   Filter,
   Clock,
+  // Customer Retention icons
+  UserCheck,
+  HeartCrack,
+  ClipboardCheck,
+  UserMinus,
+  // Enhanced Retention icons
+  GitMerge,
+  ShieldAlert,
+  ListTodo,
+  AlertOctagon,
+  PhoneCall,
+  Mail as MailIcon,
+  MessageSquareText,
+  CalendarClock,
+  Handshake,
+  Bell,
+  // Marketing Performance icons
+  Megaphone,
+  Search,
+  MousePointerClick,
+  Globe,
+  Share2,
+  Zap,
 } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
@@ -1166,11 +1733,23 @@ const sortedDepartments = computed(() => {
   return [...data.value.departments].sort((a, b) => b.total - a.total);
 });
 
+// Sales funnel pipeline stages (Cold → Warm → Hot → Closed)
 const pipelineStatuses = [
-  { key: 'new', label: 'New', description: 'Just arrived', variant: 'default' as const },
-  { key: 'inProgress', label: 'In Progress', description: 'Being handled', variant: 'secondary' as const },
-  { key: 'contacted', label: 'Contacted', description: 'Customer reached', variant: 'outline' as const },
-  { key: 'closed', label: 'Closed', description: 'Completed', variant: 'outline' as const },
+  // Cold Leads
+  { key: 'newLead', label: 'New Lead', description: 'Fresh enquiry', variant: 'default' as const, stage: 'cold' },
+  { key: 'qualified', label: 'Qualified', description: 'Budget confirmed', variant: 'secondary' as const, stage: 'cold' },
+  { key: 'attemptedContact', label: 'Attempted', description: 'No response yet', variant: 'outline' as const, stage: 'cold' },
+  // Warm Leads
+  { key: 'appointmentSet', label: 'Appt Set', description: 'Visit scheduled', variant: 'default' as const, stage: 'warm' },
+  { key: 'showed', label: 'Showed', description: 'Visited showroom', variant: 'secondary' as const, stage: 'warm' },
+  { key: 'testDrive', label: 'Test Drive', description: 'Completed TD', variant: 'outline' as const, stage: 'warm' },
+  // Hot Leads
+  { key: 'negotiating', label: 'Negotiating', description: 'Pricing discussion', variant: 'default' as const, stage: 'hot' },
+  { key: 'pendingFinance', label: 'Pending Finance', description: 'Awaiting approval', variant: 'secondary' as const, stage: 'hot' },
+  { key: 'depositTaken', label: 'Deposit', description: 'Holding deposit', variant: 'outline' as const, stage: 'hot' },
+  // Closed
+  { key: 'sold', label: 'Sold', description: 'Deal won', variant: 'default' as const, stage: 'closed' },
+  { key: 'lost', label: 'Lost', description: 'Deal lost', variant: 'destructive' as const, stage: 'closed' },
 ];
 
 const iconMap: Record<string, any> = {
@@ -1331,6 +1910,13 @@ function getLeadScoreClass(score: number): string {
   return 'bg-gray-400';
 }
 
+// Marketing Performance helpers
+function getChannelWidth(total: number): number {
+  if (!data.value?.marketingPerformance?.channels?.length) return 0;
+  const maxTotal = Math.max(...data.value.marketingPerformance.channels.map((c: any) => c.total), 1);
+  return (total / maxTotal) * 100;
+}
+
 // Staff Workload helpers
 function getWorkloadBorderClass(level: string): string {
   const classes: Record<string, string> = {
@@ -1351,5 +1937,99 @@ function getWorkloadBadgeVariant(level: string): 'default' | 'secondary' | 'outl
   };
   return variants[level] || 'outline';
 }
+
+// ============================================================================
+// CUSTOMER RETENTION HELPERS
+// ============================================================================
+
+// Lifecycle stages in order
+const lifecycleStagesOrdered = [
+  { key: 'prospect', label: 'Prospect' },
+  { key: 'lead', label: 'Lead' },
+  { key: 'test_drive', label: 'Test Drive' },
+  { key: 'negotiating', label: 'Negotiating' },
+  { key: 'purchased', label: 'Purchased' },
+  { key: 'service_customer', label: 'Service Customer' },
+  { key: 'at_risk', label: 'At Risk' },
+  { key: 'inactive', label: 'Inactive' },
+];
+
+function getLifecycleCount(stage: string): number {
+  if (!data.value?.customerRetention?.lifecycleDistribution) return 0;
+  const found = data.value.customerRetention.lifecycleDistribution.find((d: any) => d.stage === stage);
+  return found?.count || 0;
+}
+
+function getLifecyclePercent(stage: string): number {
+  if (!data.value?.customerRetention?.totalCustomers) return 0;
+  const count = getLifecycleCount(stage);
+  return Math.round((count / data.value.customerRetention.totalCustomers) * 100);
+}
+
+function getLifecycleColor(stage: string): string {
+  const colors: Record<string, string> = {
+    prospect: 'bg-blue-500',
+    lead: 'bg-cyan-500',
+    test_drive: 'bg-purple-500',
+    negotiating: 'bg-yellow-500',
+    purchased: 'bg-green-500',
+    service_customer: 'bg-teal-500',
+    at_risk: 'bg-orange-500',
+    inactive: 'bg-gray-400',
+  };
+  return colors[stage] || 'bg-gray-400';
+}
+
+function getLifecycleBarColor(stage: string): string {
+  const colors: Record<string, string> = {
+    prospect: 'bg-blue-500',
+    lead: 'bg-cyan-500',
+    test_drive: 'bg-purple-500',
+    negotiating: 'bg-yellow-500',
+    purchased: 'bg-green-500',
+    service_customer: 'bg-teal-500',
+    at_risk: 'bg-orange-500',
+    inactive: 'bg-gray-400',
+  };
+  return colors[stage] || 'bg-gray-400';
+}
+
+function getEngagementScoreColor(score: number | undefined): string {
+  if (!score) return 'text-gray-600';
+  if (score >= 70) return 'text-green-600';
+  if (score >= 40) return 'text-yellow-600';
+  return 'text-red-600';
+}
+
+function getRiskScoreColor(score: number | undefined): string {
+  if (!score) return 'text-gray-600';
+  if (score >= 70) return 'text-red-600';
+  if (score >= 40) return 'text-orange-600';
+  return 'text-green-600';
+}
+
+function getTaskTypeIcon(type: string | null) {
+  const icons: Record<string, any> = {
+    follow_up: PhoneCall,
+    call: PhoneCall,
+    email: MailIcon,
+    sms: MessageSquareText,
+    meeting: Handshake,
+    service_reminder: CalendarClock,
+    trade_in_offer: Car,
+    other: Bell,
+  };
+  return icons[type || 'other'] || Bell;
+}
+
+function getVehicleInterestPercent(count: number): number {
+  if (!data.value?.customerRetention?.topVehicleInterests?.length) return 0;
+  const maxCount = Math.max(...data.value.customerRetention.topVehicleInterests.map((i: any) => i.count), 1);
+  return Math.round((count / maxCount) * 100);
+}
 </script>
+
+
+
+
 

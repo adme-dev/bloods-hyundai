@@ -20,3 +20,7 @@ const props = defineProps<TabsListProps & { class?: HTMLAttributes['class'] }>()
 
 
 
+
+
+
+

@@ -197,13 +197,106 @@
           <CardContent class="space-y-6">
             <div v-if="vehicleFields.length" class="space-y-3">
               <h4 class="text-sm font-semibold">Vehicle of interest</h4>
+              <!-- Vehicle thumbnail and name prominently displayed -->
+              <div v-if="vehicleThumbnail || vehicleName" class="flex gap-4 rounded-lg border bg-muted/30 p-4">
+                <div v-if="vehicleThumbnail" class="flex-shrink-0">
+                  <img
+                    :src="vehicleThumbnail"
+                    :alt="vehicleName || 'Vehicle'"
+                    class="h-24 w-32 rounded-lg object-cover shadow-sm sm:h-32 sm:w-44"
+                  />
+                </div>
+                <div class="flex flex-1 flex-col justify-center">
+                  <p v-if="vehicleName" class="text-lg font-semibold text-foreground">{{ vehicleName }}</p>
+                  <p v-if="vehiclePrice" class="mt-1 text-xl font-bold text-primary">{{ vehiclePrice }}</p>
+                  <div v-if="vehicleCondition || vehicleStockId" class="mt-2 flex flex-wrap gap-2">
+                    <Badge v-if="vehicleCondition" variant="secondary">{{ vehicleCondition }}</Badge>
+                    <Badge v-if="vehicleStockId" variant="outline">Stock #{{ vehicleStockId }}</Badge>
+                  </div>
+                  <!-- View vehicle link -->
+                  <div v-if="vehicleUrl" class="mt-3">
+                    <a
+                      :href="vehicleUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    >
+                      <ExternalLink class="h-4 w-4" />
+                      View vehicle listing
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <!-- Other vehicle details in grid -->
               <div class="grid gap-4 sm:grid-cols-2">
-                <div v-for="item in vehicleFields" :key="item.label">
+                <div v-for="item in vehicleFieldsFiltered" :key="item.label">
                   <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">{{ item.label }}</dt>
                   <dd class="mt-1 text-sm">{{ item.value }}</dd>
                 </div>
               </div>
             </div>
+            <!-- Vehicle Configuration (from calculator/builder) -->
+            <div v-if="vehicleConfiguration" class="space-y-3">
+              <Separator />
+              <h4 class="text-sm font-semibold">Selected Configuration</h4>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div v-if="vehicleConfiguration.optionPack">
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Option Pack</dt>
+                  <dd class="mt-1 text-sm">
+                    {{ vehicleConfiguration.optionPack }}
+                    <span v-if="vehicleConfiguration.optionPackPrice" class="text-muted-foreground">
+                      (+{{ formatCurrency(vehicleConfiguration.optionPackPrice) }})
+                    </span>
+                  </dd>
+                </div>
+                <div v-if="vehicleConfiguration.trim">
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Interior Trim</dt>
+                  <dd class="mt-1 text-sm">
+                    {{ vehicleConfiguration.trim }}
+                    <span v-if="vehicleConfiguration.trimPrice" class="text-muted-foreground">
+                      (+{{ formatCurrency(vehicleConfiguration.trimPrice) }})
+                    </span>
+                  </dd>
+                </div>
+                <div v-if="vehicleConfiguration.prepaidService">
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Prepaid Service</dt>
+                  <dd class="mt-1 text-sm">
+                    {{ vehicleConfiguration.prepaidService }}
+                    <span v-if="vehicleConfiguration.prepaidServicePrice" class="text-muted-foreground">
+                      (+{{ formatCurrency(vehicleConfiguration.prepaidServicePrice) }})
+                    </span>
+                  </dd>
+                </div>
+                <div v-if="vehicleConfiguration.totalPrice && vehicleConfiguration.totalPrice !== vehicleConfiguration.basePrice">
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Configured Price</dt>
+                  <dd class="mt-1 text-sm font-semibold text-primary">
+                    {{ formatCurrency(vehicleConfiguration.totalPrice) }}
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            <!-- Applied Offers -->
+            <div v-if="appliedOffers.length" class="space-y-3">
+              <Separator />
+              <h4 class="text-sm font-semibold">Active Offers</h4>
+              <div class="space-y-2">
+                <div
+                  v-for="offer in appliedOffers"
+                  :key="offer.offerId"
+                  class="flex items-center justify-between rounded-lg border bg-gradient-to-r from-sky-50 to-sky-100/50 p-3"
+                >
+                  <div>
+                    <p class="font-medium text-foreground">{{ offer.title }}</p>
+                    <p v-if="offer.type" class="text-xs text-muted-foreground capitalize">{{ offer.type.replace(/_/g, ' ') }}</p>
+                  </div>
+                  <Badge v-if="offer.formattedValue" variant="secondary" class="bg-sky-600 text-white">
+                    {{ offer.formattedValue }}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
             <div v-if="tradeInFields.length" class="space-y-3">
               <Separator />
               <h4 class="text-sm font-semibold">Trade-in vehicle</h4>
@@ -227,33 +320,207 @@
           </CardContent>
         </Card>
 
-        <Card v-if="accessoriesItems.length">
-          <CardHeader>
-            <CardTitle>Accessories cart</CardTitle>
-            <CardDescription>Items the customer pre-selected.</CardDescription>
+        <!-- Sell My Car Section -->
+        <Card v-if="sellCarDetails">
+          <CardHeader class="pb-4">
+            <CardTitle class="flex items-center gap-2">
+              <Car class="h-5 w-5" />
+              Vehicle for sale
+            </CardTitle>
+            <CardDescription>Details of the vehicle the customer wants to sell.</CardDescription>
           </CardHeader>
-          <CardContent class="space-y-4">
-            <div
-              v-for="item in accessoriesItems"
-              :key="item.id + item.name"
-              class="rounded-lg border p-4"
-            >
-              <div class="flex flex-wrap items-center justify-between gap-2">
+          <CardContent class="space-y-6">
+            <!-- Vehicle Summary Header -->
+            <div class="rounded-lg border bg-gradient-to-r from-muted/50 to-muted/30 p-4">
+              <h3 class="text-xl font-bold text-foreground">
+                {{ sellCarDetails.year }} {{ sellCarDetails.make }} {{ sellCarDetails.model }}
+                <span v-if="sellCarDetails.grade" class="font-normal text-muted-foreground">{{ sellCarDetails.grade }}</span>
+              </h3>
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" class="text-sm">{{ sellCarDetails.rego }}</Badge>
+                <Badge variant="outline" class="text-sm">{{ formatNumber(sellCarDetails.odometer) }} km</Badge>
+                <Badge :variant="conditionBadgeVariant(sellCarDetails.condition)" class="text-sm">
+                  {{ formatCondition(sellCarDetails.condition) }} condition
+                </Badge>
+              </div>
+            </div>
+
+            <!-- Vehicle Photos Gallery -->
+            <div v-if="sellCarPhotos.length" class="space-y-3">
+              <Separator />
+              <h4 class="text-sm font-semibold flex items-center gap-2">
+                <ImageIcon class="h-4 w-4" />
+                Vehicle Photos ({{ sellCarPhotos.length }})
+              </h4>
+              <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <button
+                  v-for="(photo, index) in sellCarPhotos"
+                  :key="index"
+                  type="button"
+                  class="group relative aspect-[4/3] overflow-hidden rounded-lg border bg-muted/30 transition-all hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  @click="openPhotoLightbox(index)"
+                >
+                  <img
+                    :src="photo"
+                    :alt="`Vehicle photo ${index + 1}`"
+                    class="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
+                    <ZoomIn class="h-6 w-6 text-white opacity-0 drop-shadow-lg transition-opacity group-hover:opacity-100" />
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Vehicle Specifications -->
+            <div class="space-y-3">
+              <Separator />
+              <h4 class="text-sm font-semibold">Vehicle Specifications</h4>
+              <div class="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <p class="font-medium">{{ item.name }}</p>
-                  <p class="text-xs text-muted-foreground">{{ item.partNumber }}</p>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">VIN</dt>
+                  <dd class="mt-1 text-sm font-mono">{{ sellCarDetails.vin || 'Not provided' }}</dd>
                 </div>
-                <div class="text-right text-sm">
-                  <p class="font-semibold">
-                    {{ item.quantity }} × {{ formatCurrency(item.price) }}
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tyre Condition</dt>
+                  <dd class="mt-1 text-sm capitalize">{{ sellCarDetails.tyreCondition || 'Not specified' }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Service History</dt>
+                  <dd class="mt-1">
+                    <Badge v-if="sellCarDetails.serviceHistory" variant="default" class="bg-green-600">Full history</Badge>
+                    <Badge v-else variant="outline">Incomplete/Unknown</Badge>
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">One Owner</dt>
+                  <dd class="mt-1">
+                    <Badge v-if="sellCarDetails.oneOwner" variant="default" class="bg-green-600">Yes</Badge>
+                    <Badge v-else variant="outline">Multiple owners</Badge>
+                  </dd>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alerts / Issues -->
+            <div v-if="sellCarDetails.hasHailDamage || sellCarDetails.hasFinance || sellCarDetails.hasKnownFaults" class="space-y-3">
+              <Separator />
+              <h4 class="text-sm font-semibold text-amber-600 flex items-center gap-2">
+                <AlertTriangle class="h-4 w-4" />
+                Important Notes
+              </h4>
+              <div class="space-y-2">
+                <div v-if="sellCarDetails.hasHailDamage" class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p class="text-sm font-medium text-amber-900">⚠️ Previous Hail Damage</p>
+                  <p v-if="sellCarDetails.hailDamageDetails" class="mt-1 text-sm text-amber-800">
+                    {{ sellCarDetails.hailDamageDetails }}
+                  </p>
+                </div>
+                <div v-if="sellCarDetails.hasFinance" class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p class="text-sm font-medium text-amber-900">💰 Finance Owing</p>
+                  <p v-if="sellCarDetails.financeDetails" class="mt-1 text-sm text-amber-800">
+                    {{ sellCarDetails.financeDetails }}
+                  </p>
+                </div>
+                <div v-if="sellCarDetails.hasKnownFaults" class="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <p class="text-sm font-medium text-red-900">🔧 Known Faults</p>
+                  <p v-if="sellCarDetails.knownFaultsDetails" class="mt-1 text-sm text-red-800">
+                    {{ sellCarDetails.knownFaultsDetails }}
                   </p>
                 </div>
               </div>
             </div>
-            <div class="flex items-center justify-between border-t pt-4 text-sm">
-              <span class="text-muted-foreground">Estimated total</span>
-              <span class="font-semibold">{{ formatCurrency(enquiry.accessoriesCart?.total || 0) }}</span>
+
+            <!-- Accessories -->
+            <div v-if="sellCarDetails.accessories" class="space-y-2">
+              <Separator />
+              <h4 class="text-sm font-semibold">Additional Accessories</h4>
+              <p class="text-sm text-muted-foreground">{{ sellCarDetails.accessories }}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        <!-- Accessories Cart Section -->
+        <Card v-if="accessoriesCart">
+          <CardHeader class="pb-4">
+            <CardTitle class="flex items-center gap-2">
+              <ShoppingCart class="h-5 w-5" />
+              Accessories Quote Request
+            </CardTitle>
+            <CardDescription>Items the customer is interested in purchasing.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-6">
+            <!-- Model Info -->
+            <div v-if="accessoriesCart.model" class="rounded-lg border bg-gradient-to-r from-muted/50 to-muted/30 p-4">
+              <div class="flex items-center gap-2">
+                <Badge variant="secondary" class="text-sm">
+                  <Car class="mr-1 h-3 w-3" />
+                  Hyundai {{ accessoriesCart.model }}
+                </Badge>
+                <span class="text-sm text-muted-foreground">
+                  {{ accessoriesCart.itemCount }} item{{ accessoriesCart.itemCount !== 1 ? 's' : '' }} requested
+                </span>
+              </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="space-y-3">
+              <h4 class="text-sm font-semibold">Selected Accessories</h4>
+              <div class="divide-y rounded-lg border">
+                <div
+                  v-for="item in accessoriesItems"
+                  :key="item.id"
+                  class="flex items-center gap-4 p-4"
+                >
+                  <!-- Accessory Image -->
+                  <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border bg-muted/30">
+                    <img
+                      v-if="item.image || item.thumbnail"
+                      :src="item.image || item.thumbnail || ''"
+                      :alt="item.name"
+                      class="h-full w-full object-contain p-1"
+                      loading="lazy"
+                    />
+                    <div v-else class="flex h-full w-full items-center justify-center">
+                      <ShoppingCart class="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <p class="font-medium truncate">{{ item.name }}</p>
+                      <Badge v-if="item.type === 'pack'" variant="outline" class="text-xs bg-amber-50 text-amber-700 border-amber-200 flex-shrink-0">
+                        Value Pack
+                      </Badge>
+                    </div>
+                    <p v-if="item.partNumber" class="text-xs text-muted-foreground mt-0.5">
+                      Part #{{ item.partNumber }}
+                    </p>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <p class="font-semibold">{{ formatCurrency(item.subtotal || item.price * item.quantity) }}</p>
+                    <p v-if="item.quantity > 1" class="text-xs text-muted-foreground">
+                      {{ item.quantity }} × {{ formatCurrency(item.price) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Total -->
+            <div class="rounded-lg bg-primary/5 p-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-muted-foreground">Estimated Total</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">Inc. GST & estimated fitment</p>
+                </div>
+                <p class="text-2xl font-bold text-primary">{{ formatCurrency(accessoriesCart.total || 0) }}</p>
+              </div>
+            </div>
+
+            <p class="text-xs text-muted-foreground text-center">
+              *Final pricing to be confirmed at dealership based on availability and current pricing.
+            </p>
           </CardContent>
         </Card>
 
@@ -410,6 +677,57 @@
       </div>
     </div>
 
+    <!-- Photo Lightbox Modal -->
+    <Dialog :open="lightboxOpen" @update:open="(val) => (lightboxOpen = val)">
+      <DialogContent class="max-w-4xl border-0 bg-black/95 p-0">
+        <div class="relative">
+          <!-- Close button -->
+          <button
+            type="button"
+            class="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20"
+            @click="closeLightbox"
+          >
+            <X class="h-5 w-5" />
+          </button>
+
+          <!-- Image -->
+          <div class="flex min-h-[60vh] items-center justify-center p-4">
+            <img
+              v-if="sellCarPhotos[lightboxIndex]"
+              :src="sellCarPhotos[lightboxIndex]"
+              :alt="`Vehicle photo ${lightboxIndex + 1}`"
+              class="max-h-[80vh] max-w-full rounded-lg object-contain"
+            />
+          </div>
+
+          <!-- Navigation -->
+          <div v-if="sellCarPhotos.length > 1" class="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-4">
+            <button
+              type="button"
+              :disabled="lightboxIndex === 0"
+              class="rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+              @click="prevPhoto"
+            >
+              <ChevronLeft class="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              :disabled="lightboxIndex === sellCarPhotos.length - 1"
+              class="rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+              @click="nextPhoto"
+            >
+              <ChevronRight class="h-6 w-6" />
+            </button>
+          </div>
+
+          <!-- Counter -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-4 py-2 text-sm text-white">
+            {{ lightboxIndex + 1 }} / {{ sellCarPhotos.length }}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <!-- CRM modal -->
     <Dialog :open="crmDialogOpen" @update:open="(val) => (crmDialogOpen = val)">
       <DialogContent class="sm:max-w-md">
@@ -446,7 +764,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch, onMounted } from 'vue';
-import { AlertTriangle, CheckCircle2, ChevronLeft, Clock, Copy, ExternalLink, Globe, Mail, MapPin, Phone, RefreshCcw } from 'lucide-vue-next';
+import { AlertTriangle, Car, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, Globe, ImageIcon, Mail, MapPin, Phone, RefreshCcw, ShoppingCart, X, ZoomIn } from 'lucide-vue-next';
 
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
@@ -630,11 +948,210 @@ const vehicleFields = computed(() => parseFields(enquiry.value?.vehicleInfo));
 const tradeInFields = computed(() => parseFields(enquiry.value?.tradeInInfo));
 const financeFields = computed(() => parseFields(enquiry.value?.financeDetails));
 
-const accessoriesItems = computed(() => {
-  const items = enquiry.value?.accessoriesCart?.items;
-  if (!Array.isArray(items)) return [] as any[];
-  return items;
+// Vehicle thumbnail and prominent display fields
+const vehicleInfo = computed(() => enquiry.value?.vehicleInfo as Record<string, unknown> | undefined);
+
+const vehicleThumbnail = computed(() => {
+  const info = vehicleInfo.value;
+  if (!info) return '';
+  // Check common field names for thumbnail/image
+  return (info.thumbnail || info.image || info.imageUrl || info.photo || '') as string;
 });
+
+const vehicleName = computed(() => {
+  const info = vehicleInfo.value;
+  if (!info) return '';
+  const parts = [
+    info.year,
+    info.make,
+    info.model,
+    info.variant || info.badge,
+  ].filter(Boolean);
+  return parts.join(' ');
+});
+
+const vehiclePrice = computed(() => {
+  const info = vehicleInfo.value;
+  if (!info?.price) return '';
+  const price = Number(info.price);
+  if (isNaN(price)) return '';
+  return formatCurrency(price);
+});
+
+const vehicleCondition = computed(() => {
+  const info = vehicleInfo.value;
+  if (!info?.condition) return '';
+  const condition = String(info.condition);
+  return condition.charAt(0).toUpperCase() + condition.slice(1);
+});
+
+const vehicleStockId = computed(() => {
+  const info = vehicleInfo.value;
+  if (!info) return '';
+  return (info.stockId || info.stock_id || info.stockNumber || '') as string;
+});
+
+const vehicleUrl = computed(() => {
+  const info = vehicleInfo.value;
+  if (!info) return '';
+  return (info.vehicleUrl || info.vehicle_url || info.url || '') as string;
+});
+
+// Vehicle configuration from calculator/builder
+interface VehicleConfiguration {
+  model?: string;
+  variant?: string;
+  variantId?: string;
+  colour?: string;
+  colourPrice?: number;
+  trim?: string;
+  trimPrice?: number;
+  optionPack?: string;
+  optionPackPrice?: number;
+  prepaidService?: string;
+  prepaidServicePrice?: number;
+  basePrice?: number;
+  totalPrice?: number;
+  thumbnail?: string;
+}
+
+const vehicleConfiguration = computed<VehicleConfiguration | undefined>(() => {
+  const info = vehicleInfo.value;
+  if (!info) return undefined;
+  return info.configuration as VehicleConfiguration | undefined;
+});
+
+// Applied offers from vehicle builder
+interface AppliedOffer {
+  offerId: string;
+  title: string;
+  type?: string;
+  formattedValue?: string;
+}
+
+const appliedOffers = computed<AppliedOffer[]>(() => {
+  const info = vehicleInfo.value;
+  if (!info) return [];
+  const offers = info.appliedOffers;
+  if (!Array.isArray(offers)) return [];
+  return offers as AppliedOffer[];
+});
+
+// Filter out fields already displayed in the prominent card or dedicated sections
+const vehicleFieldsFiltered = computed(() => {
+  const prominentFields = ['thumbnail', 'image', 'imageUrl', 'photo', 'year', 'make', 'model', 'variant', 'badge', 'price', 'priceDisplay', 'condition', 'stockId', 'stock_id', 'stockNumber', 'vehicleUrl', 'vehicle_url', 'url', 'configuration', 'appliedOffers', 'appliedoffers'];
+  return vehicleFields.value.filter(field => {
+    const key = field.label.toLowerCase().replace(/\s+/g, '');
+    return !prominentFields.some(pf => key.includes(pf.toLowerCase()));
+  });
+});
+
+// Accessories cart
+interface AccessoriesCartData {
+  model?: string | null;
+  items: {
+    id: string;
+    name: string;
+    partNumber?: string;
+    price: number;
+    quantity: number;
+    type: 'accessory' | 'pack';
+    subtotal: number;
+    image?: string | null;
+    thumbnail?: string | null;
+  }[];
+  itemCount: number;
+  total: number;
+}
+
+const accessoriesCart = computed<AccessoriesCartData | null>(() => {
+  if (enquiry.value?.type !== 'accessories') return null;
+  const cart = enquiry.value?.accessoriesCart as AccessoriesCartData | undefined;
+  if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) return null;
+  return cart;
+});
+
+const accessoriesItems = computed(() => {
+  return accessoriesCart.value?.items || [];
+});
+
+// Sell My Car details
+interface SellCarDetails {
+  year?: string;
+  make?: string;
+  model?: string;
+  grade?: string;
+  vin?: string;
+  rego?: string;
+  odometer?: number;
+  condition?: string;
+  tyreCondition?: string;
+  serviceHistory?: boolean;
+  oneOwner?: boolean;
+  photos?: string[];
+  hasHailDamage?: boolean;
+  hailDamageDetails?: string;
+  hasFinance?: boolean;
+  financeDetails?: string;
+  hasKnownFaults?: boolean;
+  knownFaultsDetails?: string;
+  accessories?: string;
+}
+
+const sellCarDetails = computed<SellCarDetails | null>(() => {
+  if (enquiry.value?.type !== 'sell_car') return null;
+  return enquiry.value?.sellCarDetails as SellCarDetails | null;
+});
+
+const sellCarPhotos = computed(() => {
+  const photos = sellCarDetails.value?.photos;
+  if (!Array.isArray(photos)) return [];
+  return photos.filter(Boolean);
+});
+
+// Photo lightbox
+const lightboxOpen = ref(false);
+const lightboxIndex = ref(0);
+
+const openPhotoLightbox = (index: number) => {
+  lightboxIndex.value = index;
+  lightboxOpen.value = true;
+};
+
+const closeLightbox = () => {
+  lightboxOpen.value = false;
+};
+
+const nextPhoto = () => {
+  if (lightboxIndex.value < sellCarPhotos.value.length - 1) {
+    lightboxIndex.value++;
+  }
+};
+
+const prevPhoto = () => {
+  if (lightboxIndex.value > 0) {
+    lightboxIndex.value--;
+  }
+};
+
+const formatNumber = (value?: number) => {
+  if (value === undefined || value === null) return '—';
+  return new Intl.NumberFormat('en-AU').format(value);
+};
+
+const formatCondition = (condition?: string) => {
+  if (!condition) return 'Unknown';
+  return condition.charAt(0).toUpperCase() + condition.slice(1);
+};
+
+const conditionBadgeVariant = (condition?: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
+  switch (condition) {
+    case 'excellent': return 'default';
+    case 'average': return 'secondary';
+    case 'poor': return 'destructive';
+    default: return 'outline';
+  }
+};
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(value || 0);

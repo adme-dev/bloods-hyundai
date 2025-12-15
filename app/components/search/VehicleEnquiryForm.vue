@@ -154,6 +154,8 @@
 </template>
 
 <script setup lang="ts">
+import { useAnalytics } from '~/composables/useAnalytics';
+
 interface Vehicle {
   stockid?: string | number;
   title?: string;
@@ -161,7 +163,22 @@ interface Vehicle {
   make?: { displayValue?: string[] };
   model?: { displayValue?: string[] };
   year?: { displayValue?: string[] };
+  badge?: { displayValue?: string[] };
+  variant?: { displayValue?: string[] };
   price?: number;
+  kms?: number;
+  odometer?: { value?: string[]; displayValue?: string[] };
+  transmission?: { displayValue?: string[] };
+  fuel?: { displayValue?: string[] };
+  drivetrain?: { displayValue?: string[] };
+  body?: { displayValue?: string[] };
+  colour?: { displayValue?: string[] };
+  genericolour?: string;
+  seats?: { displayValue?: string[] };
+  engine?: { displayValue?: string[] };
+  thumb?: string;
+  main_photo_url?: string;
+  photos?: { photos?: string[] };
 }
 
 const props = defineProps<{
@@ -169,7 +186,38 @@ const props = defineProps<{
   stockId?: string | number;
 }>();
 
+// Helper to extract display value from vehicle field
+const getDisplay = (field: { displayValue?: string[] } | string | number | undefined): string => {
+  if (!field) return '';
+  if (typeof field === 'string') return field;
+  if (typeof field === 'number') return String(field);
+  return field.displayValue?.[0] || '';
+};
+
+// Computed properties for vehicle data
+const vehicleThumbnail = computed(() => {
+  if (!props.vehicle) return undefined;
+  // Try photos array first
+  const photos = props.vehicle.photos?.photos;
+  if (photos && photos.length > 0) return photos[0];
+  // Fallback to thumb or main_photo_url
+  return props.vehicle.thumb || props.vehicle.main_photo_url || undefined;
+});
+
+const vehicleKms = computed(() => {
+  if (!props.vehicle) return undefined;
+  const kms = props.vehicle.kms ||
+              props.vehicle.odometer?.value?.[0] ||
+              props.vehicle.odometer?.displayValue?.[0];
+  if (!kms) return undefined;
+  const numKms = typeof kms === 'number' ? kms : parseFloat(String(kms));
+  if (isNaN(numKms)) return undefined;
+  return `${numKms.toLocaleString()} km`;
+});
+
 const mainStore = useMainStore();
+const { trackVehicleEnquiry } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 // Form state
 const form = reactive({
@@ -220,12 +268,32 @@ const submitForm = async () => {
         postcode: form.postcode || undefined,
         message: form.message || undefined,
         vehicleInfo: props.vehicle ? {
-          condition: props.vehicle.condition?.displayValue?.[0] || undefined,
-          make: props.vehicle.make?.displayValue?.[0] || undefined,
-          model: props.vehicle.model?.displayValue?.[0] || undefined,
-          year: props.vehicle.year?.displayValue?.[0] ? parseInt(props.vehicle.year.displayValue[0]) : undefined,
-          price: props.vehicle.price || undefined,
+          // Identifiers
           stockId: String(props.vehicle.stockid || props.stockId || ''),
+
+          // Basic Info
+          condition: getDisplay(props.vehicle.condition) || undefined,
+          make: getDisplay(props.vehicle.make) || undefined,
+          model: getDisplay(props.vehicle.model) || undefined,
+          variant: getDisplay(props.vehicle.badge) || getDisplay(props.vehicle.variant) || undefined,
+          year: props.vehicle.year?.displayValue?.[0] ? parseInt(props.vehicle.year.displayValue[0]) : undefined,
+
+          // Specifications
+          kms: vehicleKms.value || undefined,
+          transmission: getDisplay(props.vehicle.transmission) || undefined,
+          fuel: getDisplay(props.vehicle.fuel) || undefined,
+          drivetrain: getDisplay(props.vehicle.drivetrain) || undefined,
+          body: getDisplay(props.vehicle.body) || undefined,
+          colour: getDisplay(props.vehicle.colour) || props.vehicle.genericolour || undefined,
+          seats: props.vehicle.seats?.displayValue?.[0] ? parseInt(props.vehicle.seats.displayValue[0]) : undefined,
+          engine: getDisplay(props.vehicle.engine) || undefined,
+
+          // Pricing
+          price: props.vehicle.price || undefined,
+
+          // Media (for emails/CRM display)
+          thumbnail: vehicleThumbnail.value || undefined,
+          vehicleUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         } : undefined,
         tradeIn: hasTradeIn.value ? {
           make: form.tradeMake || undefined,
@@ -234,24 +302,41 @@ const submitForm = async () => {
         } : undefined,
         financeInterest: form.financeInterest,
         source: 'vehicle-enquiry-form',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       }
     });
 
     isSubmitted.value = true;
 
-    // GTM tracking
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'vehicle',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        stockId: props.vehicle?.stockid || props.stockId,
-        vehicleTitle: props.vehicle?.title,
-        hasTradeIn: hasTradeIn.value,
-        financeInterest: form.financeInterest,
-      });
-    }
+    // Track vehicle enquiry conversion
+    const conditionValue = getDisplay(props.vehicle?.condition);
+    const validCondition = ['new', 'used', 'demo'].includes(conditionValue.toLowerCase())
+      ? conditionValue.toLowerCase() as 'new' | 'used' | 'demo'
+      : undefined;
+
+    trackVehicleEnquiry({
+      form_type: 'vehicle_enquiry',
+      form_location: 'vehicle_detail_page',
+      enquiry_id: response.enquiry.id,
+      vehicle: {
+        stockid: props.vehicle ? String(props.vehicle.stockid || props.stockId || '') : undefined,
+        condition: validCondition,
+        make: props.vehicle ? (getDisplay(props.vehicle.make) || 'Unknown') : 'Unknown',
+        model: props.vehicle ? (getDisplay(props.vehicle.model) || 'Unknown') : 'Unknown',
+        variant: props.vehicle ? (getDisplay(props.vehicle.badge) || getDisplay(props.vehicle.variant) || undefined) : undefined,
+        year: props.vehicle?.year?.displayValue?.[0] ? parseInt(props.vehicle.year.displayValue[0]) : undefined,
+        price: props.vehicle?.price,
+      },
+      has_trade_in: hasTradeIn.value,
+      trade_in_vehicle: hasTradeIn.value ? {
+        make: form.tradeMake || undefined,
+        model: form.tradeModel || undefined,
+        year: form.tradeYear || undefined,
+      } : undefined,
+      finance_interest: form.financeInterest,
+      has_message: !!form.message,
+    });
   } catch (error) {
     console.error('Form submission error:', error);
   } finally {
@@ -277,6 +362,8 @@ const submitForm = async () => {
   }
 }
 </style>
+
+
 
 
 

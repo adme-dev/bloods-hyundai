@@ -340,6 +340,16 @@
       @view-cart="accessoriesStore.toggleCart(true); closeDetailModal()"
     />
 
+    <!-- Accessories Enquiry Modal -->
+    <AccessoriesEnquiryModal
+      :show="showEnquiryModal"
+      :items="accessoriesStore.cartItems"
+      :total="accessoriesStore.cartTotal"
+      :selected-model="accessoriesStore.selectedModel"
+      @close="showEnquiryModal = false"
+      @submitted="handleEnquirySubmitted"
+    />
+
     <!-- Mobile Filters Dialog -->
     <Teleport to="body">
       <div
@@ -510,6 +520,7 @@ useSchemaOrg([
 const showDetailModal = ref(false);
 const selectedAccessory = ref<Accessory | null>(null);
 const showMobileFilters = ref(false);
+const showEnquiryModal = ref(false);
 
 // Model category filter
 const selectedModelCategory = ref<string | null>(null);
@@ -639,15 +650,14 @@ const closeDetailModal = () => {
 };
 
 const handleEnquire = () => {
-  // Navigate to contact page with cart info
-  navigateTo({
-    path: '/contact',
-    query: {
-      subject: 'Accessories Enquiry',
-      model: accessoriesStore.selectedModel?.name,
-      items: accessoriesStore.cartItemCount.toString(),
-    },
-  });
+  // Close cart and show enquiry modal
+  accessoriesStore.toggleCart(false);
+  showEnquiryModal.value = true;
+};
+
+const handleEnquirySubmitted = () => {
+  // Close the enquiry modal after successful submission
+  showEnquiryModal.value = false;
 };
 
 const formatPrice = (price: number) => {

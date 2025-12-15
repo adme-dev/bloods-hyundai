@@ -1,5 +1,5 @@
 import { db } from '../../../utils/db';
-import { enquiries } from '../../../database/schema';
+import { enquiries, dealers } from '../../../database/schema';
 import { eq, sql, and, gte } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
@@ -8,6 +8,14 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Unauthorized' });
   }
 
+  // Get dealer settings to check form active status
+  const [dealer] = await db
+    .select()
+    .from(dealers)
+    .where(eq(dealers.id, user.dealerId));
+
+  const dealerSettings = (dealer?.settings as any) || {};
+  const formsSettings = dealerSettings.forms || {};
 
   // Get total counts by type
   const typeCounts = await db
@@ -45,15 +53,22 @@ export default defineEventHandler(async (event) => {
   for (const formType of formTypes) {
     const totalRow = typeCounts.find(r => r.type === formType);
     const weeklyRow = weeklyCounts.find(r => r.type === formType);
+    const formSettings = formsSettings[formType] || {};
+    const notifications = formSettings.notifications || [];
+    
+    // Count active admin and customer notifications
+    const adminNotifications = notifications.filter((n: any) => n.type === 'admin' && n.isActive !== false).length || 1;
+    const customerNotifications = notifications.filter((n: any) => n.type === 'customer' && n.isActive !== false).length || 1;
     
     formStats[formType] = {
       total: totalRow?.total || 0,
       weekly: weeklyRow?.weekly || 0,
       weeklyChange: weeklyRow?.weekly || 0,
-      // Default notification counts (can be fetched from form_settings table later)
+      // Get isActive from saved settings, default to true
+      isActive: formSettings.isActive ?? true,
       notifications: {
-        admin: 1,
-        customer: 1,
+        admin: adminNotifications,
+        customer: customerNotifications,
       },
     };
   }
@@ -62,5 +77,9 @@ export default defineEventHandler(async (event) => {
     formStats,
   };
 });
+
+
+
+
 
 

@@ -21,6 +21,9 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { settings, notifications, confirmation } = body;
 
+  console.log('[Forms PUT] Slug:', slug);
+  console.log('[Forms PUT] Settings received:', JSON.stringify(settings, null, 2));
+  console.log('[Forms PUT] isActive value:', settings?.isActive);
 
   // Get current dealer settings
   const [dealer] = await db
@@ -56,5 +59,9 @@ export default defineEventHandler(async (event) => {
     message: 'Form settings updated successfully',
   };
 });
+
+
+
+
 
 

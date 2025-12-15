@@ -543,7 +543,7 @@ const showNotificationEditor = ref(false);
 const editingNotification = ref<any>(null);
 
 // Fetch form settings
-const { data: formData } = await useFetch(`/api/admin/forms/${slug}`);
+const { data: formData, pending: formLoading, refresh: refreshFormData } = await useFetch(`/api/admin/forms/${slug}`);
 
 // Fetch staff for assignment dropdown
 const { data: staffData } = await useFetch('/api/admin/staff');
@@ -706,32 +706,62 @@ const handleSaveRoutingRule = async (ruleData: any) => {
   }
 };
 
-// Settings state
+// Settings state - initialize with defaults, will be updated by watch
 const settings = ref({
-  isActive: formData.value?.settings?.isActive ?? true,
-  title: formData.value?.settings?.title || formConfig.value.name,
-  description: formData.value?.settings?.description || formConfig.value.description,
-  saveToDatabase: formData.value?.settings?.saveToDatabase ?? true,
-  requireAllFields: formData.value?.settings?.requireAllFields ?? false,
-  antiSpam: formData.value?.settings?.antiSpam ?? true,
-  defaultAssignee: formData.value?.settings?.defaultAssignee || '__none__',
+  isActive: true,
+  title: formConfig.value.name,
+  description: formConfig.value.description,
+  saveToDatabase: true,
+  requireAllFields: false,
+  antiSpam: true,
+  defaultAssignee: '__none__',
 });
 
 // Notifications state
-const notifications = ref(formData.value?.notifications || [
-  { id: '1', name: 'Admin Notification', type: 'admin', isActive: true, subject: `New ${formConfig.value.name} Submission` },
-  { id: '2', name: 'Customer Notification', type: 'customer', isActive: true, subject: `Thank you for your enquiry - Sale Hyundai` },
-]);
+const notifications = ref<any[]>([]);
 
 // Confirmation state
 const confirmation = ref({
-  type: formData.value?.confirmation?.type || 'message',
-  title: formData.value?.confirmation?.title || 'Thank you for your enquiry!',
-  message: formData.value?.confirmation?.message || "We've received your submission and will be in touch within 24 hours.",
-  buttonText: formData.value?.confirmation?.buttonText || 'Back to Home',
-  buttonLink: formData.value?.confirmation?.buttonLink || '/',
-  redirectUrl: formData.value?.confirmation?.redirectUrl || '/thank-you',
+  type: 'message',
+  title: 'Thank you for your enquiry!',
+  message: "We've received your submission and will be in touch within 24 hours.",
+  buttonText: 'Back to Home',
+  buttonLink: '/',
+  redirectUrl: '/thank-you',
 });
+
+// Watch for formData to load and sync state
+watch(formData, (data) => {
+  if (data) {
+    // Update settings from fetched data
+    settings.value = {
+      isActive: data.settings?.isActive ?? true,
+      title: data.settings?.title || formConfig.value.name,
+      description: data.settings?.description || formConfig.value.description,
+      saveToDatabase: data.settings?.saveToDatabase ?? true,
+      requireAllFields: data.settings?.requireAllFields ?? false,
+      antiSpam: data.settings?.antiSpam ?? true,
+      defaultAssignee: data.settings?.defaultAssignee || '__none__',
+    };
+    
+    // Update notifications
+    if (data.notifications) {
+      notifications.value = data.notifications;
+    }
+    
+    // Update confirmation
+    if (data.confirmation) {
+      confirmation.value = {
+        type: data.confirmation.type || 'message',
+        title: data.confirmation.title || 'Thank you for your enquiry!',
+        message: data.confirmation.message || "We've received your submission and will be in touch within 24 hours.",
+        buttonText: data.confirmation.buttonText || 'Back to Home',
+        buttonLink: data.confirmation.buttonLink || '/',
+        redirectUrl: data.confirmation.redirectUrl || '/thank-you',
+      };
+    }
+  }
+}, { immediate: true });
 
 const previewForm = () => {
   const routes: Record<string, string> = {
@@ -768,6 +798,10 @@ const saveSettings = async () => {
       },
     });
     console.log('✅ Settings saved:', result);
+    
+    // Refresh form data to sync with saved state
+    await refreshFormData();
+    
     saveSuccess.value = true;
     setTimeout(() => saveSuccess.value = false, 3000);
   } catch (error: any) {
@@ -823,5 +857,9 @@ const handleSaveNotification = async (notificationData: any) => {
   await saveSettings();
 };
 </script>
+
+
+
+
 
 

@@ -278,10 +278,12 @@
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div v-for="(_, index) in 6" :key="index" class="space-y-2">
                     <Label class="text-xs">Photo {{ index + 1 }} {{ index === 0 ? '*' : '' }}</Label>
-                    <ImageUpload 
+                    <ImageUpload
                       v-model="form.photos[index]"
                       :required="index === 0"
                       :has-error="index === 0 && !!errors.photos"
+                      :upload-to-r2="!!dealerApiKey"
+                      :dealer-api-key="dealerApiKey"
                     />
                   </div>
                 </div>
@@ -463,9 +465,20 @@ import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Stepper, StepperItem, StepperSeparator, StepperTitle, StepperDescription, StepperTrigger } from '~/components/ui/stepper'
 import ImageUpload from '~/components/form-elements/ImageUpload.vue'
 import PostContent from '~/components/content/PostContent.vue'
+import { useAnalytics } from '~/composables/useAnalytics'
 
 // Runtime config
 const config = useRuntimeConfig()
+
+// Analytics
+const { trackSellMyCar } = useAnalytics()
+
+// Dealer API key for R2 uploads and CRM integration
+// This should be set in the environment or fetched from dealer settings
+const dealerApiKey = computed(() => {
+  // Check for dealer API key in runtime config
+  return config.public.dealerApiKey || ''
+})
 
 // Fetch WordPress page content
 const { data: page } = await useAsyncData(
@@ -632,69 +645,110 @@ const nextStep = () => {
 // Form submission
 const handleStepSubmit = async () => {
   if (!validateStep(currentStep.value)) return
-  
+
   // If not on last step, go to next
   if (currentStep.value < formSteps.length) {
     nextStep()
     return
   }
-  
+
   // Final submission
   isSubmitting.value = true
   submitted.value = false
   submitError.value = ''
-  
+
   try {
-    const payload = {
-      input_2: form.firstName,
-      input_3: form.lastName,
-      input_4: form.email,
-      input_5: form.phone,
-      input_6: form.year,
-      input_7: form.make,
-      input_8: form.model,
-      input_9: form.grade,
-      input_10: form.vin,
-      input_11: form.registration,
-      input_12: form.odometer,
-      input_16: form.condition,
-      input_17: form.tyreCondition,
-      input_18: form.serviceHistory,
-      input_19: form.oneOwner,
-      input_35: form.photos[0],
-      input_36: form.photos[1],
-      input_37: form.photos[2],
-      input_38: form.photos[3],
-      input_39: form.photos[4],
-      input_40: form.photos[5],
-      input_26: form.hasHailDamage ? 'Yes' : 'No',
-      input_26_details: form.hailDamageDetails,
-      input_29: form.hasFinance ? 'Yes' : 'No',
-      input_29_details: form.financeDetails,
-      input_31: form.hasKnownFaults ? 'Yes' : 'No',
-      input_31_details: form.knownFaultsDetails,
-      input_33: form.accessories,
-      input_34: form.comments,
-    }
-    
-    await $fetch(`${config.public.apiUrl}/newform`, {
-      method: 'POST',
-      body: {
-        payload,
-        formId: 9,
-      },
-    })
-    
-    submitted.value = true
-    
-    // Track in GTM
-    if (process.client && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'FormSub sell-my-car',
-        formName: 'Form sell-my-car',
-        formStatus: 'submitted',
+    // If dealer API key is available, use new CRM endpoint
+    if (dealerApiKey.value) {
+      await $fetch('/api/sell-my-car', {
+        method: 'POST',
+        headers: {
+          'X-Dealer-Key': dealerApiKey.value,
+        },
+        body: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone,
+          year: form.year,
+          make: form.make,
+          model: form.model,
+          grade: form.grade,
+          vin: form.vin,
+          registration: form.registration,
+          odometer: form.odometer,
+          condition: form.condition,
+          tyreCondition: form.tyreCondition,
+          serviceHistory: form.serviceHistory,
+          oneOwner: form.oneOwner,
+          photos: form.photos.filter(Boolean),
+          hasHailDamage: form.hasHailDamage,
+          hailDamageDetails: form.hailDamageDetails,
+          hasFinance: form.hasFinance,
+          financeDetails: form.financeDetails,
+          hasKnownFaults: form.hasKnownFaults,
+          knownFaultsDetails: form.knownFaultsDetails,
+          accessories: form.accessories,
+          comments: form.comments,
+        },
+      })
+    } else {
+      // Fallback to legacy WordPress form endpoint
+      const payload = {
+        input_2: form.firstName,
+        input_3: form.lastName,
+        input_4: form.email,
+        input_5: form.phone,
+        input_6: form.year,
+        input_7: form.make,
+        input_8: form.model,
+        input_9: form.grade,
+        input_10: form.vin,
+        input_11: form.registration,
+        input_12: form.odometer,
+        input_16: form.condition,
+        input_17: form.tyreCondition,
+        input_18: form.serviceHistory,
+        input_19: form.oneOwner,
+        input_35: form.photos[0],
+        input_36: form.photos[1],
+        input_37: form.photos[2],
+        input_38: form.photos[3],
+        input_39: form.photos[4],
+        input_40: form.photos[5],
+        input_26: form.hasHailDamage ? 'Yes' : 'No',
+        input_26_details: form.hailDamageDetails,
+        input_29: form.hasFinance ? 'Yes' : 'No',
+        input_29_details: form.financeDetails,
+        input_31: form.hasKnownFaults ? 'Yes' : 'No',
+        input_31_details: form.knownFaultsDetails,
+        input_33: form.accessories,
+        input_34: form.comments,
+      }
+
+      await $fetch(`${config.public.apiUrl}/newform`, {
+        method: 'POST',
+        body: {
+          payload,
+          formId: 9,
+        },
       })
     }
+
+    submitted.value = true
+
+    // Track sell my car form submission (GA4 + Facebook Pixel + GTM)
+    const uploadedPhotos = form.photos.filter(Boolean)
+    trackSellMyCar({
+      form_location: 'sell_my_car_page',
+      vehicle_make: form.make,
+      vehicle_model: form.model,
+      vehicle_year: form.year,
+      odometer: form.odometer ? parseInt(form.odometer) : undefined,
+      condition: form.condition,
+      has_photos: uploadedPhotos.length > 0,
+      photos_count: uploadedPhotos.length,
+    })
   } catch (error: any) {
     console.error('Form submission error:', error)
     submitError.value = error?.data?.message || 'Something went wrong. Please try again.'
@@ -710,5 +764,7 @@ declare global {
   }
 }
 </script>
+
+
 
 

@@ -317,6 +317,8 @@ import { Button } from '~/components/ui/button'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 
 const mainStore = useMainStore();
+const { trackFinanceEnquiry } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
 
@@ -426,29 +428,39 @@ const submitForm = async () => {
         lastName: form.lastName,
         email: form.email,
         phone: form.phone || undefined,
-        message: form.message || `Finance pre-approval: ${currentPayment.value}/month, ${lengthInYears.value} years, ${rate.value}% rate`,
-        vehicleInfo: {
-          price: retail.value,
+        message: form.message || undefined,
+        financeInfo: {
+          vehiclePrice: retail.value,
+          deposit: downPayment.value,
+          tradeInValue: tradeIn.value,
+          loanAmount: loanAmount.value,
+          loanTermMonths: length.value,
+          loanTermYears: lengthInYears.value,
+          interestRate: rate.value,
+          comparisonRate: comparisonRate.value,
+          weeklyPayment: Math.round(calcWeeklyPayment.value * 100) / 100,
+          fortnightlyPayment: Math.round(calcFortnightlyPayment.value * 100) / 100,
+          monthlyPayment: Math.round(calcMonthlyPayment.value * 100) / 100,
+          paymentFrequency: activeTab.value,
+          selectedPayment: currentPayment.value,
         },
         financeInterest: true,
         source: 'finance-pre-approval-form',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       }
     });
 
     isSubmitted.value = true;
 
-    // GTM tracking
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'finance',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-      });
-    }
+    // Track conversion with enhanced analytics
+    trackFinanceEnquiry({
+      form_location: 'finance_page',
+      enquiry_id: response.enquiry.id,
+      loan_amount: loanAmount.value,
+      deposit_amount: downPayment.value,
+      loan_term_months: length.value,
+    });
   } catch (error) {
     console.error('Form submission error:', error);
   } finally {
@@ -520,4 +532,6 @@ const submitForm = async () => {
   }
 }
 </style>
+
+
 

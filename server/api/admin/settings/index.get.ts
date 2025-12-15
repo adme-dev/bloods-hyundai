@@ -26,9 +26,17 @@ export default defineEventHandler(async (event) => {
         suburb: dealers.suburb,
         state: dealers.state,
         postcode: dealers.postcode,
+        // Branding
         logoUrl: dealers.logoUrl,
         primaryColor: dealers.primaryColor,
         websiteUrl: dealers.websiteUrl,
+        // Social media
+        facebookUrl: dealers.facebookUrl,
+        instagramUrl: dealers.instagramUrl,
+        linkedinUrl: dealers.linkedinUrl,
+        youtubeUrl: dealers.youtubeUrl,
+        twitterUrl: dealers.twitterUrl,
+        // Other
         oem: dealers.oem,
         isActive: dealers.isActive,
         subscriptionTier: dealers.subscriptionTier,
@@ -54,5 +62,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
+
+
+
+
 
 

@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1765407555492,
+      "tag": "0000_fearless_loki",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765765781332,
+      "tag": "0001_freezing_mariko_yashida",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765779485302,
+      "tag": "0002_add_notification_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765780920651,
+      "tag": "0003_add_sales_funnel_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1765792885698,
+      "tag": "0004_outgoing_vulcan",
+      "breakpoints": true
+    }
+  ]
+}

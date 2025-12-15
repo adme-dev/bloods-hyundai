@@ -198,6 +198,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { useAnalytics } from '~/composables/useAnalytics';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -210,6 +211,9 @@ const emit = defineEmits<{
   submit: [data: any];
   'model-change': [model: string];
 }>();
+
+// Analytics
+const { trackTestDriveBooking } = useAnalytics();
 
 // State
 const currentStep = ref(1);
@@ -375,15 +379,24 @@ const resetForm = () => {
 
 const submitForm = async () => {
   if (!isStep2Valid.value) return;
-  
+
   isSubmitting.value = true;
-  
+
   try {
+    // Track conversion before emitting
+    trackTestDriveBooking({
+      form_location: 'test_drive_modal',
+      vehicle: {
+        make: 'Hyundai',
+        model: selectedModelName.value,
+      },
+    });
+
     emit('submit', {
       ...formData.value,
       modelName: selectedModelName.value,
     });
-    
+
     currentStep.value = 3;
   } catch (error) {
     console.error('Error submitting form:', error);
@@ -910,4 +923,6 @@ $bg-light: #f5f5f5;
   }
 }
 </style>
+
+
 

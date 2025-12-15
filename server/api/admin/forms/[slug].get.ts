@@ -27,6 +27,10 @@ export default defineEventHandler(async (event) => {
   // Get form settings from dealer's settings JSON
   const formSettings = (dealer.settings as any)?.forms?.[slug] || {};
 
+  console.log('[Forms GET] Slug:', slug);
+  console.log('[Forms GET] Form settings from DB:', JSON.stringify(formSettings, null, 2));
+  console.log('[Forms GET] isActive from DB:', formSettings.isActive);
+
   // Default notification templates
   const defaultNotifications = [
     {
@@ -126,5 +130,9 @@ If you have any urgent questions, please call us.
 Kind regards,
 Sale Hyundai Team`;
 }
+
+
+
+
 
 

@@ -172,16 +172,55 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
+import { useAnalytics } from '~/composables/useAnalytics';
+
+interface AppliedOffer {
+  offerId: string;
+  title: string;
+  type?: string;
+  formattedValue?: string;
+}
+
+interface VehicleConfiguration {
+  model?: string;
+  variant?: string;
+  variantId?: string;
+  colour?: string;
+  colourPrice?: number;
+  trim?: string;
+  trimPrice?: number;
+  optionPack?: string;
+  optionPackPrice?: number;
+  prepaidService?: string;
+  prepaidServicePrice?: number;
+  basePrice?: number;
+  totalPrice?: number;
+  thumbnail?: string;
+}
+
+interface AccessoryItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity?: number;
+  isPack?: boolean;
+}
 
 const props = defineProps<{
   isOpen: boolean;
   preselectedModel?: string;
+  vehicleConfiguration?: VehicleConfiguration;
+  appliedOffers?: AppliedOffer[];
+  selectedAccessories?: AccessoryItem[];
 }>();
 
 const emit = defineEmits<{
   close: [];
   submit: [data: any];
 }>();
+
+// Analytics
+const { trackVehicleEnquiry } = useAnalytics();
 
 // State
 const isSubmitting = ref(false);
@@ -270,15 +309,64 @@ const resetForm = () => {
 
 const submitForm = async () => {
   if (!isFormValid.value) return;
-  
+
   isSubmitting.value = true;
-  
+
   try {
-    emit('submit', {
+    // Build comprehensive submission data
+    const submissionData: any = {
       ...formData.value,
       modelName: selectedModelName.value,
+    };
+
+    // Include vehicle configuration if provided
+    if (props.vehicleConfiguration) {
+      submissionData.vehicleConfiguration = props.vehicleConfiguration;
+    }
+
+    // Include applied offers if provided
+    if (props.appliedOffers && props.appliedOffers.length > 0) {
+      submissionData.appliedOffers = props.appliedOffers;
+    }
+
+    // Include selected accessories if provided
+    if (props.selectedAccessories && props.selectedAccessories.length > 0) {
+      submissionData.selectedAccessories = props.selectedAccessories;
+    }
+
+    // Track conversion before emitting (ensures tracking even if parent errors)
+    const isFromCalculator = !!props.vehicleConfiguration;
+    const accessoriesTotal = props.selectedAccessories?.reduce((sum, acc) => sum + (acc.price * (acc.quantity || 1)), 0) || 0;
+
+    trackVehicleEnquiry({
+      form_type: isFromCalculator ? 'calculator_enquiry' : 'vehicle_enquiry',
+      form_location: isFromCalculator ? 'calculator_modal' : 'enquire_modal',
+      vehicle: props.vehicleConfiguration ? {
+        make: 'Hyundai',
+        model: props.vehicleConfiguration.model,
+        variant: props.vehicleConfiguration.variant,
+        colour: props.vehicleConfiguration.colour,
+        price: props.vehicleConfiguration.totalPrice,
+        condition: 'new',
+      } : {
+        make: 'Hyundai',
+        model: selectedModelName.value,
+      },
+      has_applied_offers: !!(props.appliedOffers && props.appliedOffers.length > 0),
+      applied_offers_count: props.appliedOffers?.length || 0,
+      has_accessories: !!(props.selectedAccessories && props.selectedAccessories.length > 0),
+      accessories_count: props.selectedAccessories?.length || 0,
+      accessories_value: accessoriesTotal,
+      configuration: props.vehicleConfiguration ? {
+        has_option_pack: !!props.vehicleConfiguration.optionPack,
+        has_colour_upgrade: !!(props.vehicleConfiguration.colourPrice && props.vehicleConfiguration.colourPrice > 0),
+        has_prepaid_service: !!props.vehicleConfiguration.prepaidService,
+        total_configured_price: props.vehicleConfiguration.totalPrice,
+      } : undefined,
     });
-    
+
+    emit('submit', submissionData);
+
     showSuccess.value = true;
   } catch (error) {
     console.error('Error submitting form:', error);
@@ -711,4 +799,6 @@ $bg-light: #f5f5f5;
   }
 }
 </style>
+
+
 

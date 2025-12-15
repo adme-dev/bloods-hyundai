@@ -719,6 +719,9 @@
     <EnquireModal
       :is-open="showEnquireModal"
       :preselected-model="modelSlug"
+      :vehicle-configuration="currentVehicleConfiguration"
+      :applied-offers="currentOffers"
+      :selected-accessories="selectedAccessories"
       @close="showEnquireModal = false"
       @submit="handleEnquireSubmit"
     />
@@ -1047,6 +1050,29 @@ const currentOffers = computed(() => {
 const hasActiveOffer = computed(() => {
   return selectedVariant.value?.featuredOffer || currentOffers.value.length > 0;
 });
+
+// Vehicle configuration computed for enquiry submission
+const currentVehicleConfiguration = computed(() => {
+  if (!selectedVariant.value) return undefined;
+
+  return {
+    model: calculatorData.value?.modelName || modelSlug.value,
+    variant: selectedVariant.value?.name,
+    variantId: selectedVariant.value?.id,
+    colour: selectedColour.value?.name,
+    colourPrice: selectedColour.value?.price || 0,
+    trim: selectedTrim.value?.name,
+    trimPrice: selectedTrim.value?.price || 0,
+    optionPack: selectedOptionPack.value?.name,
+    optionPackPrice: selectedOptionPack.value?.price || 0,
+    prepaidService: selectedPrepaidPlan.value ? `${selectedPrepaidPlan.value.year} Year Plan` : undefined,
+    prepaidServicePrice: selectedPrepaidPlan.value?.price || 0,
+    basePrice: variantPricing.value?.finalDriveAwayPrice || selectedVariant.value?.price || 0,
+    totalPrice: totalPrice.value,
+    thumbnail: selectedVariant.value?.image || calculatorData.value?.modelImage,
+  };
+});
+
 // Accessories computed properties
 const featuredAccessories = computed(() => {
   if (!accessoriesData.value?.accessories) return [];
@@ -1278,10 +1304,74 @@ const enquireNow = () => {
   showEnquireModal.value = true;
 };
 
-const handleEnquireSubmit = (formData: any) => {
-  console.log('Enquire form submitted:', formData);
-  // TODO: Send form data to backend/CRM
-  // For now, just log it - you can integrate with your form submission endpoint
+const handleEnquireSubmit = async (formData: any) => {
+  try {
+    // Build vehicleInfo from the configuration
+    const vehicleInfo: any = {
+      make: 'Hyundai',
+      model: formData.vehicleConfiguration?.model || modelSlug.value,
+      variant: formData.vehicleConfiguration?.variant,
+      colour: formData.vehicleConfiguration?.colour,
+      price: formData.vehicleConfiguration?.totalPrice,
+      thumbnail: formData.vehicleConfiguration?.thumbnail,
+      condition: 'new',
+    };
+
+    // Build accessories cart if there are selected accessories
+    let accessoriesCart = undefined;
+    if (formData.selectedAccessories && formData.selectedAccessories.length > 0) {
+      const items = formData.selectedAccessories.map((acc: any) => ({
+        id: acc.id,
+        name: acc.name,
+        price: acc.price || 0,
+        quantity: acc.quantity || 1,
+        type: acc.isPack ? 'pack' : 'accessory',
+        subtotal: (acc.price || 0) * (acc.quantity || 1),
+        image: acc.image,
+        thumbnail: acc.thumbnail,
+      }));
+
+      accessoriesCart = {
+        model: formData.vehicleConfiguration?.model || modelSlug.value,
+        items,
+        itemCount: items.length,
+        total: items.reduce((sum: number, item: any) => sum + item.subtotal, 0),
+      };
+    }
+
+    // Build the enquiry submission payload
+    const enquiryPayload = {
+      type: 'vehicle' as const,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      postcode: formData.postcode,
+      source: 'calculator',
+      vehicleInfo,
+      accessoriesCart,
+      // Include applied offers in the vehicle info or as separate field
+      appliedOffers: formData.appliedOffers?.map((offer: any) => ({
+        offerId: offer.offerId,
+        title: offer.title,
+        type: offer.type,
+        formattedValue: offer.formattedValue,
+      })),
+      // Include detailed configuration for CRM reference
+      vehicleConfiguration: formData.vehicleConfiguration,
+    };
+
+    // Submit to API
+    const response = await $fetch('/api/submit-enquiry', {
+      method: 'POST',
+      body: enquiryPayload,
+    });
+
+    console.log('✅ [Calculator] Enquiry submitted successfully:', response);
+  } catch (error) {
+    console.error('❌ [Calculator] Error submitting enquiry:', error);
+    // The modal already shows success - in production you might want error handling
+  }
 };
 // Accessories are now fetched server-side via useFetch above
 // No need for manual fetchAccessories function
@@ -3639,4 +3729,6 @@ $bg-white: #fff;
   }
 }
 </style>
+
+
 

@@ -240,6 +240,8 @@
 
 <script setup lang="ts">
 const mainStore = useMainStore();
+const { trackFleetEnquiry } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 const salesPhone = computed(() => mainStore.site?.departments?.sales?.phone || '');
 
@@ -309,22 +311,21 @@ const submitForm = async () => {
           model: form.modelsInterested.length ? form.modelsInterested[0] : undefined,
         },
         source: 'fleet-form',
+        // UTM tracking for marketing analytics
+        ...getUtmParams(),
       }
     });
 
     isSubmitted.value = true;
 
-    // GTM tracking
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'vehicle',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        companyName: form.companyName,
-        fleetSize: form.fleetSize,
-      });
-    }
+    // Track fleet enquiry conversion
+    trackFleetEnquiry({
+      form_location: 'fleet_form_page',
+      enquiry_id: response.enquiry.id,
+      company_name: form.companyName,
+      fleet_size: form.fleetSize,
+      vehicles_interested: form.modelsInterested,
+    });
   } catch (error) {
     console.error('Form submission error:', error);
   } finally {
@@ -366,6 +367,8 @@ const resetForm = () => {
   margin-right: 8px;
 }
 </style>
+
+
 
 
 

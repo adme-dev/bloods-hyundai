@@ -232,6 +232,8 @@ const { $uikit } = useNuxtApp();
 const route = useRoute();
 const mainStore = useMainStore();
 const config = useRuntimeConfig();
+const { trackContactForm, trackPartsEnquiry } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 // State
 const form = reactive({
@@ -329,6 +331,9 @@ const submitForm = async () => {
       finance_form: 'finance',
     };
 
+    // Get UTM params for marketing attribution
+    const utmParams = getUtmParams();
+
     // Submit to the new Neon database API
     const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
@@ -341,24 +346,31 @@ const submitForm = async () => {
         message: form.message || undefined,
         vehicleInfo: form.registration ? { registration: form.registration } : undefined,
         source: route.path,
+        // UTM tracking for marketing analytics
+        utmSource: utmParams.utmSource,
+        utmMedium: utmParams.utmMedium,
+        utmCampaign: utmParams.utmCampaign,
       },
     });
 
     isSending.value = false;
     isSent.value = true;
 
-    // Track in GTM
-    if (process.client && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: `FormSubmission`,
-        formType: props.formType || 'contact',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        phone: form.phone,
-        message: form.message,
+    // Track conversion with enhanced analytics
+    const formType = typeMap[props.activeHoursTab] || props.formType || 'contact';
+    if (formType === 'parts') {
+      trackPartsEnquiry({
+        form_location: 'contact_page',
+        enquiry_id: response.enquiry.id,
+        has_registration: !!form.registration,
+        has_message: !!form.message,
+      });
+    } else {
+      trackContactForm({
+        form_location: 'contact_page',
+        enquiry_id: response.enquiry.id,
+        department: formType,
+        has_message: !!form.message,
       });
     }
   } catch (error: any) {
@@ -381,6 +393,8 @@ const submitForm = async () => {
   border: 1px solid #ff002f;
 }
 </style>
+
+
 
 
 

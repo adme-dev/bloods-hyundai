@@ -78,10 +78,31 @@
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">All status</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="contacted">Contacted</SelectItem>
-              <SelectItem value="closed">Closed</SelectItem>
+              <SelectGroup>
+                <SelectLabel class="text-xs text-muted-foreground">Cold Leads</SelectLabel>
+                <SelectItem value="new_lead">New Lead</SelectItem>
+                <SelectItem value="qualified">Qualified</SelectItem>
+                <SelectItem value="attempted_contact">Attempted Contact</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel class="text-xs text-muted-foreground">Warm Leads</SelectLabel>
+                <SelectItem value="appointment_set">Appointment Set</SelectItem>
+                <SelectItem value="showed">Showed</SelectItem>
+                <SelectItem value="test_drive">Test Drive</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel class="text-xs text-muted-foreground">Hot Leads</SelectLabel>
+                <SelectItem value="negotiating">Negotiating</SelectItem>
+                <SelectItem value="pending_finance">Pending Finance</SelectItem>
+                <SelectItem value="pending_trade">Pending Trade</SelectItem>
+                <SelectItem value="deposit_taken">Deposit Taken</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel class="text-xs text-muted-foreground">Closed</SelectLabel>
+                <SelectItem value="sold">Sold</SelectItem>
+                <SelectItem value="lost">Lost</SelectItem>
+                <SelectItem value="dead">Dead</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
         </div>
@@ -313,13 +334,16 @@ definePageMeta({
   middleware: 'auth',
 });
 
+const route = useRoute();
+
+// Initialize filters from URL query parameters
 const filters = reactive({
-  search: '',
-  type: '__all__',
-  status: '__all__',
-  assigned: '__all__',
-  view: 'inbox',
-  page: 1,
+  search: (route.query.search as string) || '',
+  type: (route.query.type as string) || '__all__',
+  status: (route.query.status as string) || '__all__',
+  assigned: (route.query.assigned as string) || '__all__',
+  view: (route.query.view as string) || 'inbox',
+  page: parseInt(route.query.page as string) || 1,
 });
 
 // View tabs configuration

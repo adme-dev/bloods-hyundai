@@ -2195,3 +2195,5 @@ watch(() => route.query.stock, (stockId) => {
 }
 </style>
 
+
+

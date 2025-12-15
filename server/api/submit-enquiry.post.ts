@@ -23,16 +23,35 @@ interface EnquirySubmission {
   source?: string;
   
   vehicleInfo?: {
+    // Identifiers
+    stockId?: string;
+    vin?: string;
+
+    // Basic Info
+    condition?: string;
     make?: string;
     model?: string;
-    year?: number;
     variant?: string;
-    stockId?: string;
-    price?: number;
-    condition?: string;
-    vin?: string;
+    year?: number;
+
+    // Specifications
+    kms?: number | string;
+    transmission?: string;
+    fuel?: string;
+    drivetrain?: string;
+    body?: string;
     colour?: string;
+    seats?: number;
+    engine?: string;
     registration?: string;
+
+    // Pricing
+    price?: number;
+    priceDisplay?: string;
+
+    // Media (lightweight - for emails/CRM display)
+    thumbnail?: string;
+    vehicleUrl?: string;
   };
   
   tradeIn?: {
@@ -54,7 +73,66 @@ interface EnquirySubmission {
     vehicleModel?: string;
     vehicleYear?: string;
   };
-  
+
+  financeInfo?: {
+    vehiclePrice?: number;
+    deposit?: number;
+    tradeInValue?: number;
+    loanAmount?: number;
+    loanTermMonths?: number;
+    loanTermYears?: number;
+    interestRate?: number;
+    comparisonRate?: number;
+    weeklyPayment?: number;
+    fortnightlyPayment?: number;
+    monthlyPayment?: number;
+    paymentFrequency?: 'weekly' | 'fortnightly' | 'monthly';
+    selectedPayment?: string;
+  };
+
+  accessoriesCart?: {
+    model?: string | null;
+    items: {
+      id: string;
+      name: string;
+      partNumber?: string;
+      price: number;
+      quantity: number;
+      type: 'accessory' | 'pack';
+      subtotal: number;
+      image?: string | null;
+      thumbnail?: string | null;
+    }[];
+    itemCount: number;
+    total: number;
+  };
+
+  // Applied offers from vehicle builder
+  appliedOffers?: {
+    offerId: string;
+    title: string;
+    type?: string;
+    formattedValue?: string;
+  }[];
+
+  // Detailed vehicle configuration from calculator/builder
+  vehicleConfiguration?: {
+    model?: string;
+    variant?: string;
+    variantId?: string;
+    colour?: string;
+    colourPrice?: number;
+    trim?: string;
+    trimPrice?: number;
+    optionPack?: string;
+    optionPackPrice?: number;
+    prepaidService?: string;
+    prepaidServicePrice?: number;
+    basePrice?: number;
+    totalPrice?: number;
+    thumbnail?: string;
+  };
+
   testDrive?: boolean;
   financeInterest?: boolean;
   
@@ -115,7 +193,27 @@ export default defineEventHandler(async (event) => {
     const userAgent = getHeader(event, 'user-agent');
     const referer = getHeader(event, 'referer');
     
-    // 4. Insert enquiry into database
+    // 4. Build enhanced vehicle info with configuration and offers
+    const enhancedVehicleInfo = body.vehicleInfo ? {
+      ...body.vehicleInfo,
+      // Include detailed configuration from vehicle builder
+      configuration: body.vehicleConfiguration,
+      // Include applied offers
+      appliedOffers: body.appliedOffers,
+    } : body.vehicleConfiguration ? {
+      // If no vehicleInfo but we have configuration, use configuration
+      make: 'Hyundai',
+      model: body.vehicleConfiguration.model,
+      variant: body.vehicleConfiguration.variant,
+      colour: body.vehicleConfiguration.colour,
+      price: body.vehicleConfiguration.totalPrice,
+      thumbnail: body.vehicleConfiguration.thumbnail,
+      condition: 'new',
+      configuration: body.vehicleConfiguration,
+      appliedOffers: body.appliedOffers,
+    } : undefined;
+
+    // 5. Insert enquiry into database
     const [enquiry] = await db
       .insert(enquiries)
       .values({
@@ -131,8 +229,10 @@ export default defineEventHandler(async (event) => {
         state: body.state,
         message: body.message,
         vehicleStockId: body.vehicleInfo?.stockId,
-        vehicleInfo: body.vehicleInfo || undefined,
+        vehicleInfo: enhancedVehicleInfo,
         tradeInInfo: body.tradeIn || undefined,
+        financeDetails: body.financeInfo || undefined,
+        accessoriesCart: body.accessoriesCart || undefined,
         testDrive: body.testDrive || false,
         financeInterest: body.financeInterest || false,
         status: 'new',
@@ -189,5 +289,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
+
+
+
+
 
 

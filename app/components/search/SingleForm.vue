@@ -122,6 +122,9 @@
 </template>
 
 <script setup lang="ts">
+import { useAnalytics } from '~/composables/useAnalytics';
+import { useUtmParams } from '~/composables/useUtmParams';
+
 interface Vehicle {
   stockid?: string | number;
   slug?: string;
@@ -140,6 +143,8 @@ const props = defineProps<{
 }>();
 
 const mainStore = useMainStore();
+const { trackVehicleEnquiry } = useAnalytics();
+const { getUtmParams } = useUtmParams();
 
 // Form state
 const form = reactive({
@@ -201,6 +206,9 @@ const submitForm = async () => {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
     
+    // Get UTM params for marketing attribution
+    const utmParams = getUtmParams();
+
     // Submit to the new Neon database API
     const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
@@ -221,25 +229,36 @@ const submitForm = async () => {
         testDrive: form.testDrive,
         financeInterest: form.finance,
         source: 'vehicle-single-form',
+        // UTM tracking for marketing analytics
+        utmSource: utmParams.utmSource,
+        utmMedium: utmParams.utmMedium,
+        utmCampaign: utmParams.utmCampaign,
       }
     });
 
     isSent.value = true;
 
-    // GTM tracking
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'vehicle',
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        stockId: vehicle?.stockid || props.itemStock,
-        vehicleTitle: vehicle?.title,
-        testDrive: form.testDrive,
-        tradeIn: form.tradeIn,
-        finance: form.finance,
-      });
-    }
+    // Track vehicle enquiry (GA4 + Facebook Pixel + GTM)
+    const conditionValue = vehicle?.condition?.displayValue?.[0] || props.condition || '';
+    const validCondition = ['new', 'used', 'demo'].includes(conditionValue.toLowerCase())
+      ? conditionValue.toLowerCase() as 'new' | 'used' | 'demo'
+      : undefined;
+
+    trackVehicleEnquiry({
+      form_location: 'vehicle_single_form',
+      enquiry_id: response.enquiry.id,
+      vehicle: {
+        stockid: String(vehicle?.stockid || props.itemStock || ''),
+        condition: validCondition,
+        make: vehicle?.make?.displayValue?.[0] || 'Unknown',
+        model: vehicle?.model?.displayValue?.[0] || 'Unknown',
+        variant: vehicle?.badge?.displayValue?.[0] || undefined,
+      },
+      has_trade_in: form.tradeIn,
+      interested_in_finance: form.finance,
+      wants_test_drive: form.testDrive,
+      has_message: !!form.message,
+    });
   } catch (error) {
     console.error('Form submission error:', error);
   } finally {
@@ -278,6 +297,8 @@ const resetForm = () => {
   }
 }
 </style>
+
+
 
 
 

@@ -1,11 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { db, withTenantContext } from '../../../../utils/db';
 import { enquiries, enquiryActivityLog } from '../../../../database/schema';
+import { VALID_ENQUIRY_STATUSES, ENQUIRY_STATUS_CONFIG, type EnquiryStatus } from '~~/shared/constants/salesFunnel';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
   const dealerId = event.context.dealerId;
-  
+
   if (!user || !dealerId) {
     throw createError({
       statusCode: 401,
@@ -15,12 +16,12 @@ export default defineEventHandler(async (event) => {
 
   const enquiryId = getRouterParam(event, 'id');
   const body = await readBody(event);
-  const { status } = body;
+  const { status, lostReason } = body;
 
-  if (!status || !['new', 'in_progress', 'contacted', 'closed'].includes(status)) {
+  if (!status || !VALID_ENQUIRY_STATUSES.includes(status as EnquiryStatus)) {
     throw createError({
       statusCode: 400,
-      message: 'Invalid status',
+      message: `Invalid status. Valid values: ${VALID_ENQUIRY_STATUSES.join(', ')}`,
     });
   }
 
@@ -53,5 +54,9 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
+
+
+
+
 
 
