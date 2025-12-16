@@ -265,40 +265,43 @@
                 </div>
               </div>
             </div>
-            <div class="mb-5 relative" style="height: 20px;">
-              <!-- Background track -->
-              <div class="absolute top-1/2 left-0 right-0 h-2 bg-gray-200 dark:bg-gray-700 rounded-full transform -translate-y-1/2"></div>
-              
-              <!-- Active range track -->
-              <div 
-                class="absolute top-1/2 h-2 bg-blue-600 dark:bg-blue-500 rounded-full transform -translate-y-1/2"
-                :style="{
-                  left: `${((weeklyBudget[0] - minWeeklyBudget) / (maxWeeklyBudget - minWeeklyBudget)) * 100}%`,
-                  width: `${((weeklyBudget[1] - weeklyBudget[0]) / (maxWeeklyBudget - minWeeklyBudget)) * 100}%`
-                }"
-              ></div>
-              
-              <!-- Min slider -->
-              <input
-                v-model.number="weeklyBudget[0]"
-                type="range"
-                :min="minWeeklyBudget"
-                :max="weeklyBudget[1]"
-                :step="1"
-                class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2 z-10"
-                @input="updateBudgetFilter"
-              />
-              
-              <!-- Max slider -->
-              <input
-                v-model.number="weeklyBudget[1]"
-                type="range"
-                :min="weeklyBudget[0]"
-                :max="maxWeeklyBudget"
-                :step="1"
-                class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2 z-20"
-                @input="updateBudgetFilter"
-              />
+            <div class="slider-container mb-5 relative" style="height: 40px;">
+              <div class="slider-track-wrapper" style="position: relative; margin: 0 12px; height: 100%;">
+                <!-- Background track -->
+                <div class="absolute top-1/2 left-0 right-0 h-2 bg-gray-200 dark:bg-gray-700 rounded-full transform -translate-y-1/2"></div>
+                
+                <!-- Active range track -->
+                <div 
+                  class="absolute top-1/2 h-2 rounded-full transform -translate-y-1/2"
+                  :style="{
+                    backgroundColor: '#001E50',
+                    left: `${((weeklyBudget[0] - minWeeklyBudget) / (maxWeeklyBudget - minWeeklyBudget)) * 100}%`,
+                    width: `${((weeklyBudget[1] - weeklyBudget[0]) / (maxWeeklyBudget - minWeeklyBudget)) * 100}%`
+                  }"
+                ></div>
+                
+                <!-- Min slider -->
+                <input
+                  v-model.number="weeklyBudget[0]"
+                  type="range"
+                  :min="minWeeklyBudget"
+                  :max="weeklyBudget[1]"
+                  :step="1"
+                  class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2 z-10"
+                  @input="updateBudgetFilter"
+                />
+                
+                <!-- Max slider -->
+                <input
+                  v-model.number="weeklyBudget[1]"
+                  type="range"
+                  :min="weeklyBudget[0]"
+                  :max="maxWeeklyBudget"
+                  :step="1"
+                  class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2 z-20"
+                  @input="updateBudgetFilter"
+                />
+              </div>
             </div>
           </div>
         </template>
@@ -312,7 +315,8 @@
             </button>
             <NuxtLink
               :to="{ path: '/car-sales', query: currentFilterQuery }"
-              class="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white dark:text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+              class="text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+              style="background-color: #001E50;"
               @click="closeDialog('budget')"
             >
               Show {{ filteredVehicleCount }} cars
@@ -396,7 +400,8 @@
             </button>
             <NuxtLink
               :to="{ path: '/car-sales', query: currentFilterQuery }"
-              class="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white dark:text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+              class="text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+              style="background-color: #001E50;"
               @click="closeDialog('condition')"
             >
               Show {{ filteredVehicleCount }} cars
@@ -518,7 +523,8 @@
             </button>
             <NuxtLink
               :to="{ path: '/car-sales', query: currentFilterQuery }"
-              class="bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white dark:text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+              class="text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
+              style="background-color: #001E50;"
               @click="closeDialog('model')"
             >
               Show {{ filteredVehicleCount }} cars
@@ -1007,17 +1013,17 @@ const currentFilterQuery = computed(() => {
   width: 20px;
   height: 20px;
   background: white;
-  border: 2px solid #2563eb;
+  border: 2px solid #001E50;
   border-radius: 50%;
   cursor: grab;
   pointer-events: all;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(0, 30, 80, 0.1);
   transition: all 0.2s ease;
 }
 
 .slider-thumb::-webkit-slider-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(0, 30, 80, 0.15);
 }
 
 .slider-thumb::-webkit-slider-thumb:active {
@@ -1029,17 +1035,17 @@ const currentFilterQuery = computed(() => {
   width: 20px;
   height: 20px;
   background: white;
-  border: 2px solid #2563eb;
+  border: 2px solid #001E50;
   border-radius: 50%;
   cursor: grab;
   pointer-events: all;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(0, 30, 80, 0.1);
   transition: all 0.2s ease;
 }
 
 .slider-thumb::-moz-range-thumb:hover {
   transform: scale(1.1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(0, 30, 80, 0.15);
 }
 
 .slider-thumb::-moz-range-thumb:active {
@@ -1049,22 +1055,22 @@ const currentFilterQuery = computed(() => {
 
 .dark .slider-thumb::-webkit-slider-thumb {
   background: #1f2937;
-  border-color: #60a5fa;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(96, 165, 250, 0.15);
+  border-color: #001E50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(0, 30, 80, 0.15);
 }
 
 .dark .slider-thumb::-webkit-slider-thumb:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(96, 165, 250, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(0, 30, 80, 0.2);
 }
 
 .dark .slider-thumb::-moz-range-thumb {
   background: #1f2937;
-  border-color: #60a5fa;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(96, 165, 250, 0.15);
+  border-color: #001E50;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(0, 30, 80, 0.15);
 }
 
 .dark .slider-thumb::-moz-range-thumb:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(96, 165, 250, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(0, 30, 80, 0.2);
 }
 </style>
 

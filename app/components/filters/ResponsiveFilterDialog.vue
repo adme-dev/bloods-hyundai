@@ -4,7 +4,8 @@
     <div
       v-if="isDesktop"
       v-show="open"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      class="fixed inset-0 flex items-center justify-center bg-black/50"
+      style="z-index: 1000;"
       @click.self="$emit('update:open', false)"
     >
       <div
@@ -63,7 +64,8 @@
     <div
       v-else
       v-show="open"
-      class="fixed inset-0 z-50"
+      class="fixed inset-0"
+      style="z-index: 1000;"
     >
       <!-- Backdrop -->
       <div
