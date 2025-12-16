@@ -1257,30 +1257,34 @@ async function fetchVehicleCatalog() {
     if (!response.ok) return null;
 
     const data = await response.json();
-    if (!data?.variants) return null;
+    // API returns an array directly, filter out hidden items
+    if (!Array.isArray(data)) return null;
 
-    const variants = data.variants;
+    const variants = data.filter((item: any) => !item.hideInListing);
 
     // Group by category
     const categories: Record<string, any[]> = {};
     const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch and Sedans'];
 
     for (const variant of variants) {
-      const category = variant.category || 'Other';
+      // Category is nested object with .name property
+      const category = variant.primaryCategory?.name || 'Other';
       if (!categories[category]) {
         categories[category] = [];
       }
+      // Model name is nested in .model.model
+      const modelName = variant.model?.model || variant.model || 'Unknown';
       categories[category].push({
         id: variant.id || variant.modelId,
-        name: variant.name,
-        slug: variant.slug || variant.name?.toLowerCase().replace(/\s+/g, '-'),
-        image: variant.desktopImage || variant.image,
+        name: modelName,
+        slug: modelName?.toLowerCase().replace(/\s+/g, '-'),
+        image: variant.desktopImageUrl || variant.mobileImageUrl,
         lowPrice: variant.lowPrice,
         highPrice: variant.highPrice,
-        fuelType: variant.fuelType,
-        isNew: variant.name?.includes('2025') || variant.name?.includes('INSTER'),
+        fuelType: category === 'Electric' ? 'Electric' : category === 'Hybrid' ? 'Hybrid' : 'Petrol',
+        isNew: modelName?.includes('2025') || modelName?.includes('INSTER'),
         isNPerformance: variant.isNPerformance,
-        hasOffer: variant.hasOffer,
+        hasOffer: false, // Not available in this API response
       });
     }
 
@@ -1311,8 +1315,11 @@ async function fetchVehicleCatalog() {
         suv: categories['SUVs and People Movers']?.length || 0,
         performance: categories['Performance']?.length || 0,
       },
-      newModels: variants.filter((v: any) => v.name?.includes('2025') || v.name?.includes('INSTER')).length,
-      withOffers: variants.filter((v: any) => v.hasOffer).length,
+      newModels: variants.filter((v: any) => {
+        const name = v.model?.model || v.model || '';
+        return name.includes('2025') || name.includes('INSTER');
+      }).length,
+      withOffers: 0, // Offers not available in this API response
     };
   } catch (error) {
     console.error('Failed to fetch vehicle catalog:', error);
@@ -1322,32 +1329,67 @@ async function fetchVehicleCatalog() {
 
 async function fetchCurrentOffers() {
   try {
-    const response = await fetch('https://www.hyundai.com/au/en/offers');
+    // Use the same parsing logic as /api/hyundai-offers
+    const response = await fetch('https://www.hyundai.com/au/en/offers', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-AU,en;q=0.9',
+      },
+    });
     if (!response.ok) return null;
 
     const html = await response.text();
 
-    // Extract JSON data from the page
-    const scriptMatch = html.match(/window\.__NUXT__\s*=\s*({[\s\S]*?})\s*<\/script>/);
-    if (!scriptMatch) return null;
+    // Extract offers data using same patterns as /api/hyundai-offers
+    const patterns = [
+      /window\.hyundaiData\s*\[\s*["']offersData["']\s*\]\s*=\s*(\[[\s\S]*?\]);?\s*(?:<\/script>|window\.)/,
+      /window\.hyundaiData\["offersData"\]\s*=\s*(\[[\s\S]*?\]);?\s*<\/script>/,
+      /hyundaiData\["offersData"\]\s*=\s*(\[[\s\S]*?\]);/,
+      /"offersData"\s*:\s*(\[[\s\S]*?\])\s*[,}]/,
+    ];
 
-    // Try to parse offer count from the page
-    const offerCountMatch = html.match(/(\d+)\s*offers?\s*available/i);
-    const totalOffers = offerCountMatch ? parseInt(offerCountMatch[1]) : 0;
-
-    // Extract model names with offers
-    const modelOffers: string[] = [];
-    const modelMatches = html.matchAll(/data-model-name="([^"]+)"/g);
-    for (const match of modelMatches) {
-      if (!modelOffers.includes(match[1])) {
-        modelOffers.push(match[1]);
+    let offersData = null;
+    for (const regex of patterns) {
+      const match = html.match(regex);
+      if (match && match[1]) {
+        try {
+          offersData = JSON.parse(match[1]);
+          break;
+        } catch {
+          continue;
+        }
       }
     }
 
+    if (!offersData) {
+      return {
+        totalOffers: 0,
+        modelsWithOffers: [],
+        hasActiveOffers: false,
+      };
+    }
+
+    const data = Array.isArray(offersData) ? offersData[0] : offersData;
+    const variants = data?.variants || [];
+
+    // Count variants with offers
+    const variantsWithOffers = variants.filter((v: any) => {
+      if (!v.offerPackages || !Array.isArray(v.offerPackages)) return false;
+      return v.offerPackages.some((pkg: any) =>
+        pkg.offers && Array.isArray(pkg.offers) && pkg.offers.length > 0
+      );
+    });
+
+    // Extract unique model names with offers
+    const modelNames = [...new Set(
+      variantsWithOffers.map((v: any) => v.modelGroup || v.modelName || '')
+    )].filter(Boolean) as string[];
+
     return {
-      totalOffers,
-      modelsWithOffers: modelOffers.slice(0, 10),
-      hasActiveOffers: totalOffers > 0 || modelOffers.length > 0,
+      totalOffers: variantsWithOffers.length,
+      modelsWithOffers: modelNames,
+      hasActiveOffers: variantsWithOffers.length > 0,
     };
   } catch (error) {
     console.error('Failed to fetch offers:', error);

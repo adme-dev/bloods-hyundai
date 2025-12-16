@@ -1610,9 +1610,9 @@
             </div>
 
             <Button variant="outline" class="w-full" as-child>
-              <a href="https://www.hyundai.com/au/en/offers" target="_blank" rel="noopener">
-                View All Offers <ExternalLink class="ml-2 h-4 w-4" />
-              </a>
+              <NuxtLink to="/special-offers">
+                View All Offers
+              </NuxtLink>
             </Button>
           </div>
           <div v-else class="py-8 text-center">
@@ -1653,7 +1653,6 @@ import {
   Sparkles,
   Truck,
   Tag,
-  ExternalLink,
   // Sales Command Center icons
   AlertTriangle,
   Target,
