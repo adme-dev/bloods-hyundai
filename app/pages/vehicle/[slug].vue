@@ -97,14 +97,14 @@
         </div>
       </div>
 
-      <!-- Form Section (if vehicle has form) -->
-      <div v-if="vehicle.form" :class="[vehicle.formbg === 'uk-light' ? 'uk-background-secondary uk-light' : '']">
-        <div class="uk-container form-wrap" :class="[vehicle.form === 'Contact' ? 'uk-container-large' : 'uk-container-xsmall']">
-          <component 
-            :is="dynamicFormComponent" 
-            activeHoursTab="register" 
-            class="uk-margin-large-bottom uk-margin-large-top" 
-            id="register"
+      <!-- Register Interest Form Section -->
+      <div v-if="vehicle.form" id="register" class="py-12 bg-gray-50">
+        <div class="container mx-auto px-4">
+          <RegisterInterestForm
+            :vehicle-model="vehicle.model"
+            :vehicle-slug="slug"
+            :vehicle-image="heroSlide?.desktop"
+            source="vehicle_page"
           />
         </div>
       </div>
@@ -152,7 +152,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue';
 import Swiper from 'swiper';
 import { Navigation, Pagination, Autoplay, Controller, Thumbs } from 'swiper/modules';
 import 'swiper/css';
@@ -208,17 +207,6 @@ const vehicleSearchModel = computed(() => {
   // This handles cases like 'tucson-n-line' -> 'tucson'
   const parts = slugValue.split('-');
   return parts[0];
-});
-
-// Dynamic form component - only ContactForm is available in Nuxt
-const dynamicFormComponent = computed(() => {
-  if (!vehicle.value?.form) return null;
-  
-  // Both Register and Contact use ContactForm in Nuxt (RegisterForm not ported)
-  if (vehicle.value.form === 'Register' || vehicle.value.form === 'Contact') {
-    return defineAsyncComponent(() => import('~/components/page-elements/ContactForm.vue'));
-  }
-  return null;
 });
 
 // SEO
