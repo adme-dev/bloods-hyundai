@@ -1,4 +1,25 @@
 /**
+ * Parse a date string that could be in DD-MM-YYYY or standard format
+ */
+function parseDate(dateStr: string | Date): Date | null {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  
+  // Check if it's DD-MM-YYYY format (e.g., "01-11-2025")
+  const ddmmyyyy = /^(\d{2})-(\d{2})-(\d{4})$/;
+  const match = dateStr.match(ddmmyyyy);
+  
+  if (match) {
+    const [, day, month, year] = match;
+    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  }
+  
+  // Try standard Date parsing
+  const parsed = new Date(dateStr);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
  * Check if current date is within a date range
  * Used for promotional content, tickers, etc.
  */
@@ -8,9 +29,9 @@ export function isDateInRange(start?: string | Date, end?: string | Date): boole
   // If no dates provided, always show
   if (!start && !end) return true;
   
-  // Parse dates
-  const startDate = start ? new Date(start) : null;
-  const endDate = end ? new Date(end) : null;
+  // Parse dates (handles DD-MM-YYYY format)
+  const startDate = start ? parseDate(start) : null;
+  const endDate = end ? parseDate(end) : null;
   
   // Check start date
   if (startDate && now < startDate) return false;

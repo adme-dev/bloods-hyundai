@@ -6,8 +6,11 @@
         <div class="h-full bg-primary-light animate-pulse" style="animation: loading 1.5s ease-in-out infinite;"></div>
       </div>
 
+      <!-- Top Bar with Reviews, Address, Phone -->
+      <TopBar class="hidden md:block" />
+
       <!-- Main Navigation -->
-      <nav class="bg-white border-b border-gray-200 relative">
+      <nav ref="navRef" class="bg-white border-b border-gray-200 relative">
         <div class="max-w-[1400px] mx-auto px-4 lg:px-8">
           <div class="flex items-center h-16">
             <!-- Logo + Menu Group (Left Side) -->
@@ -87,9 +90,8 @@
                 <div 
                   v-if="hasDropdown(item) && item.submenuHtml"
                   :id="`nav-dropdown-${index}`"
-                  class="fixed left-0 right-0 w-screen bg-white shadow-lg z-[1000] border-t border-gray-200 transition-all duration-200 ease-in-out"
+                  class="nav-dropdown fixed left-0 right-0 w-screen bg-white shadow-lg z-[1000] border-t border-gray-200 transition-all duration-200 ease-in-out"
                   :class="activeDropdown === index ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'"
-                  style="top: 64px;"
                   @mouseenter="keepItemDropdownOpen(index)"
                   @mouseleave="hideItemDropdown(index)"
                 >
@@ -196,10 +198,9 @@
         <!-- Full-width Models Dropdown -->
         <div 
           id="vehicle-nav-dropdown"
-          class="fixed left-0 right-0 w-screen max-w-none max-h-[calc(100vh-64px)] overflow-y-auto m-0 p-0 bg-white shadow-lg z-[1000] border-t border-gray-200 pointer-events-auto hidden opacity-0 -translate-y-2.5 transition-all duration-200 ease-in-out"
+          class="nav-dropdown fixed left-0 right-0 w-screen max-w-none overflow-y-auto m-0 p-0 bg-white shadow-lg z-[1000] border-t border-gray-200 pointer-events-auto hidden opacity-0 -translate-y-2.5 transition-all duration-200 ease-in-out"
           @mouseenter="keepModelsMenuOpen"
           @mouseleave="hideModelsMenu"
-          style="top: 64px;"
         >
           <LazyNavModels />
         </div>
@@ -207,6 +208,7 @@
     </div>
     
     <template #fallback>
+      <div class="hidden md:block h-10 bg-[#1a1a1a]"></div>
       <div class="h-16 bg-white"></div>
     </template>
   </ClientOnly>
@@ -279,6 +281,31 @@ let itemShowTimeout: ReturnType<typeof setTimeout> | null = null;
 let hideTimeout: ReturnType<typeof setTimeout> | null = null;
 let showTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// Nav element ref for calculating dropdown position
+const navRef = ref<HTMLElement | null>(null);
+const dropdownTop = ref('64px');
+
+// Calculate dropdown position based on nav element
+const updateDropdownPosition = () => {
+  if (navRef.value) {
+    const navRect = navRef.value.getBoundingClientRect();
+    const top = navRect.bottom;
+    dropdownTop.value = `${top}px`;
+    
+    // Update CSS custom property for all dropdowns
+    document.documentElement.style.setProperty('--dropdown-top', `${top}px`);
+    document.documentElement.style.setProperty('--dropdown-max-height', `calc(100vh - ${top}px)`);
+  }
+};
+
+// Update position on mount and resize
+onMounted(() => {
+  updateDropdownPosition();
+  window.addEventListener('resize', updateDropdownPosition);
+  window.addEventListener('scroll', updateDropdownPosition);
+});
+
+
 // Close all dropdowns on route change
 watch(() => route.fullPath, () => {
   // Close Models dropdown
@@ -315,6 +342,8 @@ const showItemDropdown = (index: number) => {
   }
   
   itemShowTimeout = setTimeout(() => {
+    // Update position before showing
+    updateDropdownPosition();
     activeDropdown.value = index;
     itemShowTimeout = null;
   }, 100);
@@ -374,6 +403,9 @@ const showModelsMenu = () => {
   
   showTimeout = setTimeout(() => {
     if (import.meta.client) {
+      // Update position before showing
+      updateDropdownPosition();
+      
       const dropdown = document.getElementById('vehicle-nav-dropdown');
       if (dropdown) {
         dropdown.classList.remove('hidden', 'opacity-0', '-translate-y-2.5');
@@ -420,6 +452,8 @@ onUnmounted(() => {
   if (hideTimeout) clearTimeout(hideTimeout);
   if (itemShowTimeout) clearTimeout(itemShowTimeout);
   if (itemHideTimeout) clearTimeout(itemHideTimeout);
+  window.removeEventListener('resize', updateDropdownPosition);
+  window.removeEventListener('scroll', updateDropdownPosition);
 });
 </script>
 
@@ -428,6 +462,12 @@ onUnmounted(() => {
   0% { width: 0; margin-left: 0; }
   50% { width: 70%; margin-left: 15%; }
   100% { width: 0; margin-left: 100%; }
+}
+
+/* Dropdown positioning - dynamically calculated via JS */
+.nav-dropdown {
+  top: var(--dropdown-top, 64px);
+  max-height: var(--dropdown-max-height, calc(100vh - 64px));
 }
 
 /* Smooth scrollbar styling for dropdown */

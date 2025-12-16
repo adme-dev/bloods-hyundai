@@ -5,6 +5,9 @@
         <div class="bg-white py-6"></div>
       </template>
 
+      <!-- Footer Promotional Blocks -->
+      <LazyFooterBlocks />
+
       <!-- Google Reviews -->
       <div class="bg-white py-6">
         <LazyGoogleReviews />
