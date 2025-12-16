@@ -47,7 +47,8 @@ type FormType =
   | 'fleet'
   | 'accessories'
   | 'sell_my_car'
-  | 'calculator_enquiry';
+  | 'calculator_enquiry'
+  | 'special_offer';
 
 interface BaseFormData {
   form_type: FormType;
@@ -152,6 +153,16 @@ interface SellMyCarData extends BaseFormData {
   photos_count?: number;
 }
 
+interface SpecialOfferFormData extends BaseFormData {
+  form_type: 'special_offer';
+  vehicle?: VehicleData;
+  offer_model?: string;
+  offer_variant?: string;
+  offer_amount?: string;
+  offer_type?: string;
+  offer_category?: string;
+}
+
 type FormEventData =
   | VehicleEnquiryData
   | TestDriveData
@@ -161,7 +172,8 @@ type FormEventData =
   | FinanceFormData
   | FleetFormData
   | AccessoriesFormData
-  | SellMyCarData;
+  | SellMyCarData
+  | SpecialOfferFormData;
 
 export const useAnalytics = () => {
   const { gtag } = useGtag();
@@ -315,6 +327,7 @@ export const useAnalytics = () => {
     const baseValues: Record<FormType, number> = {
       vehicle_enquiry: 500,
       calculator_enquiry: 750, // Higher intent - configured vehicle
+      special_offer: 600, // High intent - clicked through from offer page
       test_drive: 1000, // Very high intent
       finance: 800,
       contact: 100,
@@ -666,6 +679,54 @@ export const useAnalytics = () => {
   };
 
   /**
+   * Track special offer enquiry
+   */
+  const trackSpecialOfferEnquiry = (data: Omit<SpecialOfferFormData, 'form_type'>) => {
+    const formData: SpecialOfferFormData = {
+      form_type: 'special_offer',
+      ...data,
+    };
+
+    trackFormSubmission(formData);
+
+    // Track as high-intent conversion (similar to test drive)
+    if (data.vehicle) {
+      gtag('event', 'begin_checkout', {
+        currency: 'AUD',
+        value: data.vehicle.price || 0,
+        items: [{
+          item_id: data.vehicle.stockid || data.vehicle.identifier || 'unknown',
+          item_name: `${data.offer_model || ''} ${data.offer_variant || ''}`.trim(),
+          item_brand: data.vehicle.make || 'Hyundai',
+          item_category: 'special_offer',
+          item_variant: data.offer_type,
+          price: data.vehicle.price || 0,
+          quantity: 1,
+        }],
+      });
+    }
+
+    // Special offer specific event
+    gtag('event', 'special_offer_enquiry', {
+      event_category: 'special_offers',
+      offer_model: data.offer_model,
+      offer_variant: data.offer_variant,
+      offer_amount: data.offer_amount,
+      offer_type: data.offer_type,
+      offer_category: data.offer_category,
+      vehicle_price: data.vehicle?.price,
+    });
+
+    // Facebook Pixel - Track as high-value lead
+    fbPixel.trackLead({
+      content_name: `Special Offer - ${data.offer_model || ''} ${data.offer_variant || ''}`.trim(),
+      content_category: data.offer_category || 'special_offer',
+      value: data.vehicle?.price || 600, // Use vehicle price or default high value
+      currency: 'AUD',
+    });
+  };
+
+  /**
    * Track form abandonment (call when user leaves form without submitting)
    */
   const trackFormAbandonment = (formType: FormType, fieldsCompleted: number, totalFields: number) => {
@@ -728,6 +789,7 @@ export const useAnalytics = () => {
     trackFleetEnquiry,
     trackAccessoriesEnquiry,
     trackSellMyCar,
+    trackSpecialOfferEnquiry,
     trackFormAbandonment,
     trackFormFieldInteraction,
     trackFormError,

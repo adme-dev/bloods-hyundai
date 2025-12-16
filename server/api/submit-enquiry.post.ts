@@ -11,7 +11,7 @@ import { sendFormNotifications } from '../utils/email';
  */
 
 interface EnquirySubmission {
-  type: 'contact' | 'finance' | 'vehicle' | 'sell_car' | 'test_drive' | 'parts' | 'service' | 'fleet' | 'accessories';
+  type: 'contact' | 'finance' | 'vehicle' | 'sell_car' | 'test_drive' | 'parts' | 'service' | 'fleet' | 'accessories' | 'special_offer';
   firstName: string;
   lastName: string;
   email: string;

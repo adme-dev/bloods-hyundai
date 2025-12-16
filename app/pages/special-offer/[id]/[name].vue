@@ -151,10 +151,10 @@
       <!-- CTA Section -->
       <div class="offer-cta-section">
         <div class="offer-cta-buttons">
-          <button class="btn-contact-dealer" @click="showEnquiryModal = true">
+          <button class="btn-contact-dealer" @click="openEnquiryModal">
             Contact the dealer to inquire about this offer
           </button>
-          <button class="btn-test-drive" @click="showTestDriveModal = true">
+          <button class="btn-test-drive" @click="openTestDriveModal">
             Book a test drive
           </button>
         </div>
@@ -726,46 +726,86 @@ const updateCarouselArrows = () => {
   carouselAtEnd.value = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 10;
 };
 
+// Analytics composable for proper tracking
+const analytics = useAnalytics();
+
 const handleSubmit = async () => {
   if (submitting.value) return;
   submitting.value = true;
 
   try {
-    // Submit to the new Neon database API
+    const vehiclePrice = offer.value?.offerAmount 
+      ? parseInt(offer.value.offerAmount.replace(/[^0-9]/g, '')) 
+      : (offer.value?.price || undefined);
+
+    // Submit to the CRM database API
     const response = await $fetch<{ enquiry: { id: string } }>('/api/submit-enquiry', {
       method: 'POST',
       body: {
-        type: 'vehicle',
+        type: 'special_offer',
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         phone: form.phone,
+        postcode: form.postcode || undefined,
         message: form.message || undefined,
         vehicleInfo: {
           condition: 'new',
           make: 'Hyundai',
           model: offer.value?.model,
           variant: offer.value?.variantName,
-          price: offer.value?.offerAmount ? parseInt(offer.value.offerAmount.replace(/[^0-9]/g, '')) : undefined,
+          price: vehiclePrice,
+          priceDisplay: offer.value?.offerAmount,
+          thumbnail: offer.value?.heroImage || offer.value?.image,
+          vehicleUrl: route.fullPath,
         },
-        source: `special-offer-page-${offerId.value}`,
+        source: `special-offer-${offer.value?.model?.toLowerCase().replace(/\s+/g, '-')}-${offerId.value}`,
+        utmSource: route.query.utm_source as string || undefined,
+        utmMedium: route.query.utm_medium as string || undefined,
+        utmCampaign: route.query.utm_campaign as string || undefined,
       },
     });
 
     submitted.value = true;
 
+    // Track with analytics composable (GA4 + Facebook Pixel + GTM dataLayer)
+    analytics.trackSpecialOfferEnquiry({
+      form_location: `special_offer_${offer.value?.model?.toLowerCase().replace(/\s+/g, '_')}`,
+      enquiry_id: response.enquiry.id,
+      page_url: route.fullPath,
+      vehicle: {
+        make: 'Hyundai',
+        model: offer.value?.model,
+        variant: offer.value?.variantName,
+        price: vehiclePrice,
+        condition: 'new',
+      },
+      offer_model: offer.value?.model,
+      offer_variant: offer.value?.variantName,
+      offer_amount: offer.value?.offerAmount,
+      offer_type: offer.value?.offerType,
+      offer_category: offer.value?.category,
+    });
+
+    // Additional dataLayer push for GTM with offer-specific data
     if (import.meta.client && (window as any).dataLayer) {
       (window as any).dataLayer.push({
-        event: 'FormSubmission',
-        formType: 'vehicle',
+        event: 'special_offer_enquiry',
+        formType: 'special_offer',
         formStatus: 'submitted',
         enquiryId: response.enquiry.id,
         offerModel: offer.value?.model,
         offerVariant: offer.value?.variantName,
+        offerAmount: offer.value?.offerAmount,
+        offerType: offer.value?.offerType,
+        offerCategory: offer.value?.category,
+        vehiclePrice: vehiclePrice,
       });
     }
   } catch (err) {
     console.error('Form submission error:', err);
+    // Track form error
+    analytics.trackFormError('vehicle_enquiry', 'submission', 'api_error');
   } finally {
     submitting.value = false;
   }
@@ -773,6 +813,38 @@ const handleSubmit = async () => {
 
 const handleTestDriveSubmit = (formData: any) => {
   console.log('Test drive form submitted:', formData);
+};
+
+// Modal opening functions with analytics tracking
+const openEnquiryModal = () => {
+  showEnquiryModal.value = true;
+  
+  // Track modal open event
+  analytics.trackEnquiryModalOpen({
+    source: 'special_offer_page',
+    page_url: route.fullPath,
+    vehicle: {
+      make: 'Hyundai',
+      model: offer.value?.model,
+      variant: offer.value?.variantName,
+      price: offer.value?.price,
+      condition: 'new',
+    },
+  });
+};
+
+const openTestDriveModal = () => {
+  showTestDriveModal.value = true;
+  
+  // Track modal open event for test drive
+  if (import.meta.client && (window as any).dataLayer) {
+    (window as any).dataLayer.push({
+      event: 'test_drive_modal_open',
+      source: 'special_offer_page',
+      offerModel: offer.value?.model,
+      offerVariant: offer.value?.variantName,
+    });
+  }
 };
 
 // SEO Meta - Optimized for Google Search with dynamic content
