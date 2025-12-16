@@ -150,20 +150,11 @@
                       </div>
                       <div>
                         <NuxtLink 
-                          :to="`/variant/${vehicle.slug}`"
+                          to="/test-drive"
                           class="uk-text-center uk-button uk-button-text uk-button-small uk-text-primary uk-text-capitalize"
                           @click="closeModel"
                         >
                           Enquire
-                        </NuxtLink>
-                      </div>
-                      <div>
-                        <NuxtLink 
-                          :to="`/build/${vehicle.slug}`"
-                          class="uk-text-center uk-button uk-button-text uk-button-small uk-text-primary uk-text-capitalize"
-                          @click="closeModel"
-                        >
-                          Range
                         </NuxtLink>
                       </div>
                     </div>
