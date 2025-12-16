@@ -12,8 +12,8 @@
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3">
-      <div class="relative flex-1 min-w-[200px] max-w-sm">
-        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div class="input-icon-wrapper flex-1 min-w-[200px] max-w-sm">
+        <Search class="form-input-icon" />
         <Input
           v-model="searchQuery"
           placeholder="Search staff..."

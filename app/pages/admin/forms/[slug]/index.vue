@@ -71,7 +71,7 @@
                 <Label>Form Status</Label>
                 <p class="text-sm text-muted-foreground">Enable or disable this form</p>
               </div>
-              <Switch v-model:checked="settings.isActive" />
+              <Switch v-model="settings.isActive" />
             </div>
             <Separator />
             <div class="grid gap-4 md:grid-cols-2">
@@ -108,7 +108,7 @@
                 <Label>Save to Database</Label>
                 <p class="text-sm text-muted-foreground">Store submissions in the enquiry system</p>
               </div>
-              <Switch v-model:checked="settings.saveToDatabase" />
+              <Switch v-model="settings.saveToDatabase" />
             </div>
             <Separator />
             <div class="flex items-center justify-between">
@@ -116,7 +116,7 @@
                 <Label>Require All Fields</Label>
                 <p class="text-sm text-muted-foreground">Make all form fields mandatory</p>
               </div>
-              <Switch v-model:checked="settings.requireAllFields" />
+              <Switch v-model="settings.requireAllFields" />
             </div>
             <Separator />
             <div class="flex items-center justify-between">
@@ -124,7 +124,7 @@
                 <Label>Anti-Spam Protection</Label>
                 <p class="text-sm text-muted-foreground">Enable honeypot and rate limiting</p>
               </div>
-              <Switch v-model:checked="settings.antiSpam" />
+              <Switch v-model="settings.antiSpam" />
             </div>
           </CardContent>
         </Card>

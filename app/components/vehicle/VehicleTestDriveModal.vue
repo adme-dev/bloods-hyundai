@@ -198,6 +198,25 @@ const mainStore = useMainStore();
 const { trackTestDriveBooking } = useAnalytics();
 const { getUtmParams } = useUtmParams();
 
+// Helper to get email-safe image URL with proper sizing for pxcrush images
+const getEmailImageUrl = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  // Add pxc_size for carsales/pxcrush images to ensure they render properly in emails
+  if (url.includes('pxcrush.net') && !url.includes('pxc_size')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}pxc_size=720,480`;
+  }
+  return url;
+};
+
+// Get vehicle images
+const vehicleImages = computed(() => {
+  const photos = props.vehicle?.photos || props.vehicle?.images || [];
+  if (photos.length > 0) return photos;
+  const singleImage = props.vehicle?.thumb || props.vehicle?.main_photo_url;
+  return singleImage ? [singleImage] : [];
+});
+
 // Helper to get display value
 const getDisplay = (field: any): string => {
   if (!field) return '';
@@ -324,7 +343,10 @@ const submitForm = async () => {
           make: getDisplay(vehicle?.make) || undefined,
           model: getDisplay(vehicle?.model) || undefined,
           variant: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || undefined,
+          year: getDisplay(vehicle?.year) ? parseInt(getDisplay(vehicle?.year)) : undefined,
           stockId: String(vehicle?.stockid || ''),
+          price: vehicle?.price || undefined,
+          thumbnail: getEmailImageUrl(vehicleImages.value[0]),
         },
         serviceInfo: {
           preferredDate: form.preferredDate,

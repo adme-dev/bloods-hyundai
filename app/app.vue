@@ -3,7 +3,9 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-    <ToastContainer />
+    <ClientOnly>
+      <ToastContainer />
+    </ClientOnly>
   </div>
 </template>
 

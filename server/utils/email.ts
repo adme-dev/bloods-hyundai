@@ -506,7 +506,7 @@ function generateEmailHeader(dealer: any, title: string): string {
 
   const logoSection = dealer.logoUrl
     ? `<img src="${dealer.logoUrl}" alt="${dealer.name}" style="max-width: 200px; max-height: 60px; height: auto; display: block; margin: 0 auto;" />`
-    : `<h1 style="margin: 0; font-size: 24px; color: ${textColor};">${dealer.name}</h1>`;
+    : '';
 
   // Use table-based layout with explicit bgcolor attribute for dark mode compatibility
   // The bgcolor attribute forces email clients to respect the background color in dark mode
@@ -515,9 +515,16 @@ function generateEmailHeader(dealer: any, title: string): string {
     <tr>
       <td align="center" style="padding: 30px 20px; border-bottom: 3px solid ${primaryColor}; background-color: ${headerBgColor};" bgcolor="${headerBgColor}">
         <table role="presentation" cellpadding="0" cellspacing="0" style="background-color: ${headerBgColor};" bgcolor="${headerBgColor}">
+          ${logoSection ? `
           <tr>
-            <td align="center" style="padding-bottom: 15px; background-color: ${headerBgColor};" bgcolor="${headerBgColor}">
+            <td align="center" style="padding-bottom: 10px; background-color: ${headerBgColor};" bgcolor="${headerBgColor}">
               ${logoSection}
+            </td>
+          </tr>
+          ` : ''}
+          <tr>
+            <td align="center" style="padding-bottom: 12px; background-color: ${headerBgColor};" bgcolor="${headerBgColor}">
+              <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: ${textColor};">${dealer.name}</h1>
             </td>
           </tr>
           <tr>
@@ -717,15 +724,19 @@ function generateVehicleInfoHTML(enquiry: any): string {
   const placeholderText = encodeURIComponent(vehicleInfo.make?.substring(0, 1) || 'V');
   const placeholderUrl = `https://ui-avatars.com/api/?name=${placeholderText}&background=001E50&color=fff&size=400&bold=true`;
 
-  // Only include image if thumbnail exists, with graceful fallback handling
-  // Note: onerror doesn't work in all email clients, so we also style the container
+  // Only include image if thumbnail exists
+  // Use table-based layout for maximum email client compatibility
   const imageSection = vehicleInfo.thumbnail ? `
-    <div style="margin-bottom: 15px; background: #e5e7eb; border-radius: 8px; min-height: 120px; display: flex; align-items: center; justify-content: center;">
-      <img src="${vehicleInfo.thumbnail}"
-           alt="${vehicleName}"
-           style="max-width: 100%; height: auto; border-radius: 8px; max-height: 200px; object-fit: cover; display: block;"
-           onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'padding:40px;text-align:center;color:#666;\\'>Vehicle Image</div>';" />
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 15px;">
+      <tr>
+        <td align="center" style="background: #e5e7eb; border-radius: 8px; padding: 10px;">
+          <img src="${vehicleInfo.thumbnail}"
+               alt="${vehicleName}"
+               width="100%"
+               style="max-width: 400px; height: auto; border-radius: 8px; display: block;" />
+        </td>
+      </tr>
+    </table>
     ` : '';
 
   return `
@@ -1108,7 +1119,7 @@ function generateEnquiryEmailHTML(enquiry: any, dealer: any): string {
                     <td style="padding: 8px 0;"><span style="color: #22c55e;">✓ Requested</span></td>
                   </tr>
                   ` : ''}
-                  ${enquiry.tradeIn ? `
+                  ${enquiry.tradeInInfo ? `
                   <tr>
                     <td style="padding: 8px 0; font-weight: 600; color: #555;">Trade-In:</td>
                     <td style="padding: 8px 0;"><span style="color: #22c55e;">✓ Has vehicle</span></td>
@@ -1167,7 +1178,7 @@ ADDITIONAL INFORMATION
 Enquiry Type: ${enquiry.type}
 Received: ${new Date(enquiry.createdAt).toLocaleString('en-AU')}
 ${enquiry.testDrive ? 'Test Drive: ✓ Requested\n' : ''}
-${enquiry.tradeIn ? 'Trade-In: ✓ Has vehicle to trade\n' : ''}
+${enquiry.tradeInInfo ? 'Trade-In: ✓ Has vehicle to trade\n' : ''}
 ${enquiry.financeInterest ? 'Finance: ✓ Interested in finance\n' : ''}
 
 View in Dashboard: ${dealer.websiteUrl || 'https://salehyundai.com.au'}/admin/enquiries/${enquiry.id}

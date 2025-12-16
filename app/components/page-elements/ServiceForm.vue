@@ -11,7 +11,41 @@
         </p>
       </div>
 
-      <Card class="shadow-xl">
+      <!-- Loading Settings -->
+      <div v-if="settingsPending" class="flex items-center justify-center py-12">
+        <Loader2 class="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+
+      <!-- External Booking Iframe -->
+      <Card v-else-if="useExternalBooking && externalIframeUrl" class="shadow-xl overflow-hidden">
+        <!-- Header with full screen button -->
+        <div class="flex items-center justify-between px-4 py-3 bg-gray-100 border-b">
+          <p class="text-sm text-gray-600 m-0">
+            Book your service appointment online
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            @click="openFullScreenDialog"
+          >
+            <Maximize2 class="h-4 w-4 mr-2" />
+            Full Screen
+          </Button>
+        </div>
+        <CardContent class="p-0">
+          <iframe
+            :src="externalIframeUrl"
+            class="w-full border-0"
+            style="min-height: 800px;"
+            title="Service Booking"
+            allow="geolocation; payment"
+            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          />
+        </CardContent>
+      </Card>
+
+      <!-- Internal Form -->
+      <Card v-else class="shadow-xl">
         <CardHeader class="pb-6 pt-8">
           <!-- Stepper -->
           <Stepper v-model="currentStep" class="flex w-full items-start gap-2">
@@ -490,25 +524,62 @@
         </CardContent>
       </Card>
     </div>
+
+    <!-- Full Screen Dialog for External Booking -->
+    <Dialog v-model:open="showFullScreenDialog">
+      <DialogContent
+        class="!max-w-none !w-screen !h-screen !rounded-none !p-0 !m-0 !left-0 !top-0 !translate-x-0 !translate-y-0"
+      >
+        <!-- Custom header with close button -->
+        <div class="flex items-center justify-between px-4 py-3 bg-gray-100 border-b absolute top-0 left-0 right-0 z-10">
+          <p class="text-sm font-medium text-gray-700 m-0">
+            Book Your Service Appointment
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            @click="showFullScreenDialog = false"
+            class="h-8 w-8 p-0"
+          >
+            <X class="h-5 w-5" />
+            <span class="sr-only">Close</span>
+          </Button>
+        </div>
+        <!-- Iframe container -->
+        <div class="pt-12 h-full">
+          <iframe
+            v-if="externalIframeUrl"
+            :src="externalIframeUrl"
+            class="w-full h-full border-0"
+            title="Service Booking - Full Screen"
+            allow="geolocation; payment"
+            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { 
-  User, 
-  Car, 
-  Calendar, 
-  FileText, 
-  ClipboardCheck, 
-  Check, 
-  ChevronLeft, 
-  ChevronRight, 
-  Loader2, 
-  CheckCircle2, 
-  XCircle 
+import {
+  User,
+  Car,
+  Calendar,
+  FileText,
+  ClipboardCheck,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Maximize2,
+  X
 } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader } from '~/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '~/components/ui/dialog'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -525,6 +596,59 @@ const { getUtmParams } = useUtmParams()
 
 // Site name from runtime config or fallback
 const siteName = computed(() => config.public.siteName || 'Sale Hyundai')
+
+// Service booking settings type
+interface ServiceBookingSettings {
+  success: boolean
+  settings: {
+    useExternalBooking: boolean
+    externalBookingIframe: string | null
+    externalBookingProvider: string | null
+  }
+}
+
+// Fetch service booking settings to determine internal vs external form
+const { data: settingsData, pending: settingsPending } = await useFetch<ServiceBookingSettings>('/api/service-booking-settings', {
+  lazy: true,
+  default: (): ServiceBookingSettings => ({
+    success: true,
+    settings: {
+      useExternalBooking: false,
+      externalBookingIframe: null,
+      externalBookingProvider: null,
+    },
+  }),
+})
+
+// Computed properties for external booking
+const useExternalBooking = computed(() => settingsData.value?.settings?.useExternalBooking ?? false)
+
+// Extract iframe URL from settings (handles both URL and HTML)
+const externalIframeUrl = computed(() => {
+  const input = settingsData.value?.settings?.externalBookingIframe?.trim()
+  if (!input) return null
+
+  // If it's already a URL
+  if (/^https?:\/\//i.test(input)) {
+    return input
+  }
+
+  // Try to extract src from iframe HTML
+  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i)
+  if (srcMatch) {
+    return srcMatch[1]
+  }
+
+  return null
+})
+
+// Full screen dialog state
+const showFullScreenDialog = ref(false)
+
+// Open external booking in full screen dialog
+const openFullScreenDialog = () => {
+  showFullScreenDialog.value = true
+}
 
 // Stepper configuration
 const formSteps = [

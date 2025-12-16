@@ -575,6 +575,58 @@ a[style*="backgroundImage"],
   }
 }
 
+// ============================================
+// INPUT ICON POSITIONING FIX
+// ============================================
+// Fix for icon positioning inside relative input containers
+// This ensures icons are properly positioned inside inputs when using Tailwind utilities
+// Overrides any conflicting UIkit styles that affect SVG positioning
+
+// Global input-icon-wrapper class for form inputs with icons
+// Use this class on the container div around icons and inputs
+.input-icon-wrapper {
+  position: relative !important;
+  display: block !important;
+}
+
+// Global form-input-icon class for icons inside form inputs
+// Apply this class to SVG icons that should be positioned inside inputs
+.form-input-icon {
+  position: absolute !important;
+  left: 0.75rem !important; // left-3 = 0.75rem
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  height: 1rem !important; // h-4 = 1rem
+  width: 1rem !important; // w-4 = 1rem
+  color: rgb(156 163 175) !important; // gray-400
+  pointer-events: none;
+  z-index: 1;
+}
+
+// Fallback: Target SVG icons positioned inside relative containers using Tailwind classes
+// This provides a fallback for components that use inline Tailwind classes
+.relative {
+  > svg.lucide,
+  > svg[class*="lucide-"] {
+    &.absolute {
+      position: absolute !important;
+      
+      &.left-3 {
+        left: 0.75rem !important;
+      }
+      
+      // Using attribute selector for classes with special characters
+      &[class*="top-1"] {
+        top: 50% !important;
+      }
+      
+      &[class*="translate-y-1"] {
+        transform: translateY(-50%) !important;
+      }
+    }
+  }
+}
+
 
 
 

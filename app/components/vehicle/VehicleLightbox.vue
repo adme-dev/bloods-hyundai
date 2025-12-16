@@ -10,7 +10,7 @@
         <header class="lightbox__header">
           <div class="lightbox__title">{{ title }}</div>
           <div class="lightbox__counter">
-            {{ selectedIndex + 1 }} of {{ images.length }}
+            {{ currentIndex + 1 }} of {{ images.length }}
           </div>
           <button
             class="lightbox__close"
@@ -29,7 +29,7 @@
           <button
             v-if="images.length > 1"
             class="lightbox__nav lightbox__nav--prev"
-            @click="scrollPrev"
+            @click="goToPrev"
             aria-label="Previous image"
           >
             <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,9 +37,15 @@
             </svg>
           </button>
 
-          <!-- Image Viewport -->
-          <div class="lightbox__viewport" ref="mainRef">
-            <div class="lightbox__slides">
+          <!-- Image Viewport - Simple CSS-based slider -->
+          <div class="lightbox__viewport">
+            <div
+              class="lightbox__slides"
+              :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
+              @touchstart="handleTouchStart"
+              @touchmove="handleTouchMove"
+              @touchend="handleTouchEnd"
+            >
               <div
                 v-for="(image, index) in largeImages"
                 :key="index"
@@ -59,7 +65,7 @@
           <button
             v-if="images.length > 1"
             class="lightbox__nav lightbox__nav--next"
-            @click="scrollNext"
+            @click="goToNext"
             aria-label="Next image"
           >
             <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,21 +78,22 @@
         <div v-if="images.length > 1" class="lightbox__thumbs" @click.stop>
           <button
             class="lightbox__thumbs-nav lightbox__thumbs-nav--prev"
-            @click="scrollThumbsPrev"
+            @click="scrollThumbsLeft"
             aria-label="Scroll thumbnails left"
           >
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          
-          <div class="lightbox__thumbs-viewport" ref="thumbsRef">
+
+          <div class="lightbox__thumbs-viewport" ref="thumbsViewportRef">
             <div class="lightbox__thumbs-track">
               <button
                 v-for="(image, index) in images"
                 :key="`thumb-${index}`"
-                :class="['lightbox__thumb', { 'lightbox__thumb--active': index === selectedIndex }]"
-                @click="scrollTo(index)"
+                :ref="el => setThumbRef(el, index)"
+                :class="['lightbox__thumb', { 'lightbox__thumb--active': index === currentIndex }]"
+                @click="goToIndex(index)"
                 :aria-label="`View photo ${index + 1}`"
               >
                 <img
@@ -98,10 +105,10 @@
               </button>
             </div>
           </div>
-          
+
           <button
             class="lightbox__thumbs-nav lightbox__thumbs-nav--next"
-            @click="scrollThumbsNext"
+            @click="scrollThumbsRight"
             aria-label="Scroll thumbnails right"
           >
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,8 +128,6 @@
 </template>
 
 <script setup lang="ts">
-import emblaCarouselVue from 'embla-carousel-vue';
-
 const props = defineProps<{
   isOpen: boolean;
   images: string[];
@@ -144,32 +149,94 @@ const getLargeImageUrl = (url: string) => {
 // Computed images with large size for main view
 const largeImages = computed(() => props.images.map(getLargeImageUrl));
 
-// Main carousel
-const [mainRef, mainApi] = emblaCarouselVue({
-  loop: true,
-  skipSnaps: false,
-  startIndex: props.initialIndex || 0,
-  dragFree: false,
-});
-
-// Thumbnails carousel
-const [thumbsRef, thumbsApi] = emblaCarouselVue({
-  containScroll: 'keepSnaps',
-  dragFree: true,
-  slidesToScroll: 3,
-});
-
 // State
-const selectedIndex = ref(0);
+const currentIndex = ref(props.initialIndex || 0);
+const thumbsViewportRef = ref<HTMLElement | null>(null);
+const thumbRefs = ref<Map<number, HTMLElement>>(new Map());
 
-// Main carousel navigation
-const scrollPrev = () => mainApi.value?.scrollPrev();
-const scrollNext = () => mainApi.value?.scrollNext();
-const scrollTo = (index: number) => mainApi.value?.scrollTo(index);
+// Touch swipe handling
+const touchStartX = ref(0);
+const touchEndX = ref(0);
+const isSwiping = ref(false);
 
-// Thumbnails navigation
-const scrollThumbsPrev = () => thumbsApi.value?.scrollPrev();
-const scrollThumbsNext = () => thumbsApi.value?.scrollNext();
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartX.value = e.touches[0].clientX;
+  isSwiping.value = true;
+};
+
+const handleTouchMove = (e: TouchEvent) => {
+  if (!isSwiping.value) return;
+  touchEndX.value = e.touches[0].clientX;
+};
+
+const handleTouchEnd = () => {
+  if (!isSwiping.value) return;
+  isSwiping.value = false;
+
+  const diff = touchStartX.value - touchEndX.value;
+  const threshold = 50; // Minimum swipe distance
+
+  if (Math.abs(diff) > threshold) {
+    if (diff > 0) {
+      // Swipe left - go to next
+      goToNext();
+    } else {
+      // Swipe right - go to prev
+      goToPrev();
+    }
+  }
+
+  touchStartX.value = 0;
+  touchEndX.value = 0;
+};
+
+// Navigation functions
+const goToNext = () => {
+  if (props.images.length <= 1) return;
+  currentIndex.value = (currentIndex.value + 1) % props.images.length;
+  scrollThumbIntoView();
+};
+
+const goToPrev = () => {
+  if (props.images.length <= 1) return;
+  currentIndex.value = (currentIndex.value - 1 + props.images.length) % props.images.length;
+  scrollThumbIntoView();
+};
+
+const goToIndex = (index: number) => {
+  currentIndex.value = index;
+  scrollThumbIntoView();
+};
+
+// Thumbnail refs management
+const setThumbRef = (el: any, index: number) => {
+  if (el) {
+    thumbRefs.value.set(index, el);
+  }
+};
+
+// Scroll active thumbnail into view
+const scrollThumbIntoView = () => {
+  nextTick(() => {
+    const thumb = thumbRefs.value.get(currentIndex.value);
+    if (thumb && thumbsViewportRef.value) {
+      thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+};
+
+// Thumbnails scroll buttons
+const scrollThumbsLeft = () => {
+  if (thumbsViewportRef.value) {
+    thumbsViewportRef.value.scrollBy({ left: -200, behavior: 'smooth' });
+  }
+};
+
+const scrollThumbsRight = () => {
+  if (thumbsViewportRef.value) {
+    thumbsViewportRef.value.scrollBy({ left: 200, behavior: 'smooth' });
+  }
+};
 
 // Close handler
 const close = () => {
@@ -184,26 +251,18 @@ const handleBackdropClick = (e: MouseEvent) => {
   }
 };
 
-// Sync main carousel selection with thumbnails
-const onMainSelect = () => {
-  if (!mainApi.value || !thumbsApi.value) return;
-  
-  selectedIndex.value = mainApi.value.selectedScrollSnap();
-  thumbsApi.value.scrollTo(selectedIndex.value);
-};
-
 // Keyboard navigation
 const handleKeydown = (e: KeyboardEvent) => {
   if (!props.isOpen) return;
-  
+
   switch (e.key) {
     case 'ArrowLeft':
       e.preventDefault();
-      scrollPrev();
+      goToPrev();
       break;
     case 'ArrowRight':
       e.preventDefault();
-      scrollNext();
+      goToNext();
       break;
     case 'Escape':
       e.preventDefault();
@@ -211,11 +270,11 @@ const handleKeydown = (e: KeyboardEvent) => {
       break;
     case 'Home':
       e.preventDefault();
-      scrollTo(0);
+      goToIndex(0);
       break;
     case 'End':
       e.preventDefault();
-      scrollTo(props.images.length - 1);
+      goToIndex(props.images.length - 1);
       break;
   }
 };
@@ -224,22 +283,22 @@ const handleKeydown = (e: KeyboardEvent) => {
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     document.body.style.overflow = 'hidden';
+    // Set initial index
+    currentIndex.value = props.initialIndex || 0;
+    // Scroll thumb into view after DOM update
     nextTick(() => {
-      if (props.initialIndex !== undefined && mainApi.value) {
-        mainApi.value.scrollTo(props.initialIndex, true);
-      }
+      scrollThumbIntoView();
     });
   } else {
     document.body.style.overflow = '';
   }
 });
 
-// Setup main carousel events
-watch(() => mainApi.value, (api) => {
-  if (api) {
-    api.on('select', onMainSelect);
-    api.on('reInit', onMainSelect);
-    onMainSelect();
+// Watch for initialIndex prop changes
+watch(() => props.initialIndex, (newIndex) => {
+  if (props.isOpen && newIndex !== undefined) {
+    currentIndex.value = newIndex;
+    scrollThumbIntoView();
   }
 });
 
@@ -251,11 +310,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
   document.body.style.overflow = '';
-  
-  if (mainApi.value) {
-    mainApi.value.off('select', onMainSelect);
-    mainApi.value.off('reInit', onMainSelect);
-  }
 });
 </script>
 
@@ -388,7 +442,7 @@ onUnmounted(() => {
   .lightbox__nav--prev {
     left: 1rem;
   }
-  
+
   .lightbox__nav--next {
     right: 1rem;
   }
@@ -404,7 +458,7 @@ onUnmounted(() => {
 .lightbox__slides {
   display: flex;
   height: 100%;
-  backface-visibility: hidden;
+  transition: transform 0.3s ease-out;
   touch-action: pan-y pinch-zoom;
 }
 
@@ -477,14 +531,20 @@ onUnmounted(() => {
 
 .lightbox__thumbs-viewport {
   flex: 1;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lightbox__thumbs-viewport::-webkit-scrollbar {
+  display: none;
 }
 
 .lightbox__thumbs-track {
   display: flex;
   gap: 0.5rem;
-  backface-visibility: hidden;
-  touch-action: pan-x pinch-zoom;
 }
 
 @media (min-width: 768px) {

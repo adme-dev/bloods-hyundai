@@ -559,6 +559,17 @@ const vehicleImage = computed(() => {
   return vehicleImages.value[0] || '';
 });
 
+// Helper to get email-safe image URL with proper sizing for pxcrush images
+const getEmailImageUrl = (url: string | undefined): string | undefined => {
+  if (!url) return undefined;
+  // Add pxc_size for carsales/pxcrush images to ensure they render properly in emails
+  if (url.includes('pxcrush.net') && !url.includes('pxc_size')) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}pxc_size=720,480`;
+  }
+  return url;
+};
+
 const photoCount = computed(() => {
   return vehicleImages.value.length || props.vehicle?.photo_count || 0;
 });
@@ -770,10 +781,10 @@ const submitForm = async () => {
           priceDisplay: vehiclePrice.value || undefined,
 
           // Media (for emails/CRM display)
-          thumbnail: vehicleImages.value[0] || undefined,
+          thumbnail: getEmailImageUrl(vehicleImages.value[0]),
           vehicleUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         },
-        tradeIn: form.tradeIn ? {} : undefined,
+        tradeIn: form.tradeIn ? { hasTradeIn: true } : undefined,
         testDrive: form.testDrive,
         financeInterest: form.finance,
         source: 'vehicle-enquiry-modal',

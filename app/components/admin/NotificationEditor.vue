@@ -36,7 +36,7 @@
           </div>
 
           <div class="flex items-center space-x-2">
-            <Switch v-model:checked="form.isActive" />
+            <Switch v-model="form.isActive" />
             <Label>{{ form.isActive ? 'Active' : 'Inactive' }}</Label>
           </div>
 
@@ -173,7 +173,7 @@
           <!-- Conditional Logic -->
           <div class="space-y-4">
             <div class="flex items-center space-x-2">
-              <Switch v-model:checked="form.hasConditions" />
+              <Switch v-model="form.hasConditions" />
               <Label>Enable Conditional Logic</Label>
             </div>
             

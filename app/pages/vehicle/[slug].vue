@@ -12,6 +12,17 @@
 
     <!-- Vehicle Content -->
     <div v-else-if="vehicle">
+      <!-- Scraped Data Notice -->
+      <div v-if="isScrapedData" class="uk-alert uk-alert-primary uk-margin-remove-bottom" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p class="uk-margin-remove">
+          <span uk-icon="info" class="uk-margin-small-right"></span>
+          This page shows preliminary information sourced from Hyundai Australia.
+          Full vehicle details coming soon.
+          <NuxtLink :to="`/variant/${slug}`" class="uk-link-text">Enquire now</NuxtLink> for the latest specifications and pricing.
+        </p>
+      </div>
+
       <!-- Hero Section -->
       <div id="top" v-if="vehicle.header?.slides" class="uk-position-relative uk-background-secondary">
         <div class="uk-width-1-1 uk-overflow-hidden uk-inline">
@@ -117,25 +128,7 @@
         <LazyPostContent :content="vehicle.content.rendered" />
       </div>
 
-      <!-- CTA Section -->
-      <div v-if="!vehicle.form" class="uk-section uk-section-primary uk-light uk-text-center">
-        <div class="uk-container">
-          <h2>Ready to Experience the {{ vehicle.model }}?</h2>
-          <p class="uk-text-lead">Book a test drive today and discover what makes it special.</p>
-          <div class="uk-margin-medium-top uk-grid-small uk-flex-center" uk-grid>
-            <div>
-              <NuxtLink to="/test-drive" class="uk-button uk-button-default uk-button-large">
-                Book Test Drive
-              </NuxtLink>
-            </div>
-            <div>
-              <NuxtLink :to="`/variant/${slug}`" class="uk-button uk-button-secondary uk-button-large">
-                Enquire Now
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
 
     <!-- Not Found -->
@@ -184,6 +177,13 @@ const { data: apiResponse, pending, error } = await useFetch(() => `/api/vehicle
 
 // Extract vehicle from response
 const vehicle = computed(() => apiResponse.value?.vehicle || null);
+
+// Check if this is scraped/placeholder data (not from CDN)
+const isScrapedData = computed(() => {
+  return apiResponse.value?.source === 'scraped' ||
+         apiResponse.value?.source === 'scraped-cache' ||
+         vehicle.value?.isScraped === true;
+});
 
 // Hero slide data
 const heroSlide = computed(() => vehicle.value?.header?.slides?.[0] || {});

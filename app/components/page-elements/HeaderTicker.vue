@@ -2,9 +2,9 @@
   <div v-if="activeTicker" class="header-ticker" :style="{ backgroundColor: activeTicker.background_color || '#001E50' }">
     <div class="uk-container">
       <div class="ticker-content" :style="{ color: activeTicker.text_color || '#ffffff' }">
-        <span v-if="activeTicker.icon" class="ticker-icon" :uk-icon="activeTicker.icon"></span>
+        <UkIcon v-if="activeTicker.icon" :icon="activeTicker.icon" class="ticker-icon" />
         <span class="ticker-text" v-html="activeTicker.message"></span>
-        <NuxtLink 
+        <NuxtLink
           v-if="activeTicker.link"
           :to="activeTicker.link"
           class="ticker-link"

@@ -27,8 +27,8 @@
               <Label for="firstName">
                 First Name <span class="text-red-500">*</span>
               </Label>
-              <div class="relative">
-                <User class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div class="input-icon-wrapper">
+                <User class="form-input-icon" />
                 <Input 
                   id="firstName"
                   v-model="form.firstName"
@@ -42,8 +42,8 @@
               <Label for="lastName">
                 Last Name <span class="text-red-500">*</span>
               </Label>
-              <div class="relative">
-                <User class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div class="input-icon-wrapper">
+                <User class="form-input-icon" />
                 <Input 
                   id="lastName"
                   v-model="form.lastName"
@@ -60,8 +60,8 @@
             <Label for="email">
               Email Address <span class="text-red-500">*</span>
             </Label>
-            <div class="relative">
-              <Mail class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div class="input-icon-wrapper">
+              <Mail class="form-input-icon" />
               <Input 
                 id="email"
                 v-model="form.email"
@@ -78,8 +78,8 @@
             <Label for="phone">
               Phone Number
             </Label>
-            <div class="relative">
-              <Phone class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div class="input-icon-wrapper">
+              <Phone class="form-input-icon" />
               <Input 
                 id="phone"
                 :value="formattedPhone"
@@ -100,8 +100,8 @@
             <Label for="registration">
               Vehicle Registration <span class="text-red-500">*</span>
             </Label>
-            <div class="relative">
-              <FileEdit class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div class="input-icon-wrapper">
+              <FileEdit class="form-input-icon" />
               <Input 
                 id="registration"
                 v-model="form.registration"
@@ -217,6 +217,9 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-vue-next';
+
+// Note: Form input icons use the .form-input-icon class for proper positioning
+// This overrides UIkit styles that may interfere with Tailwind positioning
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
@@ -381,3 +384,22 @@ const resetForm = () => {
 };
 </script>
 
+<style scoped>
+/* Input icon positioning - overrides UIkit styles */
+.input-icon-wrapper {
+  position: relative;
+  display: block;
+}
+
+.form-input-icon {
+  position: absolute !important;
+  left: 0.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  height: 1rem !important;
+  width: 1rem !important;
+  color: rgb(156 163 175) !important; /* gray-400 */
+  pointer-events: none;
+  z-index: 1;
+}
+</style>

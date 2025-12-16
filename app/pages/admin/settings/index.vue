@@ -127,6 +127,19 @@
           </CardContent>
         </Card>
       </NuxtLink>
+      <NuxtLink to="/admin/settings/service-booking" class="group">
+        <Card class="h-full transition-shadow hover:shadow-md">
+          <CardContent class="flex items-center gap-4 p-6">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20">
+              <Wrench class="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-semibold">Service Booking</h3>
+              <p class="text-sm text-muted-foreground">Internal form or external iframe</p>
+            </div>
+          </CardContent>
+        </Card>
+      </NuxtLink>
     </div>
 
     <Card>
@@ -225,7 +238,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
-import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw, Palette, Mail, GitBranch } from 'lucide-vue-next';
+import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw, Palette, Mail, GitBranch, Wrench } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';

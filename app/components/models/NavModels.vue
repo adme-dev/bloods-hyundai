@@ -11,7 +11,7 @@
         <!-- Mobile filter -->
         <div class="uk-hidden@l">
           <div @click="showMobileFilter = !showMobileFilter" class="uk-padding uk-padding-remove-bottom uk-link uk-text-bold">
-            <span class="uk-padding-small uk-margin-small-right" uk-icon="icon: settings; ratio: 1.2"></span>
+            <UkIcon icon="settings" :ratio="1.2" class="uk-padding-small uk-margin-small-right" />
             Filter
           </div>
 

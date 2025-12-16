@@ -52,14 +52,29 @@
 
               <div class="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
                 <div class="flex w-full flex-wrap justify-start gap-2 sm:justify-end">
-                  <button class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                    Watch
+                  <button
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    :class="isVehicleSaved ? 'text-red-500 border-red-200' : 'text-slate-700'"
+                    @click="toggleSaveVehicle"
+                  >
+                    <svg
+                      class="h-4 w-4"
+                      :fill="isVehicleSaved ? 'currentColor' : 'none'"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    {{ isVehicleSaved ? 'Saved' : 'Save' }}
                   </button>
-                  <button class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-                    Save
-                  </button>
-                  <button class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
+                  <button
+                    class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+                    @click="shareVehicle"
+                  >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
                     Share
                   </button>
                 </div>
@@ -95,7 +110,7 @@
         />
       </ClientOnly>
       
-      <!-- Enquiry Modal -->
+      <!-- Enquiry Modal (for main vehicle) -->
       <ClientOnly>
         <VehicleEnquiryModal
           :is-open="enquiryModalOpen"
@@ -103,7 +118,16 @@
           @close="closeEnquire"
         />
       </ClientOnly>
-      
+
+      <!-- Enquiry Modal (for related vehicle cards) -->
+      <ClientOnly>
+        <VehicleEnquiryModal
+          :is-open="vehiclesStore.vehicleEnquiryPopUp.show"
+          :vehicle="vehiclesStore.vehicleEnquiryPopUp.item"
+          @close="closeRelatedEnquire"
+        />
+      </ClientOnly>
+
       <!-- Test Drive Modal -->
       <ClientOnly>
         <VehicleTestDriveModal
@@ -285,6 +309,37 @@
           </aside>
         </div>
       </section>
+
+      <!-- Related Vehicles Section -->
+      <section v-if="relatedVehicles.length > 0" class="bg-white py-12">
+        <div class="mx-auto max-w-7xl px-4 lg:px-6">
+          <div class="mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 md:text-3xl">Similar Vehicles</h2>
+            <p class="mt-2 text-slate-600">You might also be interested in these vehicles</p>
+          </div>
+
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ModernVehicleCard
+              v-for="relatedVehicle in relatedVehicles"
+              :key="relatedVehicle.stockid || relatedVehicle.identifier"
+              :vehicle="relatedVehicle"
+              class="h-full"
+            />
+          </div>
+
+          <div class="mt-8 text-center">
+            <NuxtLink
+              to="/car-sales"
+              class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+            >
+              View All Vehicles
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </NuxtLink>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- Not Found -->
@@ -316,7 +371,24 @@
 <script setup lang="ts">
 const route = useRoute();
 const mainStore = useMainStore();
+const vehiclesStore = useVehiclesStore();
 const config = useRuntimeConfig();
+const { toast } = useToast();
+
+// Saved vehicles (comparison/favorites) using localStorage
+const comparisonIds = useLocalStorage<any>('comparisonVehicles', []);
+
+const normalizeComparisonIds = (raw: any): (string | number)[] => {
+  if (Array.isArray(raw)) return raw;
+  if (raw && typeof raw === 'object') {
+    if (raw instanceof Set) return Array.from(raw);
+    const maybeValues = raw._set || Object.values(raw);
+    if (Array.isArray(maybeValues)) return maybeValues as (string | number)[];
+  }
+  return [];
+};
+
+const comparisonSet = computed(() => new Set(normalizeComparisonIds(comparisonIds.value)));
 
 const vehicleId = computed(() => route.params.id as string);
 const slugParam = computed(() => route.params.slug as string);
@@ -326,13 +398,18 @@ const { data: apiResponse, status } = await useFetch<any>(`/api/vehicle-detail/$
   key: `vehicle-detail-${vehicleId.value}`,
 });
 
+// Fetch all vehicles for related vehicles section
+const { data: allVehiclesResponse } = await useFetch<{ vehiclesData: any[] }>('/api/carsales-feed', {
+  key: 'carsales-feed-related',
+});
+
 // Derive pending state from status
 const pending = computed(() => status.value === 'pending');
 
 // Extract vehicle from response
 const vehicle = computed(() => apiResponse.value?.vehicle || null);
 
-// Helper functions - defined first before computed properties
+// Helper function for extracting display values - defined early for use in computed properties
 const getDisplay = (field: any) => {
   if (!field) return '';
   if (typeof field === 'string' || typeof field === 'number') return String(field);
@@ -367,6 +444,54 @@ const vehicleTitle = (v: any) => {
 const pushSpec = (arr: { label: string; value: string }[], label: string, value?: string) => {
   if (value) arr.push({ label, value });
 };
+
+// Related vehicles - find similar vehicles based on make, body type, or price range
+const relatedVehicles = computed(() => {
+  if (!vehicle.value || !allVehiclesResponse.value?.vehiclesData) return [];
+
+  const currentId = vehicleId.value;
+  const currentMake = getDisplay(vehicle.value?.make)?.toLowerCase();
+  const currentBody = getDisplay(vehicle.value?.body)?.toLowerCase();
+  const currentPrice = vehicle.value?.price || 0;
+
+  // Filter out current vehicle and find related ones
+  const candidates = allVehiclesResponse.value.vehiclesData.filter((v: any) => {
+    // Exclude current vehicle
+    const vId = String(v.stockid || v.identifier || v.id);
+    if (vId === currentId) return false;
+    return true;
+  });
+
+  // Score each vehicle based on similarity
+  const scored = candidates.map((v: any) => {
+    let score = 0;
+
+    // Same make = highest priority
+    const vMake = getDisplay(v?.make)?.toLowerCase();
+    if (vMake && vMake === currentMake) score += 10;
+
+    // Same body type = second priority
+    const vBody = getDisplay(v?.body)?.toLowerCase();
+    if (vBody && vBody === currentBody) score += 5;
+
+    // Similar price range (within 30%) = third priority
+    const vPrice = v?.price || 0;
+    if (currentPrice > 0 && vPrice > 0) {
+      const priceDiff = Math.abs(vPrice - currentPrice) / currentPrice;
+      if (priceDiff <= 0.3) score += 3;
+      else if (priceDiff <= 0.5) score += 1;
+    }
+
+    return { vehicle: v, score };
+  });
+
+  // Sort by score descending, take top 4
+  return scored
+    .filter(item => item.score > 0) // Only include vehicles with some similarity
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map(item => item.vehicle);
+});
 
 const phone = computed(() => mainStore.site?.phone?.replace(/\s/g, '') || '');
 
@@ -776,6 +901,66 @@ const openEnquire = () => {
 
 const closeEnquire = () => {
   enquiryModalOpen.value = false;
+};
+
+// Related vehicle enquiry modal (triggered by ModernVehicleCard)
+const closeRelatedEnquire = () => {
+  vehiclesStore.setVehicleEnquiryPopUp(false, null);
+};
+
+// Share vehicle functionality
+const shareVehicle = async () => {
+  const shareData = {
+    title: `${vehicleTitle.value} | Phil Gilbert Hyundai`,
+    text: `Check out this ${vehicleTitle.value} - ${priceDisplay.value}`,
+    url: window.location.href,
+  };
+
+  try {
+    if (navigator.share && navigator.canShare(shareData)) {
+      await navigator.share(shareData);
+    } else {
+      // Fallback: copy URL to clipboard
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied to clipboard!');
+    }
+  } catch (err) {
+    // User cancelled share or error occurred
+    if ((err as Error).name !== 'AbortError') {
+      // Try clipboard as fallback
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      } catch {
+        toast.error('Failed to copy link');
+      }
+    }
+  }
+};
+
+// Save vehicle functionality
+const isVehicleSaved = computed(() => {
+  return comparisonSet.value.has(vehicleId.value);
+});
+
+const toggleSaveVehicle = () => {
+  const id = vehicleId.value;
+  if (!id) return;
+
+  const ids = comparisonSet.value;
+  if (ids.has(id)) {
+    // Remove from saved
+    comparisonIds.value = normalizeComparisonIds(comparisonIds.value).filter(i => i !== id);
+    toast.info('Vehicle removed from saved');
+  } else {
+    // Add to saved (max 3)
+    if (ids.size >= 3) {
+      toast.warning('You can save up to 3 vehicles at once');
+      return;
+    }
+    comparisonIds.value = [...normalizeComparisonIds(comparisonIds.value), id];
+    toast.success('Vehicle saved!', 'Added to favorites');
+  }
 };
 
 // Test drive modal state
