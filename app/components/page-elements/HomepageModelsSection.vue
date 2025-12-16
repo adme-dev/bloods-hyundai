@@ -11,13 +11,15 @@
         </p>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="modelsStore.loading" class="flex justify-center py-16">
-        <div uk-spinner></div>
-      </div>
+      <!-- Loading State - Only show on client to prevent hydration mismatch -->
+      <ClientOnly>
+        <div v-if="modelsStore.loading" class="flex justify-center py-16">
+          <div uk-spinner></div>
+        </div>
+      </ClientOnly>
 
       <!-- Error State -->
-      <div v-else-if="modelsStore.error" class="py-16 text-center">
+      <div v-if="!modelsStore.loading && modelsStore.error" class="py-16 text-center">
         <p class="text-red-600 text-lg">
           {{ modelsStore.error }}
         </p>
@@ -30,7 +32,7 @@
       </div>
 
       <!-- Content -->
-      <div v-else>
+      <div v-if="!modelsStore.loading && !modelsStore.error">
         <!-- Desktop Layout -->
         <div class="hidden lg:flex lg:flex-row gap-12">
           <!-- Left Sidebar: Categories -->
