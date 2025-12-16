@@ -1512,6 +1512,8 @@ $bg-white: #fff;
 .car-calculator-page {
   min-height: 100vh;
   background: $bg-white;
+  // Note: overflow-x: hidden breaks sticky positioning, so we avoid it here
+  // Instead, we control overflow at the body level or use max-width constraints
 }
 
 // Loading & Error States
@@ -1560,6 +1562,9 @@ $bg-white: #fff;
   display: grid;
   grid-template-columns: 55% 45%;
   min-height: 100vh;
+  // Removed overflow-x: hidden as it breaks sticky positioning
+  // Using max-width to prevent horizontal scroll instead
+  max-width: 100%;
   
   @media (max-width: 1200px) {
     grid-template-columns: 50% 50%;
@@ -1653,12 +1658,9 @@ $bg-white: #fff;
 // Right Panel - Scrollable Config
 .right-panel {
   background: $bg-white;
-  overflow-y: auto;
   padding-bottom: 120px; // Space for footer
-  
-  @media (max-width: 900px) {
-    overflow: visible;
-  }
+  // Removed overflow properties - let the page scroll naturally
+  // This allows the left panel sticky to work properly
 }
 
 .config-header {
@@ -1725,6 +1727,7 @@ $bg-white: #fff;
 
 .config-sections {
   padding: 0 2.5rem;
+  // Removed overflow-x: hidden - it breaks sticky positioning of left panel
 }
 
 .config-section {

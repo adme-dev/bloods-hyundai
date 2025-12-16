@@ -111,20 +111,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span class="text-sm font-medium text-black">{{ siteName }}</span>
-              </a>
-
-              <!-- Vehicle Search -->
-              <a 
-                href="/car-sales" 
-                class="text-black hover:text-gray-700 transition-colors"
-                title="Find a Vehicle"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9l-2-2m0 0l-2-2m2 2l2 2m2-2l-2-2m2 2l2 2" />
-                  <circle cx="9" cy="9" r="3" stroke-width="2" />
-                </svg>
+                <span class="text-base font-bold text-black">{{ siteName }}</span>
               </a>
 
               <!-- Saved Vehicles / Favorites -->
@@ -169,7 +156,7 @@
             </div>
 
             <!-- Mobile: Site Name -->
-            <div class="lg:hidden flex items-center">
+            <div class="lg:hidden flex items-center mr-4">
               <a 
                 :href="mapDirections" 
                 target="_blank" 
@@ -179,12 +166,12 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span class="text-sm font-medium text-black truncate max-w-[140px]">{{ siteName }}</span>
+                <span class="text-base font-bold text-black truncate max-w-[160px]">{{ siteName }}</span>
               </a>
             </div>
 
             <!-- Mobile Right: Icons -->
-            <div class="lg:hidden flex items-center gap-2 ml-auto">
+            <div class="lg:hidden flex items-center gap-4 ml-auto">
               <button 
                 @click="openSearch" 
                 class="p-2 text-black hover:text-gray-700 transition-colors"

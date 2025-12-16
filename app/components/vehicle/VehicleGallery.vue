@@ -209,24 +209,35 @@ const allPhotosImage = computed(() => {
 
 /* Sidebar Thumbnails */
 .gallery__sidebar {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  display: flex;
+  flex-direction: row;
   gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.gallery__sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 @media (min-width: 768px) {
   .gallery__sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
     gap: 0.75rem;
+    overflow-x: visible;
   }
 }
 
 .gallery__thumb {
   position: relative;
   display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 80px;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
   border: none;
   padding: 0;
   border-radius: 0.5rem;
@@ -241,8 +252,11 @@ const allPhotosImage = computed(() => {
 
 @media (min-width: 768px) {
   .gallery__thumb {
-    border-radius: 0.75rem;
+    width: 100%;
+    height: 100%;
     min-height: 100px;
+    border-radius: 0.75rem;
+    flex-shrink: 1;
   }
 }
 
@@ -254,13 +268,14 @@ const allPhotosImage = computed(() => {
 /* All Photos Button */
 .gallery__all-photos {
   position: relative;
-  grid-column: span 2;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60px;
+  width: 72px;
+  height: 72px;
   border: none;
-  padding: 1rem;
+  padding: 0.5rem;
   border-radius: 0.5rem;
   background-color: #1e293b;
   background-size: cover;
@@ -273,8 +288,13 @@ const allPhotosImage = computed(() => {
 
 @media (min-width: 768px) {
   .gallery__all-photos {
-    border-radius: 0.75rem;
+    grid-column: span 2;
+    width: 100%;
+    height: auto;
     min-height: 70px;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    flex-shrink: 1;
   }
 }
 
@@ -297,8 +317,16 @@ const allPhotosImage = computed(() => {
   position: relative;
   z-index: 1;
   color: #fff;
-  font-size: 0.875rem;
+  font-size: 0.625rem;
   font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .gallery__all-photos-text {
+    font-size: 0.875rem;
+  }
 }
 
 /* Accessibility */

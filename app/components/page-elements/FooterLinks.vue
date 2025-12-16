@@ -59,10 +59,18 @@
           <!-- Footer links -->
           <div class="mt-10 grid gap-8 md:grid-cols-3">
             <!-- Mobile vehicle accordion -->
-            <details class="border-b border-white/10 py-3 md:hidden" open>
+            <details class="footer-accordion border-b border-white/10 py-3 md:hidden">
               <summary class="flex cursor-pointer items-center justify-between text-base font-semibold">
                 Choose your Hyundai
-                <span class="text-sm text-slate-400">▼</span>
+                <span class="accordion-icon">
+                  <svg class="icon-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  <svg class="icon-minus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </span>
               </summary>
               <div class="mt-4 space-y-6">
                 <div
@@ -86,53 +94,107 @@
               </div>
             </details>
 
-            <!-- Sections -->
-            <div
-              v-for="(section, index) in footerLinks"
-              :key="index"
-              class="space-y-3"
-            >
-              <div class="text-base font-semibold">{{ section.heading }}</div>
-              <div class="space-y-2">
-                <div
-                  v-for="link in section.links"
-                  :key="link.url"
-                  class="text-sm text-white hover:text-white"
-                >
-                  <a
-                    v-if="isLinkExternal(link.url)"
-                    :href="link.url"
-                    rel="nofollow"
-                    target="_blank"
+            <!-- Sections - Accordion on mobile, grid on desktop -->
+            <template v-for="(section, index) in footerLinks" :key="index">
+              <!-- Mobile: Accordion -->
+              <details class="footer-accordion border-b border-white/10 py-3 md:hidden">
+                <summary class="flex cursor-pointer items-center justify-between text-base font-semibold">
+                  {{ section.heading }}
+                  <span class="accordion-icon">
+                    <svg class="icon-plus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <svg class="icon-minus" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </span>
+                </summary>
+                <div class="mt-4 space-y-2">
+                  <div
+                    v-for="link in section.links"
+                    :key="link.url"
+                    class="text-sm text-white hover:text-white"
                   >
-                    {{ link.title }}
-                  </a>
-                  <NuxtLink
-                    v-else
-                    :to="link.url"
-                    :title="link.title"
-                  >
-                    {{ link.title }}
-                  </NuxtLink>
+                    <a
+                      v-if="isLinkExternal(link.url)"
+                      :href="link.url"
+                      rel="nofollow"
+                      target="_blank"
+                    >
+                      {{ link.title }}
+                    </a>
+                    <NuxtLink
+                      v-else
+                      :to="link.url"
+                      :title="link.title"
+                    >
+                      {{ link.title }}
+                    </NuxtLink>
+                  </div>
                 </div>
-              </div>
 
-              <div v-if="index === 2 && social" class="pt-2">
-                <div class="text-base font-semibold">Connect with us.</div>
-                <div class="mt-2 flex flex-wrap gap-2">
-                  <a
-                    v-for="(url, platform) in social"
-                    :key="platform"
-                    class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-primary"
-                    target="_blank"
-                    rel="noreferrer"
-                    :href="url"
+                <div v-if="index === 2 && social" class="pt-4">
+                  <div class="text-base font-semibold">Connect with us.</div>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <a
+                      v-for="(url, platform) in social"
+                      :key="platform"
+                      class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-primary"
+                      target="_blank"
+                      rel="noreferrer"
+                      :href="url"
+                    >
+                      <span class="text-xs capitalize">{{ platform }}</span>
+                    </a>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Desktop: Static display -->
+              <div class="hidden md:block space-y-3">
+                <div class="text-base font-semibold">{{ section.heading }}</div>
+                <div class="space-y-2">
+                  <div
+                    v-for="link in section.links"
+                    :key="link.url"
+                    class="text-sm text-white hover:text-white"
                   >
-                    <span class="text-xs capitalize">{{ platform }}</span>
-                  </a>
+                    <a
+                      v-if="isLinkExternal(link.url)"
+                      :href="link.url"
+                      rel="nofollow"
+                      target="_blank"
+                    >
+                      {{ link.title }}
+                    </a>
+                    <NuxtLink
+                      v-else
+                      :to="link.url"
+                      :title="link.title"
+                    >
+                      {{ link.title }}
+                    </NuxtLink>
+                  </div>
+                </div>
+
+                <div v-if="index === 2 && social" class="pt-2">
+                  <div class="text-base font-semibold">Connect with us.</div>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <a
+                      v-for="(url, platform) in social"
+                      :key="platform"
+                      class="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-primary"
+                      target="_blank"
+                      rel="noreferrer"
+                      :href="url"
+                    >
+                      <span class="text-xs capitalize">{{ platform }}</span>
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
 
           <!-- Copyright -->
@@ -231,6 +293,41 @@ const isLinkExternal = (url: string) => {
 <style scoped>
 .drop-shadow {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+/* Accordion plus/minus icon toggle */
+.footer-accordion .accordion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-accordion .accordion-icon .icon-plus {
+  display: block;
+}
+
+.footer-accordion .accordion-icon .icon-minus {
+  display: none;
+}
+
+.footer-accordion[open] .accordion-icon .icon-plus {
+  display: none;
+}
+
+.footer-accordion[open] .accordion-icon .icon-minus {
+  display: block;
+}
+
+/* Remove default marker */
+.footer-accordion summary {
+  list-style: none;
+}
+
+.footer-accordion summary::-webkit-details-marker {
+  display: none;
 }
 </style>
 

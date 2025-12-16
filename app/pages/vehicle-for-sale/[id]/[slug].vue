@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-slate-50 text-slate-900">
+  <div class="vehicle-for-sale-page bg-slate-50 text-slate-900">
     <!-- Loading -->
     <div v-if="pending" class="flex min-h-[60vh] items-center justify-center">
       <div uk-spinner="ratio: 2"></div>
@@ -299,10 +299,16 @@
                 </div>
               </div>
 
-              <div class="mt-4 text-center text-sm text-slate-600">
-                <p class="text-xs text-slate-500">Have questions?</p>
-                <a :href="`tel:${phone}`" class="font-semibold text-primary hover:text-primary/80">
-                  Call us
+              <div class="mt-4 pt-4 border-t border-slate-100">
+                <p class="text-xs text-slate-500 text-center mb-2">Have questions?</p>
+                <a 
+                  :href="`tel:${phone}`" 
+                  class="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-primary bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm hover:bg-primary hover:text-white transition-colors"
+                >
+                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                  </svg>
+                  Call Us Now
                 </a>
               </div>
             </div>
@@ -996,7 +1002,7 @@ const closeTestDrive = () => {
   .mobile-cta-bar {
     display: flex;
   }
-  
+
   /* Add padding to bottom of page to prevent content from being hidden behind sticky bar */
   .bg-slate-50 {
     padding-bottom: 5rem;
@@ -1036,6 +1042,82 @@ const closeTestDrive = () => {
 
 .mobile-cta-btn--enquire:hover {
   background-color: #001d40;
+}
+</style>
+
+<style lang="scss">
+/* Global (unscoped) styles to override UIkit conflicts on this page */
+.vehicle-for-sale-page {
+  /* Reset UIkit min-height on all containers */
+  .rounded-2xl,
+  .rounded-xl,
+  .rounded-lg,
+  .rounded-full,
+  .rounded-md {
+    min-height: unset !important;
+  }
+  
+  /* Fix header chips (Automatic, Petrol, SUV, etc.) - the span pills */
+  .flex.flex-wrap.gap-2 > span.rounded-full {
+    padding: 0.25rem 0.75rem !important;
+    height: auto !important;
+    min-height: unset !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Fix highlight cards (Odometer, Body type, Fuel, Transmission) */
+  .grid.grid-cols-2 > .flex.items-center.rounded-xl {
+    padding: 0.75rem 1rem !important;
+    min-height: unset !important;
+  }
+  
+  /* Icon circles in highlight cards */
+  .flex.h-10.w-10.rounded-full {
+    height: 2.5rem !important;
+    width: 2.5rem !important;
+    min-height: unset !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Compact spec items */
+  .rounded-lg.border-slate-100.bg-slate-50,
+  .rounded-lg.border.border-slate-100 {
+    padding: 0.5rem 0.75rem !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+  
+  /* Reset space-y children */
+  .space-y-4 > * {
+    min-height: unset !important;
+  }
+  
+  /* Ensure grid displays correctly */
+  .grid {
+    display: grid !important;
+  }
+  
+  /* Fix highlights grid on mobile */
+  .grid.grid-cols-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  
+  @media (min-width: 640px) {
+    .grid.sm\:grid-cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+  }
+  
+  /* Reset any UIkit padding on nested divs */
+  .px-3.py-2,
+  .px-4.py-3 {
+    padding: 0.75rem 1rem !important;
+  }
+  
+  .px-3.py-2 {
+    padding: 0.5rem 0.75rem !important;
+  }
 }
 </style>
 

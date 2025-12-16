@@ -1,6 +1,6 @@
 <template>
-  <!-- Fixed call button (mobile only) -->
-  <div class="call-quick-link uk-hidden@m">
+  <!-- Fixed call button (mobile only) - hidden on pages with their own mobile CTA -->
+  <div v-if="showCallButton" class="call-quick-link uk-hidden@m">
     <a :href="`tel:${phone}`" class="call-button">
       <span uk-icon="icon: receiver; ratio: 1.2"></span>
       <span class="call-text">Call Now</span>
@@ -9,11 +9,20 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute();
 const mainStore = useMainStore();
 
 const phone = computed(() => {
   const sitePhone = mainStore.site?.phone;
   return sitePhone ? sitePhone.replace(/\s/g, '') : '';
+});
+
+// Hide on pages that have their own mobile CTA bar
+const showCallButton = computed(() => {
+  const routeName = route.name as string;
+  // Hide on vehicle-for-sale pages (they have their own enquire button)
+  if (routeName?.startsWith('vehicle-for-sale')) return false;
+  return true;
 });
 </script>
 

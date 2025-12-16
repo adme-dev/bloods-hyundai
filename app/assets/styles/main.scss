@@ -38,7 +38,8 @@
   --spacing-xxl: 3rem;
 
   // Typography
-  --font-family-base: 'Hyundai Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-base: 'Hyundai Sans Text', 'Hyundai Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-head: 'Hyundai Sans Head', 'Hyundai Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-size-base: 16px;
   --line-height-base: 1.5;
 
@@ -77,6 +78,189 @@
 }
 
 // ============================================
+// HYUNDAI SANS FONTS
+// ============================================
+
+// Hyundai Sans Head - for headings
+@font-face {
+  font-family: 'Hyundai Sans Head';
+  src: url('~/assets/fonts/HyundaiSansHead-Light.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansHead-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Head';
+  src: url('~/assets/fonts/HyundaiSansHead-Regular.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansHead-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Head';
+  src: url('~/assets/fonts/HyundaiSansHead-Medium.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansHead-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Head';
+  src: url('~/assets/fonts/HyundaiSansHead-Bold.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansHead-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+// Hyundai Sans Text - for body text
+@font-face {
+  font-family: 'Hyundai Sans Text';
+  src: url('~/assets/fonts/HyundaiSansText-Regular.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Text';
+  src: url('~/assets/fonts/HyundaiSansText-Italic.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Text';
+  src: url('~/assets/fonts/HyundaiSansText-Medium.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Text';
+  src: url('~/assets/fonts/HyundaiSansText-MediumItalic.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-MediumItalic.woff') format('woff');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Text';
+  src: url('~/assets/fonts/HyundaiSansText-Bold.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans Text';
+  src: url('~/assets/fonts/HyundaiSansText-BoldItalic.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+// Alias 'Hyundai Sans' to 'Hyundai Sans Text' for backwards compatibility
+@font-face {
+  font-family: 'Hyundai Sans';
+  src: url('~/assets/fonts/HyundaiSansText-Regular.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans';
+  src: url('~/assets/fonts/HyundaiSansText-Medium.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Medium.woff') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hyundai Sans';
+  src: url('~/assets/fonts/HyundaiSansText-Bold.woff2') format('woff2'),
+       url('~/assets/fonts/HyundaiSansText-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+// ============================================
+// ICOMOON ICON FONT
+// ============================================
+
+@font-face {
+  font-family: 'icomoon';
+  src: url('~/assets/fonts/icomoon.woff') format('woff'),
+       url('~/assets/fonts/icomoon.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  font-family: 'icomoon' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Icomoon icon classes
+.icon-map-marker:before { content: "\e900"; }
+.icon-close:before { content: "\e901"; }
+.icon-filter:before { content: "\e902"; }
+.icon-linkedin:before { content: "\e903"; }
+.icon-service-dealers:before { content: "\e904"; }
+.icon-globe:before { content: "\e905"; }
+.icon-home:before { content: "\e906"; }
+.icon-chevron-down:before { content: "\e907"; }
+.icon-plus:before { content: "\e908"; }
+.icon-brochure:before { content: "\e909"; }
+.icon-phone:before { content: "\e90a"; }
+.icon-minus:before { content: "\e90b"; }
+.icon-email:before { content: "\e90c"; }
+.icon-nav-search:before { content: "\e90d"; }
+.icon-wechat:before { content: "\e90e"; }
+.icon-compare-cars:before { content: "\e90f"; }
+.icon-book-a-service:before { content: "\e910"; }
+.icon-brochure-book:before { content: "\e911"; }
+.icon-find-a-dealer:before { content: "\e912"; }
+.icon-steering-wheel-small:before { content: "\e913"; }
+.icon-ar-experience:before { content: "\e914"; }
+.icon-question:before { content: "\e915"; }
+.icon-steering-wheel:before { content: "\e922"; }
+
+// Icon size utilities for quick links bar
+.icon-lg {
+  font-size: 2.5rem;
+}
+
+.icon-xl {
+  font-size: 3rem;
+}
+
+// ============================================
 // GLOBAL RESETS & BASE
 // ============================================
 
@@ -98,6 +282,12 @@ body {
   background-color: var(--color-white);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+// Headings use Hyundai Sans Head
+h1, h2, h3, h4, h5, h6,
+.uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6 {
+  font-family: var(--font-family-head);
 }
 
 // ============================================

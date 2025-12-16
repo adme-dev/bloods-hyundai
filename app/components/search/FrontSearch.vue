@@ -7,7 +7,7 @@
           <div>
             <NuxtLink to="/service" class="uk-link-reset uk-width-1-1">
               <div class="uk-padding-small">
-                <span uk-icon="icon: cog; ratio: 2"></span>
+                <i class="icon-book-a-service icon-xl"></i>
                 <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Servicing available</div>
                 <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
                   Book a Service
@@ -19,7 +19,7 @@
           <div>
             <NuxtLink to="/test-drive" class="uk-link-reset uk-width-1-1">
               <div class="uk-padding-small">
-                <span uk-icon="icon: car; ratio: 2"></span>
+                <i class="icon-steering-wheel icon-xl"></i>
                 <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Test Drive a Hyundai</div>
                 <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
                   Book a Test Drive
@@ -31,7 +31,7 @@
           <div>
             <NuxtLink to="/special-offers" class="uk-link-reset uk-width-1-1">
               <div class="uk-padding-small">
-                <span uk-icon="icon: tag; ratio: 2"></span>
+                <i class="icon-compare-cars icon-xl"></i>
                 <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Current Offers</div>
                 <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
                   View Offers
@@ -43,7 +43,7 @@
           <div>
             <NuxtLink to="/contact" class="uk-link-reset uk-width-1-1">
               <div class="uk-padding-small">
-                <span uk-icon="icon: mail; ratio: 2"></span>
+                <i class="icon-email icon-xl"></i>
                 <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Make an Enquiry</div>
                 <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
                   More Info
@@ -55,7 +55,7 @@
           <div>
             <a href="#location" class="uk-link-reset uk-width-1-1">
               <div class="uk-padding-small">
-                <span uk-icon="icon: location; ratio: 2"></span>
+                <i class="icon-map-marker icon-xl"></i>
                 <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Location</div>
                 <div class="uk-text-small icontxtsm uk-visible@s">
                   {{ address }}
@@ -70,7 +70,7 @@
               :href="`tel:${phone?.replace(/[^0-9+]/g, '')}`"
             >
               <div class="uk-padding-small">
-                <span uk-icon="icon: receiver; ratio: 2"></span>
+                <i class="icon-phone icon-xl"></i>
                 <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Call Us</div>
                 <div class="uk-text-small icontxtsm uk-visible@s">
                   {{ siteName }}

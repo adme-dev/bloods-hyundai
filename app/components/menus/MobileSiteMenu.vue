@@ -52,9 +52,8 @@
                 </svg>
                 Find a Vehicle
               </NuxtLink>
-              <a 
-                :href="serviceBookingUrl"
-                target="_blank"
+              <NuxtLink 
+                to="/service"
                 class="mobile-site-menu__action-btn"
                 @click="close"
               >
@@ -65,7 +64,7 @@
                   <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
                 Book Service
-              </a>
+              </NuxtLink>
             </div>
 
             <!-- Menu Sections -->
@@ -101,7 +100,7 @@
                 <Transition name="section-expand">
                   <div 
                     v-if="expandedSections.includes('models')" 
-                    class="mobile-site-menu__section-content"
+                    class="mobile-site-menu__section-content mobile-site-menu__models-content"
                   >
                     <div 
                       v-for="category in vehicleCategories" 
@@ -109,17 +108,61 @@
                       class="mobile-site-menu__category"
                     >
                       <div class="mobile-site-menu__category-label">{{ category }}</div>
-                      <div class="mobile-site-menu__category-items">
+                      <div class="mobile-site-menu__vehicle-grid">
                         <NuxtLink
                           v-for="vehicle in getVehiclesByCategory(category)"
                           :key="vehicle.slug"
                           :to="`/vehicle/${vehicle.slug}`"
-                          class="mobile-site-menu__vehicle-link"
+                          class="mobile-site-menu__vehicle-card"
                           @click="close"
                         >
-                          {{ vehicle.name }}
+                          <div class="mobile-site-menu__vehicle-image">
+                            <img 
+                              v-if="vehicle.image"
+                              :src="vehicle.image"
+                              :alt="vehicle.name"
+                              loading="lazy"
+                            />
+                            <div v-else class="mobile-site-menu__vehicle-placeholder">
+                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10.4V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v4.4l-2.5.7A2 2 0 0 0 2 13v3c0 .6.4 1 1 1h2"/>
+                                <circle cx="7" cy="17" r="2"/>
+                                <circle cx="17" cy="17" r="2"/>
+                              </svg>
+                            </div>
+                          </div>
+                          <div class="mobile-site-menu__vehicle-name">{{ vehicle.name }}</div>
                         </NuxtLink>
                       </div>
+                    </div>
+                    
+                    <!-- Quick Action Links -->
+                    <div class="mobile-site-menu__models-actions">
+                      <NuxtLink 
+                        to="/test-drive" 
+                        class="mobile-site-menu__models-action"
+                        @click="close"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                          <line x1="16" y1="2" x2="16" y2="6"/>
+                          <line x1="8" y1="2" x2="8" y2="6"/>
+                          <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Book a Test Drive
+                      </NuxtLink>
+                      <NuxtLink 
+                        to="/test-drive" 
+                        class="mobile-site-menu__models-action"
+                        @click="close"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M12 3v18"/>
+                          <path d="M3 12h18"/>
+                          <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        </svg>
+                        Build Your Hyundai
+                      </NuxtLink>
                     </div>
                   </div>
                 </Transition>
@@ -159,33 +202,31 @@
                     class="mobile-site-menu__section-content"
                   >
                     <div class="mobile-site-menu__links">
-                      <a 
-                        v-if="isLinkExternal(link.url)"
-                        v-for="link in section.links"
-                        :key="link.url"
-                        :href="link.url"
-                        class="mobile-site-menu__link"
-                        target="_blank"
-                        rel="nofollow"
-                        @click="close"
-                      >
-                        {{ link.title }}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mobile-site-menu__external-icon">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                          <polyline points="15 3 21 3 21 9"/>
-                          <line x1="10" y1="14" x2="21" y2="3"/>
-                        </svg>
-                      </a>
-                      <NuxtLink
-                        v-else
-                        v-for="link in section.links"
-                        :key="link.url"
-                        :to="link.url"
-                        class="mobile-site-menu__link"
-                        @click="close"
-                      >
-                        {{ link.title }}
-                      </NuxtLink>
+                      <template v-for="link in section.links" :key="link.url">
+                        <a 
+                          v-if="isLinkExternal(link.url)"
+                          :href="link.url"
+                          class="mobile-site-menu__link"
+                          target="_blank"
+                          rel="nofollow"
+                          @click="close"
+                        >
+                          {{ link.title }}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mobile-site-menu__external-icon">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                            <polyline points="15 3 21 3 21 9"/>
+                            <line x1="10" y1="14" x2="21" y2="3"/>
+                          </svg>
+                        </a>
+                        <NuxtLink
+                          v-else
+                          :to="link.url"
+                          class="mobile-site-menu__link"
+                          @click="close"
+                        >
+                          {{ link.title }}
+                        </NuxtLink>
+                      </template>
                     </div>
                   </div>
                 </Transition>
@@ -619,8 +660,12 @@ $hyundai-sand: rgb(246, 243, 242);
 }
 
 // Vehicle Categories
+.mobile-site-menu__models-content {
+  padding: 0 12px 16px;
+}
+
 .mobile-site-menu__category {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 
   &:last-child {
     margin-bottom: 0;
@@ -633,10 +678,109 @@ $hyundai-sand: rgb(246, 243, 242);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: rgba(0, 30, 80, 0.5);
-  margin-bottom: 8px;
-  padding-left: 32px;
+  margin-bottom: 12px;
+  padding-left: 4px;
 }
 
+.mobile-site-menu__vehicle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mobile-site-menu__vehicle-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  background: $hyundai-sand;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+
+  &:hover, &:active {
+    background: white;
+    border-color: $hyundai-light-blue;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 30, 80, 0.1);
+  }
+}
+
+.mobile-site-menu__vehicle-image {
+  width: 100%;
+  aspect-ratio: 16/10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 6px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-site-menu__vehicle-card:hover & img {
+    transform: scale(1.05);
+  }
+}
+
+.mobile-site-menu__vehicle-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(0, 30, 80, 0.3);
+}
+
+.mobile-site-menu__vehicle-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: $hyundai-blue;
+  text-align: center;
+  line-height: 1.2;
+  padding: 0 2px;
+}
+
+// Models Quick Action Links
+.mobile-site-menu__models-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 30, 80, 0.1);
+}
+
+.mobile-site-menu__models-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: $hyundai-blue;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white !important;
+  text-decoration: none;
+  transition: all 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+
+  &:hover {
+    background: darken($hyundai-blue, 5%);
+    color: white !important;
+  }
+}
+
+// Legacy pill-style links (kept for fallback)
 .mobile-site-menu__category-items {
   display: flex;
   flex-wrap: wrap;
@@ -669,11 +813,12 @@ $hyundai-sand: rgb(246, 243, 242);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 0;
-  font-size: 14px;
-  color: rgba(0, 30, 80, 0.8);
+  padding: 12px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #000000 !important;
   text-decoration: none;
-  border-bottom: 1px solid rgba(0, 30, 80, 0.05);
+  border-bottom: 1px solid rgba(0, 30, 80, 0.08);
   transition: color 0.2s ease;
 
   &:last-child {
@@ -681,7 +826,7 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 
   &:hover {
-    color: $hyundai-light-blue;
+    color: var(--color-primary-light, #00aad2) !important;
   }
 }
 
@@ -739,10 +884,10 @@ $hyundai-sand: rgb(246, 243, 242);
 }
 
 .mobile-site-menu__dealer-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   color: $hyundai-blue;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .mobile-site-menu__address {
@@ -844,7 +989,7 @@ $hyundai-sand: rgb(246, 243, 242);
 .section-expand-enter-to,
 .section-expand-leave-from {
   opacity: 1;
-  max-height: 500px;
+  max-height: 2000px; // Increased for vehicle thumbnails grid
 }
 
 // Scrollbar styling
