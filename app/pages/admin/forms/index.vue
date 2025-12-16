@@ -197,6 +197,7 @@ import {
   Package,
   ShoppingCart,
   MessageSquare,
+  Tag,
 } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
@@ -301,6 +302,16 @@ const formDefinitions = [
     iconColor: 'text-indigo-600',
     isActive: true,
   },
+  {
+    id: 9,
+    slug: 'special_offer',
+    name: 'Special Offers',
+    description: 'Enquiries from special offer pages',
+    icon: Tag,
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+    isActive: true,
+  },
 ];
 
 // Merge form definitions with stats (including isActive from database)
@@ -333,6 +344,7 @@ const previewForm = (form: any) => {
     parts: '/parts',
     accessories: '/accessories',
     test_drive: '/test-drive',
+    special_offer: '/special-offers',
   };
   window.open(routes[form.slug] || '/', '_blank');
 };

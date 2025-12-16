@@ -470,11 +470,12 @@ function getEnquirySubject(enquiry: any, dealer: any): string {
     test_drive: 'Test Drive Request',
     sell_car: 'Sell My Car',
     accessories: 'Accessories Enquiry',
+    special_offer: 'Special Offer Enquiry',
   };
-  
+
   const typeLabel = typeLabels[enquiry.type] || 'New Enquiry';
   const customerName = `${enquiry.firstName} ${enquiry.lastName}`;
-  
+
   return `${typeLabel} - ${customerName} - ${dealer.name}`;
 }
 

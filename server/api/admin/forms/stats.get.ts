@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
   // Build stats object
   const formStats: Record<string, any> = {};
   
-  const formTypes = ['vehicle', 'contact', 'finance', 'service', 'sell_car', 'parts', 'accessories', 'test_drive'];
+  const formTypes = ['vehicle', 'contact', 'finance', 'service', 'sell_car', 'parts', 'accessories', 'test_drive', 'special_offer'];
   
   for (const formType of formTypes) {
     const totalRow = typeCounts.find(r => r.type === formType);

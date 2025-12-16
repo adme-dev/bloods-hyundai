@@ -95,6 +95,7 @@ function formatFormName(slug: string): string {
     parts: 'Parts Enquiry',
     accessories: 'Accessories',
     test_drive: 'Test Drive',
+    special_offer: 'Special Offers',
   };
   return names[slug] || slug;
 }
