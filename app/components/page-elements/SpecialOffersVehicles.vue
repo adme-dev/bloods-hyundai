@@ -1,5 +1,5 @@
 <template>
-  <section class="special-offers-vehicles py-16 bg-slate-50">
+  <section class="special-offers-vehicles py-16 bg-slate-50 overflow-hidden">
     <div class="mx-auto container px-4">
       <!-- Section Header -->
       <div class="text-center mb-10">
