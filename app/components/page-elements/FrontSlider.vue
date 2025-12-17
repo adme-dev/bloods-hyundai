@@ -1,183 +1,124 @@
 <template>
   <div class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden">
-    <!-- SSR slides for SEO - all slides rendered server-side, only first visible -->
-    <div v-if="!isMounted && homeSlides.length" class="slider-ssr">
-      <div
-        v-for="(slide, index) in homeSlides"
-        :key="`ssr-${index}`"
-        class="slide-item"
-        :class="{ 'slide-item--hidden': index > 0 }"
-      >
-        <div class="slide-panel" :class="{ 'is-active': index === 0 }">
-          <NuxtPicture
-            v-if="slide.desktop"
-            :src="slide.desktop"
-            :alt="strippedHeadingContent(slide.heading_content)"
-            class="slide-image-wrapper"
-            :img-attrs="{ class: 'slide-image' }"
-            sizes="sm:100vw md:80vw"
-            :loading="index === 0 ? 'eager' : 'lazy'"
-            format="webp"
-          />
-
-          <div v-if="slide.button_text" class="slide-content">
-            <h2
-              :class="slide.contrast"
-              class="slide-heading"
-              v-html="slide.heading_content"
-            ></h2>
-            <p
-              :class="slide.contrast"
-              class="slide-subheading"
-              v-html="slide.sub_heading"
-            ></p>
-            <div v-if="slide.button_text" class="slide-cta">
-              <NuxtLink
-                v-if="slide.link"
-                :class="[slide.contrast, slide.button_colour]"
-                class="slide-button"
-                :to="slide.link"
-              >
-                {{ slide.button_text }}
-              </NuxtLink>
+    <!-- SSR placeholder - shows first slide while JS loads -->
+    <div v-if="!isMounted && homeSlides.length" class="hero-carousel hero-carousel--ssr">
+      <div class="hero-viewport">
+        <div class="hero-container hero-container--ssr">
+          <div class="hero-slide">
+            <div class="slide-panel is-active">
+              <div v-if="homeSlides[0].desktop || homeSlides[0].mobile" class="slide-media">
+                <picture class="slide-image-wrapper">
+                  <source
+                    v-if="homeSlides[0].mobile"
+                    media="(max-width: 768px)"
+                    :srcset="homeSlides[0].mobile"
+                  />
+                  <img
+                    :src="homeSlides[0].desktop || homeSlides[0].mobile"
+                    :alt="strippedHeadingContent(homeSlides[0].heading_content) || siteName"
+                    class="slide-image"
+                    loading="eager"
+                  />
+                </picture>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Client-side Swiper slider -->
-    <ClientOnly>
-      <swiper
-        :modules="modules"
-        :slides-per-view="1.2"
-        :space-between="16"
-        :centered-slides="true"
-        :loop="homeSlides.length > 2"
-        :autoplay="{
-          delay: 3500,
-          disableOnInteraction: false,
-        }"
-        :pagination="{
-          el: '.hero-pagination',
-          clickable: true,
-        }"
-        :breakpoints="swiperBreakpoints"
-        class="hero-swiper"
-        @swiper="onSwiper"
-        @slideChange="onSlideChange"
-      >
-        <swiper-slide
-          v-for="(slide, index) in homeSlides"
-          :key="index"
-          v-slot="{ isActive }"
-        >
+    <!-- Embla Carousel - client only -->
+    <div v-else class="hero-carousel">
+      <div class="hero-viewport" ref="emblaRef">
+        <div class="hero-container">
           <div
-            :class="['slide-panel', { 'is-active': isActive }]"
-            @click="handleSlideClick($event, slide, index, isActive)"
+            v-for="(slide, index) in homeSlides"
+            :key="index"
+            class="hero-slide"
           >
-            <!-- Image slide -->
-            <div v-if="slide.desktop" class="slide-media">
-              <NuxtPicture
-                :src="slide.desktop"
-                :alt="strippedHeadingContent(slide.heading_content)"
-                class="slide-image-wrapper"
-                :img-attrs="{ class: 'slide-image' }"
-                sizes="sm:100vw md:80vw"
-                :loading="index === 0 ? 'eager' : 'lazy'"
-                format="webp"
-              />
-            </div>
+            <div
+              :class="['slide-panel', { 'is-active': selectedIndex === index }]"
+              @click="handleSlideClick($event, slide, index)"
+            >
+              <!-- Image slide with art direction -->
+              <div v-if="slide.desktop || slide.mobile" class="slide-media">
+                <picture class="slide-image-wrapper">
+                  <source
+                    v-if="slide.mobile"
+                    media="(max-width: 768px)"
+                    :srcset="slide.mobile"
+                  />
+                  <img
+                    :src="slide.desktop || slide.mobile"
+                    :alt="strippedHeadingContent(slide.heading_content) || siteName"
+                    class="slide-image"
+                    :loading="index === 0 ? 'eager' : 'lazy'"
+                  />
+                </picture>
+              </div>
 
-            <!-- Video slide -->
-            <div v-if="slide.video" class="slide-media slide-video">
-              <video
-                :src="slide.video"
-                loop
-                muted
-                playsinline
-                autoplay
-                :poster="slide.video_poster"
-              ></video>
-            </div>
+              <!-- Video slide -->
+              <div v-if="slide.video" class="slide-media slide-video">
+                <video
+                  :src="slide.video"
+                  loop
+                  muted
+                  playsinline
+                  autoplay
+                  :poster="slide.video_poster"
+                ></video>
+              </div>
 
-            <!-- Slide content overlay -->
-            <div v-if="slide.button_text" class="slide-content">
-              <h2
-                :class="slide.contrast"
-                class="slide-heading"
-                v-html="slide.heading_content"
-              ></h2>
-              <p
-                :class="slide.contrast"
-                class="slide-subheading"
-                v-html="slide.sub_heading"
-              ></p>
-              <div v-if="slide.button_text" class="slide-cta">
-                <span
-                  :class="[slide.contrast, slide.button_colour]"
-                  class="slide-button"
-                >
-                  {{ slide.button_text }}
-                </span>
+              <!-- Slide content overlay -->
+              <div v-if="slide.button_text" class="slide-content">
+                <h2
+                  :class="slide.contrast"
+                  class="slide-heading"
+                  v-html="slide.heading_content"
+                ></h2>
+                <p
+                  :class="slide.contrast"
+                  class="slide-subheading"
+                  v-html="slide.sub_heading"
+                ></p>
+                <div v-if="slide.button_text" class="slide-cta">
+                  <span
+                    :class="[slide.contrast, slide.button_colour]"
+                    class="slide-button"
+                  >
+                    {{ slide.button_text }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </swiper-slide>
-      </swiper>
-
-      <!-- Pagination -->
-      <div class="hero-pagination"></div>
-
-      <template #fallback>
-        <!-- Show first slide during hydration - matches SSR output -->
-        <div v-if="homeSlides.length" class="slider-ssr">
-          <div class="slide-item">
-            <div class="slide-panel is-active">
-              <NuxtPicture
-                v-if="homeSlides[0].desktop"
-                :src="homeSlides[0].desktop"
-                :alt="strippedHeadingContent(homeSlides[0].heading_content)"
-                class="slide-image-wrapper"
-                :img-attrs="{ class: 'slide-image' }"
-                sizes="sm:100vw md:80vw"
-                loading="eager"
-                format="webp"
-              />
-            </div>
-          </div>
         </div>
-      </template>
-    </ClientOnly>
+      </div>
+
+      <!-- Pagination dots -->
+      <div v-if="homeSlides.length > 1" class="hero-pagination">
+        <button
+          v-for="(_, index) in homeSlides"
+          :key="index"
+          :class="['pagination-dot', { 'is-active': selectedIndex === index }]"
+          @click="scrollTo(index)"
+          :aria-label="`Go to slide ${index + 1}`"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Swiper, SwiperSlide } from 'swiper/vue';
-import { Autoplay, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/pagination';
+import EmblaCarousel from 'embla-carousel';
+import Autoplay from 'embla-carousel-autoplay';
 import { isDateInRange } from '~/utils/date';
 
 const mainStore = useMainStore();
-const activeSlide = ref(0);
 const isMounted = ref(false);
-const swiperInstance = ref<any>(null);
-
-// Swiper modules
-const modules = [Autoplay, Pagination];
-
-// Swiper breakpoints
-const swiperBreakpoints = {
-  640: {
-    slidesPerView: 1.15,
-    spaceBetween: 16,
-  },
-  960: {
-    slidesPerView: 1.2,
-    spaceBetween: 20,
-  },
-};
+const selectedIndex = ref(0);
+const emblaRef = ref<HTMLElement | null>(null);
+let emblaApi: any = null;
 
 // Site name for fallback
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
@@ -188,13 +129,20 @@ const homeSlides = computed(() => {
   return slides.filter((slide: any) => isDateInRange(slide.start, slide.end));
 });
 
-// Methods
-const isLinkExternal = (link: string) => {
-  return /^(http|https):\/\//.test(link);
+// Navigation methods
+const scrollTo = (index: number) => {
+  emblaApi?.scrollTo(index);
 };
 
-const linkComponent = (link: string) => {
-  return isLinkExternal(link) ? 'a' : resolveComponent('NuxtLink');
+// Update selected index on slide change
+const onSelect = () => {
+  if (!emblaApi) return;
+  selectedIndex.value = emblaApi.selectedScrollSnap();
+};
+
+// Helper methods
+const isLinkExternal = (link: string) => {
+  return /^(http|https):\/\//.test(link);
 };
 
 const formatLink = (link: string) => {
@@ -204,39 +152,19 @@ const formatLink = (link: string) => {
   return 'https://' + link;
 };
 
-const formatSlideTitle = (link: string) => {
-  if (!link) return siteName.value;
-  const parts = link.replace('-', ' ').split('/');
-  return parts[2] || parts[1] || siteName.value;
-};
-
 const strippedHeadingContent = (content: string) => {
   if (!content) return '';
   return content.replace(/<[^>]*>/g, '');
 };
 
-const onSwiper = (swiper: any) => {
-  swiperInstance.value = swiper;
-};
-
-const onSlideChange = (swiper: any) => {
-  activeSlide.value = swiper.realIndex;
-};
-
-const goToSlide = (index: number) => {
-  if (swiperInstance.value) {
-    swiperInstance.value.slideToLoop(index);
-  }
-};
-
 const router = useRouter();
 
-const handleSlideClick = (event: Event, slide: any, index: number, isActive: boolean) => {
+const handleSlideClick = (event: Event, slide: any, index: number) => {
+  const isActive = selectedIndex.value === index;
+
   if (!isActive) {
-    // Navigate to this slide
-    goToSlide(index);
+    scrollTo(index);
   } else if (slide.link) {
-    // Navigate to the route
     if (isLinkExternal(slide.link)) {
       window.open(formatLink(slide.link), '_blank', 'noopener,noreferrer');
     } else {
@@ -245,8 +173,35 @@ const handleSlideClick = (event: Event, slide: any, index: number, isActive: boo
   }
 };
 
+// Initialize Embla on mount (client-side only)
 onMounted(() => {
   isMounted.value = true;
+
+  nextTick(() => {
+    if (emblaRef.value && homeSlides.value.length > 0) {
+      emblaApi = EmblaCarousel(
+        emblaRef.value,
+        {
+          loop: true,
+          align: 'center',
+          containScroll: false,
+          slidesToScroll: 1,
+        },
+        [Autoplay({ delay: 3500, stopOnInteraction: false })]
+      );
+
+      emblaApi.on('select', onSelect);
+      emblaApi.on('reInit', onSelect);
+      onSelect();
+    }
+  });
+});
+
+// Cleanup
+onUnmounted(() => {
+  if (emblaApi) {
+    emblaApi.destroy();
+  }
 });
 </script>
 
@@ -276,33 +231,41 @@ onMounted(() => {
   padding: 10px 0;
 }
 
-.hero-swiper {
-  overflow: visible;
+.hero-carousel {
+  position: relative;
 }
 
-/* SSR container - renders all slides for SEO, shows only first */
-.slider-ssr {
-  display: flex;
+/* SSR placeholder - center single slide */
+.hero-carousel--ssr .hero-container--ssr {
   justify-content: center;
-  padding: 0 10%;
 }
 
-.slide-item {
-  width: 83.33%;
-  flex-shrink: 0;
-}
-
-/* Hidden slides still in DOM for SEO but not visible */
-.slide-item--hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+.hero-viewport {
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+}
+
+.hero-container {
+  display: flex;
+  backface-visibility: hidden;
+  touch-action: pan-y pinch-zoom;
+}
+
+.hero-slide {
+  flex: 0 0 83.33%;
+  min-width: 0;
+  padding: 0 8px;
+}
+
+@media (max-width: 960px) {
+  .hero-slide {
+    flex: 0 0 87%;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-slide {
+    flex: 0 0 92%;
+  }
 }
 
 .slide-panel {
@@ -314,8 +277,7 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.slide-panel.is-active,
-.slider-placeholder .slide-panel {
+.slide-panel.is-active {
   filter: brightness(1);
   box-shadow: 0 14px 25px rgba(0, 0, 0, 0.16);
   cursor: default;
@@ -327,6 +289,11 @@ onMounted(() => {
 
 .slide-media {
   position: relative;
+}
+
+.slide-image-wrapper {
+  display: block;
+  width: 100%;
 }
 
 .slide-image {
@@ -381,7 +348,7 @@ onMounted(() => {
 }
 
 /* Pagination styling */
-:deep(.hero-pagination) {
+.hero-pagination {
   display: flex;
   justify-content: center;
   gap: 8px;
@@ -390,17 +357,23 @@ onMounted(() => {
   z-index: 5;
 }
 
-:deep(.hero-pagination .swiper-pagination-bullet) {
+.pagination-dot {
   width: 12px;
   height: 12px;
   background-color: rgba(0, 170, 210, 0.3);
+  border: none;
+  padding: 0;
   opacity: 1;
   transition: all 0.3s ease;
   border-radius: 50%;
   cursor: pointer;
 }
 
-:deep(.hero-pagination .swiper-pagination-bullet-active) {
+.pagination-dot:hover {
+  background-color: rgba(0, 170, 210, 0.5);
+}
+
+.pagination-dot.is-active {
   background-color: #00aad2;
   transform: scale(1.2);
 }

@@ -39,6 +39,7 @@
                     loading="lazy"
                     format="webp"
                     quality="80"
+                    sizes="(max-width: 640px) 50vw, (max-width: 960px) 33vw, 25vw"
                   />
                   <div class="thumb-overlay">
                     <div v-if="thumb.content" class="thumb-content">
