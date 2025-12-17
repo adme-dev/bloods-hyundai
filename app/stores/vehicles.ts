@@ -4,7 +4,12 @@ import { findIndex } from 'lodash-es';
 /**
  * Vehicles store - handles car sales data
  * Replaces: Vuex root state (vehicles, filters) + searchData module
+ *
+ * Data is hydrated from SSR payload - no client-side fetch needed
+ * Uses shared cache key 'carsales-feed-data' with pages
  */
+
+const CACHE_KEY = 'carsales-feed-data';
 
 interface Vehicle {
   id: string | number;
@@ -145,18 +150,37 @@ export const useVehiclesStore = defineStore('vehicles', () => {
   });
 
   // Actions
+  /**
+   * Hydrate store from SSR payload data
+   * This method reads from the Nuxt payload (populated during SSR)
+   * No client-side network request is made
+   */
   const fetchVehicles = async () => {
     if (isDataLoaded.value) return;
 
     try {
-      const response = await $fetch<{ vehiclesData: Vehicle[]; filters: Filters }>(
-        '/api/carsales-feed'
-      );
-      vehicles.value = response.vehiclesData;
-      filters.value = response.filters;
-      isDataLoaded.value = true;
+      // Try to get data from Nuxt payload (SSR hydrated data)
+      const nuxtApp = useNuxtApp();
+      const cachedData = nuxtApp.payload?.data?.[CACHE_KEY] || nuxtApp.static?.data?.[CACHE_KEY];
+
+      if (cachedData) {
+        vehicles.value = cachedData.vehiclesData || [];
+        filters.value = cachedData.filters || [];
+        isDataLoaded.value = true;
+        return;
+      }
+
+      // Fallback: If no SSR data, fetch server-side only (should not happen in normal flow)
+      if (import.meta.server) {
+        const response = await $fetch<{ vehiclesData: Vehicle[]; filters: Filters }>(
+          '/api/carsales-feed'
+        );
+        vehicles.value = response.vehiclesData;
+        filters.value = response.filters;
+        isDataLoaded.value = true;
+      }
     } catch (error) {
-      console.error('Error fetching vehicles:', error);
+      console.error('Error hydrating vehicles store:', error);
     }
   };
 

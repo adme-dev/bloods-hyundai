@@ -140,10 +140,11 @@
     border-radius: $width;
 
     &:hover {
-      background: darken($thumb, 10%);
+      background: color.adjust($thumb, $lightness: -10%);
     }
   }
 }
+
 
 
 

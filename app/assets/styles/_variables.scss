@@ -1,13 +1,34 @@
 /**
  * SCSS Variables
  * Migrated from src/assets/styles/_variables.scss
+ *
+ * Hyundai Brand Guidelines
+ * - Primary Navy: #001E50 (Hyundai corporate blue)
+ * - Active Blue: #00aad2 (accent/interactive elements)
+ * - Hyundai Red: #e63312 (CTAs, alerts)
+ * - Sand: #f6f3f2 (background)
  */
 
-// Brand colors
-// Hyundai Blue - using darker shade #001E50 (matches navigation) instead of #002c5f
-$primary: #001E50;
-$primary-light: #00aad2;
-$secondary: #e63312;
+// ============================================
+// HYUNDAI BRAND COLORS
+// ============================================
+
+// Primary Hyundai colors
+$hyundai-navy: #001E50;        // Primary brand color
+$hyundai-blue: #001E50;        // Alias for navy
+$hyundai-active-blue: #00aad2; // Interactive/accent elements
+$hyundai-red: #e63312;         // CTAs and alerts
+$hyundai-sand: #f6f3f2;        // Light background
+
+// Hyundai color variations
+$hyundai-navy-dark: #001638;   // Hover state for navy
+$hyundai-navy-light: #002d6d;  // Lighter navy
+$hyundai-blue-dark: #0095b8;   // Hover state for active blue
+
+// Legacy aliases (for backward compatibility)
+$primary: $hyundai-navy;
+$primary-light: $hyundai-active-blue;
+$secondary: $hyundai-red;
 
 // Neutrals
 $dark: #1a1a1a;
@@ -60,6 +81,7 @@ $z-modal-backdrop: 400;
 $z-modal: 500;
 $z-popover: 600;
 $z-tooltip: 700;
+
 
 
 

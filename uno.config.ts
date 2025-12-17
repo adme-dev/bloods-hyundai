@@ -101,26 +101,42 @@ export default defineConfig({
     },
     // Tailwind v4 uses 'font' instead of 'fontFamily'
     font: {
-      sans: ['Hyundai Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      sans: ['Hyundai Sans Text', 'Hyundai Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      head: ['Hyundai Sans Head', 'Hyundai Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      body: ['Hyundai Sans Text', 'Hyundai Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
     },
   },
 
   // Shortcuts for common patterns
   shortcuts: {
-    // Buttons
-    'btn-hyundai': 'bg-[#001E50] text-white px-6 py-3 rounded font-semibold hover:bg-opacity-90 transition-colors',
-    'btn-hyundai-secondary': 'bg-[#e63312] text-white px-6 py-3 rounded font-semibold hover:bg-opacity-90 transition-colors',
-    'btn-hyundai-accent': 'bg-[#00aad2] text-white px-6 py-3 rounded font-semibold hover:bg-opacity-90 transition-colors',
-    
-    // Text utilities
+    // Buttons - Hyundai brand styling
+    'btn-hyundai': 'bg-[#001E50] text-white px-6 py-3 rounded font-semibold hover:bg-[#002d6d] transition-colors font-body',
+    'btn-hyundai-secondary': 'bg-[#e63312] text-white px-6 py-3 rounded font-semibold hover:bg-[#c42a0f] transition-colors font-body',
+    'btn-hyundai-accent': 'bg-[#00aad2] text-white px-6 py-3 rounded font-semibold hover:bg-[#0095b8] transition-colors font-body',
+
+    // Text utilities - Hyundai brand colors
     'text-hyundai': 'text-[#001E50]',
     'text-hyundai-accent': 'text-[#00aad2]',
-    
+    'text-hyundai-red': 'text-[#e63312]',
+
     // Background utilities
     'bg-hyundai': 'bg-[#001E50]',
     'bg-hyundai-accent': 'bg-[#00aad2]',
-    
+    'bg-hyundai-sand': 'bg-[#f6f3f2]',
+
     // Card patterns
     'card-hyundai': 'bg-white rounded-lg shadow-md p-6',
+
+    // Typography - Hyundai OEM style headings
+    'heading-hero': 'font-head text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight text-[#001E50]',
+    'heading-1': 'font-head text-3xl md:text-4xl font-medium tracking-tight text-[#001E50]',
+    'heading-2': 'font-head text-2xl md:text-3xl font-medium tracking-tight text-[#001E50]',
+    'heading-3': 'font-head text-xl md:text-2xl font-medium text-[#001E50]',
+    'heading-4': 'font-head text-lg md:text-xl font-medium text-[#001E50]',
+    'heading-5': 'font-head text-base md:text-lg font-medium text-[#001E50]',
+    'body-lg': 'font-body text-lg text-gray-700 leading-relaxed',
+    'body-base': 'font-body text-base text-gray-600 leading-relaxed',
+    'body-sm': 'font-body text-sm text-gray-500 leading-relaxed',
+    'label': 'font-body text-xs font-medium uppercase tracking-wider text-gray-500',
   },
 })

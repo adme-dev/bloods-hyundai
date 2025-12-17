@@ -3,7 +3,12 @@ import { defineStore } from 'pinia';
 /**
  * Main store - replaces root Vuex state
  * Handles: site config, loading state, models, meta
+ *
+ * Site config is hydrated from SSR payload - no client-side fetch needed
+ * Uses shared cache key 'site-config-data' with pages
  */
+
+const SITE_CONFIG_CACHE_KEY = 'site-config-data';
 
 interface SiteConfig {
   name: string;
@@ -52,35 +57,45 @@ export const useMainStore = defineStore('main', () => {
     loading.value = value;
   };
 
+  /**
+   * Hydrate store from SSR payload data
+   * This method reads from the Nuxt payload (populated during SSR)
+   * No client-side network request is made
+   */
   const fetchSiteConfig = async () => {
     const config = useRuntimeConfig();
-    
-    // Skip if CDN URL not configured
-    if (!config.public.cdnUrl) {
-      // Set default site config for development
-      site.value = {
-        name: config.public.siteName || 'Sale Hyundai',
-        promotional: [],
-        scripts: { google: { analytics: [], gtm: '' } },
-      };
-      return site.value;
-    }
-    
+
+    // Default config
+    const defaultConfig: SiteConfig = {
+      name: config.public.siteName || 'Sale Hyundai',
+      promotional: [],
+      scripts: { google: { analytics: [], gtm: '' } },
+    };
+
     try {
-      const data = await $fetch<SiteConfig>(
-        `${config.public.cdnUrl}/config/config.json`
-      );
-      site.value = data;
-      return data;
+      // Try to get data from Nuxt payload (SSR hydrated data)
+      const nuxtApp = useNuxtApp();
+      const cachedData = nuxtApp.payload?.data?.[SITE_CONFIG_CACHE_KEY] || nuxtApp.static?.data?.[SITE_CONFIG_CACHE_KEY];
+
+      if (cachedData?.config) {
+        site.value = cachedData.config;
+        return cachedData.config;
+      }
+
+      // Fallback: If no SSR data, fetch server-side only (should not happen in normal flow)
+      if (import.meta.server) {
+        const response = await $fetch<{ config: SiteConfig }>('/api/site-config');
+        site.value = response.config;
+        return response.config;
+      }
+
+      // Client-side without SSR data - use defaults
+      site.value = defaultConfig;
+      return defaultConfig;
     } catch (error) {
-      console.error('Error fetching site config:', error);
-      // Set default config on error
-      site.value = {
-        name: config.public.siteName || 'Sale Hyundai',
-        promotional: [],
-        scripts: { google: { analytics: [], gtm: '' } },
-      };
-      return site.value;
+      console.error('Error hydrating site config:', error);
+      site.value = defaultConfig;
+      return defaultConfig;
     }
   };
 

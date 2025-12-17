@@ -1,38 +1,21 @@
 /**
  * GET /api/search
  * Searches vehicles from the carsales feed
- * Uses data from /api/carsales-feed instead of external API
+ * Uses cached data from /api/carsales-feed (server-side, no HTTP call)
  */
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  
+
   try {
-    // Fetch vehicles from carsales-feed endpoint
-    // In Nitro, we can use relative paths for internal calls
-    // But for reliability, use localhost in development or construct URL from request
-    const config = useRuntimeConfig();
-    let feedUrl = '/api/carsales-feed';
-    
-    // In development, use explicit localhost URL
-    if (process.env.NODE_ENV === 'development' || !event.node.req.headers.host) {
-      const port = process.env.PORT || 3000;
-      feedUrl = `http://localhost:${port}/api/carsales-feed`;
-    } else {
-      // In production, construct from request headers
-      const protocol = event.node.req.headers['x-forwarded-proto'] || 'https';
-      const host = event.node.req.headers.host;
-      feedUrl = `${protocol}://${host}/api/carsales-feed`;
-    }
-    
-    console.log('[Search API] Calling carsales-feed from:', feedUrl);
-    
-    const feedResponse = await $fetch<{ vehiclesData: any[]; filters: any[] }>(feedUrl, {
+    // Use internal $fetch which leverages Nitro's route caching
+    // This doesn't make an HTTP call - it calls the handler directly
+    const feedResponse = await $fetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
       headers: {
         'Accept': 'application/json',
       },
     });
-    
+
     if (!feedResponse) {
       console.error('[Search API] No response from carsales-feed');
       return {
@@ -45,7 +28,7 @@ export default defineEventHandler(async (event) => {
         error: 'No response from feed',
       };
     }
-    
+
     let vehicles = feedResponse.vehiclesData || [];
     console.log('[Search API] Received vehicles count:', vehicles.length);
     console.log('[Search API] Query params:', JSON.stringify(query));
@@ -385,6 +368,7 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
+
 
 
 

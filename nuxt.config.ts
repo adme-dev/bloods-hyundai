@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     '@nuxtjs/seo', // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
     '@fedorae/nuxt-uikit', // UIkit loaded globally
     '@unocss/nuxt', // UnoCSS/Tailwind utilities - used globally for all pages
-    '@nuxtjs/tailwindcss', // Tailwind CSS for admin dashboard
+    // Note: @nuxtjs/tailwindcss removed - UnoCSS with Tailwind preset handles all utility classes
   ],
 
   // Pinia Persisted State configuration
@@ -100,11 +100,21 @@ export default defineNuxtConfig({
         },
       },
     },
-    // Optimize memory usage for development
+    // Build optimizations
     build: {
-      sourcemap: false,
-      minify: false,
-      cssMinify: false,
+      sourcemap: process.env.NODE_ENV === 'development',
+      // Enable minification in production
+      minify: process.env.NODE_ENV === 'production' ? 'esbuild' : false,
+      cssMinify: process.env.NODE_ENV === 'production',
+      // Optimize chunk splitting for better caching
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-vue': ['vue', 'vue-router'],
+            'vendor-pinia': ['pinia'],
+          },
+        },
+      },
     },
     server: {
       hmr: {
@@ -129,6 +139,39 @@ export default defineNuxtConfig({
     // prerender: {
     //   routes: ['/sitemap.xml'],
     // },
+    // Compression for faster response delivery
+    compressPublicAssets: true,
+    // Security headers for all responses
+    routeRules: {
+      '/**': {
+        headers: {
+          // Prevent clickjacking
+          'X-Frame-Options': 'SAMEORIGIN',
+          // Prevent MIME type sniffing
+          'X-Content-Type-Options': 'nosniff',
+          // Enable XSS protection
+          'X-XSS-Protection': '1; mode=block',
+          // Referrer policy
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          // Permissions policy (previously feature policy)
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=(self)',
+          // Cross-Origin policies
+          'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+          'Cross-Origin-Resource-Policy': 'same-origin',
+        },
+      },
+      // Cache static assets aggressively
+      '/_nuxt/**': {
+        headers: {
+          'Cache-Control': 'public, max-age=31536000, immutable',
+        },
+      },
+      '/images/**': {
+        headers: {
+          'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        },
+      },
+    },
   },
 
   // Route rules for hybrid rendering
@@ -177,8 +220,24 @@ export default defineNuxtConfig({
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
+      htmlAttrs: {
+        lang: 'en-AU',
+      },
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        // Preload critical fonts for faster text rendering
+        { rel: 'preload', href: '/_nuxt/assets/fonts/HyundaiSansText-Regular.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' },
+        { rel: 'preload', href: '/_nuxt/assets/fonts/HyundaiSansHead-Medium.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' },
+        // Preconnect to external resources for faster loading
+        { rel: 'preconnect', href: 'https://hyundaioem.b-cdn.net' },
+        { rel: 'dns-prefetch', href: 'https://hyundaioem.b-cdn.net' },
+        { rel: 'preconnect', href: 'https://www.googletagmanager.com' },
+        { rel: 'dns-prefetch', href: 'https://www.googletagmanager.com' },
+      ],
+      meta: [
+        // Security headers as meta tags (backup for server headers)
+        { 'http-equiv': 'X-UA-Compatible', content: 'IE=edge' },
+        { name: 'format-detection', content: 'telephone=no' },
       ],
     },
   },
@@ -211,6 +270,7 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-12-05',
 });
+
 
 
 

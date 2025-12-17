@@ -4,21 +4,24 @@
     :class="{ 'card-list': viewMode === 'list' }"
   >
     <!-- Save Button -->
-    <button 
+    <button
       class="save-button"
       :class="{ 'is-saved': isSaved }"
       @click.stop="toggleSave"
-      :title="isSaved ? 'Remove from saved' : 'Save vehicle'"
+      :aria-label="isSaved ? 'Remove from saved vehicles' : 'Save vehicle'"
+      :aria-pressed="isSaved"
     >
-      <span :uk-icon="isSaved ? 'heart' : 'heart'"></span>
+      <span :uk-icon="isSaved ? 'heart' : 'heart'" aria-hidden="true"></span>
     </button>
 
     <!-- Image -->
     <div class="uk-card-media-top">
       <NuxtLink :to="vehicleLink">
-        <img 
-          :src="vehicle.thumb || vehicle.images?.[0] || '/images/placeholder-car.jpg'" 
+        <img
+          :src="vehicle.thumb || vehicle.images?.[0] || '/images/placeholder-car.jpg'"
           :alt="vehicleTitle"
+          width="400"
+          height="200"
           loading="lazy"
           class="vehicle-image"
         />
@@ -342,6 +345,7 @@ const slugify = (text: string) => {
   padding-top: 0;
 }
 </style>
+
 
 
 

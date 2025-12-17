@@ -16,6 +16,8 @@
         <img
           :src="block.slides"
           :alt="block.heading_content || 'Promotional block'"
+          width="640"
+          height="360"
           class="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
           loading="lazy"
         />
@@ -42,8 +44,8 @@
             
             <!-- Learn more link -->
             <span class="inline-flex items-center gap-1 text-sm md:text-base font-medium mt-3 group-hover:underline">
-              {{ block.button || 'Learn more' }}
-              <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24">
+              {{ block.button || `Learn more about ${block.heading_content || 'this offer'}` }}
+              <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </span>
@@ -91,3 +93,4 @@ const linkComponent = (link: string) => {
   text-decoration: none;
 }
 </style>
+

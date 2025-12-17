@@ -19,6 +19,21 @@ const vehiclesStore = useVehiclesStore();
 // This ensures data is available for all components without duplicate fetches
 const { variants } = useAllVariants();
 
+// Fetch site config during SSR - hidden from browser network tab
+// Uses shared cache key 'site-config-data' with 10-min server cache
+const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
+  key: 'site-config-data',
+  dedupe: 'defer',
+  getCachedData: (key, nuxtApp) => {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+  },
+});
+
+// Populate Pinia store with site config from SSR data
+if (siteConfigData.value?.config) {
+  mainStore.site = siteConfigData.value.config;
+}
+
 // Populate Pinia store with variants
 watch(variants, (newVariants) => {
   if (newVariants && newVariants.length > 0) {
@@ -26,18 +41,10 @@ watch(variants, (newVariants) => {
   }
 }, { immediate: true });
 
-// Fetch initial data on app mount (client-side)
-onMounted(async () => {
-  try {
-    await Promise.all([
-      mainStore.fetchSiteConfig(),
-      vehiclesStore.fetchVehicles(),
-    ]);
-  } catch (error) {
-    console.error('Failed to fetch initial data:', error);
-  } finally {
-    mainStore.setLoading(false);
-  }
+// Mark loading as complete on mount
+// Note: Both site config and vehicles data are hydrated from SSR payload, no client fetch needed
+onMounted(() => {
+  mainStore.setLoading(false);
 });
 
 // Global link handler for SPA navigation
@@ -93,6 +100,7 @@ if (process.client) {
 <style lang="scss">
 // UIkit and custom styles are imported via nuxt.config.ts css array
 </style>
+
 
 
 

@@ -3,6 +3,9 @@
     <!-- Page Schema -->
     <LazyPageSchema />
 
+    <!-- Visually hidden H1 for SEO and accessibility -->
+    <h1 class="sr-only">Sale Hyundai - New and Used Hyundai Vehicles in Sale, Victoria</h1>
+
     <!-- Hero/Slider Section -->
     <LazyFrontSlider v-if="site?.promotional" :slides="site.promotional" />
 
@@ -66,7 +69,21 @@ onMounted(async () => {
     }
   }
 }
+
+// Screen reader only utility (also defined globally but scoped here for clarity)
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 </style>
+
 
 
 

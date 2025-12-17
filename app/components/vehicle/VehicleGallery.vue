@@ -11,6 +11,8 @@
         <img
           :src="heroImage"
           :alt="`${title} - Main photo`"
+          width="800"
+          height="500"
           class="gallery__hero-img"
         />
         <span v-if="badge" class="gallery__badge">{{ badge }}</span>

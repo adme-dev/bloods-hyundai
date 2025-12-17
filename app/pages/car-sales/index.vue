@@ -740,6 +740,75 @@ const route = useRoute();
 const router = useRouter();
 const vehiclesStore = useVehiclesStore();
 
+// SSR-only data fetching - hidden from browser network tab, 10-min server cache
+// Using useFetch with getCachedData to prevent client-side refetching
+const { data: carsalesFeedData } = await useFetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
+  key: 'carsales-feed-data',
+  dedupe: 'defer',
+  // Return cached data on client - prevents network request
+  getCachedData: (key, nuxtApp) => {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+  },
+});
+
+// Initialize filter data immediately from SSR-cached data (runs during SSR and client hydration)
+const initializeFiltersFromCache = () => {
+  const vehiclesData = carsalesFeedData.value?.vehiclesData || [];
+  const filtersData = carsalesFeedData.value?.filters || [];
+
+  const findFilter = (name: string) => filtersData.find((f: any) => f.name === name);
+
+  const models = findFilter('model')?.data || [];
+  const conditions = findFilter('condition')?.data || [];
+  const bodies = findFilter('body')?.data || [];
+  const fuels = findFilter('fuel')?.data || [];
+  const transmissions = findFilter('transmission')?.data || [];
+  const badges = findFilter('badge')?.data || [];
+  const colours = findFilter('colour')?.data || [];
+  const price = findFilter('price')?.data || { min: 0, max: 200000 };
+  const kms = findFilter('kms')?.data || { min: 0, max: 200000 };
+
+  // Derive makes and year/suburb ranges from vehicles
+  const makesSet = new Set<string>();
+  const suburbsSet = new Set<string>();
+  let minYear = new Date().getFullYear();
+  let maxYear = 1990;
+
+  vehiclesData.forEach((vehicle: any) => {
+    const make = vehicle.make?.displayValue?.[0] || vehicle.make?.value?.[0];
+    if (make) makesSet.add(make.toLowerCase());
+
+    const suburb = vehicle.suburb?.displayValue?.[0];
+    if (suburb) suburbsSet.add(suburb);
+
+    const year = vehicle.year?.displayValue?.[0] || vehicle.year?.value?.[0] || vehicle.releaseyear;
+    const yearNum = parseInt(year);
+    if (!Number.isNaN(yearNum)) {
+      minYear = Math.min(minYear, yearNum);
+      maxYear = Math.max(maxYear, yearNum);
+    }
+  });
+
+  return {
+    vehiclesData,
+    conditions,
+    models,
+    bodies,
+    fuels,
+    transmissions,
+    badges,
+    colours,
+    priceRange: { min: price.min || 0, max: price.max || 200000 },
+    kmsRange: { min: kms.min || 0, max: kms.max || 200000 },
+    yearRange: { min: minYear || 2005, max: maxYear || new Date().getFullYear() },
+    makes: Array.from(makesSet),
+    suburbs: Array.from(suburbsSet).sort(),
+  };
+};
+
+// Initialize during SSR/setup
+const initialData = initializeFiltersFromCache();
+
 const loading = ref(false);
 const vehicles = ref<any[]>([]);
 const totalCount = ref(0);
@@ -803,20 +872,24 @@ const modelMakeMap = ref<Record<string, string>>({});
 // badge -> model (which model does this badge belong to)
 const badgeModelMap = ref<Record<string, string>>({});
 
+// Initialize filterOptions with SSR data immediately (no empty state flash)
 const filterOptions = ref({
-  conditions: [] as { value: string; displayValue: string }[],
-  models: [] as any[],
-  bodies: [] as { value: string; displayValue: string }[],
-  fuels: [] as { value: string; displayValue: string }[],
-  transmissions: [] as { value: string; displayValue: string }[],
-  badges: [] as { value: string; displayValue: string }[],
-  colours: [] as { value: string; displayValue: string }[],
-  priceRange: { min: 0, max: 200000 },
-  kmsRange: { min: 0, max: 200000 },
-  yearRange: { min: 2005, max: new Date().getFullYear() },
-  makes: [] as string[],
-  suburbs: [] as string[],
+  conditions: initialData.conditions as { value: string; displayValue: string }[],
+  models: initialData.models as any[],
+  bodies: initialData.bodies as { value: string; displayValue: string }[],
+  fuels: initialData.fuels as { value: string; displayValue: string }[],
+  transmissions: initialData.transmissions as { value: string; displayValue: string }[],
+  badges: initialData.badges as { value: string; displayValue: string }[],
+  colours: initialData.colours as { value: string; displayValue: string }[],
+  priceRange: initialData.priceRange,
+  kmsRange: initialData.kmsRange,
+  yearRange: initialData.yearRange,
+  makes: initialData.makes as string[],
+  suburbs: initialData.suburbs as string[],
 });
+
+// Also initialize allVehiclesData for badge computation
+const allVehiclesData = ref<any[]>(initialData.vehiclesData);
 
 const calculatePriceFromWeekly = (weeklyPayment: number, annualInterestRate = 9.8, loanTermYears = 5): number => {
   const monthlyPayment = (weeklyPayment * 52) / 12;
@@ -827,65 +900,24 @@ const calculatePriceFromWeekly = (weeklyPayment: number, annualInterestRate = 9.
   return (monthlyPayment * (i - 1)) / (monthlyInterestRate * i);
 };
 
-const fetchFilterOptions = async () => {
-  try {
-    const response = await $fetch<any>('/api/carsales-feed');
-    const vehiclesData = response?.vehiclesData || [];
-    const filtersData = response?.filters || [];
-
-    // Store all vehicles data for badge computation
-    allVehiclesData.value = vehiclesData;
-
-    const findFilter = (name: string) => filtersData.find((f: any) => f.name === name);
-
-    const models = findFilter('model')?.data || [];
-    const conditions = findFilter('condition')?.data || [];
-    const bodies = findFilter('body')?.data || [];
-    const fuels = findFilter('fuel')?.data || [];
-    const transmissions = findFilter('transmission')?.data || [];
-    const badges = findFilter('badge')?.data || [];
-    const colours = findFilter('colour')?.data || [];
-    const price = findFilter('price')?.data || { min: 0, max: 200000 };
-    const kms = findFilter('kms')?.data || { min: 0, max: 200000 };
-
-    // Derive makes and year/suburb ranges from vehicles
-    const makesSet = new Set<string>();
-    const suburbsSet = new Set<string>();
-    let minYear = new Date().getFullYear();
-    let maxYear = 1990;
-
-    vehiclesData.forEach((vehicle: any) => {
-      const make = vehicle.make?.displayValue?.[0] || vehicle.make?.value?.[0];
-      if (make) makesSet.add(make.toLowerCase());
-
-      const suburb = vehicle.suburb?.displayValue?.[0];
-      if (suburb) suburbsSet.add(suburb);
-
-      const year = vehicle.year?.displayValue?.[0] || vehicle.year?.value?.[0] || vehicle.releaseyear;
-      const yearNum = parseInt(year);
-      if (!Number.isNaN(yearNum)) {
-        minYear = Math.min(minYear, yearNum);
-        maxYear = Math.max(maxYear, yearNum);
-      }
-    });
-
-    filterOptions.value = {
-      conditions,
-      models,
-      bodies,
-      fuels,
-      transmissions,
-      badges,
-      colours,
-      priceRange: { min: price.min || 0, max: price.max || 200000 },
-      kmsRange: { min: kms.min || 0, max: kms.max || 200000 },
-      yearRange: { min: minYear || 2005, max: maxYear || new Date().getFullYear() },
-      makes: Array.from(makesSet),
-      suburbs: Array.from(suburbsSet).sort(),
-    };
-  } catch (error) {
-    console.error('Failed to load filter options', error);
-  }
+// Refresh filter options from cache (used if data needs to be re-synced)
+const fetchFilterOptions = () => {
+  const freshData = initializeFiltersFromCache();
+  allVehiclesData.value = freshData.vehiclesData;
+  filterOptions.value = {
+    conditions: freshData.conditions,
+    models: freshData.models,
+    bodies: freshData.bodies,
+    fuels: freshData.fuels,
+    transmissions: freshData.transmissions,
+    badges: freshData.badges,
+    colours: freshData.colours,
+    priceRange: freshData.priceRange,
+    kmsRange: freshData.kmsRange,
+    yearRange: freshData.yearRange,
+    makes: freshData.makes,
+    suburbs: freshData.suburbs,
+  };
 };
 
 // Helper to capitalize first letter
@@ -1479,9 +1511,6 @@ const getMakeModelBadgeSummary = computed(() => {
   // Show on two lines: first item on line 1, rest on line 2
   return `${parts[0]}<br>${parts.slice(1).join(', ')}`;
 });
-
-// Store all vehicles data for badge computation
-const allVehiclesData = ref<any[]>([]);
 
 const getModelsForMake = (make: string) => {
   // Get models from filterOptions and calculate counts from allVehiclesData
@@ -2114,27 +2143,22 @@ const closeEnquiryModal = () => {
 };
 
 // Check for stock param in URL to open enquiry modal
-const checkStockParam = async () => {
+const checkStockParam = () => {
   const stockId = route.query.stock as string;
   if (stockId) {
     // Try to find the vehicle in current results first
     let vehicle = vehicles.value.find(
       (v: any) => String(v.stockid) === stockId || String(v.identifier) === stockId
     );
-    
-    // If not found, fetch directly
+
+    // If not found, use SSR-cached data (no network request)
     if (!vehicle) {
-      try {
-        const response = await $fetch<any>('/api/carsales-feed');
-        const allVehicles = response?.vehiclesData || [];
-        vehicle = allVehicles.find(
-          (v: any) => String(v.stockid) === stockId || String(v.identifier) === stockId
-        );
-      } catch (e) {
-        console.error('Failed to fetch vehicle for modal:', e);
-      }
+      const allVehicles = carsalesFeedData.value?.vehiclesData || [];
+      vehicle = allVehicles.find(
+        (v: any) => String(v.stockid) === stockId || String(v.identifier) === stockId
+      );
     }
-    
+
     if (vehicle) {
       // Track enquiry modal open from stock param (e.g., from Google Ads)
       trackEnquiryModalOpen({
@@ -2147,20 +2171,22 @@ const checkStockParam = async () => {
   }
 };
 
-onMounted(async () => {
+onMounted(() => {
   // Restore viewMode from localStorage
   const savedViewMode = localStorage.getItem(LAYOUT_STORAGE_KEY);
   if (savedViewMode === 'grid' || savedViewMode === 'list') {
     viewMode.value = savedViewMode;
   }
-  
-  await fetchFilterOptions();
+
+  // Use SSR-cached data (no network request for filter options)
+  fetchFilterOptions();
   syncFromQuery();
   fetchVehicles();
-  
+
   // Check for stock param after vehicles are loaded
-  await nextTick();
-  checkStockParam();
+  nextTick(() => {
+    checkStockParam();
+  });
 });
 
 // Watch for stock param changes
@@ -2196,6 +2222,7 @@ watch(() => route.query.stock, (stockId) => {
   }
 }
 </style>
+
 
 
 

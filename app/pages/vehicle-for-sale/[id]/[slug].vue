@@ -404,9 +404,14 @@ const { data: apiResponse, status } = await useFetch<any>(`/api/vehicle-detail/$
   key: `vehicle-detail-${vehicleId.value}`,
 });
 
-// Fetch all vehicles for related vehicles section
+// Fetch all vehicles for related vehicles section (uses shared SSR cache)
 const { data: allVehiclesResponse } = await useFetch<{ vehiclesData: any[] }>('/api/carsales-feed', {
-  key: 'carsales-feed-related',
+  key: 'carsales-feed-data',
+  dedupe: 'defer',
+  // Return cached data on client - prevents network request
+  getCachedData: (key, nuxtApp) => {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+  },
 });
 
 // Derive pending state from status
@@ -1120,6 +1125,7 @@ const closeTestDrive = () => {
   }
 }
 </style>
+
 
 
 

@@ -592,7 +592,7 @@ $hyundai-sand: rgb(246, 243, 242);
     border-color: $hyundai-blue;
 
     &:hover {
-      background: darken($hyundai-blue, 5%);
+      background: color.adjust($hyundai-blue, $lightness: -5%);
     }
   }
 
@@ -775,7 +775,7 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 
   &:hover {
-    background: darken($hyundai-blue, 5%);
+    background: color.adjust($hyundai-blue, $lightness: -5%);
     color: white !important;
   }
 }
@@ -910,7 +910,7 @@ $hyundai-sand: rgb(246, 243, 242);
   transition: background 0.2s ease;
 
   &:hover {
-    background: darken($hyundai-blue, 5%);
+    background: color.adjust($hyundai-blue, $lightness: -5%);
   }
 
   svg {
@@ -1008,6 +1008,7 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 }
 </style>
+
 
 
 

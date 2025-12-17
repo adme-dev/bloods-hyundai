@@ -170,9 +170,19 @@ const normalizeComparisonIds = (raw: any): (string | number)[] => {
   return [];
 };
 
+// SSR-only data fetching - hidden from browser network tab, 10-min server cache
+const { data: carsalesFeedData, status } = await useFetch<{ vehiclesData: any[] }>('/api/carsales-feed', {
+  key: 'carsales-feed-data',
+  dedupe: 'defer',
+  // Return cached data on client - prevents network request
+  getCachedData: (key, nuxtApp) => {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+  },
+});
+
 // State
-const loading = ref(true);
-const allVehiclesData = ref<any[]>([]);
+const loading = computed(() => status.value === 'pending');
+const allVehiclesData = computed(() => carsalesFeedData.value?.vehiclesData || []);
 
 // Computed: Get full vehicle data for saved IDs
 const savedVehicles = computed(() => {
@@ -196,19 +206,6 @@ const comparisonFields = [
   { key: 'seats', label: 'Seats' },
 ];
 
-// Fetch all vehicles data
-const fetchVehicles = async () => {
-  loading.value = true;
-  try {
-    const response = await $fetch<any>('/api/carsales-feed');
-    allVehiclesData.value = response?.vehiclesData || [];
-  } catch (error) {
-    console.error('Failed to fetch vehicles:', error);
-    allVehiclesData.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
 
 // Helper functions
 const getShortTitle = (vehicle: any) => {
@@ -278,9 +275,6 @@ const closeEnquiryModal = () => {
   vehiclesStore.setVehicleEnquiryPopUp(false, null);
 };
 
-onMounted(() => {
-  fetchVehicles();
-});
 </script>
 
 <style scoped>
@@ -288,6 +282,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);
 }
 </style>
+
 
 
 

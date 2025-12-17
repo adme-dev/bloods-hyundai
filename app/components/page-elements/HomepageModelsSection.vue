@@ -1,9 +1,9 @@
 <template>
-  <section class="homepage-models-section py-16 bg-gray-50">
+  <section class="homepage-models-section py-16 bg-[#f6f3f2]">
     <div class="mx-auto container">
       <!-- Section Header -->
       <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">
+        <h2 class="section-heading mb-4">
           {{ sectionTitle }}
         </h2>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -24,7 +24,7 @@
           {{ modelsStore.error }}
         </p>
         <button
-          class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          class="mt-4 px-6 py-2 bg-[#001E50] text-white rounded-lg hover:bg-[#002d6d] transition-colors"
           @click="retryLoad"
         >
           Try Again
@@ -47,8 +47,8 @@
                 class="text-left text-lg font-medium transition-colors py-2 px-4 rounded-lg"
                 :class="
                   activeCategory === category
-                    ? 'text-blue-600 bg-blue-50 font-semibold'
-                    : 'text-gray-900 hover:text-blue-600 hover:bg-gray-100'
+                    ? 'text-[#00aad2] bg-[#00aad2]/10 font-semibold'
+                    : 'text-[#001E50] hover:text-[#00aad2] hover:bg-gray-100'
                 "
                 @click="activeCategory = category"
               >
@@ -80,7 +80,7 @@
               <div
                 v-for="model in filteredModels"
                 :key="model.id"
-                class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-200 flex flex-col"
+                class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#00aad2]/30 flex flex-col"
               >
                 <!-- Image Area -->
                 <div
@@ -90,7 +90,7 @@
                   <div
                     class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
                   >
-                    <span class="w-2 h-2 bg-blue-600 rounded-full mr-2" />
+                    <span class="w-2 h-2 bg-[#00aad2] rounded-full mr-2" />
                     <span>{{ model.vehiclecat || model.title.rendered }}</span>
                   </div>
                   <!-- Image Link -->
@@ -101,6 +101,8 @@
                     <img
                       :src="model.model_image"
                       :alt="model.title.rendered"
+                      width="400"
+                      height="300"
                       class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
                     >
                   </NuxtLink>
@@ -109,7 +111,7 @@
                 <!-- Text Content Area -->
                 <div class="p-6 flex flex-col flex-1">
                   <h3
-                    class="text-xl font-semibold mb-3 text-gray-900 group-hover:text-blue-600 transition-colors"
+                    class="card-title mb-3 group-hover:text-[#00aad2] transition-colors"
                   >
                     {{ model.title.rendered }}
                   </h3>
@@ -125,7 +127,7 @@
                   <div class="flex flex-wrap gap-4 pt-4 border-t border-gray-200 mt-auto">
                     <NuxtLink
                       :to="`/vehicle/${model.slug}`"
-                      class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
+                      class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                     >
                       <span>Explore</span>
                       <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +137,7 @@
 
                     <NuxtLink
                       :to="`/calculator/${model.slug}`"
-                      class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
+                      class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                     >
                       <span>Range / Build</span>
                       <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +193,7 @@
                       :key="category"
                       class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
                       :class="
-                        activeCategory === category ? 'text-blue-600 font-medium' : 'text-gray-900'
+                        activeCategory === category ? 'text-[#00aad2] font-medium' : 'text-[#001E50]'
                       "
                       @click="selectCategory(category)"
                     >
@@ -221,7 +223,7 @@
                   class="h-auto"
                 >
                   <div
-                    class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 group"
+                    class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#00aad2]/30 hover:shadow-lg transition-all duration-300 group"
                   >
                     <!-- Image Section -->
                     <div class="relative w-full bg-gray-100 overflow-hidden aspect-[4/3] p-4">
@@ -229,6 +231,8 @@
                         <img
                           :src="model.model_image"
                           :alt="model.title.rendered"
+                          width="400"
+                          height="300"
                           class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
                         >
                       </div>
@@ -236,7 +240,7 @@
                       <div
                         class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
                       >
-                        <span class="w-2 h-2 bg-blue-600 rounded-full mr-2" />
+                        <span class="w-2 h-2 bg-[#00aad2] rounded-full mr-2" />
                         <span>{{ model.vehiclecat || model.title.rendered }}</span>
                       </div>
                     </div>
@@ -246,7 +250,7 @@
                       <div class="flex flex-col h-full">
                         <div class="flex-1">
                           <h3
-                            class="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors"
+                            class="card-title mb-2 group-hover:text-[#00aad2] transition-colors"
                           >
                             {{ model.title.rendered }}
                           </h3>
@@ -263,7 +267,7 @@
                         >
                           <NuxtLink
                             :to="`/vehicle/${model.slug}`"
-                            class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
+                            class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                           >
                             <span>Explore</span>
                             <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,7 +277,7 @@
 
                           <NuxtLink
                             :to="`/calculator/${model.slug}`"
-                            class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group/link"
+                            class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                           >
                             <span>Range / Build</span>
                             <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

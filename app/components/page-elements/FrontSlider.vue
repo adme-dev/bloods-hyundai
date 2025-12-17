@@ -1,23 +1,23 @@
 <template>
-  <div 
+  <div
     ref="slider"
-    class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden uk-visible-toggle" 
+    class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden uk-visible-toggle uk-slider uk-slider-container"
     tabindex="-1"
     uk-slider="finite: true; autoplay: true; autoplay-interval: 3500"
   >
     <div class="uk-position-relative uk-visible-toggle">
       <div class="uk-slider-items uk-grid uk-grid-small">
-        <div 
-          v-for="(slide, index) in homeSlides" 
+        <div
+          v-for="(slide, index) in homeSlides"
           :key="index"
-          class="uk-width-4-5@s"
+          :class="['uk-width-4-5@s', { 'uk-slide-active uk-active': index === 0 }]"
           :data-index="index"
         >
           <div class="uk-panel">
             <!-- Overlay for inactive slides -->
-            <a 
-              href="#" 
-              class="slide-overlay uk-position-cover"
+            <a
+              href="#"
+              :class="['slide-overlay', 'uk-position-cover', { 'uk-active': index === 0 }]"
               :uk-slider-item="index"
               aria-label="View this slide"
             ></a>
@@ -210,13 +210,25 @@ if (process.client) {
 .hero-slider h2,
 .hero-slider h1,
 .hero-slider h3,
-.hero-slider h4,
+.hero-slider h4 {
+  margin: 0;
+  font-family: 'Hyundai Sans Head', 'Hyundai Sans', sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
 .hero-slider p {
   margin: 0;
+  font-family: 'Hyundai Sans Text', 'Hyundai Sans', sans-serif;
 }
 
 .hero-slider .uk-light {
   color: #fff;
+}
+
+.hero-slider .uk-button {
+  font-family: 'Hyundai Sans Text', 'Hyundai Sans', sans-serif;
+  font-weight: 600;
 }
 </style>
 
@@ -321,6 +333,7 @@ if (process.client) {
   z-index: 1;
 }
 </style>
+
 
 
 

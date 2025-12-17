@@ -9,6 +9,8 @@
           v-if="mainImage"
           :src="mainImage"
           :alt="vehicleTitle"
+          width="400"
+          height="300"
           class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         >
         <div v-else class="flex h-full items-center justify-center bg-slate-100">
@@ -21,11 +23,11 @@
       <!-- Photo Count Badge - Bottom Left -->
       <div v-if="photoCount > 0" class="absolute bottom-3 left-3 z-10">
         <span class="inline-flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          {{ photoCount }}
+          <span class="sr-only">Photo count:</span>{{ photoCount }}
         </span>
       </div>
     </div>
@@ -35,15 +37,17 @@
       <button
         class="absolute -top-5 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md"
         :class="isInComparison ? 'text-red-500' : 'text-slate-400 hover:text-slate-600'"
-        :title="isInComparison ? 'Remove from saved' : 'Save vehicle'"
+        :aria-label="isInComparison ? 'Remove from saved vehicles' : 'Save vehicle'"
+        :aria-pressed="isInComparison"
         @click.stop.prevent="toggleCompare"
       >
-        <svg 
-          class="h-5 w-5" 
-          :fill="isInComparison ? 'currentColor' : 'none'" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
+        <svg
+          class="h-5 w-5"
+          :fill="isInComparison ? 'currentColor' : 'none'"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
           stroke-width="1.5"
+          aria-hidden="true"
         >
           <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
@@ -76,11 +80,11 @@
       <div class="mb-3 flex items-start justify-between gap-2">
         <div>
           <div class="text-2xl font-bold text-slate-900">{{ priceDisplay }}</div>
-          <div v-if="priceDisplay !== 'POA'" class="text-[10px] text-slate-400">Drive away*</div>
+          <div v-if="priceDisplay !== 'POA'" class="text-[10px] text-slate-500">Drive away*</div>
         </div>
         <div v-if="perWeekDisplay" class="text-right">
-          <div class="text-base font-bold text-slate-900">{{ perWeekDisplay }}<span class="text-xs font-medium text-slate-400">p/w</span></div>
-          <div class="text-[10px] text-slate-400">Est. repayments</div>
+          <div class="text-base font-bold text-slate-900">{{ perWeekDisplay }}<span class="text-xs font-medium text-slate-600">p/w</span></div>
+          <div class="text-[10px] text-slate-500">Est. repayments</div>
         </div>
       </div>
 
@@ -119,8 +123,9 @@
         <button
           class="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-slate-800 bg-slate-800 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
           @click="openEnquire"
+          :aria-label="`Enquire about ${vehicleTitle}`"
         >
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
           Enquire

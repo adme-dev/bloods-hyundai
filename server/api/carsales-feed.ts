@@ -1,7 +1,11 @@
 /**
  * GET /api/carsales-feed
  * Fetches vehicle listings and filter data from Supabase
- * Replaces: src/functions/carsales-feed.js
+ *
+ * Features:
+ * - 10-minute server-side cache (hidden from browser network tab when using SSR)
+ * - Automatic cache invalidation
+ * - Stale-while-revalidate for better performance
  */
 
 // Helper functions
@@ -78,7 +82,11 @@ function createFiltersFromVehicles(vehicles: any[]) {
   ];
 }
 
-export default defineEventHandler(async (event) => {
+// Cache configuration
+const CACHE_MAX_AGE = 60 * 10; // 10 minutes
+const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
+
+export default defineCachedEventHandler(async (event) => {
   // Supabase data URLs
   const urls = [
     'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/sale-motor-group/data.json',
@@ -226,15 +234,30 @@ export default defineEventHandler(async (event) => {
     return {
       vehiclesData: vehicles,
       filters,
+      _cached: false,
+      _timestamp: Date.now(),
     };
   } catch (error: any) {
     console.error('Error fetching carsales feed:', error);
     return {
       vehiclesData: [],
       filters: [],
+      _cached: false,
+      _timestamp: Date.now(),
     };
   }
+}, {
+  maxAge: CACHE_MAX_AGE,
+  staleMaxAge: CACHE_STALE_MAX_AGE,
+  name: 'carsales-feed',
+  getKey: () => 'carsales-feed-data',
+  shouldBypassCache: (event) => {
+    // Allow cache bypass with ?refresh=true query param (for admin use)
+    const query = getQuery(event);
+    return query.refresh === 'true';
+  },
 });
+
 
 
 

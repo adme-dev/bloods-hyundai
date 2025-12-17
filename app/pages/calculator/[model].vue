@@ -20,11 +20,14 @@
         <div class="sticky-content">
           <!-- Vehicle Image -->
           <div class="vehicle-image-container">
-            <img 
-              v-if="selectedColourImage" 
-              :src="selectedColourImage" 
-              :alt="calculatorData.model"
-              class="vehicle-image" />
+            <img
+              v-if="selectedColourImage"
+              :src="selectedColourImage"
+              :alt="`${calculatorData.model} in ${selectedColour?.name || 'selected colour'}`"
+              width="800"
+              height="450"
+              class="vehicle-image"
+            />
             <div v-else class="vehicle-placeholder">
               <span>{{ calculatorData.model }}</span>
             </div>
@@ -292,14 +295,14 @@
                   <span class="tick-icon">✓</span>
                 </div>
                 <div class="accessory-image">
-                  <img v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" />
+                  <img v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" width="200" height="150" />
                   <div v-else class="accessory-placeholder">{{ accessory.name.charAt(0) }}</div>
                 </div>
                 <div class="accessory-info">
                   <h4 class="accessory-name">{{ accessory.name }}</h4>
                   <span class="accessory-category">{{ accessory.categoryName || accessory.category }}</span>
                   <div class="accessory-footer">
-                    <button class="learn-more-link" @click.stop="openAccessoryDetail(accessory)">Learn more ></button>
+                    <button class="learn-more-link" :aria-label="`View details about ${accessory.name}`" @click.stop="openAccessoryDetail(accessory)">View {{ accessory.name }} details</button>
                     <span class="accessory-price">${{ formatPrice(accessory.price) }}</span>
                   </div>
                 </div>
@@ -318,13 +321,13 @@
                   <span class="tick-icon">✓</span>
                 </div>
                 <div class="pack-image">
-                  <img v-if="pack.image" :src="pack.image" :alt="pack.name" />
+                  <img v-if="pack.image" :src="pack.image" :alt="pack.name" width="200" height="150" />
                 </div>
                 <div class="pack-info">
                   <h4 class="pack-name">{{ pack.name }}</h4>
                   <span class="pack-category">Packs</span>
                   <div class="pack-footer">
-                    <button class="learn-more-link" @click.stop="openAccessoryDetail(pack, true)">Learn more ></button>
+                    <button class="learn-more-link" :aria-label="`View details about ${pack.name} pack`" @click.stop="openAccessoryDetail(pack, true)">View {{ pack.name }} details</button>
                     <span class="pack-price">${{ formatPrice(pack.price) }}</span>
                   </div>
                   <div v-if="pack.savingsAmount" class="pack-savings">Save ${{ formatPrice(pack.savingsAmount) }}</div>
@@ -399,13 +402,13 @@
                       <span v-if="isPackSelected(pack.id)" class="check">✓</span>
                     </div>
                     <div class="card-image">
-                      <img v-if="pack.image" :src="pack.image" :alt="pack.name" />
+                      <img v-if="pack.image" :src="pack.image" :alt="pack.name" width="200" height="150" />
                     </div>
                     <div class="card-content">
                       <h4 class="card-name">{{ pack.name }}</h4>
                       <span class="card-category">Packs</span>
                       <div class="card-footer">
-                        <button class="learn-more-link" @click.stop="openAccessoryDetail(pack, true)">Learn more ></button>
+                        <button class="learn-more-link" :aria-label="`View details about ${pack.name} pack`" @click.stop="openAccessoryDetail(pack, true)">View {{ pack.name }} details</button>
                         <span class="card-price">${{ formatPrice(pack.price) }}</span>
                       </div>
                     </div>
@@ -422,13 +425,13 @@
                     <span v-if="isAccessorySelected(accessory.id)" class="check">✓</span>
                   </div>
                   <div class="card-image">
-                    <img v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" />
+                    <img v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" width="200" height="150" />
                   </div>
                   <div class="card-content">
                     <h4 class="card-name">{{ accessory.name }}</h4>
                     <span class="card-category">{{ accessory.categoryName || accessory.category }}</span>
                     <div class="card-footer">
-                      <button class="learn-more-link" @click.stop="openAccessoryDetail(accessory)">Learn more ></button>
+                      <button class="learn-more-link" :aria-label="`View details about ${accessory.name}`" @click.stop="openAccessoryDetail(accessory)">View {{ accessory.name }} details</button>
                       <span class="card-price">${{ formatPrice(accessory.price) }}</span>
                     </div>
                   </div>
@@ -3732,6 +3735,7 @@ $bg-white: #fff;
   }
 }
 </style>
+
 
 
 
