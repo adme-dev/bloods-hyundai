@@ -306,6 +306,7 @@ export default defineNuxtConfig({
       'hyundaioem.b-cdn.net',
       'salehyundai.com.au',
       'driveAgentMedia.b-cdn.net',
+      'driveagent.b-cdn.net',
       'www.hyundai.com',
       'carsales.pxcrush.net',
     ],
