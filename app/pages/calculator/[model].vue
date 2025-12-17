@@ -940,26 +940,13 @@ const filteredVariantGroups = computed(() => {
 
 const variantsForGroup = computed(() => {
   if (!selectedVariantGroup.value || !calculatorData.value?.variants) return [];
-  
+
   const groupName = selectedVariantGroup.value.name;
-  
-  // Try multiple matching strategies
+
+  // Filter variants by exact match on variantGroup property
+  // This ensures we only show engine/transmission options for the selected variant group
   return calculatorData.value.variants.filter((v: any) => {
-    // Exact match on variantGroup
-    if (v.variantGroup === groupName) return true;
-    
-    // Variant name includes group name
-    if (v.name && v.name.includes(groupName)) return true;
-    
-    // Group name includes variant name (for cases where group was created from variant)
-    if (groupName.includes(v.name)) return true;
-    
-    // If group was auto-created (id starts with 'group-'), match by variantGroup property
-    if (selectedVariantGroup.value.id?.startsWith('group-') && v.variantGroup === groupName) {
-      return true;
-    }
-    
-    return false;
+    return v.variantGroup === groupName;
   });
 });
 

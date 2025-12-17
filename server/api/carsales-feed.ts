@@ -218,8 +218,9 @@ export default defineCachedEventHandler(async (event) => {
       }
     });
 
-    // Mark last 15 vehicles as stock special
-    const startIndex = Math.max(vehicles.length - 15, 0);
+    // Mark last N vehicles as stock special (TODO: make configurable via admin)
+    const stockSpecialCount = 7;
+    const startIndex = Math.max(vehicles.length - stockSpecialCount, 0);
     for (let i = startIndex; i < vehicles.length; i++) {
       vehicles[i].stock_special = {
         value: ["stock-special"],

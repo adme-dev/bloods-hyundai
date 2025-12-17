@@ -22,18 +22,26 @@
       </div>
     </section>
 
-    <!-- Stock Special Offers -->
-    <LazySpecialOffersVehicles />
-
     <!-- Homepage Models Section -->
     <LazyHomepageModelsSection />
+
+    <!-- Featured Accessories -->
+    <LazyFeaturedAccessories />
+
+    <!-- Stock Special Offers -->
+    <LazySpecialOffersVehicles />
 
     <!-- Dealership Reviews -->
     <section class="uk-section">
       <LazyDealershipReviews />
     </section>
 
-
+    <!-- Vehicle Enquiry Modal (for stock specials cards) -->
+    <LazyVehicleEnquiryModal
+      :is-open="vehiclesStore.vehicleEnquiryPopUp.show"
+      :vehicle="vehiclesStore.vehicleEnquiryPopUp.item"
+      @close="closeEnquiryModal"
+    />
   </div>
 </template>
 
@@ -47,6 +55,14 @@ useSiteMeta({
 // Get site config from store
 const mainStore = useMainStore();
 const site = computed(() => mainStore.site);
+
+// Vehicles store for enquiry modal
+const vehiclesStore = useVehiclesStore();
+
+// Close enquiry modal
+const closeEnquiryModal = () => {
+  vehiclesStore.setVehicleEnquiryPopUp(false, null);
+};
 
 // Fetch homepage CMS content (client-side)
 const pageContent = ref<string | null>(null);

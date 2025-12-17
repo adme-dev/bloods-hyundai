@@ -1,7 +1,7 @@
 <template>
   <div class="dealership-reviews">
     <div class="uk-container">
-      <h2 class="uk-text-center uk-h1 uk-text-primary uk-text-bold uk-margin-medium-bottom">
+      <h2 class="uk-text-center uk-h1 uk-text-bold uk-margin-medium-bottom" style="color: #002855;">
         Customer <b>Reviews</b>
       </h2>
       
