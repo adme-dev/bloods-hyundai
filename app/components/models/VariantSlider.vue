@@ -68,13 +68,17 @@
               <div class="uk-pane">
                 <!-- Variant Image -->
                 <div class="uk-text-center uk-margin-bottom">
-                  <img 
-                    v-if="item.image" 
-                    :src="item.image" 
-                    :alt="item.name" 
+                  <NuxtImg
+                    v-if="item.image"
+                    :src="item.image"
+                    :alt="item.name"
                     class="uk-width-1-1"
                     style="max-height: 200px; object-fit: contain;"
                     loading="lazy"
+                    width="320"
+                    height="200"
+                    format="webp"
+                    quality="80"
                   />
                   <div v-else class="uk-background-muted uk-width-1-1 uk-flex uk-flex-center uk-flex-middle" style="height: 200px;">
                     <span uk-icon="icon: image; ratio: 2" class="uk-text-muted"></span>

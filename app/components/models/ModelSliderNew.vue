@@ -66,13 +66,15 @@
                   <div class="uk-flex uk-flex-column uk-height-1-1">
                     <div class="uk-card-media-top">
                       <NuxtLink :to="'/vehicle/' + vehicle.slug" class="uk-text-muted">
-                        <img 
+                        <NuxtImg
                           :src="vehicle.image"
                           :alt="vehicle.name"
                           width="357"
                           height="137"
                           class="uk-width-1-1 uk-margin-medium-bottom"
                           loading="lazy"
+                          format="webp"
+                          quality="80"
                         />
                       </NuxtLink>
                     </div>

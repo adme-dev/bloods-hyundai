@@ -10,7 +10,7 @@
       <!-- Header -->
       <div class="mobile-nav-header">
         <NuxtLink to="/" class="mobile-nav-logo" @click="close">
-          <img :src="logo" :alt="siteName" />
+          <NuxtImg :src="logo" :alt="siteName" width="120" height="32" />
         </NuxtLink>
         <button class="mobile-nav-close" @click="close">
           <span uk-icon="close"></span>

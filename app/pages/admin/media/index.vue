@@ -403,11 +403,15 @@ onMounted(() => {
           >
             <!-- Image Preview -->
             <div class="aspect-square bg-muted flex items-center justify-center">
-              <img
+              <NuxtImg
                 v-if="isImage(file)"
                 :src="file.url"
                 :alt="file.filename"
                 class="w-full h-full object-contain"
+                width="200"
+                height="200"
+                format="webp"
+                quality="80"
               />
               <component
                 v-else
@@ -470,11 +474,15 @@ onMounted(() => {
           >
             <!-- Thumbnail -->
             <div class="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
-              <img
+              <NuxtImg
                 v-if="isImage(file)"
                 :src="file.url"
                 :alt="file.filename"
                 class="w-full h-full object-contain rounded"
+                width="48"
+                height="48"
+                format="webp"
+                quality="80"
               />
               <component
                 v-else

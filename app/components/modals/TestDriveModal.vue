@@ -44,11 +44,16 @@
 
         <!-- Vehicle Image -->
         <div class="vehicle-preview">
-          <img 
-            v-if="selectedModelImage" 
-            :src="selectedModelImage" 
+          <NuxtImg
+            v-if="selectedModelImage"
+            :src="selectedModelImage"
             :alt="selectedModelName"
-            class="vehicle-image" />
+            class="vehicle-image"
+            width="480"
+            height="300"
+            format="webp"
+            quality="80"
+          />
           <div v-else class="vehicle-placeholder">
             <span>Select a model to preview</span>
           </div>

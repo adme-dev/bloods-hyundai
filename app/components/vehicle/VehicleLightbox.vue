@@ -51,11 +51,15 @@
                 :key="index"
                 class="lightbox__slide"
               >
-                <img
+                <NuxtImg
                   :src="image"
                   :alt="`${title} - Photo ${index + 1}`"
                   class="lightbox__image"
                   draggable="false"
+                  width="1920"
+                  height="1080"
+                  format="webp"
+                  quality="85"
                 />
               </div>
             </div>
@@ -96,11 +100,16 @@
                 @click="goToIndex(index)"
                 :aria-label="`View photo ${index + 1}`"
               >
-                <img
+                <NuxtImg
                   :src="image"
                   :alt="`Thumbnail ${index + 1}`"
                   class="lightbox__thumb-img"
                   draggable="false"
+                  width="80"
+                  height="56"
+                  loading="lazy"
+                  format="webp"
+                  quality="80"
                 />
               </button>
             </div>

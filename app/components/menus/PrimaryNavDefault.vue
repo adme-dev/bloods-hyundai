@@ -3,10 +3,12 @@
     <div class="uk-container uk-container-expand">
       <div class="uk-navbar-left">
         <NuxtLink to="/" class="uk-navbar-item uk-logo">
-          <img 
-            :src="logo" 
-            :alt="siteName" 
+          <NuxtImg
+            :src="logo"
+            :alt="siteName"
             class="logo-image"
+            width="160"
+            height="40"
           />
         </NuxtLink>
       </div>

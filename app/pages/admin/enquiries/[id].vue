@@ -200,10 +200,14 @@
               <!-- Vehicle thumbnail and name prominently displayed -->
               <div v-if="vehicleThumbnail || vehicleName" class="flex gap-4 rounded-lg border bg-muted/30 p-4">
                 <div v-if="vehicleThumbnail" class="flex-shrink-0">
-                  <img
+                  <NuxtImg
                     :src="vehicleThumbnail"
                     :alt="vehicleName || 'Vehicle'"
                     class="h-24 w-32 rounded-lg object-cover shadow-sm sm:h-32 sm:w-44"
+                    width="176"
+                    height="128"
+                    format="webp"
+                    quality="80"
                   />
                 </div>
                 <div class="flex flex-1 flex-col justify-center">
@@ -360,11 +364,15 @@
                   class="group relative aspect-[4/3] overflow-hidden rounded-lg border bg-muted/30 transition-all hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary"
                   @click="openPhotoLightbox(index)"
                 >
-                  <img
+                  <NuxtImg
                     :src="photo"
                     :alt="`Vehicle photo ${index + 1}`"
                     class="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
                     loading="lazy"
+                    width="200"
+                    height="150"
+                    format="webp"
+                    quality="80"
                   />
                   <div class="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30">
                     <ZoomIn class="h-6 w-6 text-white opacity-0 drop-shadow-lg transition-opacity group-hover:opacity-100" />
@@ -475,12 +483,16 @@
                 >
                   <!-- Accessory Image -->
                   <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border bg-muted/30">
-                    <img
+                    <NuxtImg
                       v-if="item.image || item.thumbnail"
                       :src="item.image || item.thumbnail || ''"
                       :alt="item.name"
                       class="h-full w-full object-contain p-1"
                       loading="lazy"
+                      width="64"
+                      height="64"
+                      format="webp"
+                      quality="80"
                     />
                     <div v-else class="flex h-full w-full items-center justify-center">
                       <ShoppingCart class="h-6 w-6 text-muted-foreground/50" />
@@ -692,11 +704,15 @@
 
           <!-- Image -->
           <div class="flex min-h-[60vh] items-center justify-center p-4">
-            <img
+            <NuxtImg
               v-if="sellCarPhotos[lightboxIndex]"
               :src="sellCarPhotos[lightboxIndex]"
               :alt="`Vehicle photo ${lightboxIndex + 1}`"
               class="max-h-[80vh] max-w-full rounded-lg object-contain"
+              width="1200"
+              height="900"
+              format="webp"
+              quality="85"
             />
           </div>
 

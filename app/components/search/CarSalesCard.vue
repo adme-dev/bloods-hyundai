@@ -17,13 +17,15 @@
     <!-- Image -->
     <div class="uk-card-media-top">
       <NuxtLink :to="vehicleLink">
-        <img
+        <NuxtImg
           :src="vehicle.thumb || vehicle.images?.[0] || '/images/placeholder-car.jpg'"
           :alt="vehicleTitle"
           width="400"
           height="200"
           loading="lazy"
           class="vehicle-image"
+          format="webp"
+          quality="80"
         />
       </NuxtLink>
       

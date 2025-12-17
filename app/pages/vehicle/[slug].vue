@@ -78,17 +78,25 @@
                 uk-cover
               ></video>
               <template v-else>
-                <img 
+                <NuxtImg
                   :src="heroSlide.desktop"
                   :alt="vehicle.model"
-                  class="uk-visible@m uk-width-1-1" 
+                  class="uk-visible@m uk-width-1-1"
                   uk-cover
+                  width="1920"
+                  height="1080"
+                  format="webp"
+                  quality="80"
                 />
-                <img 
+                <NuxtImg
                   :src="heroSlide.mobile || heroSlide.desktop"
                   :alt="vehicle.model"
-                  class="uk-hidden@m uk-width-1-1" 
+                  class="uk-hidden@m uk-width-1-1"
                   uk-cover
+                  width="768"
+                  height="1024"
+                  format="webp"
+                  quality="80"
                 />
               </template>
             </ClientOnly>

@@ -24,10 +24,15 @@
           <div class="uk-grid-small uk-flex-middle" uk-grid>
             <div class="uk-width-auto">
               <div class="viewed-image">
-                <img 
-                  v-if="vehicle.thumb || vehicle.photos?.[0]" 
-                  :src="vehicle.thumb || vehicle.photos[0]" 
+                <NuxtImg
+                  v-if="vehicle.thumb || vehicle.photos?.[0]"
+                  :src="vehicle.thumb || vehicle.photos[0]"
                   :alt="vehicle.title"
+                  width="60"
+                  height="45"
+                  loading="lazy"
+                  format="webp"
+                  quality="80"
                 />
                 <div v-else class="placeholder-image">
                   <span uk-icon="image"></span>

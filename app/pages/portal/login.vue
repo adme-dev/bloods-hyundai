@@ -4,10 +4,12 @@
       <!-- Header -->
       <div class="text-center">
         <NuxtLink to="/" class="inline-block">
-          <img
+          <NuxtImg
             src="/assets/logos/logo-black-sm.svg"
             alt="Sale Hyundai"
             class="h-12 mx-auto"
+            width="120"
+            height="48"
           />
         </NuxtLink>
         <h2 class="mt-6 text-3xl font-bold text-gray-900">

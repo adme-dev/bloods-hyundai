@@ -303,11 +303,16 @@ const acceptTypes = computed(() => {
             >
               <!-- Image Preview -->
               <div class="aspect-square bg-muted flex items-center justify-center">
-                <img
+                <NuxtImg
                   v-if="isImage(file)"
                   :src="file.url"
                   :alt="file.filename"
                   class="w-full h-full object-contain"
+                  width="200"
+                  height="200"
+                  loading="lazy"
+                  format="webp"
+                  quality="80"
                 />
                 <component
                   v-else

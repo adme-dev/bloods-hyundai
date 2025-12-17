@@ -65,12 +65,16 @@
               <div class="flex flex-col">
                 <!-- Main Image -->
                 <div class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-white lg:aspect-auto lg:h-96">
-                  <img
+                  <NuxtImg
                     v-if="currentImage"
                     :src="currentImage"
                     :alt="accessory.name"
                     class="h-full w-full object-contain p-4"
-                  >
+                    width="640"
+                    height="480"
+                    format="webp"
+                    quality="85"
+                  />
                   <div v-else class="flex flex-col items-center gap-2 text-slate-300">
                     <svg class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -92,11 +96,16 @@
                     ]"
                     @click="currentImage = img"
                   >
-                    <img
+                    <NuxtImg
                       :src="img"
                       :alt="`${accessory.name} - Image ${index + 1}`"
                       class="h-16 w-16 object-cover sm:h-20 sm:w-20 lg:h-20 lg:w-20"
-                    >
+                      width="80"
+                      height="80"
+                      loading="lazy"
+                      format="webp"
+                      quality="80"
+                    />
                   </button>
                 </div>
               </div>

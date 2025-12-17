@@ -5,7 +5,7 @@
         <!-- Logo & Contact -->
         <div>
           <div class="footer-logo uk-margin-bottom">
-            <img :src="logo" :alt="siteName" />
+            <NuxtImg :src="logo" :alt="siteName" width="160" height="50" />
           </div>
           <div class="footer-address uk-margin-bottom">
             <p v-if="address">{{ address }}</p>

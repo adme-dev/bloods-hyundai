@@ -81,12 +81,17 @@
                   >
                     <div class="flex items-center gap-3">
                       <div class="h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-slate-100">
-                        <img
+                        <NuxtImg
                           v-if="item.accessory.image || item.accessory.thumbnail"
                           :src="item.accessory.image || item.accessory.thumbnail"
                           :alt="item.accessory.name"
                           class="h-full w-full object-contain p-1"
-                        >
+                          width="40"
+                          height="40"
+                          loading="lazy"
+                          format="webp"
+                          quality="80"
+                        />
                       </div>
                       <div>
                         <span class="font-medium text-slate-900">{{ item.accessory.name }}</span>

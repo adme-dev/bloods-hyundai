@@ -8,12 +8,14 @@
         @click="$emit('openLightbox', 0)"
         :aria-label="`View ${title} gallery`"
       >
-        <img
+        <NuxtImg
           :src="heroImage"
           :alt="`${title} - Main photo`"
           width="800"
           height="500"
           class="gallery__hero-img"
+          format="webp"
+          quality="80"
         />
         <span v-if="badge" class="gallery__badge">{{ badge }}</span>
         <div class="gallery__hero-overlay">

@@ -15,11 +15,15 @@
             <div class="uk-card uk-card-default uk-card-hover">
               <div class="uk-card-media-top uk-position-relative">
                 <NuxtLink :to="`/vehicle-for-sale/${vehicle.id}/${vehicle.slug}`">
-                  <img 
+                  <NuxtImg
                     :src="vehicle.images?.[0] || vehicle.image"
                     :alt="vehicle.title"
                     class="uk-width-1-1"
                     loading="lazy"
+                    width="400"
+                    height="300"
+                    format="webp"
+                    quality="80"
                   />
                 </NuxtLink>
                 <span v-if="vehicle.condition" class="condition-badge" :class="vehicle.condition.toLowerCase()">

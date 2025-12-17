@@ -21,11 +21,15 @@
               </p>
             </div>
             <div class="uk-width-1-2@m">
-              <img 
+              <NuxtImg
                 v-if="variant.image"
                 :src="variant.image"
                 :alt="variant.name"
                 class="uk-width-1-1"
+                width="640"
+                height="400"
+                format="webp"
+                quality="80"
               />
             </div>
           </div>

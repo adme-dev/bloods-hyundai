@@ -32,11 +32,15 @@
                 style="cursor: pointer;"
               >
                 <div class="uk-card-media-top">
-                  <img 
+                  <NuxtImg
                     :src="variant.image"
                     :alt="variant.name"
                     class="uk-width-1-1"
                     loading="lazy"
+                    width="400"
+                    height="250"
+                    format="webp"
+                    quality="80"
                   />
                 </div>
                 <div class="uk-card-body">

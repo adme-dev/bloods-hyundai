@@ -49,7 +49,7 @@
                 Sales / Service / Parts: <b>{{ phone }}</b>
               </a>
             </div>
-            <img
+            <NuxtImg
               src="/assets/logos/logo-white-sm.svg"
               width="80"
               height="42"

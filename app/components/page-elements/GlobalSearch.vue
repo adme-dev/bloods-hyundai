@@ -68,11 +68,16 @@
                     @click="close"
                   >
                     <div class="relative w-20 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
+                      <NuxtImg
                         v-if="vehicle.thumb"
                         :src="vehicle.thumb"
                         :alt="vehicle.title"
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        width="80"
+                        height="56"
+                        loading="lazy"
+                        format="webp"
+                        quality="80"
                       />
                       <div v-else class="w-full h-full flex items-center justify-center">
                         <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

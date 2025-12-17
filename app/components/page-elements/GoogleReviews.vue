@@ -35,13 +35,14 @@
             <div class="uk-card uk-card-default uk-card-body review-card">
               <div class="review-header uk-flex uk-flex-middle uk-margin-small-bottom">
                 <div class="reviewer-avatar">
-                  <img 
-                    v-if="review.profile_photo_url" 
-                    :src="review.profile_photo_url" 
+                  <NuxtImg
+                    v-if="review.profile_photo_url"
+                    :src="review.profile_photo_url"
                     :alt="review.author_name"
                     class="uk-border-circle"
                     width="48"
                     height="48"
+                    loading="lazy"
                   />
                   <span v-else class="avatar-placeholder">
                     {{ getInitials(review.author_name) }}

@@ -64,13 +64,15 @@
                   <div class="uk-padding-small">
                     <!-- Model Image -->
                     <NuxtLink :to="modelLink(model)" class="uk-text-muted uk-display-block">
-                      <img 
-                        :src="model.model_image || model.image" 
+                      <NuxtImg
+                        :src="model.model_image || model.image"
                         :alt="model.title?.rendered || model.title"
                         class="uk-display-block uk-width-1-1"
                         width="357"
                         height="137"
                         loading="lazy"
+                        format="webp"
+                        quality="80"
                       />
                     </NuxtLink>
 

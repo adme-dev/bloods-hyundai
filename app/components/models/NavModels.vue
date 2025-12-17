@@ -116,18 +116,20 @@
             >
               <div>
                 <div>
-                  <NuxtLink 
+                  <NuxtLink
                     :to="'/vehicle/' + vehicle.slug"
                     class="uk-text-muted"
                     @click="closeModel"
                   >
-                    <img 
-                      :src="`${vehicle.image}?width=357&auto_optimize=medium`"
+                    <NuxtImg
+                      :src="vehicle.image"
                       :alt="vehicle.name"
                       class="uk-display-block"
                       width="357"
                       height="185"
                       loading="lazy"
+                      format="webp"
+                      quality="80"
                     />
                   </NuxtLink>
                 </div>
@@ -137,26 +139,22 @@
                     {{ vehicle.name }}
                   </div>
 
-                  <div class="uk-width-expand uk-text-center">
-                    <div class="uk-child-width-auto uk-grid">
-                      <div>
-                        <NuxtLink 
-                          :to="'/vehicle/' + vehicle.slug"
-                          class="uk-text-center uk-button uk-button-text uk-button-small uk-text-primary uk-text-capitalize uk-padding-remove-left"
-                          @click="closeModel"
-                        >
-                          Details
-                        </NuxtLink>
-                      </div>
-                      <div>
-                        <NuxtLink 
-                          to="/test-drive"
-                          class="uk-text-center uk-button uk-button-text uk-button-small uk-text-primary uk-text-capitalize"
-                          @click="closeModel"
-                        >
-                          Enquire
-                        </NuxtLink>
-                      </div>
+                  <div class="uk-width-expand uk-text-left uk-margin-small-top">
+                    <div class="uk-flex uk-flex-left" style="gap: 8px;">
+                      <NuxtLink 
+                        :to="'/vehicle/' + vehicle.slug"
+                        class="nav-model-btn nav-model-btn--details"
+                        @click="closeModel"
+                      >
+                        Details
+                      </NuxtLink>
+                      <NuxtLink 
+                        :to="'/calculator/' + vehicle.slug"
+                        class="nav-model-btn nav-model-btn--enquire"
+                        @click="closeModel"
+                      >
+                        Enquire
+                      </NuxtLink>
                     </div>
                   </div>
                 </div>
@@ -351,6 +349,42 @@ const capitalizeFirstLetter = (str: string) => {
 
 .vehicle-item:hover {
   transform: translateY(-3px);
+}
+
+/* Nav model buttons */
+.nav-model-btn {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+}
+
+.nav-model-btn--details {
+  background: transparent;
+  border: 2px solid #002c5f;
+  color: #002c5f !important;
+}
+
+.nav-model-btn--details:hover {
+  background: #002c5f;
+  color: #fff !important;
+}
+
+.nav-model-btn--enquire {
+  background: #002c5f;
+  border: 2px solid #002c5f;
+  color: #fff !important;
+}
+
+.nav-model-btn--enquire:hover {
+  background: #004080;
+  border-color: #004080;
+  color: #fff !important;
 }
 
 /* Scrollable content area */

@@ -19,13 +19,14 @@
               <div class="uk-card uk-padding-small uk-flex uk-flex-column">
                 <!-- Author Info -->
                 <div class="uk-flex uk-flex-middle uk-margin-bottom">
-                  <img 
+                  <NuxtImg
                     v-if="review.profile_photo_url"
-                    :src="review.profile_photo_url" 
-                    :alt="review.author_name" 
+                    :src="review.profile_photo_url"
+                    :alt="review.author_name"
                     class="uk-border-circle review-avatar"
-                    width="60" 
+                    width="60"
                     height="60"
+                    loading="lazy"
                   />
                   <div 
                     v-else 
@@ -99,10 +100,11 @@
             rel="noopener noreferrer"
             class="google-badge"
           >
-            <img 
-              src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" 
-              alt="Google" 
+            <NuxtImg
+              src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
+              alt="Google"
               width="20"
+              height="20"
             />
             <span class="uk-margin-small-left">View all reviews on Google</span>
           </a>

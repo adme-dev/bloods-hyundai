@@ -17,19 +17,19 @@
             <div class="flex items-center gap-4 md:gap-8 flex-1 min-w-0">
               <!-- Logo -->
               <NuxtLink to="/" class="flex items-center flex-shrink-0">
-                <img 
-                  src="/assets/logos/logo-black.svg" 
-                  width="160" 
+                <NuxtImg
+                  src="/assets/logos/logo-black.svg"
+                  width="160"
                   height="22"
-                  class="hidden md:block" 
-                  :alt="siteName" 
+                  class="hidden md:block"
+                  :alt="siteName"
                 />
-                <img 
-                  src="/assets/logos/logo-black-sm.svg" 
-                  width="50" 
+                <NuxtImg
+                  src="/assets/logos/logo-black-sm.svg"
+                  width="50"
                   height="26"
-                  class="block md:hidden" 
-                  :alt="siteName" 
+                  class="block md:hidden"
+                  :alt="siteName"
                 />
               </NuxtLink>
 

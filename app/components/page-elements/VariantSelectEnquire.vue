@@ -43,7 +43,7 @@
                 class="uk-text-center uk-padding-small uk-card uk-card-default uk-card-hover"
                 :class="{ 'uk-card-primary': selectedModelId === entry.id }"
               >
-                <img :src="entry.image" :alt="entry.title" width="120" class="uk-margin-small-bottom" />
+                <NuxtImg :src="entry.image" :alt="entry.title" width="120" height="75" class="uk-margin-small-bottom" loading="lazy" format="webp" quality="80" />
                 <div class="uk-text-bold uk-text-small">
                   <input 
                     type="radio" 
@@ -75,10 +75,14 @@
         <div v-if="selectedVariantDetails" class="uk-card uk-card-default uk-card-body uk-card-small uk-margin-small-top">
           <div class="uk-grid uk-grid-small" uk-grid>
             <div class="uk-width-1-3">
-              <img 
+              <NuxtImg
                 :src="selectedVariantDetails.image || selectedVariantDetails.thumbnail"
                 :alt="selectedVariantDetails.name"
                 class="uk-width-1-1"
+                width="160"
+                height="100"
+                format="webp"
+                quality="80"
               />
             </div>
             <div class="uk-width-2-3">

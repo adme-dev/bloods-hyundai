@@ -42,10 +42,12 @@
             <!-- Current Logo Preview -->
             <div v-if="form.logoUrl" class="space-y-2">
               <div class="rounded-lg border bg-muted/30 p-6 text-center">
-                <img
+                <NuxtImg
                   :src="form.logoUrl"
                   :alt="dealer?.name"
                   class="mx-auto max-h-16 max-w-[200px] object-contain"
+                  width="200"
+                  height="64"
                   @error="logoError = true"
                   @load="logoError = false"
                 />
@@ -257,11 +259,13 @@
               class="p-6 text-center"
               :style="{ backgroundColor: form.primaryColor || '#001E50' }"
             >
-              <img
+              <NuxtImg
                 v-if="form.logoUrl && !logoError"
                 :src="form.logoUrl"
                 :alt="dealer?.name"
                 class="mx-auto max-h-12 max-w-[180px] object-contain"
+                width="180"
+                height="48"
               />
               <h2 v-else class="text-xl font-semibold text-white">{{ dealer?.name }}</h2>
               <p class="mt-2 text-sm text-white/90">Thank You For Your Enquiry</p>
@@ -278,11 +282,13 @@
             <!-- Email Footer Preview -->
             <div class="border-t bg-gray-50 p-6">
               <div class="text-center">
-                <img
+                <NuxtImg
                   v-if="form.logoUrl && !logoError"
                   :src="form.logoUrl"
                   :alt="dealer?.name"
                   class="mx-auto mb-4 max-h-10 max-w-[140px] object-contain opacity-75"
+                  width="140"
+                  height="40"
                 />
                 <p v-else class="mb-4 font-semibold" :style="{ color: form.primaryColor || '#001E50' }">
                   {{ dealer?.name }}

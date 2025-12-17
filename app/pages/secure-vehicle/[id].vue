@@ -8,11 +8,15 @@
         <div class="uk-width-1-2@m">
           <div v-if="vehicle" class="uk-card uk-card-default uk-card-body">
             <h3 class="uk-card-title">{{ vehicle.title }}</h3>
-            <img 
+            <NuxtImg
               v-if="vehicle.images?.[0]"
               :src="vehicle.images[0]"
               :alt="vehicle.title"
               class="uk-width-1-1 uk-margin"
+              width="480"
+              height="360"
+              format="webp"
+              quality="80"
             />
             <ul class="uk-list uk-list-divider">
               <li v-if="vehicle.year"><strong>Year:</strong> {{ vehicle.year }}</li>

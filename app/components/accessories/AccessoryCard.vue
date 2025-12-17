@@ -17,13 +17,17 @@
       class="relative aspect-[16/10] w-full cursor-pointer overflow-hidden bg-slate-50"
       @click="$emit('view-details', accessory)"
     >
-      <img
+      <NuxtImg
         v-if="accessory.image || accessory.thumbnail"
         :src="accessory.image || accessory.thumbnail"
         :alt="accessory.name"
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         loading="lazy"
-      >
+        width="320"
+        height="200"
+        format="webp"
+        quality="80"
+      />
       <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50">
         <svg class="h-20 w-20 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />

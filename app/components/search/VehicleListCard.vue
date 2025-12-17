@@ -7,14 +7,17 @@
       <!-- Main Image -->
       <NuxtLink :to="vehicleLink" class="block relative">
         <div class="relative aspect-[4/3] overflow-hidden bg-slate-100">
-          <img
+          <NuxtImg
             v-if="displayImage"
             :src="displayImage"
             :alt="vehicleTitle"
             width="320"
             height="240"
             class="h-full w-full object-cover transition-all duration-300 group-hover:scale-105"
-          >
+            loading="lazy"
+            format="webp"
+            quality="80"
+          />
           <div v-else class="flex h-full items-center justify-center">
             <span class="text-lg font-semibold uppercase tracking-[0.3em] text-slate-400">
               {{ vehicleMake }}
@@ -43,14 +46,17 @@
           :class="selectedImageIndex === index ? 'border-primary ring-1 ring-primary' : 'border-slate-200 hover:border-slate-300'"
           @click.prevent="selectImage(index)"
         >
-          <img
+          <NuxtImg
             :src="thumb"
             :alt="`${vehicleTitle} thumbnail ${index + 1}`"
             width="80"
             height="56"
             class="h-full w-full object-cover transition-opacity"
             :class="selectedImageIndex === index ? 'opacity-100' : 'opacity-70 hover:opacity-100'"
-          >
+            loading="lazy"
+            format="webp"
+            quality="80"
+          />
         </div>
       </div>
     </div>

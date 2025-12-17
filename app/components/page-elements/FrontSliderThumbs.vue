@@ -32,11 +32,15 @@
                 class="thumb-card"
               >
                 <div class="thumb-image-wrapper">
-                  <img
+                  <NuxtImg
                     :src="thumb.image"
                     :alt="thumb.button_text || siteName"
                     class="thumb-image"
                     loading="lazy"
+                    width="320"
+                    height="200"
+                    format="webp"
+                    quality="80"
                   />
                   <div class="thumb-overlay">
                     <div v-if="thumb.content" class="thumb-content">

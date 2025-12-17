@@ -98,13 +98,16 @@
                     :to="`/vehicle/${model.slug}`"
                     class="block h-full flex items-center justify-center overflow-hidden"
                   >
-                    <img
+                    <NuxtImg
                       :src="model.model_image"
                       :alt="model.title.rendered"
                       width="400"
                       height="300"
+                      loading="lazy"
                       class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                    >
+                      format="webp"
+                      quality="80"
+                    />
                   </NuxtLink>
                 </div>
 
@@ -228,13 +231,16 @@
                     <!-- Image Section -->
                     <div class="relative w-full bg-gray-100 overflow-hidden aspect-[4/3] p-4">
                       <div class="flex items-center justify-center h-full overflow-hidden">
-                        <img
+                        <NuxtImg
                           :src="model.model_image"
                           :alt="model.title.rendered"
                           width="400"
                           height="300"
+                          loading="lazy"
                           class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                        >
+                          format="webp"
+                          quality="80"
+                        />
                       </div>
                       <!-- Badge -->
                       <div

@@ -22,16 +22,20 @@
                 <div class="main-image-container">
                   <div ref="mainCarouselRef" class="embla-main">
                     <div class="embla-main__container">
-                      <div 
-                        v-for="(image, index) in vehicleImages" 
-                        :key="index" 
+                      <div
+                        v-for="(image, index) in vehicleImages"
+                        :key="index"
                         class="embla-main__slide"
                         @click="openLightbox(index)"
                       >
-                        <img
+                        <NuxtImg
                           :src="image"
                           :alt="`${vehicleTitle} - Image ${index + 1}`"
                           class="main-slide-image"
+                          width="600"
+                          height="450"
+                          format="webp"
+                          quality="80"
                         />
                       </div>
                       <!-- Fallback if no images -->
@@ -87,10 +91,15 @@
                         :class="{ 'is-selected': index === selectedIndex }"
                         @click="onThumbClick(index)"
                       >
-                        <img
+                        <NuxtImg
                           :src="image"
                           :alt="`Thumbnail ${index + 1}`"
                           class="thumb-image"
+                          width="56"
+                          height="40"
+                          loading="lazy"
+                          format="webp"
+                          quality="80"
                         />
                       </button>
                     </div>

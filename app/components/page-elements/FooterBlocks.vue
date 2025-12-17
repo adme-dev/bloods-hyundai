@@ -13,13 +13,15 @@
         class="footer-block group relative overflow-hidden block"
       >
         <!-- Image - true size, responsive -->
-        <img
+        <NuxtImg
           :src="block.slides"
           :alt="block.heading_content || 'Promotional block'"
           width="640"
           height="360"
           class="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
           loading="lazy"
+          format="webp"
+          quality="80"
         />
         
         <!-- Content Overlay - positioned at top -->

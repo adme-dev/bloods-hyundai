@@ -9,18 +9,18 @@
         :class="{ 'slide-item--hidden': index > 0 }"
       >
         <div class="slide-panel" :class="{ 'is-active': index === 0 }">
-          <picture v-if="slide.desktop">
-            <source :srcset="`${slide.desktop}?width=1600`" media="(min-width: 960px)" />
-            <source :srcset="`${slide.mobile}?width=566`" media="(max-width: 959px)" />
-            <img
-              :src="`${slide.desktop}?width=1600`"
-              class="slide-image"
-              width="1800"
-              height="1200"
-              :alt="strippedHeadingContent(slide.heading_content)"
-              :loading="index === 0 ? 'eager' : 'lazy'"
-            />
-          </picture>
+          <NuxtPicture
+            v-if="slide.desktop"
+            :src="slide.desktop"
+            :alt="strippedHeadingContent(slide.heading_content)"
+            class="slide-image-wrapper"
+            :img-attrs="{ class: 'slide-image' }"
+            width="1600"
+            height="900"
+            sizes="sm:100vw md:80vw"
+            :loading="index === 0 ? 'eager' : 'lazy'"
+            format="webp"
+          />
 
           <div v-if="slide.button_text" class="slide-content">
             <h2
@@ -80,18 +80,17 @@
           >
             <!-- Image slide -->
             <div v-if="slide.desktop" class="slide-media">
-              <picture>
-                <source :srcset="`${slide.desktop}?width=1600`" media="(min-width: 960px)" />
-                <source :srcset="`${slide.mobile}?width=566`" media="(max-width: 959px)" />
-                <img
-                  :src="index === 0 ? `${slide.desktop}?width=1600` : `${slide.mobile}?width=566`"
-                  class="slide-image"
-                  width="1800"
-                  height="1200"
-                  :alt="strippedHeadingContent(slide.heading_content)"
-                  :loading="index === 0 ? 'eager' : 'lazy'"
-                />
-              </picture>
+              <NuxtPicture
+                :src="slide.desktop"
+                :alt="strippedHeadingContent(slide.heading_content)"
+                class="slide-image-wrapper"
+                :img-attrs="{ class: 'slide-image' }"
+                width="1600"
+                height="900"
+                sizes="sm:100vw md:80vw"
+                :loading="index === 0 ? 'eager' : 'lazy'"
+                format="webp"
+              />
             </div>
 
             <!-- Video slide -->
@@ -139,17 +138,18 @@
         <div v-if="homeSlides.length" class="slider-ssr">
           <div class="slide-item">
             <div class="slide-panel is-active">
-              <picture v-if="homeSlides[0].desktop">
-                <source :srcset="`${homeSlides[0].desktop}?width=1600`" media="(min-width: 960px)" />
-                <source :srcset="`${homeSlides[0].mobile}?width=566`" media="(max-width: 959px)" />
-                <img
-                  :src="`${homeSlides[0].desktop}?width=1600`"
-                  class="slide-image"
-                  width="1800"
-                  height="1200"
-                  :alt="strippedHeadingContent(homeSlides[0].heading_content)"
-                />
-              </picture>
+              <NuxtPicture
+                v-if="homeSlides[0].desktop"
+                :src="homeSlides[0].desktop"
+                :alt="strippedHeadingContent(homeSlides[0].heading_content)"
+                class="slide-image-wrapper"
+                :img-attrs="{ class: 'slide-image' }"
+                width="1600"
+                height="900"
+                sizes="sm:100vw md:80vw"
+                loading="eager"
+                format="webp"
+              />
             </div>
           </div>
         </div>

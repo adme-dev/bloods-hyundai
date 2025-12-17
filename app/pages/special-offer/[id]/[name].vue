@@ -139,10 +139,14 @@
           
           <!-- Right Side - Vehicle Image -->
           <div class="hero-image">
-            <img 
-              :src="offer.heroImage || offer.image" 
+            <NuxtImg
+              :src="offer.heroImage || offer.image"
               :alt="offer.imageAltText || offer.model"
               loading="lazy"
+              width="640"
+              height="400"
+              format="webp"
+              quality="80"
             />
           </div>
         </div>
@@ -219,10 +223,14 @@
                 
                 <!-- Vehicle Image -->
                 <div class="offer-card-image">
-                  <img 
-                    :src="variant.image || offer.modelImage" 
+                  <NuxtImg
+                    :src="variant.image || offer.modelImage"
                     :alt="variant.name"
                     loading="lazy"
+                    width="360"
+                    height="200"
+                    format="webp"
+                    quality="80"
                   />
                 </div>
                 

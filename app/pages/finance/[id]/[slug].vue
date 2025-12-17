@@ -31,10 +31,14 @@
           <!-- Vehicle Card -->
           <div class="vehicle-summary-card">
             <div class="vehicle-image-container">
-              <img 
-                :src="heroImage" 
+              <NuxtImg
+                :src="heroImage"
                 :alt="headline"
                 class="vehicle-image"
+                width="640"
+                height="400"
+                format="webp"
+                quality="80"
               />
               <div v-if="conditionLabel" class="condition-badge">{{ conditionLabel }}</div>
             </div>

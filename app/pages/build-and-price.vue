@@ -67,13 +67,15 @@
                   <NuxtLink
                     :to="`/calculator/${getModelSlug(entry.name)}`"
                     class="vehicle-image-link">
-                    <img
+                    <NuxtImg
                       :src="entry.image"
                       :alt="entry.name || entry.model"
                       class="vehicle-image"
                       width="640"
                       height="331"
                       loading="lazy"
+                      format="webp"
+                      quality="80"
                     />
                   </NuxtLink>
                 </div>

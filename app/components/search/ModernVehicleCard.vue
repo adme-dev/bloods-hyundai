@@ -5,14 +5,17 @@
     <!-- Vehicle Image -->
     <div class="relative aspect-[4/3] w-full overflow-hidden bg-muted">
       <NuxtLink :to="vehicleLink" class="block h-full w-full">
-        <img
+        <NuxtImg
           v-if="mainImage"
           :src="mainImage"
           :alt="vehicleTitle"
           width="400"
           height="300"
+          loading="lazy"
           class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        >
+          format="webp"
+          quality="80"
+        />
         <div v-else class="flex h-full items-center justify-center bg-slate-100">
           <span class="text-lg font-semibold uppercase tracking-[0.3em] text-muted-foreground">
             {{ vehicleMake }}

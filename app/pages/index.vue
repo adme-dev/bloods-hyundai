@@ -22,6 +22,9 @@
       </div>
     </section>
 
+    <!-- Stock Special Offers -->
+    <LazySpecialOffersVehicles />
+
     <!-- Homepage Models Section -->
     <LazyHomepageModelsSection />
 

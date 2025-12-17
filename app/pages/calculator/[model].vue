@@ -20,13 +20,15 @@
         <div class="sticky-content">
           <!-- Vehicle Image -->
           <div class="vehicle-image-container">
-            <img
+            <NuxtImg
               v-if="selectedColourImage"
               :src="selectedColourImage"
               :alt="`${calculatorData.model} in ${selectedColour?.name || 'selected colour'}`"
               width="800"
               height="450"
               class="vehicle-image"
+              format="webp"
+              quality="80"
             />
             <div v-else class="vehicle-placeholder">
               <span>{{ calculatorData.model }}</span>
@@ -81,7 +83,7 @@
                 :class="['variant-card', { selected: selectedVariantGroup?.id === group.id }]"
                 @click="selectVariantGroup(group)">
                 <div class="variant-image">
-                  <img v-if="group.image" :src="group.image" :alt="group.name" />
+                  <NuxtImg v-if="group.image" :src="group.image" :alt="group.name" width="200" height="150" format="webp" quality="80" loading="lazy" />
                   <div v-else class="variant-image-placeholder">
                     <span>{{ group.name.charAt(0) }}</span>
                   </div>
@@ -128,7 +130,7 @@
                   :class="['colour-option', { selected: selectedColour?.id === colour.id, 'sold-out': colour.soldOut }]"
                   @click="!colour.soldOut && selectColour(colour)">
                   <div class="colour-swatch">
-                    <img v-if="colour.swatch" :src="colour.swatch" :alt="colour.name" />
+                    <NuxtImg v-if="colour.swatch" :src="colour.swatch" :alt="colour.name" width="48" height="48" format="webp" quality="80" loading="lazy" />
                   </div>
                   <span class="colour-name">{{ colour.name }}</span>
                   <span v-if="colour.price > 0" class="colour-price">+${{ formatPrice(colour.price) }}</span>
@@ -149,7 +151,7 @@
                   :class="['colour-option', { selected: selectedTrim?.id === trim.id }]"
                   @click="selectedTrim = trim">
                   <div class="colour-swatch">
-                    <img v-if="trim.swatch" :src="trim.swatch" :alt="trim.name" />
+                    <NuxtImg v-if="trim.swatch" :src="trim.swatch" :alt="trim.name" width="48" height="48" format="webp" quality="80" loading="lazy" />
                   </div>
                   <span class="colour-name">{{ trim.name }}</span>
                   <span v-if="trim.price > 0" class="colour-price">+${{ formatPrice(trim.price) }}</span>
@@ -169,7 +171,7 @@
                 :class="['option-pack-card', { selected: selectedOptionPack?.id === pack.id }]"
                 @click="toggleOptionPack(pack)">
                 <div class="pack-image" v-if="pack.modalImage">
-                  <img :src="pack.modalImage" :alt="pack.title || pack.name" />
+                  <NuxtImg :src="pack.modalImage" :alt="pack.title || pack.name" width="320" height="200" format="webp" quality="80" loading="lazy" />
                 </div>
                 <div class="pack-content">
                   <div class="pack-header">
@@ -295,7 +297,7 @@
                   <span class="tick-icon">✓</span>
                 </div>
                 <div class="accessory-image">
-                  <img v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" width="200" height="150" />
+                  <NuxtImg v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" width="200" height="150" format="webp" quality="80" loading="lazy" />
                   <div v-else class="accessory-placeholder">{{ accessory.name.charAt(0) }}</div>
                 </div>
                 <div class="accessory-info">
@@ -321,7 +323,7 @@
                   <span class="tick-icon">✓</span>
                 </div>
                 <div class="pack-image">
-                  <img v-if="pack.image" :src="pack.image" :alt="pack.name" width="200" height="150" />
+                  <NuxtImg v-if="pack.image" :src="pack.image" :alt="pack.name" width="200" height="150" format="webp" quality="80" loading="lazy" />
                 </div>
                 <div class="pack-info">
                   <h4 class="pack-name">{{ pack.name }}</h4>
@@ -402,7 +404,7 @@
                       <span v-if="isPackSelected(pack.id)" class="check">✓</span>
                     </div>
                     <div class="card-image">
-                      <img v-if="pack.image" :src="pack.image" :alt="pack.name" width="200" height="150" />
+                      <NuxtImg v-if="pack.image" :src="pack.image" :alt="pack.name" width="200" height="150" format="webp" quality="80" loading="lazy" />
                     </div>
                     <div class="card-content">
                       <h4 class="card-name">{{ pack.name }}</h4>
@@ -425,7 +427,7 @@
                     <span v-if="isAccessorySelected(accessory.id)" class="check">✓</span>
                   </div>
                   <div class="card-image">
-                    <img v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" width="200" height="150" />
+                    <NuxtImg v-if="accessory.image || accessory.thumbnail" :src="accessory.thumbnail || accessory.image" :alt="accessory.name" width="200" height="150" format="webp" quality="80" loading="lazy" />
                   </div>
                   <div class="card-content">
                     <h4 class="card-name">{{ accessory.name }}</h4>
@@ -446,7 +448,7 @@
               <button class="modal-close" @click="showGenuineBenefitsModal = false">×</button>
               <div class="benefits-content">
                 <div class="benefits-image">
-                  <img src="https://www.hyundai.com/content/dam/hyundai/au/en/images/accessories/hyundai-au-en-accessories-genuine-accessories-1120x840.jpg" alt="Hyundai Genuine Accessories" />
+                  <NuxtImg src="https://www.hyundai.com/content/dam/hyundai/au/en/images/accessories/hyundai-au-en-accessories-genuine-accessories-1120x840.jpg" alt="Hyundai Genuine Accessories" width="560" height="420" format="webp" quality="80" />
                 </div>
                 <div class="benefits-text">
                   <h2>Hyundai Genuine Accessories.</h2>
@@ -464,7 +466,7 @@
               <div class="option-pack-modal-content">
                 <!-- Pack Image -->
                 <div v-if="selectedOptionPackDetails.modalImage" class="pack-modal-image">
-                  <img :src="selectedOptionPackDetails.modalImage" :alt="selectedOptionPackDetails.title || selectedOptionPackDetails.name" />
+                  <NuxtImg :src="selectedOptionPackDetails.modalImage" :alt="selectedOptionPackDetails.title || selectedOptionPackDetails.name" width="480" height="300" format="webp" quality="80" />
                 </div>
                 
                 <!-- Pack Info -->
@@ -505,15 +507,19 @@
                 <!-- Left: Images -->
                 <div class="detail-images">
                   <div class="main-image">
-                    <img 
-                      :src="selectedAccessoryDetail.image || selectedAccessoryDetail.thumbnail" 
+                    <NuxtImg
+                      :src="selectedAccessoryDetail.image || selectedAccessoryDetail.thumbnail"
                       :alt="selectedAccessoryDetail.name"
+                      width="480"
+                      height="360"
+                      format="webp"
+                      quality="85"
                     />
                   </div>
                   <!-- Thumbnail gallery if we have multiple images -->
                   <div v-if="selectedAccessoryDetail.thumbnail && selectedAccessoryDetail.image" class="image-thumbnails">
-                    <img :src="selectedAccessoryDetail.image" :alt="selectedAccessoryDetail.name" class="thumb active" />
-                    <img v-if="selectedAccessoryDetail.thumbnail" :src="selectedAccessoryDetail.thumbnail" :alt="selectedAccessoryDetail.name" class="thumb" />
+                    <NuxtImg :src="selectedAccessoryDetail.image" :alt="selectedAccessoryDetail.name" class="thumb active" width="80" height="60" format="webp" quality="80" />
+                    <NuxtImg v-if="selectedAccessoryDetail.thumbnail" :src="selectedAccessoryDetail.thumbnail" :alt="selectedAccessoryDetail.name" class="thumb" width="80" height="60" format="webp" quality="80" />
                   </div>
                 </div>
                 

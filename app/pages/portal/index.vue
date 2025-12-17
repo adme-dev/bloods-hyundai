@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center gap-4">
             <NuxtLink to="/">
-              <img src="/assets/logos/logo-black-sm.svg" alt="Sale Hyundai" class="h-8" />
+              <NuxtImg src="/assets/logos/logo-black-sm.svg" alt="Sale Hyundai" class="h-8" width="80" height="32" />
             </NuxtLink>
             <span class="text-lg font-semibold text-gray-900">Customer Portal</span>
           </div>

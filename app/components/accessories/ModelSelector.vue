@@ -14,12 +14,16 @@
 
         <!-- Model Image -->
         <div class="model-image-wrapper">
-          <img
+          <NuxtImg
             :src="model.image || '/images/placeholder-car.png'"
             :alt="model.name"
             class="model-image"
             loading="lazy"
-          >
+            width="300"
+            height="200"
+            format="webp"
+            quality="80"
+          />
         </div>
       </button>
     </div>

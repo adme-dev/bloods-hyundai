@@ -19,8 +19,8 @@
           <!-- Header -->
           <header class="mobile-site-menu__header">
             <NuxtLink to="/" class="mobile-site-menu__logo" @click="close">
-              <img 
-                src="/assets/logos/logo-white-sm.svg" 
+              <NuxtImg
+                src="/assets/logos/logo-white-sm.svg"
                 :alt="siteName"
                 width="80"
                 height="42"
@@ -117,11 +117,15 @@
                           @click="close"
                         >
                           <div class="mobile-site-menu__vehicle-image">
-                            <img 
+                            <NuxtImg
                               v-if="vehicle.image"
                               :src="vehicle.image"
                               :alt="vehicle.name"
                               loading="lazy"
+                              width="120"
+                              height="75"
+                              format="webp"
+                              quality="80"
                             />
                             <div v-else class="mobile-site-menu__vehicle-placeholder">
                               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

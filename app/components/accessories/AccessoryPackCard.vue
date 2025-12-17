@@ -24,13 +24,17 @@
       class="relative aspect-[16/10] w-full cursor-pointer overflow-hidden bg-slate-50"
       @click="$emit('view-details', pack)"
     >
-      <img
+      <NuxtImg
         v-if="pack.image"
         :src="pack.image"
         :alt="pack.name"
         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         loading="lazy"
-      >
+        width="320"
+        height="200"
+        format="webp"
+        quality="80"
+      />
       <div v-else class="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-100 to-amber-50">
         <svg class="h-20 w-20 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clip-rule="evenodd" />

@@ -66,16 +66,19 @@
 
                 <!-- Vehicle Image -->
                 <div class="vehicle-image-container">
-                  <NuxtLink 
-                    :to="`/vehicle/${entry.slug}`" 
+                  <NuxtLink
+                    :to="`/vehicle/${entry.slug}`"
                     class="vehicle-image-link">
-                    <img 
-                      :data-src="entry.image" 
-                      :alt="entry.name || entry.model" 
+                    <NuxtImg
+                      :src="entry.image"
+                      :alt="entry.name || entry.model"
                       class="vehicle-image"
                       width="640"
                       height="331"
-                      uk-img />
+                      loading="lazy"
+                      format="webp"
+                      quality="80"
+                    />
                   </NuxtLink>
                 </div>
 

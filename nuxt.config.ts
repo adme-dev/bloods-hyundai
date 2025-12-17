@@ -9,10 +9,15 @@ export default defineNuxtConfig({
     'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
     'nuxt-gtag',
-    '@nuxtjs/seo', // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
-    '@fedorae/nuxt-uikit', // UIkit loaded globally
-    '@unocss/nuxt', // UnoCSS/Tailwind utilities - used globally for all pages
+    '@nuxt/image',
+    // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
+    '@nuxtjs/seo',
+    // UIkit loaded globally
+    '@fedorae/nuxt-uikit',
+    // UnoCSS/Tailwind utilities - used globally for all pages
     // Note: @nuxtjs/tailwindcss removed - UnoCSS with Tailwind preset handles all utility classes
+    '@unocss/nuxt',
+    'nuxt-vitalizer',
   ],
 
   // Pinia Persisted State configuration
@@ -271,13 +276,67 @@ export default defineNuxtConfig({
     writeEarlyHints: false,
   },
 
+  // Nuxt Vitalizer - Lighthouse score optimization
+  // Disables prefetch/preload links that can hurt LCP and FCP scores
+  vitalizer: {
+    disablePrefetchLinks: true,
+    disablePreloadLinks: true,
+  },
+
+  // Nuxt Image - Image optimization and CDN integration
+  image: {
+    // Quality setting for optimized images
+    quality: 80,
+    // Default format (webp for better compression)
+    format: ['webp', 'jpg'],
+    // Responsive image sizes
+    screens: {
+      xs: 320,
+      sm: 640,
+      md: 768,
+      lg: 1024,
+      xl: 1280,
+      xxl: 1536,
+    },
+    // Allow images from these domains
+    domains: [
+      'hyundaioem.b-cdn.net',
+      'salehyundai.com.au',
+    ],
+    // BunnyCDN provider configuration
+    providers: {
+      bunny: {
+        provider: 'bunny',
+        options: {
+          baseURL: 'https://hyundaioem.b-cdn.net',
+        },
+      },
+    },
+    // Presets for common image sizes
+    presets: {
+      thumbnail: {
+        modifiers: {
+          width: 300,
+          height: 200,
+          fit: 'cover',
+        },
+      },
+      card: {
+        modifiers: {
+          width: 600,
+          height: 400,
+          fit: 'cover',
+        },
+      },
+      hero: {
+        modifiers: {
+          width: 1600,
+          height: 900,
+          fit: 'cover',
+        },
+      },
+    },
+  },
+
   compatibilityDate: '2024-12-05',
 });
-
-
-
-
-
-
-
-

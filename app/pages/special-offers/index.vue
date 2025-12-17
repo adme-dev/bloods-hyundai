@@ -7,10 +7,14 @@
 
     <!-- Hero Banner from Hyundai OEM -->
     <div v-if="offersData?.heroBanner" class="offers-hero-banner">
-      <img 
-        :src="offersData.heroBanner" 
+      <NuxtImg
+        :src="offersData.heroBanner"
         alt="Surprisingly Big Offers on now! Unlock offers across a selected range."
         class="hero-banner-image"
+        width="1920"
+        height="600"
+        format="webp"
+        quality="80"
       />
     </div>
 
@@ -85,11 +89,15 @@
             class="model-card"
           >
             <div class="model-image-container">
-              <img 
-                :src="model.image" 
+              <NuxtImg
+                :src="model.image"
                 :alt="model.imageAltText || model.name"
                 class="model-image"
                 loading="lazy"
+                width="400"
+                height="225"
+                format="webp"
+                quality="80"
               />
             </div>
             

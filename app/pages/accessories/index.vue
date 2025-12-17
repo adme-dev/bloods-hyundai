@@ -103,12 +103,16 @@
           <div class="selected-model-header">
             <div class="selected-model-info">
               <div class="model-image-container">
-                <img
+                <NuxtImg
                   v-if="accessoriesStore.selectedModel.image"
                   :src="accessoriesStore.selectedModel.image"
                   :alt="accessoriesStore.selectedModel.name"
                   class="model-header-image"
-                >
+                  width="80"
+                  height="60"
+                  format="webp"
+                  quality="80"
+                />
               </div>
               <div class="model-info-text">
                 <h2 class="model-title">{{ accessoriesStore.selectedModel.name }}</h2>
