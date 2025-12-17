@@ -285,6 +285,7 @@ export default defineNuxtConfig({
 
   // Nuxt Image - Image optimization and CDN integration
   image: {
+    // Netlify provider auto-detects in production; use ipx locally for dev parity
     // Quality setting for optimized images
     quality: 80,
     // Default format (webp for better compression)
@@ -298,12 +299,15 @@ export default defineNuxtConfig({
       xl: 1280,
       xxl: 1536,
     },
-    // Allow images from these domains
+    // Allow images from these domains (required for Netlify Image CDN)
     domains: [
       'hyundaioem.b-cdn.net',
       'salehyundai.com.au',
+      'driveAgentMedia.b-cdn.net',
+      'www.hyundai.com',
+      'carsales.pxcrush.net',
     ],
-    // BunnyCDN provider configuration
+    // BunnyCDN provider configuration (fallback/alternative)
     providers: {
       bunny: {
         provider: 'bunny',

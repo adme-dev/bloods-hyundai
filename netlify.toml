@@ -47,6 +47,17 @@
   [headers.values]
     Cache-Control = "public, max-age=3600, must-revalidate"
 
+# Netlify Image CDN - Allow remote images from these domains
+# Required for NuxtImage to work with external image sources
+[images]
+  remote_images = [
+    "https://hyundaioem.b-cdn.net/.*",
+    "https://salehyundai.com.au/.*",
+    "https://driveAgentMedia.b-cdn.net/.*",
+    "https://www.hyundai.com/.*",
+    "https://carsales.pxcrush.net/.*"
+  ]
+
 
 
 
