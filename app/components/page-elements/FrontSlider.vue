@@ -15,8 +15,6 @@
             :alt="strippedHeadingContent(slide.heading_content)"
             class="slide-image-wrapper"
             :img-attrs="{ class: 'slide-image' }"
-            width="1600"
-            height="900"
             sizes="sm:100vw md:80vw"
             :loading="index === 0 ? 'eager' : 'lazy'"
             format="webp"
@@ -85,8 +83,6 @@
                 :alt="strippedHeadingContent(slide.heading_content)"
                 class="slide-image-wrapper"
                 :img-attrs="{ class: 'slide-image' }"
-                width="1600"
-                height="900"
                 sizes="sm:100vw md:80vw"
                 :loading="index === 0 ? 'eager' : 'lazy'"
                 format="webp"
@@ -144,8 +140,6 @@
                 :alt="strippedHeadingContent(homeSlides[0].heading_content)"
                 class="slide-image-wrapper"
                 :img-attrs="{ class: 'slide-image' }"
-                width="1600"
-                height="900"
                 sizes="sm:100vw md:80vw"
                 loading="eager"
                 format="webp"
@@ -338,7 +332,6 @@ onMounted(() => {
 .slide-image {
   width: 100%;
   height: auto;
-  object-fit: cover;
   display: block;
 }
 
