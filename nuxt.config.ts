@@ -285,8 +285,9 @@ export default defineNuxtConfig({
 
   // Nuxt Image - Image optimization and CDN integration
   image: {
-    // Use Netlify provider for consistent SSR/client URL generation
-    provider: process.env.NETLIFY ? 'netlify' : 'ipx',
+    // Use Netlify provider in production for consistent SSR/client URL generation
+    // NODE_ENV is available in both server and client bundles
+    provider: process.env.NODE_ENV === 'production' ? 'netlify' : 'ipx',
     // Quality setting for optimized images
     quality: 80,
     // Default format (webp for better compression)
