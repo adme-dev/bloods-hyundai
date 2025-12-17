@@ -2,7 +2,9 @@
   <!-- Off-canvas models menu -->
   <div id="offcanvas-models" uk-offcanvas="flip: true; overlay: true; mode: slide">
     <div class="uk-offcanvas-bar uk-padding-remove uk-background-secondary" style="width: 100%; max-width: 100%;">
-      <LazyNavModels />
+      <ClientOnly>
+        <LazyNavModels />
+      </ClientOnly>
     </div>
   </div>
 </template>

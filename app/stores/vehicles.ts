@@ -151,15 +151,15 @@ export const useVehiclesStore = defineStore('vehicles', () => {
 
   // Actions
   /**
-   * Hydrate store from SSR payload data
-   * This method reads from the Nuxt payload (populated during SSR)
-   * No client-side network request is made
+   * Hydrate vehicles data from Nuxt payload
+   * Data is preloaded server-side via vehicles-data.server.ts plugin
+   * No client-side API calls are made - data is always in SSR payload
    */
   const fetchVehicles = async () => {
     if (isDataLoaded.value) return;
 
     try {
-      // Try to get data from Nuxt payload (SSR hydrated data)
+      // Get data from Nuxt payload (populated by vehicles-data.server.ts plugin)
       const nuxtApp = useNuxtApp();
       const cachedData = nuxtApp.payload?.data?.[CACHE_KEY] || nuxtApp.static?.data?.[CACHE_KEY];
 
@@ -167,17 +167,8 @@ export const useVehiclesStore = defineStore('vehicles', () => {
         vehicles.value = cachedData.vehiclesData || [];
         filters.value = cachedData.filters || [];
         isDataLoaded.value = true;
-        return;
-      }
-
-      // Fallback: If no SSR data, fetch server-side only (should not happen in normal flow)
-      if (import.meta.server) {
-        const response = await $fetch<{ vehiclesData: Vehicle[]; filters: Filters }>(
-          '/api/carsales-feed'
-        );
-        vehicles.value = response.vehiclesData;
-        filters.value = response.filters;
-        isDataLoaded.value = true;
+      } else {
+        console.warn('[vehicles store] No vehicle data in payload - check vehicles-data.server.ts plugin');
       }
     } catch (error) {
       console.error('Error hydrating vehicles store:', error);

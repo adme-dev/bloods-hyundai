@@ -225,9 +225,6 @@ export default defineNuxtConfig({
       },
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-        // Preload critical fonts for faster text rendering
-        { rel: 'preload', href: '/_nuxt/assets/fonts/HyundaiSansText-Regular.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' },
-        { rel: 'preload', href: '/_nuxt/assets/fonts/HyundaiSansHead-Medium.woff2', as: 'font', type: 'font/woff2', crossorigin: 'anonymous' },
         // Preconnect to external resources for faster loading
         { rel: 'preconnect', href: 'https://hyundaioem.b-cdn.net' },
         { rel: 'dns-prefetch', href: 'https://hyundaioem.b-cdn.net' },
@@ -266,6 +263,12 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
     typeCheck: false, // Enable later when migration is complete
+  },
+
+  // Experimental features
+  experimental: {
+    // Disable automatic image preloading - causes warnings with ClientOnly components
+    writeEarlyHints: false,
   },
 
   compatibilityDate: '2024-12-05',
