@@ -82,8 +82,8 @@
                     <div class="flex items-center gap-3">
                       <div class="h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-slate-100">
                         <NuxtImg
-                          v-if="item.accessory.image || item.accessory.thumbnail"
-                          :src="item.accessory.image || item.accessory.thumbnail"
+                          v-if="getItemImage(item)"
+                          :src="getItemImage(item)!"
                           :alt="item.accessory.name"
                           class="h-full w-full object-contain p-1"
                           width="40"
@@ -301,6 +301,14 @@ const formatPrice = (price: number) => {
   return price.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
+// Get image URL from cart item (handles both Accessory and AccessoryPack types)
+const getItemImage = (item: CartItem): string | null => {
+  const acc = item.accessory;
+  if (acc.image) return acc.image;
+  if ('thumbnail' in acc && acc.thumbnail) return acc.thumbnail;
+  return null;
+};
+
 const validateForm = () => {
   // Clear previous errors
   Object.keys(errors).forEach(key => delete errors[key]);
@@ -351,7 +359,7 @@ const handleSubmit = async () => {
       subtotal: item.accessory.price * item.quantity,
       // Include image URLs for display in CRM
       image: item.accessory.image || null,
-      thumbnail: item.accessory.thumbnail || null,
+      thumbnail: 'thumbnail' in item.accessory ? item.accessory.thumbnail : null,
     }));
 
     // Submit to API

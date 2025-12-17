@@ -246,7 +246,7 @@
           <!-- Main Content -->
           <div class="main-content-area">
             <!-- Results Header with Mobile Filter Button -->
-            <div class="results-header">
+            <div ref="resultsHeaderRef" class="results-header">
               <p class="results-count">
                 Showing <strong>{{ accessoriesStore.filteredAccessories.length }}</strong> accessories
               </p>
@@ -525,6 +525,34 @@ const showDetailModal = ref(false);
 const selectedAccessory = ref<Accessory | null>(null);
 const showMobileFilters = ref(false);
 const showEnquiryModal = ref(false);
+
+// Scroll to results ref
+const resultsHeaderRef = ref<HTMLElement | null>(null);
+
+// Scroll to results helper
+const scrollToResults = () => {
+  nextTick(() => {
+    if (resultsHeaderRef.value) {
+      resultsHeaderRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+};
+
+// Watch for filter changes and scroll to results
+watch(
+  () => [
+    accessoriesStore.selectedCategory,
+    accessoriesStore.searchQuery,
+    accessoriesStore.showOnlyPopular,
+    accessoriesStore.sortBy,
+  ],
+  () => {
+    // Only scroll if we have a selected model (i.e., we're viewing accessories)
+    if (accessoriesStore.selectedModel) {
+      scrollToResults();
+    }
+  }
+);
 
 // Model category filter
 const selectedModelCategory = ref<string | null>(null);

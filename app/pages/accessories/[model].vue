@@ -217,7 +217,7 @@
         <!-- Main Content -->
         <div class="flex-1">
           <!-- Results Header -->
-          <div class="mb-4 flex items-center justify-between">
+          <div ref="resultsHeaderRef" class="mb-4 flex items-center justify-between">
             <p class="text-sm text-slate-500">
               Showing <strong class="text-slate-900">{{ accessoriesStore.filteredAccessories.length }}</strong> accessories
             </p>
@@ -376,6 +376,31 @@ useSchemaOrg([
 // Modal state
 const showDetailModal = ref(false);
 const selectedAccessory = ref<Accessory | null>(null);
+
+// Scroll to results ref
+const resultsHeaderRef = ref<HTMLElement | null>(null);
+
+// Scroll to results helper
+const scrollToResults = () => {
+  nextTick(() => {
+    if (resultsHeaderRef.value) {
+      resultsHeaderRef.value.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+};
+
+// Watch for filter changes and scroll to results
+watch(
+  () => [
+    accessoriesStore.selectedCategory,
+    accessoriesStore.searchQuery,
+    accessoriesStore.showOnlyPopular,
+    accessoriesStore.sortBy,
+  ],
+  () => {
+    scrollToResults();
+  }
+);
 
 // Computed
 const hasActiveFilters = computed(() => {

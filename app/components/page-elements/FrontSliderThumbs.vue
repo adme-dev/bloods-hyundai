@@ -37,8 +37,6 @@
                     :alt="thumb.button_text || siteName"
                     class="thumb-image"
                     loading="lazy"
-                    width="320"
-                    height="200"
                     format="webp"
                     quality="80"
                   />
@@ -206,8 +204,8 @@ onUnmounted(() => {
 
 .thumb-image {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  display: block;
   transition: transform 0.4s ease;
 }
 

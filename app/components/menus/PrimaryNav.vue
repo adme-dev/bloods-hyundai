@@ -37,18 +37,18 @@
               <ul class="hidden lg:flex items-center gap-2 list-none m-0 p-0">
               <!-- Models Dropdown -->
               <li class="relative" id="models-nav-item">
-                <a 
-                  href="#" 
+                <NuxtLink
+                  to="/models"
                   class="flex items-center gap-1 px-4 py-2 text-black font-semibold text-sm hover:text-gray-700 transition-colors cursor-pointer"
-                  id="models-nav-link" 
-                  @mouseenter="showModelsMenu" 
+                  id="models-nav-link"
+                  @mouseenter="showModelsMenu"
                   @mouseleave="hideModelsMenu"
                 >
                   Models
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
-                </a>
+                </NuxtLink>
               </li>
 
               <!-- Dynamic Nav Items -->
@@ -116,16 +116,33 @@
                 <span class="text-base font-bold text-black">{{ siteName }}</span>
               </a>
 
+              <!-- Accessories Cart -->
+              <button
+                v-if="accessoriesCartCount > 0"
+                class="relative text-black hover:text-gray-700 transition-colors"
+                title="Accessories Cart"
+                @click="openAccessoriesCart"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span
+                  class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
+                >
+                  {{ accessoriesCartCount }}
+                </span>
+              </button>
+
               <!-- Saved Vehicles / Favorites -->
-              <NuxtLink 
-                to="/favorites" 
+              <NuxtLink
+                to="/favorites"
                 class="relative text-black hover:text-gray-700 transition-colors"
                 title="Saved Vehicles"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-                <span 
+                <span
                   v-if="savedVehicleCount > 0"
                   class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white"
                 >
@@ -173,17 +190,33 @@
             </div>
 
             <!-- Mobile Right: Icons -->
-            <div class="lg:hidden flex items-center gap-4 ml-auto">
-              <button 
-                @click="openSearch" 
+            <div class="lg:hidden flex items-center gap-3 ml-auto">
+              <!-- Mobile Accessories Cart -->
+              <button
+                v-if="accessoriesCartCount > 0"
+                class="relative p-2 text-black hover:text-gray-700 transition-colors"
+                title="Accessories Cart"
+                @click="openAccessoriesCart"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span
+                  class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
+                >
+                  {{ accessoriesCartCount }}
+                </span>
+              </button>
+              <button
+                @click="openSearch"
                 class="p-2 text-black hover:text-gray-700 transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
-              <button 
-                @click="openDrawer" 
+              <button
+                @click="openDrawer"
                 class="p-2 text-black hover:text-gray-700 transition-colors"
                 title="Menu"
               >
@@ -196,7 +229,7 @@
         </div>
         
         <!-- Full-width Models Dropdown -->
-        <div 
+        <div
           id="vehicle-nav-dropdown"
           class="nav-dropdown fixed left-0 right-0 w-screen max-w-none overflow-y-auto m-0 p-0 bg-white shadow-lg z-[1000] border-t border-gray-200 pointer-events-auto hidden opacity-0 -translate-y-2.5 transition-all duration-200 ease-in-out"
           @mouseenter="keepModelsMenuOpen"
@@ -205,8 +238,31 @@
           <LazyNavModels />
         </div>
       </nav>
+
+      <!-- Accessories Cart Sidebar (global) -->
+      <AccessoriesCart
+        :show="accessoriesStore.showCart"
+        :items="accessoriesStore.cartItems"
+        :total="accessoriesStore.cartTotal"
+        :selected-model="accessoriesStore.selectedModel"
+        @close="accessoriesStore.toggleCart(false)"
+        @remove="accessoriesStore.removeFromCart"
+        @update-quantity="accessoriesStore.updateCartQuantity"
+        @clear="accessoriesStore.clearCart()"
+        @enquire="handleAccessoriesEnquire"
+      />
+
+      <!-- Accessories Enquiry Modal (global) -->
+      <AccessoriesEnquiryModal
+        :show="showAccessoriesEnquiryModal"
+        :items="accessoriesStore.cartItems"
+        :total="accessoriesStore.cartTotal"
+        :selected-model="accessoriesStore.selectedModel"
+        @close="showAccessoriesEnquiryModal = false"
+        @submitted="handleAccessoriesEnquirySubmitted"
+      />
     </div>
-    
+
     <template #fallback>
       <div class="hidden md:block h-10 bg-[#1a1a1a]"></div>
       <div class="h-16 bg-white"></div>
@@ -216,6 +272,7 @@
 
 <script setup lang="ts">
 const mainStore = useMainStore();
+const accessoriesStore = useAccessoriesStore();
 const eventBus = useEventBus();
 const route = useRoute();
 
@@ -237,6 +294,28 @@ const savedVehicleCount = computed(() => {
   }
   return 0;
 });
+
+// Accessories cart count for badge
+const accessoriesCartCount = computed(() => accessoriesStore.cartItemCount);
+
+// Accessories enquiry modal state
+const showAccessoriesEnquiryModal = ref(false);
+
+// Open accessories cart
+const openAccessoriesCart = () => {
+  accessoriesStore.toggleCart(true);
+};
+
+// Handle accessories enquire - open the enquiry modal
+const handleAccessoriesEnquire = () => {
+  accessoriesStore.toggleCart(false);
+  showAccessoriesEnquiryModal.value = true;
+};
+
+// Handle successful accessories enquiry submission
+const handleAccessoriesEnquirySubmitted = () => {
+  showAccessoriesEnquiryModal.value = false;
+};
 
 // Menu from site config
 const menu = computed(() => {
