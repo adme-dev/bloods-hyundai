@@ -1,5 +1,5 @@
 <template>
-  <div class="uk-background-default">
+  <div class="variant-slider-wrapper">
     <!-- Loading State -->
     <div v-if="loading" class="uk-text-center uk-padding-large">
       <div uk-spinner="ratio: 2"></div>
@@ -54,8 +54,8 @@
 
         <div class="uk-width-1-1 uk-height-medium uk-position-top linear-gradient"></div>
 
-        <ul 
-          class="uk-slider-items uk-grid-collapse uk-child-width-1-2@s uk-child-width-1-3@m uk-child-width-1-4@l uk-child-width-1-5@xl" 
+        <ul
+          class="uk-slider-items uk-grid-collapse uk-child-width-1-2@s uk-child-width-1-3@m uk-child-width-1-4@l uk-child-width-1-5@xl"
           :class="[itemsCount < 5 ? 'uk-flex uk-flex-center@m' : '']"
         >
           <li
@@ -64,67 +64,86 @@
             class="uk-position-relative uk-padding-small"
             tabindex="0"
           >
-            <div class="uk-link-heading">
-              <div class="uk-pane">
-                <!-- Variant Image -->
-                <div class="uk-text-center uk-margin-bottom">
-                  <NuxtImg
-                    v-if="item.image"
-                    :src="item.image"
-                    :alt="item.name"
-                    class="uk-width-1-1"
-                    style="max-height: 200px; object-fit: contain;"
-                    loading="lazy"
-                    width="320"
-                    height="200"
-                    format="webp"
-                    quality="80"
-                  />
-                  <div v-else class="uk-background-muted uk-width-1-1 uk-flex uk-flex-center uk-flex-middle" style="height: 200px;">
-                    <span uk-icon="icon: image; ratio: 2" class="uk-text-muted"></span>
-                  </div>
-                  <div class="uk-h4 uk-text-bold uk-margin-small-top">{{ item.name }}</div>
-                  <div v-if="item.priceEnabled && item.lowestPrice" class="uk-text-primary uk-text-bold">
-                    From ${{ formatPrice(item.lowestPrice) }} Drive Away
+            <div class="variant-card">
+              <!-- Offer Badge -->
+              <div v-if="getVariantGroupOffers(item.name).length > 0" class="variant-offer-badge">
+                SPECIAL OFFER
+              </div>
+
+              <!-- Variant Image -->
+              <div class="variant-image-container">
+                <NuxtImg
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.name"
+                  class="variant-image"
+                  loading="lazy"
+                  width="320"
+                  height="180"
+                  format="webp"
+                  quality="80"
+                />
+                <div v-else class="variant-image-placeholder">
+                  <span uk-icon="icon: image; ratio: 2"></span>
+                </div>
+              </div>
+
+              <!-- Variant Info -->
+              <div class="variant-info">
+                <h3 class="variant-name">{{ item.name }}</h3>
+                <div v-if="item.priceEnabled && item.lowestPrice" class="variant-price">
+                  From ${{ formatPrice(item.lowestPrice) }} <span class="price-label">Drive Away</span>
+                </div>
+              </div>
+
+              <!-- Offer Cards -->
+              <div v-if="getVariantGroupOffers(item.name).length > 0" class="variant-offers">
+                <div
+                  v-for="offer in getVariantGroupOffers(item.name).slice(0, 2)"
+                  :key="offer.offerId"
+                  class="offer-item"
+                >
+                  <span class="offer-type-badge">{{ offer.type }}</span>
+                  <div class="offer-content">
+                    <span class="offer-value">{{ offer.formattedValue }}</span>
+                    <span class="offer-title">{{ offer.title }}</span>
                   </div>
                 </div>
+              </div>
 
-                <div class="uk-width-1-1">
-                  <div class="uk-padding-small uk-padding-remove-top uk-text-center">
-                    <NuxtLink
-                      :to="`/calculator/${model}`"
-                      class="uk-button uk-button-default uk-button-border uk-text-primary border-radius-50 uk-width-auto uk-margin-small-top"
-                    >
-                      <strong>Enquire</strong> Today
-                    </NuxtLink>
-                  </div>
+              <!-- Features List -->
+              <div v-if="item.features && item.features.length > 0" class="variant-features">
+                <div class="features-header">Key Features</div>
+                <ul class="features-list">
+                  <li
+                    v-for="(feature, fIndex) in getVisibleFeatures(item.features, index)"
+                    :key="fIndex"
+                    v-html="getFeatureText(feature)"
+                  ></li>
+                </ul>
+                <button
+                  v-if="item.features.length > 5"
+                  class="features-toggle"
+                  @click="toggleFeatures(index)"
+                >
+                  <span :uk-icon="showAllFeatures[index] ? 'chevron-up' : 'chevron-down'"></span>
+                  {{ showAllFeatures[index] ? 'Show less' : 'Show more' }}
+                </button>
+              </div>
 
-                  <!-- Features List -->
-                  <div v-if="item.features && item.features.length > 0" class="uk-padding-small">
-                    <div class="uk-text-bold">Key Features</div>
-                    <hr class="uk-margin-small">
-                    <ul class="uk-list uk-list-bullet uk-text-small">
-                      <li 
-                        v-for="(feature, fIndex) in getVisibleFeatures(item.features, index)" 
-                        :key="fIndex" 
-                        v-html="getFeatureText(feature)"
-                      ></li>
-                    </ul>
-                    <button
-                      v-if="item.features.length > 5"
-                      class="uk-button uk-button-link uk-margin-small-bottom"
-                      @click="toggleFeatures(index)"
-                    >
-                      <span :uk-icon="showAllFeatures[index] ? 'chevron-up' : 'chevron-down'"></span>
-                      {{ showAllFeatures[index] ? 'SHOW LESS' : 'SHOW MORE' }}
-                    </button>
-                  </div>
+              <!-- SmartSense Badge -->
+              <div v-if="item.smartSenseIncluded" class="smartsense-badge">
+                <span>SmartSense™ Included</span>
+              </div>
 
-                  <!-- SmartSense Badge -->
-                  <div v-if="item.smartSenseIncluded" class="uk-text-center uk-margin-small">
-                    <span class="uk-badge uk-background-primary">SmartSense™ Included</span>
-                  </div>
-                </div>
+              <!-- CTA Button -->
+              <div class="variant-cta">
+                <NuxtLink
+                  :to="`/calculator/${model}`"
+                  class="hyundai-btn hyundai-btn-primary"
+                >
+                  Enquire Today
+                </NuxtLink>
               </div>
             </div>
           </li>
@@ -159,6 +178,25 @@
 </template>
 
 <script setup lang="ts">
+interface Offer {
+  offerId: string;
+  formattedValue: string;
+  title: string;
+  subtitle?: string;
+  type: string;
+  disclaimerCitation?: string;
+  priority?: number;
+}
+
+interface Variant {
+  id: string;
+  name: string;
+  variantGroup: string;
+  offerPackages?: Array<{
+    offers?: Offer[];
+  }>;
+}
+
 interface Props {
   model: string;
   modelTitle?: string;
@@ -171,6 +209,7 @@ const config = useRuntimeConfig();
 const loading = ref(true);
 const error = ref<string | null>(null);
 const variantGroups = ref<any[]>([]);
+const variants = ref<Variant[]>([]);
 const checkedPowertrain = ref<string[]>([]);
 const showAllFeatures = ref<Record<number, boolean>>({});
 
@@ -186,13 +225,39 @@ const powertrainOptions = computed(() => {
 
 const filteredVariants = computed(() => {
   if (checkedPowertrain.value.length === 0) return variantGroups.value;
-  return variantGroups.value.filter(variant => 
+  return variantGroups.value.filter(variant =>
     checkedPowertrain.value.includes(variant.powertrain)
   );
 });
 
 const itemsCount = computed(() => filteredVariants.value.length);
 const totalCount = computed(() => variantGroups.value.length);
+
+// Get offers for a specific variant group by matching variants
+const getVariantGroupOffers = (variantGroupName: string): Offer[] => {
+  const offers: Offer[] = [];
+  const seenOfferIds = new Set<string>();
+
+  // Find all variants that belong to this variant group
+  const matchingVariants = variants.value.filter(v =>
+    v.variantGroup === variantGroupName || v.name === variantGroupName
+  );
+
+  // Collect all unique offers from matching variants
+  matchingVariants.forEach(variant => {
+    (variant.offerPackages || []).forEach(pkg => {
+      (pkg.offers || []).forEach(offer => {
+        if (!seenOfferIds.has(offer.offerId)) {
+          seenOfferIds.add(offer.offerId);
+          offers.push(offer);
+        }
+      });
+    });
+  });
+
+  // Sort by priority
+  return offers.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+};
 
 // Methods
 const fetchVariants = async () => {
@@ -215,6 +280,7 @@ const fetchVariants = async () => {
 
     if (response.success) {
       variantGroups.value = response.variantGroups || [];
+      variants.value = response.variants || [];
     } else {
       error.value = response.error || 'Failed to load variants';
       console.error('[VariantSlider] Error:', error.value);
@@ -267,74 +333,275 @@ watch(() => props.model, (newVal) => {
 });
 </script>
 
-<style lang="css" scoped>
-.uk-button-border {
-  border: 2px solid rgb(0, 30, 80);
+<style lang="scss" scoped>
+// Hyundai brand colors
+$primary-blue: #002c5f;
+$accent-blue: #00aad2;
+$text-dark: #1a1a1a;
+$text-gray: #666;
+$border-color: #e5e5e5;
+$bg-light: #f8f9fa;
+
+.variant-slider-wrapper {
+  background: #fff;
 }
 
-.border-radius-50 {
-  border-radius: 50px;
+// Variant Card
+.variant-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
 }
 
-.rotate-svg {
-  display: none;
+// Offer Badge
+.variant-offer-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: $accent-blue;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.35rem 0.6rem;
+  letter-spacing: 0.5px;
+  z-index: 10;
 }
 
+// Image
+.variant-image-container {
+  width: 100%;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.variant-image {
+  max-width: 100%;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.variant-image-placeholder {
+  width: 100%;
+  height: 140px;
+  background: $bg-light;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+}
+
+// Info
+.variant-info {
+  margin-bottom: 0.75rem;
+}
+
+.variant-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $text-dark;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.3;
+}
+
+.variant-price {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $primary-blue;
+
+  .price-label {
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: $text-gray;
+  }
+}
+
+// Offers
+.variant-offers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, rgba($accent-blue, 0.06) 0%, rgba($accent-blue, 0.02) 100%);
+  border-radius: 4px;
+}
+
+.offer-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.offer-type-badge {
+  background: $accent-blue;
+  color: #fff;
+  font-size: 0.5rem;
+  font-weight: 700;
+  padding: 0.2rem 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.offer-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.offer-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $primary-blue;
+  line-height: 1.2;
+}
+
+.offer-title {
+  font-size: 0.65rem;
+  color: $text-gray;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+// CTA Button
+.variant-cta {
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.hyundai-btn {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.hyundai-btn-primary {
+  background: $primary-blue;
+  color: #fff;
+
+  &:hover {
+    background: darken($primary-blue, 10%);
+    color: #fff;
+  }
+}
+
+// Features
+.variant-features {
+  flex: 1;
+  border-top: 1px solid $border-color;
+  padding-top: 0.75rem;
+}
+
+.features-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: $text-dark;
+  margin-bottom: 0.5rem;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+
+  li {
+    position: relative;
+    padding-left: 1rem;
+    font-size: 0.75rem;
+    color: $text-dark;
+    line-height: 1.5;
+    margin-bottom: 0.25rem;
+
+    &::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: $primary-blue;
+      font-weight: bold;
+    }
+  }
+}
+
+.features-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  color: $primary-blue;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  margin-top: 0.25rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// SmartSense Badge
+.smartsense-badge {
+  padding-top: 0.5rem;
+
+  span {
+    display: inline-block;
+    background: $primary-blue;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.3rem 0.6rem;
+    border-radius: 2px;
+  }
+}
+
+// Slider styles
 .model-slider .uk-slider-items li {
   opacity: 1;
   transition: opacity 0.3s;
-  -webkit-transition: opacity 0.3s;
-}
-
-.counter-top-center,
-.model-slider-action {
-  opacity: 0;
-  transition: opacity 1.9s;
-  -webkit-transition: opacity 1.9s;
 }
 
 .model-slider .uk-slider-items li {
   cursor: pointer;
 }
 
-.model-slider .uk-slider-items li.uk-active,
-.model-slider .uk-slider-items li.uk-active .counter-top-center,
-.model-slider .uk-slider-items li.uk-active .model-slider-action {
+.model-slider .uk-slider-items li.uk-active {
   opacity: 1;
   cursor: default;
 }
 
 .model-slider .uk-slider-items li:hover:not(.uk-active) {
-  opacity: 0.4;
-}
-
-.sl-position-bottom-nav {
-  position: absolute;
-  bottom: 55%;
-  left: 0;
-  right: 0;
-  z-index: 0;
-}
-
-@media (max-width: 960px) {
-  .model_image_lg {
-    margin-bottom: -220px;
-  }
-}
-
-.model--Category input[type="checkbox"] {
-  display: none;
-}
-
-.model--Category :checked + span {
-  color: #000;
-  border-bottom: 4px solid #ed0000;
-  font-weight: bold;
-}
-
-.model-slider-left,
-.model-slider-right {
-  margin-top: -30px;
+  opacity: 0.7;
 }
 
 .model-slider .linear-gradient {
@@ -347,29 +614,34 @@ watch(() => props.model, (newVal) => {
   );
 }
 
-.uk-list-bullet li {
+// Filter
+.model--Category input[type="checkbox"] {
+  display: none;
+}
+
+.model--Category :checked + span {
   color: #000;
+  border-bottom: 4px solid #ed0000;
+  font-weight: bold;
+}
+
+// Navigation
+.tm-slidenav {
+  padding: 10px;
+  color: #333;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+// Utilities
+.space33 {
+  letter-spacing: 0.33em;
 }
 
 .uk-text-meta-xs {
   font-size: 0.75rem;
   color: #999;
 }
-
-.tm-slidenav {
-  padding: 10px;
-  color: #333;
-}
-
-.tm-slidenav:hover {
-  color: #000;
-}
-
-.space33 {
-  letter-spacing: 0.33em;
-}
 </style>
-
-
-
-

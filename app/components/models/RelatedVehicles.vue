@@ -15,7 +15,7 @@
       <div v-else-if="vehicles.length" class="vehicles-carousel">
         <!-- Previous Button -->
         <button
-          v-if="vehicles.length > 1"
+          v-if="vehicles.length > visibleSlides"
           class="carousel-nav carousel-nav--prev"
           :disabled="!canScrollPrev"
           @click="scrollPrev"
@@ -27,7 +27,7 @@
         </button>
 
         <!-- Carousel Viewport -->
-        <div class="carousel-viewport" ref="emblaRef">
+        <div class="carousel-viewport" ref="viewportRef">
           <div class="carousel-container">
             <div
               v-for="vehicle in vehicles"
@@ -41,7 +41,7 @@
 
         <!-- Next Button -->
         <button
-          v-if="vehicles.length > 1"
+          v-if="vehicles.length > visibleSlides"
           class="carousel-nav carousel-nav--next"
           :disabled="!canScrollNext"
           @click="scrollNext"
@@ -55,7 +55,7 @@
 
       <!-- View All Button -->
       <div v-if="vehicles.length" class="flex justify-center mt-8">
-        <NuxtLink 
+        <NuxtLink
           :to="viewAllLink"
           class="inline-flex items-center gap-2 rounded-xl border-2 border-slate-800 bg-slate-800 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
         >
@@ -70,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import emblaCarouselVue from 'embla-carousel-vue';
+import EmblaCarousel, { type EmblaCarouselType } from 'embla-carousel';
 
 interface Props {
   model?: string;
@@ -84,23 +84,30 @@ const props = withDefaults(defineProps<Props>(), {
 
 const loading = ref(true);
 const vehicles = ref<any[]>([]);
-
-// Embla Carousel setup
-const [emblaRef, emblaApi] = emblaCarouselVue({
-  loop: false,
-  align: 'start',
-  containScroll: 'trimSnaps',
-  slidesToScroll: 1,
-  breakpoints: {
-    '(min-width: 640px)': { slidesToScroll: 2 },
-    '(min-width: 960px)': { slidesToScroll: 3 },
-    '(min-width: 1200px)': { slidesToScroll: 4 },
-  },
-});
+const viewportRef = ref<HTMLElement | null>(null);
+const emblaApi = ref<EmblaCarouselType | null>(null);
 
 // Navigation state
 const canScrollPrev = ref(false);
 const canScrollNext = ref(false);
+
+// Responsive visible slides count
+const visibleSlides = ref(4);
+
+// Update visible slides based on screen width
+const updateVisibleSlides = () => {
+  if (typeof window === 'undefined') return;
+  const width = window.innerWidth;
+  if (width >= 1200) {
+    visibleSlides.value = 4;
+  } else if (width >= 960) {
+    visibleSlides.value = 3;
+  } else if (width >= 640) {
+    visibleSlides.value = 2;
+  } else {
+    visibleSlides.value = 1;
+  }
+};
 
 // Navigation methods
 const scrollPrev = () => emblaApi.value?.scrollPrev();
@@ -113,22 +120,31 @@ const updateButtons = () => {
   canScrollNext.value = emblaApi.value.canScrollNext();
 };
 
-// Watch for embla API initialization
-watch(() => emblaApi.value, (api) => {
-  if (!api) return;
-  
-  updateButtons();
-  api.on('select', updateButtons);
-  api.on('reInit', updateButtons);
-});
+// Initialize Embla carousel
+const initCarousel = () => {
+  if (!viewportRef.value || vehicles.value.length === 0) return;
 
-// Reinitialize carousel when vehicles change
-watch(vehicles, () => {
-  nextTick(() => {
-    emblaApi.value?.reInit();
-    updateButtons();
+  // Destroy existing instance if any
+  if (emblaApi.value) {
+    emblaApi.value.destroy();
+  }
+
+  emblaApi.value = EmblaCarousel(viewportRef.value, {
+    loop: false,
+    align: 'start',
+    containScroll: 'trimSnaps',
+    slidesToScroll: 1,
+    breakpoints: {
+      '(min-width: 640px)': { slidesToScroll: 2 },
+      '(min-width: 960px)': { slidesToScroll: 3 },
+      '(min-width: 1200px)': { slidesToScroll: 4 },
+    },
   });
-});
+
+  emblaApi.value.on('select', updateButtons);
+  emblaApi.value.on('reInit', updateButtons);
+  updateButtons();
+};
 
 const viewAllLink = computed(() => {
   if (props.model) {
@@ -137,30 +153,20 @@ const viewAllLink = computed(() => {
   return '/car-sales';
 });
 
-onMounted(async () => {
-  await fetchVehicles();
-});
-
-watch(() => props.model, () => {
-  fetchVehicles();
-});
-
 const fetchVehicles = async () => {
   loading.value = true;
-  
+
   try {
     const params: Record<string, any> = {
       make: 'hyundai',
       limit: props.limit,
     };
-    
+
     if (props.model) {
       params.model = props.model;
-      // Add makeModels association for proper faceted filtering
       params.makeModels = `hyundai:${props.model}`;
     }
-    
-    // Use the internal /api/search endpoint
+
     const response = await $fetch<any>('/api/search', { params });
     vehicles.value = response.vehicles || [];
   } catch (err) {
@@ -170,6 +176,37 @@ const fetchVehicles = async () => {
     loading.value = false;
   }
 };
+
+// Watch for vehicles to load and init carousel
+watch(vehicles, () => {
+  nextTick(() => {
+    // Give DOM time to render the slides
+    setTimeout(() => {
+      initCarousel();
+    }, 150);
+  });
+});
+
+onMounted(async () => {
+  updateVisibleSlides();
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateVisibleSlides);
+  }
+  await fetchVehicles();
+});
+
+onUnmounted(() => {
+  if (emblaApi.value) {
+    emblaApi.value.destroy();
+  }
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateVisibleSlides);
+  }
+});
+
+watch(() => props.model, () => {
+  fetchVehicles();
+});
 </script>
 
 <style scoped>
@@ -188,6 +225,8 @@ const fetchVehicles = async () => {
 .carousel-container {
   display: flex;
   gap: 1rem;
+  backface-visibility: hidden;
+  touch-action: pan-y pinch-zoom;
 }
 
 .carousel-slide {
@@ -210,7 +249,6 @@ const fetchVehicles = async () => {
 @media (min-width: 1200px) {
   .carousel-slide {
     flex: 0 0 calc(25% - 0.75rem);
-    min-width: 300px;
   }
 }
 
@@ -245,13 +283,9 @@ const fetchVehicles = async () => {
   .carousel-nav {
     display: none;
   }
-  
+
   .vehicles-carousel {
     gap: 0;
   }
 }
 </style>
-
-
-
-
