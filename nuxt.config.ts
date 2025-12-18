@@ -309,6 +309,8 @@ export default defineNuxtConfig({
       'driveagent.b-cdn.net',
       'www.hyundai.com',
       'carsales.pxcrush.net',
+      'lh3.googleusercontent.com',
+      'www.gstatic.com',
     ],
     // BunnyCDN provider configuration (fallback/alternative)
     providers: {
