@@ -83,9 +83,7 @@
                 class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#00aad2]/30 flex flex-col"
               >
                 <!-- Image Area -->
-                <div
-                  class="relative bg-gray-100 overflow-hidden"
-                >
+                <div class="relative overflow-hidden">
                   <!-- Badge -->
                   <div
                     class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
@@ -96,7 +94,7 @@
                   <!-- Image Link -->
                   <NuxtLink
                     :to="`/vehicle/${model.slug}`"
-                    class="block flex items-center justify-center overflow-hidden p-4"
+                    class="block"
                   >
                     <NuxtImg
                       :src="model.model_image"
@@ -105,9 +103,10 @@
                       height="300"
                       fit="contain"
                       loading="lazy"
-                      class="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
+                      class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
                       format="webp"
                       quality="80"
+                      style="background: transparent;"
                     />
                   </NuxtLink>
                 </div>
@@ -236,20 +235,19 @@
                     class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#00aad2]/30 hover:shadow-lg transition-all duration-300 group"
                   >
                     <!-- Image Section -->
-                    <div class="relative w-full bg-gray-100 overflow-hidden">
-                      <div class="flex items-center justify-center overflow-hidden p-4">
-                        <NuxtImg
-                          :src="model.model_image"
-                          :alt="model.title.rendered"
-                          width="550"
-                          height="300"
-                          fit="contain"
-                          loading="lazy"
-                          class="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
-                          format="webp"
-                          quality="80"
-                        />
-                      </div>
+                    <div class="relative w-full overflow-hidden">
+                      <NuxtImg
+                        :src="model.model_image"
+                        :alt="model.title.rendered"
+                        width="550"
+                        height="300"
+                        fit="contain"
+                        loading="lazy"
+                        class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
+                        format="webp"
+                        quality="80"
+                        style="background: transparent;"
+                      />
                       <!-- Badge -->
                       <div
                         class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
