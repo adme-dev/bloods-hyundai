@@ -99,11 +99,11 @@
         <!-- Main Content -->
         <div v-else>
           <!-- Header -->
-          <div class="text-center mb-12">
-            <h2 class="text-3xl sm:text-4xl font-semibold mb-3 text-gray-900 dark:text-white tracking-tight">
+          <div class="text-center mt-10 mb-12">
+            <h2 class="text-3xl sm:text-4xl font-extrabold m-0 text-gray-900 dark:text-white tracking-tight">
               Get matched to your perfect car
             </h2>
-            <p class="text-gray-600 dark:text-[#CCCCCC] text-base mb-10">
+            <p class="text-gray-600 dark:text-[#CCCCCC] text-base mt-0 mb-10">
               Select your preferences to find available vehicles
             </p>
           </div>
