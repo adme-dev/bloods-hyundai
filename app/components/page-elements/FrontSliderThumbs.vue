@@ -39,8 +39,6 @@
                     loading="lazy"
                     format="webp"
                     quality="80"
-                    width="400"
-                    height="300"
                   />
                   <div class="thumb-overlay">
                     <div v-if="thumb.content" class="thumb-content">
