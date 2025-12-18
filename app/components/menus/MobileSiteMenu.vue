@@ -124,7 +124,6 @@
                               loading="lazy"
                               width="120"
                               height="75"
-                              fit="contain"
                               format="webp"
                               quality="80"
                             />

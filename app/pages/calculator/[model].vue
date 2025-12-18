@@ -1777,8 +1777,8 @@ $bg-white: #fff;
   
   .variant-image {
     width: 120px;
-    height: 70px;
-    
+    height: 90px;
+
     img {
       width: 100%;
       height: 100%;
@@ -3701,10 +3701,10 @@ $bg-white: #fff;
   
   .variant-card {
     grid-template-columns: 80px 1fr auto;
-    
+
     .variant-image {
       width: 80px;
-      height: 50px;
+      height: 60px;
     }
   }
   

@@ -78,7 +78,7 @@
 
         <!-- Add to Cart Button -->
         <button
-          v-if="!isInCart"
+          v-if="!showInCart"
           class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-amber-500 text-white shadow-sm transition-all hover:bg-amber-600 hover:shadow-md active:scale-95"
           title="Add pack to cart"
           @click="$emit('add-to-cart', pack)"
@@ -119,6 +119,14 @@ defineEmits<{
   (e: 'view-details', pack: AccessoryPack): void;
   (e: 'view-cart'): void;
 }>();
+
+// Hydration-safe cart state - defer to client to avoid SSR/client mismatch
+const isHydrated = ref(false);
+onMounted(() => {
+  isHydrated.value = true;
+});
+
+const showInCart = computed(() => isHydrated.value && props.isInCart);
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });

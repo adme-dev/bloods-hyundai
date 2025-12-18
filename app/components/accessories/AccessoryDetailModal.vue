@@ -196,7 +196,7 @@
               <!-- Actions -->
               <div class="flex gap-3">
                 <button
-                  v-if="!isInCart"
+                  v-if="!showInCart"
                   class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-base font-semibold text-white shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
                   @click="$emit('add-to-cart', accessory)"
                 >
@@ -258,6 +258,14 @@ defineEmits<{
 }>();
 
 const accessoriesStore = useAccessoriesStore();
+
+// Hydration-safe cart state - defer to client to avoid SSR/client mismatch
+const isHydrated = ref(false);
+onMounted(() => {
+  isHydrated.value = true;
+});
+
+const showInCart = computed(() => isHydrated.value && props.isInCart);
 
 // Image gallery management
 const currentImage = ref<string | null>(null);

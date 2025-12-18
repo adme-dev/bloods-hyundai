@@ -101,12 +101,10 @@
                       :alt="model.title.rendered"
                       width="550"
                       height="300"
-                      fit="contain"
                       loading="lazy"
                       class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
                       format="webp"
                       quality="80"
-                      style="background: transparent;"
                     />
                   </NuxtLink>
                 </div>
@@ -241,12 +239,10 @@
                         :alt="model.title.rendered"
                         width="550"
                         height="300"
-                        fit="contain"
                         loading="lazy"
                         class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
                         format="webp"
                         quality="80"
-                        style="background: transparent;"
                       />
                       <!-- Badge -->
                       <div
