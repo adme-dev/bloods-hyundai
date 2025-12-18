@@ -124,6 +124,7 @@
                               loading="lazy"
                               width="120"
                               height="75"
+                              fit="inside"
                               format="webp"
                               quality="80"
                             />
@@ -1012,6 +1013,7 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 }
 </style>
+
 
 
 

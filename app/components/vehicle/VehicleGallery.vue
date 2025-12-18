@@ -346,3 +346,4 @@ const allPhotosImage = computed(() => {
   border-width: 0;
 }
 </style>
+

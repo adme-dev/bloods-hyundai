@@ -12,15 +12,29 @@
 
     <!-- Vehicle Content -->
     <div v-else-if="vehicle">
-      <!-- Scraped Data Notice -->
-      <div v-if="isScrapedData" class="uk-alert uk-alert-primary uk-margin-remove-bottom" uk-alert>
-        <a class="uk-alert-close" uk-close></a>
-        <p class="uk-margin-remove">
-          <span uk-icon="info" class="uk-margin-small-right"></span>
-          This page shows preliminary information sourced from Hyundai Australia.
-          Full vehicle details coming soon.
-          <NuxtLink :to="`/variant/${slug}`" class="uk-link-text">Enquire now</NuxtLink> for the latest specifications and pricing.
-        </p>
+      <!-- Floating Scraped Data Notice -->
+      <div
+        v-if="isScrapedData && !isAlertDismissed"
+        class="fixed top-24 left-4 z-50 max-w-xs"
+      >
+        <Alert class="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-200 pr-10">
+          <Info />
+          <AlertTitle>Preliminary Information</AlertTitle>
+          <AlertDescription>
+            Data sourced from Hyundai Australia.
+            <a href="#register" uk-scroll="offset: 100" class="underline hover:no-underline font-medium">
+              Register your interest
+            </a>
+          </AlertDescription>
+          <button
+            type="button"
+            class="absolute top-3 right-3 p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            @click="isAlertDismissed = true"
+          >
+            <X class="h-4 w-4" />
+            <span class="sr-only">Dismiss</span>
+          </button>
+        </Alert>
       </div>
 
       <!-- Hero Section -->
@@ -47,8 +61,17 @@
 
                 <!-- CTA Button -->
                 <div class="uk-width-1-1 uk-width-auto@m uk-margin-auto-left@m">
-                  <NuxtLink 
-                    :to="`/calculator/${slug}`" 
+                  <a
+                    v-if="vehicle.form"
+                    href="#register"
+                    uk-scroll="offset: 100"
+                    class="uk-width-1-1 uk-width-auto@s uk-button uk-button-default tm-button-default text-inherit heading-btn"
+                  >
+                    {{ heroSlide.button || 'Register Your Interest' }}
+                  </a>
+                  <NuxtLink
+                    v-else
+                    :to="`/calculator/${slug}`"
                     class="uk-width-1-1 uk-width-auto@s uk-button uk-button-default tm-button-default text-inherit heading-btn"
                   >
                     {{ heroSlide.button || 'Calculate Repayments' }}
@@ -102,6 +125,83 @@
             </ClientOnly>
           </div>
           <div class="uk-position-bottom uk-width-1-1 uk-gradient"></div>
+        </div>
+      </div>
+
+      <!-- Description & Content Sections (for scraped/coming soon vehicles) -->
+      <div v-if="isScrapedData && (vehicle.description || vehicle.contentSections?.length)" id="start" class="uk-section uk-section-default">
+        <div class="uk-container uk-container-large">
+          <!-- Main Description -->
+          <div v-if="vehicle.description" class="uk-text-center uk-margin-large-bottom">
+            <p class="uk-text-lead uk-text-muted" style="max-width: 800px; margin: 0 auto;">
+              {{ vehicle.description }}
+            </p>
+          </div>
+
+          <!-- Content Sections -->
+          <div v-if="vehicle.contentSections?.length" class="uk-margin-large-bottom">
+            <div class="uk-grid uk-grid-large uk-child-width-1-1 uk-child-width-1-2@m" uk-grid>
+              <div v-for="(section, index) in vehicle.contentSections" :key="index">
+                <div class="uk-card uk-card-default uk-card-body">
+                  <h3 v-if="section.heading" class="uk-card-title uk-text-bold">{{ section.heading }}</h3>
+                  <p v-if="section.text" class="uk-text-muted uk-margin-remove-bottom">{{ section.text }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features & Highlights Section (for scraped/coming soon vehicles) -->
+      <div v-if="isScrapedData && (vehicle.features?.length || vehicle.highlights?.length)" class="uk-section uk-section-muted">
+        <div class="uk-container uk-container-large">
+          <!-- Highlights -->
+          <div v-if="vehicle.highlights?.length" class="uk-margin-large-bottom uk-text-center">
+            <h2 class="uk-h2 uk-margin-medium-bottom">What to Expect</h2>
+            <div class="uk-grid uk-grid-medium uk-child-width-1-1 uk-child-width-1-2@s uk-child-width-1-4@m uk-flex-center" uk-grid>
+              <div v-for="(highlight, index) in vehicle.highlights.slice(0, 4)" :key="index">
+                <div class="uk-card uk-card-default uk-card-body uk-card-small uk-border-rounded">
+                  <p class="uk-text-bold uk-margin-remove">{{ highlight }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Features -->
+          <div v-if="vehicle.features?.length">
+            <h2 class="uk-h2 uk-margin-medium-bottom uk-text-center">Key Features</h2>
+            <div class="uk-grid uk-grid-small uk-child-width-1-2 uk-child-width-1-3@s uk-child-width-1-4@m uk-child-width-1-5@l" uk-grid>
+              <div v-for="(feature, index) in vehicle.features" :key="index">
+                <div class="uk-flex uk-flex-middle uk-padding-small uk-background-default uk-border-rounded">
+                  <span uk-icon="icon: check; ratio: 0.8" class="uk-text-primary uk-margin-small-right"></span>
+                  <span class="uk-text-small">{{ feature }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicle Images Gallery (for scraped vehicles with multiple images) -->
+      <div v-if="isScrapedData && vehicle.images?.length > 2" class="uk-section uk-section-muted">
+        <div class="uk-container uk-container-large">
+          <h2 class="uk-h2 uk-margin-medium-bottom uk-text-center">Gallery</h2>
+          <div class="uk-grid uk-grid-small uk-child-width-1-2 uk-child-width-1-3@m" uk-grid uk-lightbox="animation: fade">
+            <div v-for="(image, index) in vehicle.images.slice(0, 6)" :key="index">
+              <a :href="image" :data-caption="`${vehicle.model} - Image ${index + 1}`">
+                <NuxtImg
+                  :src="image"
+                  :alt="`${vehicle.model} gallery image ${index + 1}`"
+                  class="uk-width-1-1 uk-border-rounded"
+                  width="400"
+                  height="300"
+                  format="webp"
+                  quality="80"
+                  style="object-fit: cover; aspect-ratio: 4/3;"
+                />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -165,8 +265,13 @@ import { Navigation, Pagination, Autoplay, Controller, Thumbs } from 'swiper/mod
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
+import { Info, X } from 'lucide-vue-next';
+import { Alert, AlertTitle, AlertDescription } from '~/components/ui/alert';
 
 const route = useRoute();
+
+// State for dismissing the scraped data alert
+const isAlertDismissed = ref(false);
 const vehiclesStore = useVehiclesStore();
 
 // Close enquiry modal

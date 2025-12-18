@@ -13,7 +13,7 @@
     <Transition name="slide-up">
       <div
         v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-100 flex items-center justify-center p-4"
         @click.self="$emit('close')"
       >
         <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl">

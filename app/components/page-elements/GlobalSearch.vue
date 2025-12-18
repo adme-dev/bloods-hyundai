@@ -228,6 +228,22 @@ const eventBus = useEventBus();
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
 
+// Searchable pages index with keywords for better matching
+const SEARCHABLE_PAGES = [
+  { slug: 'car-sales', title: 'Browse Cars for Sale', description: 'View our full inventory of new and used vehicles', keywords: ['buy', 'purchase', 'inventory', 'stock', 'used', 'new', 'cars', 'vehicles'] },
+  { slug: 'special-offers', title: 'Special Offers', description: 'Current deals and promotions on vehicles', keywords: ['deals', 'discounts', 'promotions', 'savings', 'sale', 'offers'] },
+  { slug: 'test-drive', title: 'Book a Test Drive', description: 'Schedule a test drive appointment', keywords: ['try', 'drive', 'appointment', 'booking', 'schedule', 'book'] },
+  { slug: 'contact', title: 'Contact Us', description: 'Get in touch with our team', keywords: ['phone', 'email', 'location', 'hours', 'address', 'directions', 'call'] },
+  { slug: 'sell-my-car', title: 'Sell My Car', description: 'Get a valuation for your vehicle', keywords: ['trade', 'valuation', 'sell', 'trade-in', 'appraisal', 'value'] },
+  { slug: 'models', title: 'Hyundai Models', description: 'Explore the full Hyundai range', keywords: ['range', 'lineup', 'new cars', 'hyundai', 'models', 'vehicles'] },
+  { slug: 'accessories', title: 'Accessories', description: 'Genuine Hyundai accessories and parts', keywords: ['parts', 'add-ons', 'extras', 'genuine', 'accessories'] },
+  { slug: 'build-and-price', title: 'Build & Price', description: 'Configure your perfect Hyundai', keywords: ['configure', 'customize', 'spec', 'options', 'build', 'price', 'calculator'] },
+  { slug: 'favorites', title: 'Saved Vehicles', description: 'View your saved vehicles', keywords: ['saved', 'wishlist', 'liked', 'favorites', 'shortlist'] },
+  { slug: 'compare-vehicles-for-sale', title: 'Compare Vehicles', description: 'Compare vehicles side by side', keywords: ['compare', 'comparison', 'versus', 'vs', 'side by side'] },
+  { slug: 'service', title: 'Book a Service', description: 'Schedule your vehicle service appointment', keywords: ['service', 'maintenance', 'repair', 'booking', 'mechanic', 'workshop', 'logbook'] },
+  { slug: 'site-map', title: 'Site Map', description: 'Navigate our website', keywords: ['sitemap', 'navigation', 'pages', 'links'] },
+];
+
 // State
 const isOpen = ref(false);
 const searchQuery = ref('');
@@ -246,6 +262,19 @@ const modelFuse = computed(() => {
   return new Fuse(mainStore.models, {
     keys: ['name', 'title.rendered', 'slug'],
     threshold: 0.3,
+  });
+});
+
+const pageFuse = computed(() => {
+  return new Fuse(SEARCHABLE_PAGES, {
+    keys: [
+      { name: 'title', weight: 0.4 },
+      { name: 'description', weight: 0.3 },
+      { name: 'keywords', weight: 0.2 },
+      { name: 'slug', weight: 0.1 },
+    ],
+    threshold: 0.4,
+    includeScore: true,
   });
 });
 
@@ -283,8 +312,9 @@ const debouncedSearch = useDebounceFn(() => {
   const modelResults = modelFuse.value.search(searchQuery.value);
   results.value.models = modelResults.map(r => r.item);
 
-  // Pages could be static or from CMS
-  results.value.pages = []; // Add page search if needed
+  // Search pages
+  const pageResults = pageFuse.value.search(searchQuery.value);
+  results.value.pages = pageResults.map(r => r.item);
 
   isSearching.value = false;
 }, 300);
@@ -326,6 +356,9 @@ const handleEnter = () => {
   } else if (results.value.models.length > 0) {
     close();
     navigateTo(`/vehicle/${results.value.models[0].slug}`);
+  } else if (results.value.pages.length > 0) {
+    close();
+    navigateTo(`/${results.value.pages[0].slug}`);
   }
 };
 

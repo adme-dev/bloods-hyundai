@@ -115,7 +115,7 @@
               class="uk-width-1-2@s uk-width-1-4@l uk-width-1-5@xl vehicle-item"
             >
               <div>
-                <div>
+                <div class="vehicle-image-container">
                   <NuxtLink
                     :to="'/vehicle/' + vehicle.slug"
                     class="uk-text-muted"
@@ -124,9 +124,10 @@
                     <NuxtImg
                       :src="vehicle.image"
                       :alt="vehicle.name"
-                      class="uk-display-block"
-                      width="357"
-                      height="185"
+                      class="vehicle-thumbnail"
+                      width="550"
+                      height="300"
+                      fit="inside"
                       loading="lazy"
                       format="webp"
                       quality="80"
@@ -148,13 +149,20 @@
                       >
                         Details
                       </NuxtLink>
-                      <NuxtLink 
+                      <NuxtLink
+                        v-if="!vehicle.isComingSoon"
                         :to="'/calculator/' + vehicle.slug"
                         class="nav-model-btn nav-model-btn--enquire"
                         @click="closeModel"
                       >
                         Enquire
                       </NuxtLink>
+                      <span
+                        v-else
+                        class="nav-model-btn nav-model-btn--coming-soon"
+                      >
+                        Coming Soon
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -385,6 +393,30 @@ const capitalizeFirstLetter = (str: string) => {
   background: #004080;
   border-color: #004080;
   color: #fff !important;
+}
+
+.nav-model-btn--coming-soon {
+  background: #6b7280;
+  border: 2px solid #6b7280;
+  color: #fff !important;
+  cursor: default;
+}
+
+/* Vehicle image container - consistent height with full car visible */
+.vehicle-image-container {
+  height: 155px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Vehicle thumbnail - true-to-size display */
+.vehicle-thumbnail {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 /* Scrollable content area */

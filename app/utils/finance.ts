@@ -20,3 +20,4 @@ export function calculateWeeklyPayment(price: number, annualInterestRate = 9.8, 
 
 
 
+

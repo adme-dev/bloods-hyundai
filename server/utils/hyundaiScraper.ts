@@ -4,7 +4,16 @@
  * Scrapes vehicle information from Hyundai Australia's website
  * when a vehicle is not found in the CDN. This provides fallback
  * data to display basic vehicle pages.
+ *
+ * Uses AI-assisted extraction via Groq when available for better accuracy.
  */
+
+import { extractVehicleDataWithAI, type AIExtractedVehicleData } from './aiScraper';
+
+export interface ContentSection {
+  heading?: string;
+  text?: string;
+}
 
 export interface ScrapedVehicleData {
   slug: string;
@@ -29,9 +38,12 @@ export interface ScrapedVehicleData {
   };
   specs: Record<string, string>;
   features: string[];
+  highlights: string[]; // Key selling points extracted from page
+  contentSections?: ContentSection[]; // Marketing content sections
   images: string[];
   scrapedAt: string;
   isScraped: true;
+  form?: boolean; // True for Register Your Interest vehicles (coming soon)
 }
 
 // URL mapping for Hyundai Australia website
@@ -58,8 +70,11 @@ const HYUNDAI_URL_MAPPINGS: Record<string, string> = {
   'ioniq5n': '/au/en/cars/eco/ioniq5n',
   'ioniq-6': '/au/en/cars/eco/ioniq6-2023',
   'ioniq6': '/au/en/cars/eco/ioniq6-2023',
+  'ioniq-6-n': '/au/en/cars/eco/ioniq6-n-ryi',
+  'ioniq6-n': '/au/en/cars/eco/ioniq6-n-ryi',
   'ioniq-9': '/au/en/cars/eco/ioniq9',
   'ioniq9': '/au/en/cars/eco/ioniq9',
+  'elexio': '/au/en/cars/eco/elexio-ryi',
 
   // Hatchbacks & Sedans
   'i30': '/au/en/cars/small-cars/i30',
@@ -162,7 +177,8 @@ function formatVehicleName(slug: string): string {
     .replace('Palisade', 'PALISADE')
     .replace('Staria', 'STARIA')
     .replace('Sonata', 'SONATA')
-    .replace('Inster', 'INSTER');
+    .replace('Inster', 'INSTER')
+    .replace('Elexio', 'ELEXIO');
 }
 
 /**
@@ -174,6 +190,7 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
     model: slug,
     specs: {},
     features: [],
+    highlights: [],
     images: [],
   };
 
@@ -196,28 +213,42 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
   }
 
   // Extract images from content/dam paths (Hyundai's DAM system)
-  // Priority: hero/banner images first, then model images, then gallery
+  // Priority: hero images first (especially desktop Hero_D), then RYI/model images, then gallery
   const damImageRegex = /["'](\/content\/dam\/hyundai\/au\/en\/[^"']+\.(?:png|jpg|jpeg|webp))["']/gi;
   let match;
-  const heroImages: string[] = [];
-  const modelImages: string[] = [];
-  const otherImages: string[] = [];
+  const heroDesktopImages: string[] = []; // Desktop hero images (1920x720)
+  const heroMobileImages: string[] = [];  // Mobile hero images
+  const ryiImages: string[] = [];         // RYI specific images (Register Your Interest pages)
+  const modelImages: string[] = [];       // Model/vehicle images
+  const otherImages: string[] = [];       // Gallery, feature images
 
   while ((match = damImageRegex.exec(html)) !== null) {
     const imagePath = match[1];
+    if (!imagePath) continue;
+
     const fullUrl = `${HYUNDAI_BASE_URL}${imagePath}`;
 
-    // Skip generic social share images, icons, logos
+    // Skip generic social share images, icons, logos, navigation
     if (imagePath.includes('social-share') ||
         imagePath.includes('/icons/') ||
         imagePath.includes('/logos/') ||
+        imagePath.includes('/navigation/') ||
+        imagePath.includes('/owning/') ||
+        imagePath.includes('/masterbrand/') ||
+        imagePath.includes('/offers-images/') ||
+        imagePath.includes('side-profile') ||
         imagePath.includes('favicon')) {
       continue;
     }
 
-    // Prioritize hero and banner images for the main display
-    if (imagePath.includes('hero') || imagePath.includes('banner') || imagePath.includes('Header')) {
-      heroImages.push(fullUrl);
+    // Prioritize desktop hero images (Hero_D pattern from RYI pages)
+    if (imagePath.includes('Hero_D') || (imagePath.includes('hero') && imagePath.includes('1920'))) {
+      heroDesktopImages.push(fullUrl);
+    } else if (imagePath.includes('Hero_M') || (imagePath.includes('hero') && imagePath.includes('767'))) {
+      heroMobileImages.push(fullUrl);
+    } else if (imagePath.includes('/ryi/') || imagePath.includes('register-your-interest')) {
+      // RYI page specific images (vehicle images on coming soon pages)
+      ryiImages.push(fullUrl);
     } else if (imagePath.includes('models') || imagePath.includes('vehicles')) {
       modelImages.push(fullUrl);
     } else if (imagePath.includes('gallery') || imagePath.includes('feature') || imagePath.includes('interior') || imagePath.includes('exterior')) {
@@ -229,15 +260,22 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
   const fullUrlRegex = /["'](https:\/\/www\.hyundai\.com\/content\/dam\/hyundai\/au\/en\/[^"']+\.(?:png|jpg|jpeg|webp))["']/gi;
   while ((match = fullUrlRegex.exec(html)) !== null) {
     const imagePath = match[1];
+    if (!imagePath) continue;
 
     if (imagePath.includes('social-share') ||
         imagePath.includes('/icons/') ||
-        imagePath.includes('/logos/')) {
+        imagePath.includes('/logos/') ||
+        imagePath.includes('/navigation/') ||
+        imagePath.includes('side-profile')) {
       continue;
     }
 
-    if (imagePath.includes('hero') || imagePath.includes('banner') || imagePath.includes('Header')) {
-      if (!heroImages.includes(imagePath)) heroImages.push(imagePath);
+    if (imagePath.includes('Hero_D') || (imagePath.includes('hero') && imagePath.includes('1920'))) {
+      if (!heroDesktopImages.includes(imagePath)) heroDesktopImages.push(imagePath);
+    } else if (imagePath.includes('Hero_M')) {
+      if (!heroMobileImages.includes(imagePath)) heroMobileImages.push(imagePath);
+    } else if (imagePath.includes('/ryi/') || imagePath.includes('register-your-interest')) {
+      if (!ryiImages.includes(imagePath)) ryiImages.push(imagePath);
     } else if (imagePath.includes('models') || imagePath.includes('vehicles')) {
       if (!modelImages.includes(imagePath)) modelImages.push(imagePath);
     } else if (imagePath.includes('gallery') || imagePath.includes('feature')) {
@@ -245,11 +283,13 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
     }
   }
 
-  // Combine images with priority: hero > model > other
+  // Combine images with priority: desktop hero > mobile hero > RYI > model > other
   if (!data.images) data.images = [];
-  data.images.push(...heroImages.slice(0, 3));
-  data.images.push(...modelImages.slice(0, 4));
-  data.images.push(...otherImages.slice(0, 3));
+  data.images.push(...heroDesktopImages.slice(0, 2));
+  data.images.push(...heroMobileImages.slice(0, 1));
+  data.images.push(...ryiImages.slice(0, 4));
+  data.images.push(...modelImages.slice(0, 3));
+  data.images.push(...otherImages.slice(0, 2));
 
   // Only use OG image as last resort if we found no other images
   if (data.images.length === 0) {
@@ -299,6 +339,134 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
     data.specs!['towing'] = `${towMatch[1]}kg`;
   }
 
+  // === Electric Vehicle Specifications ===
+
+  // Driving range (WLTP) - patterns like "546km", "up to 546 km", "546 km (WLTP)"
+  const rangePatterns = [
+    /(\d{3,4})\s*km\s*(?:\(?\s*WLTP\s*\)?)?/i,
+    /(?:range|driving\s+range)[:\s]*(?:up\s+to\s+)?(\d{3,4})\s*km/i,
+    /(?:up\s+to\s+)?(\d{3,4})\s*km\s*(?:range|driving)/i,
+  ];
+  for (const pattern of rangePatterns) {
+    const rangeMatch = html.match(pattern);
+    if (rangeMatch && parseInt(rangeMatch[1]) > 200) { // Sanity check for EV range
+      data.specs!['range'] = `${rangeMatch[1]}km`;
+      break;
+    }
+  }
+
+  // Battery capacity - patterns like "77.4 kWh", "72.6kWh battery"
+  const batteryMatch = html.match(/(\d+(?:\.\d+)?)\s*kWh/i);
+  if (batteryMatch) {
+    data.specs!['battery'] = `${batteryMatch[1]} kWh`;
+  }
+
+  // Charging time - patterns like "18 min", "10-80% in 18 minutes"
+  const chargingPatterns = [
+    /(?:10-80%|fast\s+charge)[:\s]*(?:in\s+)?(\d+)\s*min/i,
+    /(\d+)\s*min(?:utes?)?\s*(?:to\s+)?(?:10-80%|fast\s+charge)/i,
+    /charge[:\s]*(\d+)\s*min/i,
+  ];
+  for (const pattern of chargingPatterns) {
+    const chargeMatch = html.match(pattern);
+    if (chargeMatch) {
+      data.specs!['charging'] = `${chargeMatch[1]} min (10-80%)`;
+      break;
+    }
+  }
+
+  // 0-100 acceleration
+  const accelMatch = html.match(/0-100\s*(?:km\/h)?[:\s]*(\d+(?:\.\d+)?)\s*s(?:ec)?/i);
+  if (accelMatch) {
+    data.specs!['acceleration'] = `${accelMatch[1]}s (0-100km/h)`;
+  }
+
+  // === Feature Extraction ===
+
+  // Remove script and style tags from HTML before feature extraction
+  const cleanHtml = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+
+  const extractedFeatures = new Set<string>();
+
+  // Known feature keywords to look for in clean HTML
+  const knownFeatures = [
+    { keyword: 'infotainment', label: 'Infotainment System' },
+    { keyword: 'heads-up display', label: 'Heads-up Display' },
+    { keyword: 'panoramic sunroof', label: 'Panoramic Sunroof' },
+    { keyword: 'leather', label: 'Leather Interior' },
+    { keyword: 'heated seats', label: 'Heated Seats' },
+    { keyword: 'ventilated seats', label: 'Ventilated Seats' },
+    { keyword: 'blind spot', label: 'Blind Spot Monitoring' },
+    { keyword: 'lane assist', label: 'Lane Keeping Assist' },
+    { keyword: 'adaptive cruise', label: 'Adaptive Cruise Control' },
+    { keyword: 'parking assist', label: 'Parking Assist' },
+    { keyword: 'surround view', label: 'Surround View Camera' },
+    { keyword: '360', label: '360° Camera' },
+    { keyword: 'wireless charging', label: 'Wireless Phone Charging' },
+    { keyword: 'apple carplay', label: 'Apple CarPlay' },
+    { keyword: 'android auto', label: 'Android Auto' },
+    { keyword: 'bose', label: 'BOSE Premium Audio' },
+    { keyword: 'harman kardon', label: 'Harman Kardon Audio' },
+    { keyword: 'ambient lighting', label: 'Ambient Lighting' },
+    { keyword: 'sunroof', label: 'Sunroof' },
+  ];
+
+  // Check for each known feature in the clean HTML
+  for (const { keyword, label } of knownFeatures) {
+    if (cleanHtml.toLowerCase().includes(keyword.toLowerCase())) {
+      extractedFeatures.add(label);
+    }
+  }
+
+  // Look for specific screen size mentions (common in Hyundai pages)
+  const screenMatch = cleanHtml.match(/(\d+(?:\.\d+)?)["\s]*(?:inch|")\s*(?:screen|display|infotainment)/i);
+  if (screenMatch) {
+    extractedFeatures.add(`${screenMatch[1]}" Display`);
+  }
+
+  data.features = Array.from(extractedFeatures).slice(0, 10);
+
+  // === Highlight/Selling Point Extraction ===
+
+  // Extract key selling points from H2/H3 headings and prominent text in clean HTML
+  const highlightPatterns = [
+    // H2 and H3 headings often contain key selling points
+    /<h[23][^>]*>([^<]{15,120})<\/h[23]>/gi,
+    // Paragraphs with specific classes
+    /<p[^>]*class="[^"]*(?:lead|intro|highlight|subtitle)[^"]*"[^>]*>([^<]{20,150})<\/p>/gi,
+  ];
+
+  const extractedHighlights = new Set<string>();
+  const skipTerms = ['cookie', 'privacy', 'terms', 'subscribe', 'newsletter', 'login', 'sign up', 'menu', 'navigation'];
+
+  for (const pattern of highlightPatterns) {
+    let highlightMatch;
+    while ((highlightMatch = pattern.exec(cleanHtml)) !== null) {
+      const highlight = highlightMatch[1]?.trim();
+      if (highlight && highlight.length > 15 && highlight.length < 150) {
+        const cleanHighlight = highlight
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&#\d+;/g, '')
+          .trim();
+
+        // Skip if contains unwanted terms
+        const lowerHighlight = cleanHighlight.toLowerCase();
+        const shouldSkip = skipTerms.some(term => lowerHighlight.includes(term));
+
+        if (cleanHighlight && !shouldSkip && cleanHighlight.split(' ').length >= 3) {
+          extractedHighlights.add(cleanHighlight);
+        }
+      }
+    }
+  }
+
+  data.highlights = Array.from(extractedHighlights).slice(0, 5);
+
   return data;
 }
 
@@ -315,6 +483,9 @@ export async function scrapeHyundaiVehicle(slug: string): Promise<ScrapedVehicle
 
   console.log(`[Scraper] Fetching vehicle data from: ${url}`);
 
+  // Check if this is a Register Your Interest (RYI) page
+  const isRYI = url.includes('-ryi');
+
   try {
     const response = await $fetch<string>(url, {
       headers: {
@@ -324,32 +495,54 @@ export async function scrapeHyundaiVehicle(slug: string): Promise<ScrapedVehicle
       },
     });
 
-    const extracted = extractVehicleData(response, slug);
+    // Try AI-assisted extraction first (Groq)
+    let aiData: AIExtractedVehicleData | null = null;
+    try {
+      aiData = await extractVehicleDataWithAI(response, slug);
+      if (aiData) {
+        console.log(`[Scraper] AI extraction successful for ${slug}`);
+      }
+    } catch (aiError: any) {
+      console.log(`[Scraper] AI extraction failed, falling back to regex: ${aiError.message}`);
+    }
+
+    // Fall back to regex extraction if AI fails
+    const regexExtracted = extractVehicleData(response, slug);
+
+    // Merge AI and regex data, preferring AI when available
+    const extracted = mergeExtractionResults(aiData, regexExtracted, slug);
+
+    // Determine CTA button text and link based on RYI status
+    const buttonText = isRYI ? 'Register Your Interest' : 'Enquire Now';
+    const buttonLink = isRYI ? `/vehicle/${slug}#register` : `/variant/${slug}`;
 
     // Build the complete vehicle data structure
     const vehicleData: ScrapedVehicleData = {
       slug,
       model: extracted.model || slug,
       title: extracted.title || formatVehicleName(slug),
-      tagline: extracted.description?.split('.')[0] || `Discover the ${formatVehicleName(slug)}`,
+      tagline: extracted.tagline || extracted.description?.split('.')[0] || `Discover the ${formatVehicleName(slug)}`,
       description: extracted.description || `Explore the ${formatVehicleName(slug)} at your local Hyundai dealer.`,
       header: {
         slides: [{
-          desktop: extracted.images?.[0] || getDefaultHeroImage(slug),
-          mobile: extracted.images?.[0] || getDefaultHeroImage(slug),
+          desktop: extracted.heroDesktop || getDefaultHeroImage(slug),
+          mobile: extracted.heroMobile || extracted.heroDesktop || getDefaultHeroImage(slug),
           video: false,
           heading: formatVehicleName(slug),
-          sub_heading: extracted.description?.split('.')[0] || `Discover the ${formatVehicleName(slug)}`,
-          button: 'Enquire Now',
-          link: `/variant/${slug}`,
-          bottom_strip: buildSpecStrip(extracted.specs || {}),
+          sub_heading: extracted.tagline || extracted.description?.split('.')[0] || `Discover the ${formatVehicleName(slug)}`,
+          button: buttonText,
+          link: buttonLink,
+          bottom_strip: buildSpecStrip(extracted.specs || {}, isElectricVehicle(slug)),
         }],
       },
       specs: extracted.specs || {},
       features: extracted.features || [],
+      highlights: extracted.highlights || [],
+      contentSections: extracted.contentSections || [],
       images: extracted.images || [],
       scrapedAt: new Date().toISOString(),
       isScraped: true,
+      form: isRYI, // Set form=true for RYI pages to show Register Interest form
     };
 
     return vehicleData;
@@ -362,14 +555,193 @@ export async function scrapeHyundaiVehicle(slug: string): Promise<ScrapedVehicle
 }
 
 /**
+ * Merge AI extraction results with regex fallback
+ */
+function mergeExtractionResults(
+  aiData: AIExtractedVehicleData | null,
+  regexData: Partial<ScrapedVehicleData>,
+  slug: string
+): {
+  model: string;
+  title: string;
+  tagline: string;
+  description: string;
+  specs: Record<string, string>;
+  features: string[];
+  highlights: string[];
+  contentSections: ContentSection[];
+  heroDesktop: string | undefined;
+  heroMobile: string | undefined;
+  images: string[];
+} {
+  if (!aiData) {
+    // No AI data, use regex results
+    return {
+      model: regexData.model || slug,
+      title: regexData.title || formatVehicleName(slug),
+      tagline: regexData.description?.split('.')[0] || '',
+      description: regexData.description || '',
+      specs: regexData.specs || {},
+      features: regexData.features || [],
+      highlights: regexData.highlights || [],
+      contentSections: [],
+      heroDesktop: regexData.images?.[0],
+      heroMobile: regexData.images?.[1] || regexData.images?.[0],
+      images: deduplicateImages(regexData.images || [], slug),
+    };
+  }
+
+  // Convert AI specs to flat Record<string, string>
+  const specs: Record<string, string> = {};
+  if (aiData.specs.range) specs.range = aiData.specs.range;
+  if (aiData.specs.battery) specs.battery = aiData.specs.battery;
+  if (aiData.specs.chargingTime) specs.charging = aiData.specs.chargingTime;
+  if (aiData.specs.acceleration) specs.acceleration = aiData.specs.acceleration;
+  if (aiData.specs.power) specs.power = aiData.specs.power;
+  if (aiData.specs.torque) specs.torque = aiData.specs.torque;
+  if (aiData.specs.fuelConsumption) specs.fuel_consumption = aiData.specs.fuelConsumption;
+  if (aiData.specs.seating) specs.seating = `${aiData.specs.seating} seats`;
+  if (aiData.specs.towing) specs.towing = aiData.specs.towing;
+
+  // Merge specs with regex fallback
+  const mergedSpecs = { ...regexData.specs, ...specs };
+
+  // Combine and deduplicate images
+  const allImages = [
+    aiData.heroImageDesktop,
+    aiData.heroImageMobile,
+    ...aiData.galleryImages,
+    ...(regexData.images || []),
+  ].filter((img): img is string => !!img);
+
+  // Build content sections from AI data
+  const contentSections: ContentSection[] = [];
+  if (aiData.introHeading || aiData.introText) {
+    contentSections.push({ heading: aiData.introHeading, text: aiData.introText });
+  }
+  if (aiData.designHeading || aiData.designText) {
+    contentSections.push({ heading: aiData.designHeading, text: aiData.designText });
+  }
+  if (aiData.technologyHeading || aiData.technologyText) {
+    contentSections.push({ heading: aiData.technologyHeading, text: aiData.technologyText });
+  }
+  if (aiData.performanceHeading || aiData.performanceText) {
+    contentSections.push({ heading: aiData.performanceHeading, text: aiData.performanceText });
+  }
+  if (aiData.safetyHeading || aiData.safetyText) {
+    contentSections.push({ heading: aiData.safetyHeading, text: aiData.safetyText });
+  }
+  if (aiData.comfortHeading || aiData.comfortText) {
+    contentSections.push({ heading: aiData.comfortHeading, text: aiData.comfortText });
+  }
+
+  return {
+    model: slug,
+    title: aiData.title || regexData.title || formatVehicleName(slug),
+    tagline: aiData.tagline || regexData.description?.split('.')[0] || '',
+    description: aiData.description || regexData.description || '',
+    specs: mergedSpecs,
+    features: aiData.features.length > 0 ? aiData.features : (regexData.features || []),
+    highlights: aiData.highlights.length > 0 ? aiData.highlights : (regexData.highlights || []),
+    contentSections,
+    heroDesktop: aiData.heroImageDesktop || regexData.images?.[0],
+    heroMobile: aiData.heroImageMobile || aiData.heroImageDesktop || regexData.images?.[0],
+    images: deduplicateImages(allImages, slug),
+  };
+}
+
+/**
+ * Remove duplicate images and filter out images from other vehicles
+ */
+function deduplicateImages(images: string[], vehicleSlug?: string): string[] {
+  const seen = new Set<string>();
+  return images.filter(img => {
+    // Normalize URL for comparison (remove query params)
+    const normalized = img.split('?')[0];
+    if (seen.has(normalized)) return false;
+
+    const lowerUrl = img.toLowerCase();
+
+    // Filter out images from other vehicle models (if we know what vehicle we're scraping)
+    if (vehicleSlug) {
+      const vehicleSlugNormalized = vehicleSlug.toLowerCase().replace(/-/g, '');
+
+      // Check if the URL contains a different vehicle model
+      const otherVehiclePatterns = [
+        /\/ioniq-?5[n]?[-\/]/i,
+        /\/ioniq-?6[n]?[-\/]/i,
+        /\/ioniq-?9[-\/]/i,
+        /\/kona[-\/]/i,
+        /\/tucson[-\/]/i,
+        /\/santa-?fe[-\/]/i,
+        /\/venue[-\/]/i,
+        /\/palisade[-\/]/i,
+        /\/i30[-\/]/i,
+        /\/staria[-\/]/i,
+        /\/inster[-\/]/i,
+        /IONIQ5/i,
+        /IONIQ6/i,
+        /IONIQ9/i,
+      ];
+
+      for (const pattern of otherVehiclePatterns) {
+        // Extract vehicle name from pattern for comparison
+        const patternName = pattern.source.replace(/[\/\[\]\-\?\(\)\\]/g, '').toLowerCase();
+
+        // Skip if this pattern matches the vehicle we're looking for
+        if (vehicleSlugNormalized.includes(patternName.replace(/[^a-z0-9]/g, ''))) continue;
+
+        if (pattern.test(lowerUrl)) {
+          return false;
+        }
+      }
+    }
+
+    seen.add(normalized);
+    return true;
+  });
+}
+
+/**
+ * Check if a vehicle slug represents an electric vehicle
+ */
+function isElectricVehicle(slug: string): boolean {
+  const evKeywords = ['ioniq', 'electric', 'ev', 'inster', 'elexio', 'kona-electric'];
+  const normalizedSlug = slug.toLowerCase();
+  return evKeywords.some(keyword => normalizedSlug.includes(keyword));
+}
+
+/**
  * Build the specification strip from extracted specs
  */
-function buildSpecStrip(specs: Record<string, string>): Array<{ heading: string; sub_heading: string }> | false {
+function buildSpecStrip(specs: Record<string, string>, isEV: boolean = false): Array<{ heading: string; sub_heading: string }> | false {
   const strip: Array<{ heading: string; sub_heading: string }> = [];
 
+  // For EVs, prioritize EV-specific specs
+  if (isEV) {
+    if (specs.range) {
+      strip.push({ heading: specs.range, sub_heading: 'Range (WLTP)' });
+    }
+
+    if (specs.battery) {
+      strip.push({ heading: specs.battery, sub_heading: 'Battery' });
+    }
+
+    if (specs.charging) {
+      strip.push({ heading: specs.charging.replace(' (10-80%)', ''), sub_heading: 'Fast Charge' });
+    }
+
+    if (specs.acceleration) {
+      strip.push({ heading: specs.acceleration.replace(' (0-100km/h)', ''), sub_heading: '0-100 km/h' });
+    }
+  }
+
+  // ICE vehicle specs
   if (specs.power) {
-    const [power] = specs.power.split('/');
-    strip.push({ heading: power.trim(), sub_heading: 'Max Power' });
+    const power = specs.power.split('/')[0];
+    if (power) {
+      strip.push({ heading: power.trim(), sub_heading: 'Max Power' });
+    }
   }
 
   if (specs.fuel_consumption) {
@@ -384,7 +756,8 @@ function buildSpecStrip(specs: Record<string, string>): Array<{ heading: string;
     strip.push({ heading: specs.towing, sub_heading: 'Towing Capacity' });
   }
 
-  return strip.length > 0 ? strip : false;
+  // Limit to 4 items for clean display
+  return strip.length > 0 ? strip.slice(0, 4) : false;
 }
 
 /**
@@ -425,6 +798,7 @@ function getDefaultHeroImage(slug: string): string {
  */
 function createPlaceholderVehicle(slug: string): ScrapedVehicleData {
   const title = formatVehicleName(slug);
+  const isEV = isElectricVehicle(slug);
 
   return {
     slug,
@@ -439,16 +813,18 @@ function createPlaceholderVehicle(slug: string): ScrapedVehicleData {
         video: false,
         heading: title,
         sub_heading: `Discover the Hyundai ${title}`,
-        button: 'Enquire Now',
-        link: `/variant/${slug}`,
+        button: isEV ? 'Register Your Interest' : 'Enquire Now',
+        link: isEV ? `/vehicle/${slug}#register` : `/variant/${slug}`,
         bottom_strip: false,
       }],
     },
     specs: {},
     features: [],
+    highlights: [],
     images: [getDefaultHeroImage(slug)],
     scrapedAt: new Date().toISOString(),
     isScraped: true,
+    form: isEV, // EVs often have Register Interest forms
   };
 }
 

@@ -52,14 +52,14 @@
 import PostContent from '~/components/content/PostContent.vue';
 
 // Component mapping for templates
-const ContactForm = defineAsyncComponent(() => import('~/components/page-elements/ContactForm.vue'));
+const ContactFormSection = defineAsyncComponent(() => import('~/components/contact/ContactFormSection.vue'));
 const ServiceForm = defineAsyncComponent(() => import('~/components/page-elements/ServiceForm.vue'));
 const FleetForm = defineAsyncComponent(() => import('~/components/page-elements/FleetForm.vue'));
 const FinanceForm = defineAsyncComponent(() => import('~/components/page-elements/FinanceForm.vue'));
 const PartsForm = defineAsyncComponent(() => import('~/components/page-elements/PartsForm.vue'));
 
 const ComponentMapping: Record<string, any> = {
-  contact_form: ContactForm,
+  contact_form: ContactFormSection,
   service_form: ServiceForm,
   fleet_form: FleetForm,
   finance_form: FinanceForm,

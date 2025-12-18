@@ -101,8 +101,9 @@
                     <NuxtImg
                       :src="model.model_image"
                       :alt="model.title.rendered"
-                      width="400"
+                      width="550"
                       height="300"
+                      fit="inside"
                       loading="lazy"
                       class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
                       format="webp"
@@ -139,6 +140,7 @@
                     </NuxtLink>
 
                     <NuxtLink
+                      v-if="!model.isComingSoon"
                       :to="`/calculator/${model.slug}`"
                       class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                     >
@@ -148,7 +150,12 @@
                       </svg>
                     </NuxtLink>
 
-
+                    <span
+                      v-if="model.isComingSoon"
+                      class="text-sm font-medium text-gray-500"
+                    >
+                      Register Interest
+                    </span>
                   </div>
                 </div>
               </div>
@@ -234,8 +241,9 @@
                         <NuxtImg
                           :src="model.model_image"
                           :alt="model.title.rendered"
-                          width="400"
+                          width="550"
                           height="300"
+                          fit="inside"
                           loading="lazy"
                           class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
                           format="webp"
@@ -282,6 +290,7 @@
                           </NuxtLink>
 
                           <NuxtLink
+                            v-if="!model.isComingSoon"
                             :to="`/calculator/${model.slug}`"
                             class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                           >
@@ -291,6 +300,12 @@
                             </svg>
                           </NuxtLink>
 
+                          <span
+                            v-if="model.isComingSoon"
+                            class="text-sm font-medium text-gray-500"
+                          >
+                            Register Interest
+                          </span>
                         </div>
                       </div>
                     </div>
