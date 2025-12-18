@@ -5,7 +5,7 @@
         <!-- Home -->
         <li class="breadcrumb-item" itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
           <NuxtLink to="/" class="breadcrumb-link" itemprop="item">
-            <svg class="home-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="home-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
@@ -59,15 +59,19 @@ defineProps<Props>();
 
 <style lang="scss" scoped>
 .accessories-breadcrumb {
-  background: #f8f9fa;
-  padding: 12px 0;
-  border-bottom: 1px solid #e9ecef;
+  background: white;
+  padding: 0;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .breadcrumb-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 8px 16px;
+
+  @media (min-width: 1024px) {
+    padding: 8px 32px;
+  }
 }
 
 .breadcrumb-list {
@@ -76,9 +80,9 @@ defineProps<Props>();
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 14px;
+  font-size: 13px;
   flex-wrap: wrap;
-  gap: 4px 0;
+  gap: 2px 0;
 }
 
 .breadcrumb-item {
@@ -87,21 +91,21 @@ defineProps<Props>();
 }
 
 .breadcrumb-link {
-  color: #002c5f;
+  color: #6b7280;
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color 0.15s;
   display: flex;
   align-items: center;
   gap: 4px;
 
   &:hover {
-    color: #00aad2;
-    text-decoration: underline;
+    color: #002c5f;
   }
 }
 
 .home-icon {
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .sr-only {
@@ -117,23 +121,24 @@ defineProps<Props>();
 }
 
 .breadcrumb-separator {
-  margin: 0 8px;
-  color: #6c757d;
+  margin: 0 6px;
+  color: #d1d5db;
   user-select: none;
+  font-size: 11px;
 }
 
 .breadcrumb-current {
-  color: #495057;
+  color: #374151;
   font-weight: 500;
 }
 
 @media (max-width: 640px) {
   .breadcrumb-list {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .breadcrumb-separator {
-    margin: 0 6px;
+    margin: 0 4px;
   }
 }
 </style>
