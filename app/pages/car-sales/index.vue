@@ -12,16 +12,16 @@
       <!-- Overlay gradient -->
       <div class="absolute inset-0 bg-gradient-to-r from-[#001E50]/95 via-[#001E50]/65 to-[#001E50]/40"></div>
       <div class="relative z-10 max-w-7xl mx-auto px-4 py-6 lg:px-6 lg:py-8">
-        <nav class="flex items-center gap-2 text-sm text-white/70 mb-4" aria-label="Breadcrumb">
+        <nav class="flex items-center gap-2 text-sm text-white/70 m-0" aria-label="Breadcrumb">
           <NuxtLink to="/" class="hover:text-white transition-colors">Home</NuxtLink>
           <span>›</span>
           <span class="text-white">Cars for Sale</span>
         </nav>
         
-        <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">
+        <h1 class="text-3xl md:text-4xl font-bold text-white m-0">
           {{ pageTitle }}
         </h1>
-        <p class="text-lg text-white/80">
+        <p class="text-lg text-white/80 m-0">
           {{ pageSubtitle }}
         </p>
       </div>
