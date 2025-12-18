@@ -84,7 +84,7 @@
               >
                 <!-- Image Area -->
                 <div
-                  class="relative bg-gradient-to-br from-gray-100 to-gray-200 p-4 aspect-[4/3] overflow-hidden"
+                  class="relative bg-gray-100 overflow-hidden"
                 >
                   <!-- Badge -->
                   <div
@@ -96,7 +96,7 @@
                   <!-- Image Link -->
                   <NuxtLink
                     :to="`/vehicle/${model.slug}`"
-                    class="block h-full flex items-center justify-center overflow-hidden"
+                    class="block flex items-center justify-center overflow-hidden p-4"
                   >
                     <NuxtImg
                       :src="model.model_image"
@@ -105,7 +105,7 @@
                       height="300"
                       fit="contain"
                       loading="lazy"
-                      class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                      class="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
                       format="webp"
                       quality="80"
                     />
@@ -236,8 +236,8 @@
                     class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#00aad2]/30 hover:shadow-lg transition-all duration-300 group"
                   >
                     <!-- Image Section -->
-                    <div class="relative w-full bg-gray-100 overflow-hidden aspect-[4/3] p-4">
-                      <div class="flex items-center justify-center h-full overflow-hidden">
+                    <div class="relative w-full bg-gray-100 overflow-hidden">
+                      <div class="flex items-center justify-center overflow-hidden p-4">
                         <NuxtImg
                           :src="model.model_image"
                           :alt="model.title.rendered"
@@ -245,7 +245,7 @@
                           height="300"
                           fit="contain"
                           loading="lazy"
-                          class="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                          class="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
                           format="webp"
                           quality="80"
                         />

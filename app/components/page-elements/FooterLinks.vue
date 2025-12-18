@@ -275,12 +275,22 @@ const footerLinks = computed(() => {
 // Vehicle categories
 const vehicles = computed(() => mainStore.models || []);
 
+// Sort categories with "Coming Soon" always at the end
 const vehicleCategories = computed(() => {
   const categories = new Set<string>();
   vehicles.value.forEach((v: any) => {
     if (v.category) categories.add(v.category);
   });
-  return Array.from(categories);
+  
+  const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch & Sedans', 'Runout', 'Coming Soon'];
+  return Array.from(categories).sort((a, b) => {
+    const aIndex = categoryOrder.indexOf(a);
+    const bIndex = categoryOrder.indexOf(b);
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+    if (aIndex !== -1) return a === 'Coming Soon' ? 1 : -1;
+    if (bIndex !== -1) return b === 'Coming Soon' ? -1 : 1;
+    return a.localeCompare(b);
+  });
 });
 
 const getVehiclesByCategory = (category: string) => {
