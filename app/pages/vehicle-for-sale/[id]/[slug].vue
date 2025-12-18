@@ -200,7 +200,7 @@
               </div>
             </div>
 
-            <!-- Specifications -->
+            <!-- Basic Specifications -->
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 class="text-lg font-semibold text-slate-900">Specifications</h2>
               <div class="mt-3 grid grid-cols-2 gap-3">
@@ -211,11 +211,48 @@
               </div>
             </div>
 
+            <!-- AI-Enriched Detailed Specifications -->
+            <ClientOnly>
+              <VehicleEnrichedSpecs
+                v-if="enrichment?.specifications && hasDetailedSpecs"
+                :specs="enrichment.specifications"
+                :series="enrichment.series"
+                :generation="enrichment.generation"
+                :confidence="enrichment.confidence"
+              />
+              <template #fallback>
+                <div v-if="enrichmentLoading" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm animate-pulse">
+                  <div class="h-6 bg-slate-200 rounded w-48 mb-4"></div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div v-for="i in 6" :key="i" class="h-14 bg-slate-100 rounded-lg"></div>
+                  </div>
+                </div>
+              </template>
+            </ClientOnly>
+
+            <!-- ANCAP Safety Rating -->
+            <ClientOnly>
+              <VehicleANCAPRating
+                v-if="enrichment?.australianData?.ancapRating"
+                :rating="enrichment.australianData.ancapRating"
+                :year="enrichment.australianData.ancapYear"
+                :details="enrichment.australianData.ancapDetails"
+              />
+            </ClientOnly>
+
+            <!-- Features & Equipment -->
+            <ClientOnly>
+              <VehicleFeaturesList
+                v-if="enrichment?.features && hasEnrichedFeatures"
+                :features="enrichment.features"
+              />
+            </ClientOnly>
+
             <!-- Description -->
-            <div v-if="vehicle.Comments || vehicle.description" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div v-if="vehicleDescription" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <h2 class="text-lg font-semibold text-slate-900">Description</h2>
               <div class="prose prose-sm prose-slate mt-2 whitespace-pre-line text-slate-700">
-                {{ vehicle.Comments || vehicle.description }}
+                {{ vehicleDescription }}
               </div>
             </div>
             
@@ -420,6 +457,40 @@ const pending = computed(() => status.value === 'pending');
 // Extract vehicle from response
 const vehicle = computed(() => apiResponse.value?.vehicle || null);
 
+// Build enrichment ID from vehicle data
+const enrichmentId = computed(() => {
+  if (!vehicle.value) return '';
+  return buildEnrichmentId(vehicle.value);
+});
+
+// Fetch vehicle enrichment data (AI-generated specs, ANCAP, features)
+const {
+  enrichment,
+  loading: enrichmentLoading,
+  hasDetailedSpecs,
+  hasANCAP,
+} = useVehicleEnrichment(enrichmentId, {
+  optimized: true,
+  immediate: false, // Will fetch when enrichmentId changes
+});
+
+// Check if enrichment has useful features
+const hasEnrichedFeatures = computed(() => {
+  const features = enrichment.value?.features;
+  if (!features) return false;
+  return (
+    (features.safety?.items?.length || 0) > 0 ||
+    (features.comfort?.items?.length || 0) > 0 ||
+    (features.technology?.items?.length || 0) > 0 ||
+    (features.performance?.items?.length || 0) > 0
+  );
+});
+
+// Vehicle description - prefer AI-generated if available, fallback to feed
+const vehicleDescription = computed(() => {
+  return enrichment.value?.description || vehicle.value?.Comments || vehicle.value?.description || '';
+});
+
 // Helper function for extracting display values - defined early for use in computed properties
 const getDisplay = (field: any) => {
   if (!field) return '';
@@ -448,7 +519,9 @@ const vehicleTitle = (v: any) => {
   const year = getDisplay(v.year);
   const make = getDisplay(v.make);
   const model = getDisplay(v.model);
-  const badge = getDisplay(v.variant) || getDisplay(v.badge);
+  let badge = getDisplay(v.variant) || getDisplay(v.badge);
+  // Filter out "No Badge" as it's not meaningful to display
+  if (badge.toLowerCase().includes('no badge')) badge = '';
   return [year, make, model, badge].filter(Boolean).join(' ').trim() || v.title || 'Vehicle';
 };
 
@@ -582,7 +655,11 @@ const specList = computed(() => {
   pushSpec(specs, 'Make', getDisplay(vehicle.value?.make) || '');
   pushSpec(specs, 'Model', getDisplay(vehicle.value?.model) || '');
   pushSpec(specs, 'Series', getDisplay(vehicle.value?.series) || '');
-  pushSpec(specs, 'Badge', getDisplay(vehicle.value?.badge) || '');
+  const badgeValue = getDisplay(vehicle.value?.badge) || '';
+  // Only show badge in specs if it's not "No Badge"
+  if (!badgeValue.toLowerCase().includes('no badge')) {
+    pushSpec(specs, 'Badge', badgeValue);
+  }
   pushSpec(specs, 'Body', bodyDisplay.value);
   pushSpec(specs, 'Fuel', fuelDisplay.value);
   pushSpec(specs, 'Transmission', transmissionDisplay.value);
@@ -922,8 +999,8 @@ const closeRelatedEnquire = () => {
 // Share vehicle functionality
 const shareVehicle = async () => {
   const shareData = {
-    title: `${vehicleTitle.value} | Phil Gilbert Hyundai`,
-    text: `Check out this ${vehicleTitle.value} - ${priceDisplay.value}`,
+    title: `${vehicleTitle(vehicle.value)} | Phil Gilbert Hyundai`,
+    text: `Check out this ${vehicleTitle(vehicle.value)} - ${priceDisplay.value}`,
     url: window.location.href,
   };
 

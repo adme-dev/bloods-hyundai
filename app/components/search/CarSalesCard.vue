@@ -119,9 +119,12 @@ const vehicleTitle = computed(() => {
 });
 
 const vehicleSubtitle = computed(() => {
-  return props.vehicle.variant?.displayValue?.[0] || 
-         props.vehicle.badge?.displayValue?.[0] || 
-         '';
+  const variant = props.vehicle.variant?.displayValue?.[0] || '';
+  const badge = props.vehicle.badge?.displayValue?.[0] || '';
+  // Filter out "No Badge" as it's not meaningful to display
+  if (variant && !variant.toLowerCase().includes('no badge')) return variant;
+  if (badge && !badge.toLowerCase().includes('no badge')) return badge;
+  return '';
 });
 
 const vehicleLink = computed(() => {

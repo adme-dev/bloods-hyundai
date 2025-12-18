@@ -393,9 +393,12 @@ const getModel = (vehicle: any) => {
 };
 
 const getBadge = (vehicle: any) => {
-  return vehicle.badge?.displayValue?.[0] || 
-         vehicle.badge?.value?.[0] || 
+  const badge = vehicle.badge?.displayValue?.[0] ||
+         vehicle.badge?.value?.[0] ||
          '';
+  // Filter out "No Badge" or "(No Badge)" as it's not meaningful to display
+  if (badge.toLowerCase().includes('no badge')) return '';
+  return badge;
 };
 
 // Analytics tracking
