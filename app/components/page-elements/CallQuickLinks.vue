@@ -22,6 +22,8 @@ const showCallButton = computed(() => {
   const routeName = route.name as string;
   // Hide on vehicle-for-sale pages (they have their own enquire button)
   if (routeName?.startsWith('vehicle-for-sale')) return false;
+  // Hide on calculator pages (they have their own price footer with CTA buttons)
+  if (routeName?.startsWith('calculator')) return false;
   return true;
 });
 </script>

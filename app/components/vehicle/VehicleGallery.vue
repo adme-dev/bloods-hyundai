@@ -20,8 +20,7 @@
         <span v-if="badge" class="gallery__badge">{{ badge }}</span>
         <div class="gallery__hero-overlay">
           <div class="gallery__hero-meta">
-            <span class="gallery__hero-category">Exterior</span>
-            <span class="gallery__hero-count">({{ exteriorCount }})</span>
+           
           </div>
         </div>
       </button>

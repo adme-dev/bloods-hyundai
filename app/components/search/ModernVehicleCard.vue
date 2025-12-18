@@ -157,7 +157,13 @@ const props = withDefaults(defineProps<Props>(), {
 const vehiclesStore = useVehiclesStore();
 
 // Comparison state using array persistence to avoid Set serialization issues
+// Note: useLocalStorage only returns meaningful data on client, so we track mount state
 const comparisonIds = useLocalStorage<any>('comparisonVehicles', []);
+const isMounted = ref(false);
+
+onMounted(() => {
+  isMounted.value = true;
+});
 
 const normalizeComparisonIds = (raw: any): (string | number)[] => {
   if (Array.isArray(raw)) return raw;
@@ -172,6 +178,8 @@ const normalizeComparisonIds = (raw: any): (string | number)[] => {
 
 const comparisonSet = computed(() => new Set(normalizeComparisonIds(comparisonIds.value)));
 const isInComparison = computed(() => {
+  // Return false during SSR to prevent hydration mismatch
+  if (!isMounted.value) return false;
   const vehicleId = props.vehicle.stockid || props.vehicle.identifier || props.vehicle.id;
   return comparisonSet.value.has(vehicleId);
 });

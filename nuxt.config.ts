@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     '@vueuse/nuxt',
     'nuxt-gtag',
     '@nuxt/image',
+    '@nuxt/icon',
     // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
     '@nuxtjs/seo',
     // UIkit loaded globally

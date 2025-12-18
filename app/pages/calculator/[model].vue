@@ -508,7 +508,7 @@
                 <div class="detail-images">
                   <div class="main-image">
                     <NuxtImg
-                      :src="selectedAccessoryDetail.image || selectedAccessoryDetail.thumbnail"
+                      :src="currentAccessoryImage || selectedAccessoryDetail.image || selectedAccessoryDetail.thumbnail"
                       :alt="selectedAccessoryDetail.name"
                       width="480"
                       height="360"
@@ -517,9 +517,24 @@
                     />
                   </div>
                   <!-- Thumbnail gallery if we have multiple images -->
-                  <div v-if="selectedAccessoryDetail.thumbnail && selectedAccessoryDetail.image" class="image-thumbnails">
-                    <NuxtImg :src="selectedAccessoryDetail.image" :alt="selectedAccessoryDetail.name" class="thumb active" width="80" height="60" format="webp" quality="80" />
-                    <NuxtImg v-if="selectedAccessoryDetail.thumbnail" :src="selectedAccessoryDetail.thumbnail" :alt="selectedAccessoryDetail.name" class="thumb" width="80" height="60" format="webp" quality="80" />
+                  <div v-if="accessoryDetailImages.length > 1" class="image-thumbnails">
+                    <button
+                      v-for="(img, index) in accessoryDetailImages"
+                      :key="index"
+                      class="thumb-btn"
+                      :class="{ active: currentAccessoryImage === img }"
+                      @click="currentAccessoryImage = img"
+                    >
+                      <NuxtImg 
+                        :src="img" 
+                        :alt="`${selectedAccessoryDetail.name} - Image ${index + 1}`" 
+                        class="thumb" 
+                        width="80" 
+                        height="60" 
+                        format="webp" 
+                        quality="80" 
+                      />
+                    </button>
                   </div>
                 </div>
                 
@@ -892,6 +907,38 @@ const showGenuineBenefitsModal = ref(false);
 const showAccessoryDetailModal = ref(false);
 const selectedAccessoryDetail = ref<any>(null);
 const accessoryDetailQuantity = ref(1);
+const currentAccessoryImage = ref<string | null>(null);
+
+// Computed: all images for the current accessory detail
+const accessoryDetailImages = computed(() => {
+  if (!selectedAccessoryDetail.value) return [];
+  const acc = selectedAccessoryDetail.value;
+  const images: string[] = [];
+  
+  // Add main image
+  if (acc.image) images.push(acc.image);
+  
+  // Add pack-specific images (for accessory packs)
+  if (acc.imageHero) images.push(acc.imageHero);
+  if (acc.imageCloseUp1) images.push(acc.imageCloseUp1);
+  if (acc.imageCloseUp2) images.push(acc.imageCloseUp2);
+  
+  // Add thumbnail if different from main image
+  if (acc.thumbnail && acc.thumbnail !== acc.image) {
+    images.push(acc.thumbnail);
+  }
+  
+  return images;
+});
+
+// Watch for accessory changes to reset current image
+watch(selectedAccessoryDetail, (newVal) => {
+  if (newVal) {
+    currentAccessoryImage.value = newVal.image || newVal.thumbnail || null;
+  } else {
+    currentAccessoryImage.value = null;
+  }
+});
 // Accessory sorting and filtering
 const accessorySortBy = ref('price-low');
 const accessoryShowFilter = ref('all');
@@ -1655,6 +1702,7 @@ $bg-white: #fff;
 .right-panel {
   background: $bg-white;
   padding-bottom: 120px; // Space for footer
+  overflow: hidden;
   // Removed overflow properties - let the page scroll naturally
   // This allows the left panel sticky to work properly
 }
@@ -2576,11 +2624,21 @@ $bg-white: #fff;
       flex-wrap: wrap;
       gap: 1rem;
     }
+    
+    @media (max-width: 600px) {
+      padding: 0.75rem 1rem;
+      gap: 0.5rem;
+    }
   }
   
   .footer-vehicle-info {
     flex: 1;
     min-width: 200px;
+    
+    // Hide on mobile to save space - price and buttons are more important
+    @media (max-width: 600px) {
+      display: none;
+    }
     
     .footer-model {
       font-size: 1rem;
@@ -2608,6 +2666,11 @@ $bg-white: #fff;
     border-radius: 4px;
     transition: background 0.2s;
     
+    @media (max-width: 600px) {
+      padding: 0.25rem 0.5rem;
+      text-align: left;
+    }
+    
     &:hover {
       background: color.adjust($border-color, $lightness: 5%);
     }
@@ -2619,6 +2682,10 @@ $bg-white: #fff;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       
+      @media (max-width: 600px) {
+        font-size: 0.6rem;
+      }
+      
       sup {
         font-size: 0.5rem;
       }
@@ -2629,12 +2696,21 @@ $bg-white: #fff;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
+      
+      @media (max-width: 600px) {
+        justify-content: flex-start;
+        gap: 0.25rem;
+      }
     }
     
     .price-amount {
       font-size: 1.75rem;
       font-weight: 700;
       color: $primary-blue;
+      
+      @media (max-width: 600px) {
+        font-size: 1.25rem;
+      }
     }
     
     .price-expand-icon {
@@ -2655,6 +2731,10 @@ $bg-white: #fff;
       border-radius: 2px;
       text-transform: uppercase;
       white-space: nowrap;
+      
+      @media (max-width: 600px) {
+        display: none;
+      }
     }
   }
   
@@ -2663,11 +2743,8 @@ $bg-white: #fff;
     gap: 0.75rem;
     
     @media (max-width: 600px) {
-      width: 100%;
-      
-      button {
-        flex: 1;
-      }
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
     
     .btn-secondary {
@@ -2679,6 +2756,11 @@ $bg-white: #fff;
       font-size: 0.9rem;
       cursor: pointer;
       transition: all 0.2s;
+      
+      @media (max-width: 600px) {
+        padding: 0.625rem 1rem;
+        font-size: 0.8rem;
+      }
       
       &:hover {
         background: rgba($primary-blue, 0.05);
@@ -2694,6 +2776,11 @@ $bg-white: #fff;
       font-size: 0.9rem;
       cursor: pointer;
       transition: all 0.2s;
+      
+      @media (max-width: 600px) {
+        padding: 0.625rem 1rem;
+        font-size: 0.8rem;
+      }
       
       &:hover {
         background: color.adjust($primary-blue, $lightness: -10%);
@@ -3480,17 +3567,29 @@ $bg-white: #fff;
       display: flex;
       gap: 0.5rem;
       margin-top: 1rem;
-      
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+
+      .thumb-btn {
+        padding: 0;
+        background: none;
+        border: 2px solid transparent;
+        border-radius: 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+        overflow: hidden;
+        transition: border-color 0.2s ease;
+
+        &.active, &:hover {
+          border-color: $primary-blue;
+        }
+      }
+
       .thumb {
         width: 80px;
         height: 60px;
         object-fit: cover;
-        border: 2px solid transparent;
-        cursor: pointer;
-        
-        &.active, &:hover {
-          border-color: $primary-blue;
-        }
+        display: block;
       }
     }
   }

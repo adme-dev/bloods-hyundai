@@ -200,35 +200,63 @@
               </div>
             </div>
 
-            <!-- Basic Specifications -->
+            <!-- Specifications with Tabs -->
             <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h2 class="text-lg font-semibold text-slate-900">Specifications</h2>
-              <div class="mt-3 grid grid-cols-2 gap-3">
-                <div v-for="spec in specList" :key="spec.label" class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div class="text-xs uppercase tracking-wide text-slate-500">{{ spec.label }}</div>
-                  <div class="text-sm font-semibold text-slate-900">{{ spec.value }}</div>
-                </div>
-              </div>
-            </div>
+              <Tabs :default-value="hasDetailedSpecs ? 'detailed' : 'basic'">
+                <TabsList class="mb-4 gap-1 bg-transparent">
+                  <TabsTrigger
+                    value="basic"
+                    class="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-full data-[state=active]:shadow-none"
+                  >
+                    <Icon name="lucide:list" class="-ms-0.5 me-1.5 size-4 opacity-60" aria-hidden="true" />
+                    Vehicle Info
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="detailed"
+                    :disabled="!hasDetailedSpecs && !enrichmentLoading"
+                    class="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-full data-[state=active]:shadow-none"
+                  >
+                    <Icon name="lucide:settings-2" class="-ms-0.5 me-1.5 size-4 opacity-60" aria-hidden="true" />
+                    Full Specifications
+                    <span v-if="enrichmentLoading && !hasDetailedSpecs" class="ml-1.5">
+                      <Icon name="lucide:loader-2" class="size-3 animate-spin" />
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
 
-            <!-- AI-Enriched Detailed Specifications -->
-            <ClientOnly>
-              <VehicleEnrichedSpecs
-                v-if="enrichment?.specifications && hasDetailedSpecs"
-                :specs="enrichment.specifications"
-                :series="enrichment.series"
-                :generation="enrichment.generation"
-                :confidence="enrichment.confidence"
-              />
-              <template #fallback>
-                <div v-if="enrichmentLoading" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm animate-pulse">
-                  <div class="h-6 bg-slate-200 rounded w-48 mb-4"></div>
+                <!-- Basic Specs Tab -->
+                <TabsContent value="basic" class="mt-0">
                   <div class="grid grid-cols-2 gap-3">
-                    <div v-for="i in 6" :key="i" class="h-14 bg-slate-100 rounded-lg"></div>
+                    <div v-for="spec in specList" :key="spec.label" class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                      <div class="text-xs uppercase tracking-wide text-slate-500">{{ spec.label }}</div>
+                      <div class="text-sm font-semibold text-slate-900">{{ spec.value }}</div>
+                    </div>
                   </div>
-                </div>
-              </template>
-            </ClientOnly>
+                </TabsContent>
+
+                <!-- Detailed Specs Tab -->
+                <TabsContent value="detailed" class="mt-0">
+                  <ClientOnly>
+                    <VehicleEnrichedSpecsContent
+                      v-if="enrichment?.specifications && hasDetailedSpecs"
+                      :specs="enrichment.specifications"
+                      :series="enrichment.series"
+                      :generation="enrichment.generation"
+                      :confidence="enrichment.confidence"
+                    />
+                    <div v-else-if="enrichmentLoading" class="animate-pulse">
+                      <div class="grid grid-cols-2 gap-3">
+                        <div v-for="i in 8" :key="i" class="h-14 bg-slate-100 rounded-lg"></div>
+                      </div>
+                    </div>
+                    <div v-else class="text-center py-8 text-slate-500">
+                      <Icon name="lucide:info" class="size-8 mx-auto mb-2 opacity-50" />
+                      <p class="text-sm">Detailed specifications not available for this vehicle.</p>
+                    </div>
+                  </ClientOnly>
+                </TabsContent>
+              </Tabs>
+            </div>
 
             <!-- ANCAP Safety Rating -->
             <ClientOnly>
@@ -245,6 +273,7 @@
               <VehicleFeaturesList
                 v-if="enrichment?.features && hasEnrichedFeatures"
                 :features="enrichment.features"
+                :specs="enrichment?.specifications"
               />
             </ClientOnly>
 
