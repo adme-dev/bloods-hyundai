@@ -29,7 +29,7 @@
     <LazyFeaturedAccessories />
 
     <!-- Stock Special Offers -->
-    <LazySpecialOffersVehicles />
+    <LazySpecialOffersVehicles class="overflow-hidden"/>
 
     <!-- Dealership Reviews -->
     <section class="uk-section">

@@ -127,7 +127,7 @@
                       class="vehicle-thumbnail"
                       width="550"
                       height="300"
-                      fit="inside"
+                      fit="contain"
                       loading="lazy"
                       format="webp"
                       quality="80"
