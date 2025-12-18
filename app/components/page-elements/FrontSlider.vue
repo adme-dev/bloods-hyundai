@@ -18,6 +18,7 @@
                     :alt="strippedHeadingContent(homeSlides[0].heading_content) || siteName"
                     class="slide-image"
                     loading="eager"
+                    fetchpriority="high"
                   />
                 </picture>
               </div>
@@ -53,6 +54,7 @@
                     :alt="strippedHeadingContent(slide.heading_content) || siteName"
                     class="slide-image"
                     :loading="index === 0 ? 'eager' : 'lazy'"
+                    :fetchpriority="index === 0 ? 'high' : 'auto'"
                   />
                 </picture>
               </div>

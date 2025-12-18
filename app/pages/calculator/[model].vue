@@ -588,7 +588,7 @@
               
               <!-- Citation-based disclaimers -->
               <p v-for="disclaimer in calculatorData.disclaimers" :key="disclaimer.citation" class="disclaimer-text">
-                <sup>[{{ disclaimer.citation }}]</sup> {{ disclaimer.text }}
+                <sup>[{{ disclaimer.citation }}]</sup> <span v-html="disclaimer.text"></span>
               </p>
             </div>
           </section>
