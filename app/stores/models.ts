@@ -24,7 +24,7 @@ export const useModelsStore = defineStore('models', () => {
     }));
   });
 
-  // Get unique categories
+  // Get unique categories - sorted with "Coming Soon" always at the end
   const uniqueCategories = computed(() => {
     const categories = new Set<string>();
     allModels.value.forEach((model: any) => {
@@ -32,7 +32,24 @@ export const useModelsStore = defineStore('models', () => {
         categories.add(model.category);
       }
     });
-    return Array.from(categories).sort();
+    
+    // Define preferred category order (Coming Soon always last)
+    const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch & Sedans', 'Runout', 'Coming Soon'];
+    
+    return Array.from(categories).sort((a, b) => {
+      const aIndex = categoryOrder.indexOf(a);
+      const bIndex = categoryOrder.indexOf(b);
+      
+      // If both are in the predefined order, sort by that order
+      if (aIndex !== -1 && bIndex !== -1) {
+        return aIndex - bIndex;
+      }
+      // If only one is in the order, prioritize the one that's in the order (unless it's Coming Soon)
+      if (aIndex !== -1) return a === 'Coming Soon' ? 1 : -1;
+      if (bIndex !== -1) return b === 'Coming Soon' ? -1 : 1;
+      // Otherwise, sort alphabetically
+      return a.localeCompare(b);
+    });
   });
 
   // Get models by category
