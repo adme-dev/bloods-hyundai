@@ -15,7 +15,7 @@
         <!-- Model Image -->
         <div class="model-image-wrapper">
           <NuxtImg
-            :src="model.image || '/images/placeholder-car.png'"
+            :src="model.image || '/images/placeholder-car.svg'"
             :alt="model.name"
             class="model-image"
             loading="lazy"

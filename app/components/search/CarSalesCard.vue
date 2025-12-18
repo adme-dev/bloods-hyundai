@@ -18,7 +18,7 @@
     <div class="uk-card-media-top">
       <NuxtLink :to="vehicleLink">
         <NuxtImg
-          :src="vehicle.thumb || vehicle.images?.[0] || '/images/placeholder-car.jpg'"
+          :src="vehicle.thumb || vehicle.images?.[0] || '/images/placeholder-car.svg'"
           :alt="vehicleTitle"
           width="400"
           height="200"
