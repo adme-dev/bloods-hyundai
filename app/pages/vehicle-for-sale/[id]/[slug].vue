@@ -7,9 +7,10 @@
 
     <!-- Vehicle Content -->
     <div v-else-if="vehicle">
-      <!-- Sticky Top Bar (Desktop only) -->
+      <!-- Sticky Top Bar (Desktop only) - Only show when we have a real price -->
       <ClientOnly>
         <VehicleStickyBar
+          v-if="showStickyBar"
           :title="headline"
           :price="priceDisplay"
           :per-week="perWeekDisplay"
@@ -655,6 +656,11 @@ const perWeekDisplay = computed(() => {
   if (!pw || pw === 0 || pw === '0') return '';
   const num = typeof pw === 'string' ? parseFloat(pw) : pw;
   return isNaN(num) ? '' : `$${num.toLocaleString()}`;
+});
+
+// Only show sticky bar when we have a real price (not POA)
+const showStickyBar = computed(() => {
+  return priceDisplay.value && priceDisplay.value !== 'POA';
 });
 
 // Gallery management
