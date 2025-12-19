@@ -170,10 +170,8 @@
       </div>
     </div>
 
-    <!-- No variants found -->
-    <div v-else class="uk-text-center uk-padding-large">
-      <p class="uk-text-muted">No variants available for {{ modelTitle }}.</p>
-    </div>
+    <!-- No variants found - hidden, component simply doesn't render anything -->
+    <div v-else></div>
   </div>
 </template>
 

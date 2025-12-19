@@ -7,6 +7,17 @@
 
     <!-- Vehicle Content -->
     <div v-else-if="vehicle">
+      <!-- Sticky Top Bar (Desktop only) -->
+      <ClientOnly>
+        <VehicleStickyBar
+          :title="headline"
+          :price="priceDisplay"
+          :per-week="perWeekDisplay"
+          :image="heroImage"
+          :scroll-threshold="400"
+          @enquire="openEnquire"
+        />
+      </ClientOnly>
       <!-- Listing Header -->
       <section class="bg-white">
         <div class="mx-auto max-w-7xl px-4 py-6 lg:px-6">
