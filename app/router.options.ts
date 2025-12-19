@@ -12,8 +12,20 @@ export default <RouterConfig>{
       return savedPosition
     }
     
-    // Default: scroll to top
-    return { top: 0 }
+    // If there's a hash, scroll to that element
+    if (to.hash) {
+      return {
+        el: to.hash,
+        behavior: 'smooth',
+      }
+    }
+    
+    // Default: scroll to top with smooth behavior
+    return { 
+      top: 0, 
+      left: 0,
+      behavior: 'smooth'
+    }
   }
 }
 

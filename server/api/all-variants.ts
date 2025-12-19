@@ -145,28 +145,27 @@ export default defineEventHandler(async (event) => {
     }
 
     // Known images for models that may be missing from CPC
+    // Based on https://www.hyundai.com/au/en/cars official images
     const knownImages: Record<string, string> = {
+      // Electric
       'ioniq 6': '/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
       '2023 ioniq 6': '/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
       'kona electric': '/content/dam/hyundai/au/en/models/front-3-4-models/KONA_Electric_Front34_640x331.png',
-      'i30': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Front34_640x331.png',
-      'i30 n line': '/content/dam/hyundai/au/en/models/i30/2025/front-3-4/n-line/i30_N_Line_Atlas_White-new.png',
-      'i30 n line premium': '/content/dam/hyundai/au/en/models/i30/2025/front-3-4/n-line-premium/i30_N_Line_Premium_Atlas_White-new.png',
-      'i30 sedan': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/i30/i30_Sedan_Front34_MY24_Atlas_White.png',
-      'i30 sedan elite': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/elite/i30_Sedan_Front34_MY24_Elite_Atlas_White.png',
-      'i30 sedan premium': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/premium/i30_Sedan_Front34_MY24_Premium_Atlas_White.png',
-      'i30 sedan n line': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/n-line/i30_Sedan_Front34_MY24_NLine_Atlas_White.png',
-      'i30 sedan n line premium': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/n-line-premium/i30_Sedan_Front34_MY24_NLinePremium_Atlas_White.png',
-      'i30 sedan hybrid': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/hybrid/i30_Sedan_MY24_Front 3_4_Atlas_White.png',
-      'i30 sedan hybrid elite': '/content/dam/hyundai/au/en/models/i30-sedan/front-3-4-images/hybrid-elite/i30_Sedan_MY24_Hybrid_Elite_Front_3_4_Atlas_White.png',
-      '2025 tucson': '/content/dam/hyundai/au/en/models/tucson-2024/awards-2025/v2/TUCSON_ICE-Elite_Front34_640x331.png',
-      '2025 santa fe': '/content/dam/hyundai/au/en/models/front-3-4-models/Hyundai_SANTA_FE_Front34_COTY_640x331.png',
-      '2025 palisade': '/content/dam/hyundai/au/en/models/front-3-4-models/PALISADE_Front34_640x331.png',
-      '2025 ioniq 5': '/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ5_Front34_640x331.png',
+      // Hybrid
       'kona hybrid': '/content/dam/hyundai/au/en/models/front-3-4-models/Hyundai_Models_KONA_Hybrid_Front34_640x3311.png',
       'tucson hybrid': '/content/dam/hyundai/au/en/models/tucson-2024/awards-2025/v2/TUCSON_Hybrid-Elite_Front34_640x331.png',
       'santa fe hybrid': '/content/dam/hyundai/au/en/models/front-3-4-models/Hyundai_Models_SANTA_FE_Hybrid_Front34_640x331_COTY.png',
       'palisade hybrid': '/content/dam/hyundai/au/en/models/palisade/2026-palisade/front-34/PALISADE_MY26_Front34_640x331_v2.png',
+      'i30 sedan hybrid': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_Hybrid_Front34_640x331.png',
+      // Hatch & Sedan
+      'i30 n line': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_N_Line_Front34_640x331.png',
+      'i30 sedan': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_Front34_640x331.png',
+      'i30 sedan n line': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_NLine_Front34_640x331.png',
+      // Runout
+      '2025 tucson': '/content/dam/hyundai/au/en/models/front-3-4-models/TUCSON_Hybrid_Front34_640x331.png',
+      '2025 santa fe': '/content/dam/hyundai/au/en/models/front-3-4-models/Hyundai_SANTA_FE_Front34_COTY_640x331.png',
+      '2025 palisade': '/content/dam/hyundai/au/en/models/front-3-4-models/PALISADE_Front34_640x331.png',
+      '2025 ioniq 5': '/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ5_Front34_640x331.png',
     };
 
     // Helper to get image URL
@@ -338,163 +337,72 @@ export default defineEventHandler(async (event) => {
       }
     });
 
-    // STEP 3: Add variant groups from detailed CPC fetch
-    // For i30: Include distinct body types and powertrain variants (N Line, Sedan, Hybrid)
-    // For other models: Only include Hybrid variants (trim levels like Elite/Premium go to base model)
-    detailedVariantGroups.forEach((variantGroups, baseModelName) => {
-      const categoryName = detailedModelCategories.get(baseModelName) || 'Hatch and Sedan';
-      const categoryDescription = cpcCategories.get('AE896C0D-1F2D-44E4-801F-CCAA5E51EFC1')?.description ||
-        'Perfect for urban explorers, every small car in our range is fun, zippy and full of personality.';
-      
-      const baseModelAdditional = modelAdditionalByName.get(baseModelName);
-      const isI30 = baseModelName.toLowerCase() === 'i30';
-      
-      variantGroups.forEach((vg: VariantGroup, index: number) => {
-        const variantName = vg.name.trim();
-        const variantNameLower = variantName.toLowerCase();
-        const variantSlug = variantNameLower.replace(/\s+/g, '-');
-        
-        // Skip if already processed
-        if (processedSlugs.has(variantSlug)) return;
-        
-        // Skip base variants that match parent model (e.g., "i30 Sedan" when we already have "i30")
-        const isBaseVariant = variantNameLower === baseModelName.toLowerCase() || 
-                              variantNameLower === `${baseModelName.toLowerCase()} sedan`;
-        if (isBaseVariant) return;
-        
-        // Determine if this variant should be included
-        // For i30: Include N Line, Hybrid, and distinct body variants
-        // For other models: Only include Hybrid variants (not trim levels)
-        const isHybrid = variantNameLower.includes('hybrid');
-        const isNLine = variantNameLower.includes('n line');
-        const isElectric = variantNameLower.includes('electric');
-        
-        // For non-i30 models, skip trim levels (Elite, Premium, Calligraphy)
-        // These are not distinct models, just trim levels of the base model
-        if (!isI30 && !isHybrid && !isElectric) {
-          return; // Skip non-i30 ICE variants (they're just trim levels)
-        }
-        
-        // For i30, only include meaningful variants (N Line, Hybrid, distinct body types)
-        if (isI30 && !isNLine && !isHybrid) {
-          // Skip basic i30 trim levels like "i30 Sedan Elite", "i30 Sedan Premium"
-          if (variantNameLower.includes('elite') || 
-              variantNameLower.includes('premium') ||
-              variantNameLower === 'i30 sedan') {
-            return;
-          }
-        }
-        
-        // Determine the correct category for this variant
-        let variantCategory = categoryName;
-        let variantCategoryDesc = categoryDescription;
-        let fuelType = 'Petrol';
-        
-        // Hybrid variants go to Hybrid category
-        if (isHybrid) {
-          variantCategory = 'Hybrid';
-          variantCategoryDesc = cpcCategories.get('8FCA4200-978C-42E5-A824-55D4C67FFFD0')?.description ||
-            "Hyundai's Hybrid line up where excellent efficiency meets outstanding performance.";
-          fuelType = 'Hybrid';
-        }
-        
-        // Electric variants go to Electric category
-        if (isElectric) {
-          variantCategory = 'Electric';
-          variantCategoryDesc = cpcCategories.get('54A732E0-1CC3-4DF0-93D1-41A62C12E4E2')?.description ||
-            "Hyundai's Electric line up where innovation, advanced technology and thoughtful design come together.";
-          fuelType = 'Electric';
-        }
-        
-        // Get image from variant group or fallback
-        let imageUrl = vg.image ? 
-          (vg.image.startsWith('http') ? vg.image : `https://www.hyundai.com${vg.image}`) :
-          getImageUrl(variantName, undefined);
-        
-        const variantModel = {
-          id: vg.id || `variant-${variantSlug}`,
-          modelId: vg.id || `variant-${variantSlug}`,
-          name: variantName,
-          slug: variantSlug,
-          category: variantCategory,
-          categoryDescription: variantCategoryDesc,
-          image: imageUrl,
-          mobileImage: imageUrl,
-          desktopImage: imageUrl,
-          lowPrice: vg.lowestVariantPrice ? parseFloat(vg.lowestVariantPrice) : null,
-          highPrice: null,
-          priceEnabled: vg.priceEnabled !== false,
-          priceDisclaimer: '',
-          modelUrl: baseModelAdditional?.modelUrl 
-            ? `https://www.hyundai.com${baseModelAdditional.modelUrl}`
-            : null,
-          calculatorUrl: baseModelAdditional?.calculatorUrl
-            ? `https://www.hyundai.com${baseModelAdditional.calculatorUrl}`
-            : null,
-          isNPerformance: variantName.includes(' N ') || variantName.endsWith(' N'),
-          order: index + 10, // Offset to sort after main models
-          variantId: vg.id || `variant-${variantSlug}`,
-          fuelType: fuelType,
-          hasOffer: false,
-          isNew: false,
-          hideInListing: false,
-          baseModelName: baseModelName,
-          isVariantGroup: true,
-        };
-
-        addToCategory(variantModel, variantCategory, variantCategoryDesc);
-        allModels.push(variantModel);
-        processedSlugs.add(variantSlug);
-      });
-    });
-
-    // STEP 4: Add Hybrid variants for models that don't have detailed variant groups
-    // These are SUV/sedan models that have Hybrid powertrain options
+    // STEP 3: Add specific models that match Hyundai AU website lineup
+    // Based on https://www.hyundai.com/au/en/cars
+    // Only add models that have their own pages on the official site
+    
     const hybridDescription = cpcCategories.get('8FCA4200-978C-42E5-A824-55D4C67FFFD0')?.description ||
       "Hyundai's Hybrid line up where excellent efficiency meets outstanding performance.";
+    const hatchSedanDescription = cpcCategories.get('AE896C0D-1F2D-44E4-801F-CCAA5E51EFC1')?.description ||
+      'Perfect for urban explorers, every small car in our range is fun, zippy and full of personality.';
     
-    // Models that have Hybrid variants (from displayPowertrain flag + known hybrids)
-    const hybridModels = ['KONA', 'TUCSON', 'SANTA FE', 'PALISADE'];
+    // Models to add that aren't in CPC with categoryId but are on the official site
+    const additionalModels = [
+      // Hybrid models
+      { name: 'KONA Hybrid', category: 'Hybrid', categoryDesc: hybridDescription, fuelType: 'Hybrid', isNew: false },
+      { name: 'TUCSON Hybrid', category: 'Hybrid', categoryDesc: hybridDescription, fuelType: 'Hybrid', isNew: true },
+      { name: 'SANTA FE Hybrid', category: 'Hybrid', categoryDesc: hybridDescription, fuelType: 'Hybrid', isNew: false },
+      { name: 'PALISADE Hybrid', category: 'Hybrid', categoryDesc: hybridDescription, fuelType: 'Hybrid', isNew: true },
+      { name: 'i30 Sedan Hybrid', category: 'Hybrid', categoryDesc: hybridDescription, fuelType: 'Hybrid', isNew: false },
+      // Hatch & Sedan models
+      { name: 'i30 N Line', category: 'Hatch and Sedan', categoryDesc: hatchSedanDescription, fuelType: 'Petrol', isNew: false },
+      { name: 'i30 Sedan', category: 'Hatch and Sedan', categoryDesc: hatchSedanDescription, fuelType: 'Petrol', isNew: false },
+      { name: 'i30 Sedan N Line', category: 'Hatch and Sedan', categoryDesc: hatchSedanDescription, fuelType: 'Petrol', isNew: false },
+    ];
     
-    hybridModels.forEach((baseName, index) => {
-      const hybridName = `${baseName} Hybrid`;
-      const hybridSlug = hybridName.toLowerCase().replace(/\s+/g, '-');
+    additionalModels.forEach((modelDef, index) => {
+      const slug = modelDef.name.toLowerCase().replace(/\s+/g, '-');
       
-      // Skip if already added (e.g., from detailed variant groups)
-      if (processedSlugs.has(hybridSlug)) return;
-
-      // Find base model to get pricing info
-      const baseModel = allModels.find(m => m.name.toUpperCase() === baseName.toUpperCase());
+      // Skip if already processed
+      if (processedSlugs.has(slug)) return;
       
-      const hybridModel = {
-        id: `hybrid-${hybridSlug}`,
-        modelId: `hybrid-${hybridSlug}`,
-        name: hybridName,
-        slug: hybridSlug,
-        category: 'Hybrid',
-        categoryDescription: hybridDescription,
-        image: getImageUrl(hybridName, undefined),
-        mobileImage: getImageUrl(hybridName, undefined),
-        desktopImage: getImageUrl(hybridName, undefined),
+      // Find base model name for lookups
+      const baseModelName = modelDef.name.split(' ')[0].toLowerCase();
+      const baseModelAdditional = modelAdditionalByName.get(baseModelName);
+      const baseModel = allModels.find(m => m.name.toLowerCase() === baseModelName);
+      
+      const model = {
+        id: `model-${slug}`,
+        modelId: `model-${slug}`,
+        name: modelDef.name,
+        slug: slug,
+        category: modelDef.category,
+        categoryDescription: modelDef.categoryDesc,
+        image: getImageUrl(modelDef.name, undefined),
+        mobileImage: getImageUrl(modelDef.name, undefined),
+        desktopImage: getImageUrl(modelDef.name, undefined),
         lowPrice: baseModel?.lowPrice || null,
         highPrice: baseModel?.highPrice || null,
-        priceEnabled: baseModel?.priceEnabled || false,
+        priceEnabled: baseModel?.priceEnabled !== false,
         priceDisclaimer: baseModel?.priceDisclaimer || '',
-        modelUrl: baseModel?.modelUrl || null,
-        calculatorUrl: baseModel?.calculatorUrl || null,
-        isNPerformance: false,
-        order: index + 1,
-        variantId: `hybrid-${hybridSlug}`,
-        fuelType: 'Hybrid',
-        hasOffer: false,
-        isNew: hybridName.includes('PALISADE') || hybridName.includes('TUCSON'),
+        modelUrl: baseModelAdditional?.modelUrl 
+          ? `https://www.hyundai.com${baseModelAdditional.modelUrl}`
+          : null,
+        calculatorUrl: baseModelAdditional?.calculatorUrl
+          ? `https://www.hyundai.com${baseModelAdditional.calculatorUrl}`
+          : null,
+        isNPerformance: modelDef.name.includes(' N ') || modelDef.name.endsWith(' N'),
+        order: index + 10,
+        variantId: `model-${slug}`,
+        fuelType: modelDef.fuelType,
+        hasOffer: true,
+        isNew: modelDef.isNew,
         hideInListing: false,
-        baseModelSlug: baseName.toLowerCase().replace(/\s+/g, '-'),
       };
 
-      addToCategory(hybridModel, 'Hybrid', hybridDescription);
-      allModels.push(hybridModel);
-      processedSlugs.add(hybridSlug);
+      addToCategory(model, modelDef.category, modelDef.categoryDesc);
+      allModels.push(model);
+      processedSlugs.add(slug);
     });
 
     // STEP 5: Add Coming Soon vehicles
