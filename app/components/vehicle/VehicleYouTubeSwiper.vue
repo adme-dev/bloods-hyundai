@@ -1,91 +1,74 @@
 <template>
   <div v-if="hasVideos || loading" class="youtube-videos-section">
-    <div class="youtube-carousel">
-      <!-- Header with title and navigation -->
-      <div class="youtube-header">
-        <h2 class="youtube-title">
-          <svg class="youtube-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-          </svg>
-          <span>{{ modelName }} Videos</span>
-        </h2>
+    <!-- Header with title -->
+    <div class="youtube-header">
+      <h2 class="youtube-title">
+        <svg class="youtube-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+        <span>{{ modelName }} Videos</span>
+      </h2>
+    </div>
 
-        <!-- Navigation Buttons -->
-        <div v-if="videos.length > 1" class="youtube-nav-group">
+    <!-- Loading State -->
+    <div v-if="loading" class="youtube-loading">
+      <div class="youtube-spinner"></div>
+    </div>
+
+    <!-- Videos Carousel using shadcn-vue -->
+    <Carousel
+      v-else-if="hasVideos"
+      :opts="{
+        align: 'start',
+        loop: false,
+      }"
+      class="youtube-carousel"
+    >
+      <CarouselContent class="-ml-2 md:-ml-3">
+        <CarouselItem
+          v-for="video in videos"
+          :key="video.id"
+          class="pl-2 md:pl-3 basis-4/5 sm:basis-1/2"
+        >
           <button
-            class="youtube-nav youtube-nav--prev"
-            :disabled="!canScrollPrev"
-            aria-label="Previous videos"
-            @click="scrollPrev"
+            type="button"
+            class="video-card"
+            @click="openVideoModal(video)"
           >
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            class="youtube-nav youtube-nav--next"
-            :disabled="!canScrollNext"
-            aria-label="Next videos"
-            @click="scrollNext"
-          >
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Loading State -->
-      <div v-if="loading" class="youtube-loading">
-        <div class="youtube-spinner"></div>
-      </div>
-
-      <!-- Videos Carousel -->
-      <div v-else-if="hasVideos" class="youtube-viewport" ref="emblaRef">
-        <div class="youtube-container">
-          <div
-            v-for="video in videos"
-            :key="video.id"
-            class="youtube-slide"
-          >
-            <button
-              type="button"
-              class="video-card"
-              @click="openVideoModal(video)"
-            >
-              <div class="video-thumbnail">
-                <img
-                  :src="video.thumbnails || video.thumbnailmq"
-                  :alt="video.title"
-                  class="thumbnail-img"
-                  loading="lazy"
-                />
-                <div class="play-overlay">
-                  <div class="play-btn">
-                    <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </div>
-                </div>
-                <div class="yt-badge">
-                  <svg class="yt-badge-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            <div class="video-thumbnail">
+              <img
+                :src="video.thumbnails || video.thumbnailmq"
+                :alt="video.title"
+                class="thumbnail-img"
+                loading="lazy"
+              />
+              <div class="play-overlay">
+                <div class="play-btn">
+                  <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
                   </svg>
-                  YouTube
                 </div>
               </div>
-              <div class="video-info">
-                <h3 class="video-title-text">{{ video.title }}</h3>
+              <div class="yt-badge">
+                <svg class="yt-badge-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                YouTube
               </div>
-            </button>
-          </div>
-        </div>
-      </div>
+            </div>
+            <div class="video-info">
+              <h3 class="video-title-text">{{ video.title }}</h3>
+            </div>
+          </button>
+        </CarouselItem>
+      </CarouselContent>
+      <CarouselPrevious class="carousel-nav-prev" />
+      <CarouselNext class="carousel-nav-next" />
+    </Carousel>
 
-      <!-- No Videos Message -->
-      <div v-else class="youtube-empty">
-        No videos found for this model.
-      </div>
+    <!-- No Videos Message -->
+    <div v-else class="youtube-empty">
+      No videos found for this model.
     </div>
 
     <!-- Video Modal -->
@@ -139,7 +122,13 @@
 </template>
 
 <script setup lang="ts">
-import emblaCarouselVue from 'embla-carousel-vue'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '~/components/ui/carousel'
 
 interface YouTubeVideo {
   id: string
@@ -156,52 +145,11 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// Embla Carousel setup - following exact pattern from FrontSliderThumbs.vue
-const [emblaRef, emblaApi] = emblaCarouselVue({
-  loop: false,
-  align: 'start',
-  containScroll: 'trimSnaps',
-  slidesToScroll: 1,
-})
-
-// Navigation state
-const canScrollPrev = ref(false)
-const canScrollNext = ref(false)
-
-// Navigation methods
-const scrollPrev = () => emblaApi.value?.scrollPrev()
-const scrollNext = () => emblaApi.value?.scrollNext()
-
-// Update button states
-const updateButtons = () => {
-  if (!emblaApi.value) return
-  canScrollPrev.value = emblaApi.value.canScrollPrev()
-  canScrollNext.value = emblaApi.value.canScrollNext()
-}
-
-// Watch for embla API initialization
-watch(() => emblaApi.value, (api) => {
-  if (!api) return
-  updateButtons()
-  api.on('select', updateButtons)
-  api.on('reInit', updateButtons)
-})
-
 // Use the YouTube videos composable - filter by model name
 const { videos, loading, hasVideos } = useYouTubeVideos(
   computed(() => props.modelName),
   { maxResults: 8, threshold: 0.4 }
 )
-
-// Re-init carousel when videos load
-watch(videos, () => {
-  nextTick(() => {
-    if (emblaApi.value) {
-      emblaApi.value.reInit()
-      updateButtons()
-    }
-  })
-}, { deep: true })
 
 // Video Modal State
 const isModalOpen = ref(false)
@@ -233,11 +181,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   document.body.style.overflow = ''
-  // Cleanup embla listeners
-  if (emblaApi.value) {
-    emblaApi.value.off('select', updateButtons)
-    emblaApi.value.off('reInit', updateButtons)
-  }
 })
 </script>
 
@@ -248,10 +191,6 @@ onUnmounted(() => {
   background-color: #fff;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.youtube-carousel {
-  position: relative;
 }
 
 /* Header */
@@ -285,38 +224,6 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* Navigation */
-.youtube-nav-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.youtube-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e2e8f0;
-  border-radius: 50%;
-  background-color: #fff;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.youtube-nav:hover:not(:disabled) {
-  background-color: #f8fafc;
-  color: #002c5f;
-  border-color: #002c5f;
-}
-
-.youtube-nav:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
 /* Loading */
 .youtube-loading {
   display: flex;
@@ -337,27 +244,39 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* Carousel - matching FrontSliderThumbs pattern */
-.youtube-viewport {
-  overflow: hidden;
+/* Carousel */
+.youtube-carousel {
+  position: relative;
 }
 
-.youtube-container {
-  display: flex;
-  gap: 12px;
-  backface-visibility: hidden;
-  touch-action: pan-y pinch-zoom;
+/* Navigation buttons - positioned inside the carousel */
+.youtube-carousel :deep(.carousel-nav-prev) {
+  left: 4px;
+  top: 35%;
+  transform: translateY(-50%);
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.youtube-slide {
-  flex: 0 0 80%;
-  min-width: 0;
+.youtube-carousel :deep(.carousel-nav-next) {
+  right: 4px;
+  top: 35%;
+  transform: translateY(-50%);
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-@media (min-width: 480px) {
-  .youtube-slide {
-    flex: 0 0 48%;
-  }
+.youtube-carousel :deep(.carousel-nav-prev:hover:not(:disabled)),
+.youtube-carousel :deep(.carousel-nav-next:hover:not(:disabled)) {
+  background-color: #f8fafc;
+  border-color: #002c5f;
+}
+
+.youtube-carousel :deep(.carousel-nav-prev:disabled),
+.youtube-carousel :deep(.carousel-nav-next:disabled) {
+  opacity: 0.3;
 }
 
 /* Video card */
