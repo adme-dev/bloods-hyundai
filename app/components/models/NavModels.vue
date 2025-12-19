@@ -196,9 +196,9 @@
             </NuxtLink>
           </li>
           <li class="uk-margin-small-top">
-            <a href="#" uk-toggle="target: #global-search-modal" class="uk-button uk-button-text uk-text-light uk-text-primary uk-text-bold uk-text-capitalize uk-width-auto" @click="closeModel">
-              Stock Search
-            </a>
+            <NuxtLink to="/accessories" class="uk-button uk-button-text uk-text-light uk-text-primary uk-text-bold uk-text-capitalize uk-width-auto" @click="closeModel">
+              Accessories
+            </NuxtLink>
           </li>
           <li class="uk-margin-small-top">
             <NuxtLink to="/finance" class="uk-button uk-button-text uk-text-light uk-text-primary uk-text-bold uk-text-capitalize uk-width-auto" @click="closeModel">
@@ -352,6 +352,7 @@ const capitalizeFirstLetter = (str: string) => {
 
 .vehicle-item {
   transition: transform 0.2s;
+  padding: 12px 8px;
 }
 
 .vehicle-item:hover {
@@ -401,15 +402,17 @@ const capitalizeFirstLetter = (str: string) => {
   cursor: default;
 }
 
-/* Vehicle image container - consistent height with full car visible */
+/* Vehicle image container - consistent aspect ratio */
 .vehicle-image-container {
-  height: 155px;
+  position: relative;
+  aspect-ratio: 550 / 300;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 12px;
 }
 
-/* Vehicle thumbnail - true-to-size display */
+/* Vehicle thumbnail - fit within container */
 .vehicle-thumbnail {
   max-width: 100%;
   max-height: 100%;

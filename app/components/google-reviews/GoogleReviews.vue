@@ -55,7 +55,7 @@
                 </div>
               </div>
               <!-- Directions Button -->
-              <a :href="directionsUrl" target="_blank" rel="noreferrer" class="flex flex-col items-center gap-0.5 px-3 py-2 text-[#1a73e8] font-medium text-sm leading-tight rounded-md border border-transparent hover:border-[#1a73e8]/30 hover:bg-blue-50 transition-colors flex-shrink-0">
+              <a :href="directionsUrl" target="_blank" rel="noreferrer" class="flex flex-col items-center gap-0.5 px-3 py-2 text-[#1a73e8] font-medium text-sm leading-tight bg-gray-900 text-black rounded-md border border-transparent hover:border-[#1a73e8]/30 hover:bg-blue-50 transition-colors flex-shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" height="24" viewBox="0 0 24 24" width="24" class="text-[#1a73e8]">
                   <path d="M0 0h24v24H0z" fill="none" />
                   <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
