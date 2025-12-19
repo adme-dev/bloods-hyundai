@@ -148,7 +148,7 @@ const props = defineProps<Props>()
 // Use the YouTube videos composable - filter by model name
 const { videos, loading, hasVideos } = useYouTubeVideos(
   computed(() => props.modelName),
-  { maxResults: 8, threshold: 0.4 }
+  { maxResults: 8 }
 )
 
 // Video Modal State
