@@ -33,8 +33,8 @@ export const useModelsStore = defineStore('models', () => {
       }
     });
     
-    // Define preferred category order (Coming Soon always last)
-    const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch & Sedans', 'Runout', 'Coming Soon'];
+    // Define preferred category order (matches Hyundai AU website)
+    const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch and Sedan', 'Vans and Trucks', 'Runout', 'Coming Soon'];
     
     return Array.from(categories).sort((a, b) => {
       const aIndex = categoryOrder.indexOf(a);

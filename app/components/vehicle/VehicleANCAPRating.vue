@@ -27,26 +27,46 @@
         v-if="details?.adultOccupantScore"
         label="Adult Occupant"
         :score="details.adultOccupantScore"
-        icon="👤"
-      />
+      >
+        <template #icon>
+          <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </template>
+      </ScoreBar>
       <ScoreBar
         v-if="details?.childOccupantScore"
         label="Child Occupant"
         :score="details.childOccupantScore"
-        icon="👶"
-      />
+      >
+        <template #icon>
+          <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+          </svg>
+        </template>
+      </ScoreBar>
       <ScoreBar
         v-if="details?.vulnerableRoadUserScore"
         label="Pedestrian"
         :score="details.vulnerableRoadUserScore"
-        icon="🚶"
-      />
+      >
+        <template #icon>
+          <svg class="h-3.5 w-3.5 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7" />
+          </svg>
+        </template>
+      </ScoreBar>
       <ScoreBar
         v-if="details?.safetyAssistScore"
         label="Safety Assist"
         :score="details.safetyAssistScore"
-        icon="🛡️"
-      />
+      >
+        <template #icon>
+          <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </template>
+      </ScoreBar>
     </div>
 
     <!-- Collision Avoidance Badge -->
@@ -122,9 +142,8 @@ const ScoreBar = defineComponent({
   props: {
     label: { type: String, required: true },
     score: { type: Number, required: true },
-    icon: { type: String, default: '' },
   },
-  setup(props) {
+  setup(props, { slots }) {
     const barColor = computed(() => {
       if (props.score >= 80) return 'bg-green-500';
       if (props.score >= 60) return 'bg-yellow-500';
@@ -134,7 +153,7 @@ const ScoreBar = defineComponent({
     return () => h('div', { class: 'space-y-1' }, [
       h('div', { class: 'flex items-center justify-between text-xs' }, [
         h('span', { class: 'text-slate-600 flex items-center gap-1' }, [
-          props.icon && h('span', {}, props.icon),
+          slots.icon && slots.icon(),
           props.label,
         ]),
         h('span', { class: 'font-semibold text-slate-900' }, `${props.score}%`),

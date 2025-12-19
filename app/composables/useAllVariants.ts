@@ -42,7 +42,7 @@ export const useAllVariants = () => {
     // Fallback: compute from groupedByCategory with proper sorting
     const grouped = groupedByCategory.value;
     if (grouped && Object.keys(grouped).length > 0) {
-      const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch & Sedans', 'Runout', 'Coming Soon'];
+      const categoryOrder = ['Electric', 'Hybrid', 'SUVs and People Movers', 'Performance', 'Hatch and Sedan', 'Vans and Trucks', 'Runout', 'Coming Soon'];
       return Object.keys(grouped).sort((a, b) => {
         const aIndex = categoryOrder.indexOf(a);
         const bIndex = categoryOrder.indexOf(b);
