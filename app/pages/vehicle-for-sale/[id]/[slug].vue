@@ -307,87 +307,103 @@
                 </div>
               </div>
             </div>
+
+            <!-- YouTube Videos -->
+            <ClientOnly>
+              <VehicleYouTubeSwiper :model-name="youtubeModelName" />
+            </ClientOnly>
           </div>
 
           <!-- Sidebar -->
-          <aside class="space-y-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sticky top-24">
-              <div class="flex items-start justify-between">
-                <div class="space-y-1">
-                  <div class="text-2xl font-semibold text-slate-900">{{ priceDisplay }}</div>
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500">Drive Away</div>
-                </div>
-                <div v-if="perWeekDisplay" class="text-right space-y-1">
-                  <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                    {{ perWeekDisplay }}/week
+          <aside class="relative">
+            <div class="sticky top-24 space-y-4">
+              <!-- Enquiry Card -->
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1">
+                    <div class="text-2xl font-semibold text-slate-900">{{ priceDisplay }}</div>
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500">Drive Away</div>
                   </div>
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500">Estimate</div>
+                  <div v-if="perWeekDisplay" class="text-right space-y-1">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                      {{ perWeekDisplay }}/week
+                    </div>
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500">Estimate</div>
+                  </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-2 text-sm text-slate-700">
+                  <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500">Odometer</div>
+                    <div class="font-semibold">{{ kmsDisplay || '—' }}</div>
+                  </div>
+                  <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500">Transmission</div>
+                    <div class="font-semibold">{{ transmissionDisplay || '—' }}</div>
+                  </div>
+                  <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500">Fuel</div>
+                    <div class="font-semibold">{{ fuelDisplay || '—' }}</div>
+                  </div>
+                  <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div class="text-[11px] uppercase tracking-wide text-slate-500">Body</div>
+                    <div class="font-semibold">{{ bodyDisplay || '—' }}</div>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-2">
+                  <button
+                    class="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                    @click="openEnquire"
+                  >
+                    Enquire Now
+                  </button>
+                  <button
+                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:border-primary hover:text-primary"
+                    @click="openTestDrive"
+                  >
+                    Book Test Drive
+                  </button>
+                  <NuxtLink
+                    :to="financeUrl"
+                    class="w-full rounded-xl border border-emerald-500 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm hover:bg-emerald-100 text-center"
+                  >
+                    Get Finance
+                  </NuxtLink>
+                </div>
+
+                <div class="mt-4 space-y-1 text-sm text-slate-700">
+                  <div class="flex items-center justify-between">
+                    <span>Location</span>
+                    <span class="font-semibold">{{ suburbDisplay || '—' }}</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span>Stock</span>
+                    <span class="font-semibold">#{{ stockId || '—' }}</span>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-100">
+                  <p class="text-xs text-slate-500 text-center mb-2">Have questions?</p>
+                  <a 
+                    :href="`tel:${phone}`" 
+                    class="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-primary bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm hover:bg-primary hover:text-white transition-colors"
+                  >
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                    </svg>
+                    Call Us Now
+                  </a>
                 </div>
               </div>
 
-              <div class="mt-4 grid grid-cols-2 gap-2 text-sm text-slate-700">
-                <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500">Odometer</div>
-                  <div class="font-semibold">{{ kmsDisplay || '—' }}</div>
-                </div>
-                <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500">Transmission</div>
-                  <div class="font-semibold">{{ transmissionDisplay || '—' }}</div>
-                </div>
-                <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500">Fuel</div>
-                  <div class="font-semibold">{{ fuelDisplay || '—' }}</div>
-                </div>
-                <div class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div class="text-[11px] uppercase tracking-wide text-slate-500">Body</div>
-                  <div class="font-semibold">{{ bodyDisplay || '—' }}</div>
-                </div>
-              </div>
-
-              <div class="mt-4 flex flex-col gap-2">
-                <button
-                  class="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-                  @click="openEnquire"
-                >
-                  Enquire Now
-                </button>
-                <button
-                  class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:border-primary hover:text-primary"
-                  @click="openTestDrive"
-                >
-                  Book Test Drive
-                </button>
-                <NuxtLink
-                  :to="financeUrl"
-                  class="w-full rounded-xl border border-emerald-500 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 shadow-sm hover:bg-emerald-100 text-center"
-                >
-                  Get Finance
-                </NuxtLink>
-              </div>
-
-              <div class="mt-4 space-y-1 text-sm text-slate-700">
-                <div class="flex items-center justify-between">
-                  <span>Location</span>
-                  <span class="font-semibold">{{ suburbDisplay || '—' }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span>Stock</span>
-                  <span class="font-semibold">#{{ stockId || '—' }}</span>
-                </div>
-              </div>
-
-              <div class="mt-4 pt-4 border-t border-slate-100">
-                <p class="text-xs text-slate-500 text-center mb-2">Have questions?</p>
-                <a 
-                  :href="`tel:${phone}`" 
-                  class="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-primary bg-white px-4 py-2.5 text-sm font-semibold text-primary shadow-sm hover:bg-primary hover:text-white transition-colors"
-                >
-                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                  </svg>
-                  Call Us Now
-                </a>
-              </div>
+              <!-- Recently Viewed Vehicles -->
+              <ClientOnly>
+                <RecentlyViewedCard 
+                  :current-vehicle-id="vehicleId" 
+                  :all-vehicles="allVehiclesResponse?.vehiclesData || []"
+                />
+              </ClientOnly>
             </div>
           </aside>
         </div>
@@ -681,6 +697,18 @@ const drivetrainDisplay = computed(() => getDisplay(vehicle.value?.drivetrain));
 const seatsDisplay = computed(() => getDisplay(vehicle.value?.seats));
 const doorsDisplay = computed(() => getDisplay(vehicle.value?.doors));
 const suburbDisplay = computed(() => getDisplay(vehicle.value?.suburb));
+
+// YouTube model name - combine model with variant/badge for better video matching
+const youtubeModelName = computed(() => {
+  const model = getDisplay(vehicle.value?.model);
+  const variant = getDisplay(vehicle.value?.variant) || getDisplay(vehicle.value?.badge);
+  // Filter out "No Badge" and combine
+  const parts = [model];
+  if (variant && !variant.toLowerCase().includes('no badge')) {
+    parts.push(variant);
+  }
+  return parts.filter(Boolean).join(' ') || '';
+});
 
 const highlightChips = computed(() => {
   return [kmsDisplay.value, transmissionDisplay.value, fuelDisplay.value, bodyDisplay.value, seatsDisplay.value && `${seatsDisplay.value} Seats`, doorsDisplay.value && `${doorsDisplay.value} Doors`]
@@ -1009,10 +1037,15 @@ useHead(() => {
 // Analytics tracking
 const { trackEnquiryModalOpen, trackVehicleView } = useAnalytics();
 
-// Track vehicle view on page load
+// Track vehicle view on page load and add to recently viewed
 onMounted(() => {
   if (vehicle.value) {
     trackVehicleView(vehicle.value);
+    // Add to recently viewed vehicles
+    const id = vehicle.value.stockid || vehicle.value.id || vehicle.value.identifier;
+    if (id) {
+      vehiclesStore.addToRecentlyViewed(id);
+    }
   }
 });
 
