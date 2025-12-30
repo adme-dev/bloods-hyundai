@@ -1,6 +1,8 @@
 <template>
   <div>
-    <LazyHeaderTicker />
+    <ClientOnly>
+      <LazyHeaderTicker />
+    </ClientOnly>
 
     <div class="relative">
       <header>
