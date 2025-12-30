@@ -1,5 +1,6 @@
 <template>
-  <div v-if="recentVehicles.length > 0" class="recently-viewed-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" role="region" aria-label="Recently Viewed Vehicles">
+  <Transition name="fade-slide">
+    <div v-if="isMounted && recentVehicles.length > 0" class="recently-viewed-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" role="region" aria-label="Recently Viewed Vehicles">
     <div class="flex items-center justify-between mb-3">
       <div>
         <h3 class="text-base font-semibold text-slate-900 m-0">Recently Viewed Vehicles</h3>
@@ -54,20 +55,23 @@
 
     <!-- Show more / Clear buttons -->
     <div v-if="recentVehicles.length > maxVisible" class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-      <button 
+      <button
+        type="button"
         class="text-xs font-medium text-primary hover:underline"
         @click="showAll = !showAll"
       >
         {{ showAll ? 'Show less' : `View all (${recentVehicles.length})` }}
       </button>
-      <button 
+      <button
+        type="button"
         class="text-xs text-slate-400 hover:text-slate-600"
         @click.stop="clearHistory"
       >
         Clear
       </button>
     </div>
-  </div>
+    </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
@@ -84,6 +88,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 const vehiclesStore = useVehiclesStore()
 const showAll = ref(false)
+const isMounted = ref(false)
+
+// Wait until client-side hydration is complete to prevent flash
+onMounted(() => {
+  nextTick(() => {
+    isMounted.value = true
+  })
+})
 
 // Get recently viewed vehicles, excluding current vehicle
 // Uses allVehicles prop if available, falls back to store
@@ -176,5 +188,19 @@ const clearHistory = () => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Transition for smooth mount/unmount */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
 </style>
+
+
 

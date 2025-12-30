@@ -1,11 +1,27 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = process.env.NUXT_JWT_SECRET || 'your-secret-key-min-32-characters-long';
-const JWT_REFRESH_SECRET = process.env.NUXT_JWT_REFRESH_SECRET || 'your-refresh-secret-key-min-32-characters';
+// In production, require JWT secrets to be set via environment variables
+// Fallback to dev secrets only in development mode
+const isProduction = process.env.NODE_ENV === 'production';
+
+const JWT_SECRET = process.env.NUXT_JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.NUXT_JWT_REFRESH_SECRET;
+
+// Fail fast in production if secrets are not configured
+if (isProduction && (!JWT_SECRET || JWT_SECRET.length < 32)) {
+  throw new Error('NUXT_JWT_SECRET must be set to a secure value (min 32 characters) in production');
+}
+if (isProduction && (!JWT_REFRESH_SECRET || JWT_REFRESH_SECRET.length < 32)) {
+  throw new Error('NUXT_JWT_REFRESH_SECRET must be set to a secure value (min 32 characters) in production');
+}
+
+// Use dev fallbacks only in non-production
+const jwtSecret = JWT_SECRET || 'dev-only-secret-key-min-32-chars-long';
+const jwtRefreshSecret = JWT_REFRESH_SECRET || 'dev-only-refresh-secret-min-32-chars';
 
 // Convert string secret to Uint8Array for jose
-const secret = new TextEncoder().encode(JWT_SECRET);
-const refreshSecret = new TextEncoder().encode(JWT_REFRESH_SECRET);
+const secret = new TextEncoder().encode(jwtSecret);
+const refreshSecret = new TextEncoder().encode(jwtRefreshSecret);
 
 export interface JWTPayload {
   userId: string;
@@ -63,6 +79,8 @@ export async function verifyRefreshToken(token: string): Promise<{ userId: strin
     throw new Error('Invalid or expired refresh token');
   }
 }
+
+
 
 
 

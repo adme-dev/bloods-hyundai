@@ -1,6 +1,7 @@
 /**
  * SSR-safe localStorage composable
  * Handles hydration mismatches and provides reactive localStorage
+ * Properly cleans up event listeners to prevent memory leaks
  */
 export const useLocalStorage = <T>(
   key: string,
@@ -8,7 +9,7 @@ export const useLocalStorage = <T>(
 ): Ref<T> => {
   const data = ref<T>(defaultValue) as Ref<T>;
 
-  if (process.client) {
+  if (import.meta.client) {
     // Load from localStorage on client
     const stored = localStorage.getItem(key);
     if (stored) {
@@ -20,7 +21,7 @@ export const useLocalStorage = <T>(
     }
 
     // Watch for changes and sync to localStorage
-    watch(
+    const stopWatch = watch(
       data,
       (newValue) => {
         if (newValue === null || newValue === undefined) {
@@ -33,7 +34,7 @@ export const useLocalStorage = <T>(
     );
 
     // Listen for changes from other tabs
-    window.addEventListener('storage', (event) => {
+    const handleStorageChange = (event: StorageEvent) => {
       if (event.key === key && event.newValue) {
         try {
           data.value = JSON.parse(event.newValue);
@@ -41,11 +42,20 @@ export const useLocalStorage = <T>(
           // Ignore parse errors
         }
       }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Clean up event listeners on scope disposal
+    onScopeDispose(() => {
+      stopWatch();
+      window.removeEventListener('storage', handleStorageChange);
     });
   }
 
   return data;
 };
+
 
 
 

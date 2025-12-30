@@ -158,13 +158,17 @@ const selectedVideo = ref<YouTubeVideo | null>(null)
 const openVideoModal = (video: YouTubeVideo) => {
   selectedVideo.value = video
   isModalOpen.value = true
-  document.body.style.overflow = 'hidden'
+  if (import.meta.client) {
+    document.body.style.overflow = 'hidden'
+  }
 }
 
 const closeVideoModal = () => {
   isModalOpen.value = false
   selectedVideo.value = null
-  document.body.style.overflow = ''
+  if (import.meta.client) {
+    document.body.style.overflow = ''
+  }
 }
 
 // Close modal on Escape key
@@ -175,12 +179,16 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
+  if (import.meta.client) {
+    window.addEventListener('keydown', handleKeydown)
+  }
 })
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
-  document.body.style.overflow = ''
+  if (import.meta.client) {
+    window.removeEventListener('keydown', handleKeydown)
+    document.body.style.overflow = ''
+  }
 })
 </script>
 

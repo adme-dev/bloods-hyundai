@@ -83,6 +83,7 @@ const lastScrollY = ref(0)
 
 // Track scroll position - show when past threshold, hide when scrolling back to top
 const handleScroll = () => {
+  if (!import.meta.client) return
   const currentScrollY = window.scrollY
   const scrollDelta = currentScrollY - lastScrollY.value
   
@@ -110,6 +111,7 @@ const handleScroll = () => {
 // Throttle scroll handler for performance
 let ticking = false
 const throttledScroll = () => {
+  if (!import.meta.client) return
   if (!ticking) {
     window.requestAnimationFrame(() => {
       handleScroll()
@@ -120,11 +122,15 @@ const throttledScroll = () => {
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', throttledScroll, { passive: true })
+  if (import.meta.client) {
+    window.addEventListener('scroll', throttledScroll, { passive: true })
+  }
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', throttledScroll)
+  if (import.meta.client) {
+    window.removeEventListener('scroll', throttledScroll)
+  }
 })
 </script>
 

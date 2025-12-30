@@ -1,8 +1,10 @@
 /**
  * GET /api/reviews
- * Fetches Google Reviews data from CDN
+ * Fetches Google Reviews data from CDN with local fallback
  * Replaces: src/functions/fetchReviews.js
  */
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 // Shuffle array helper
 function shuffleArray<T>(array: T[]): T[] {
@@ -14,62 +16,90 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+// Try to load local fallback reviews data for development
+function loadLocalReviewsFallback(): any | null {
+  try {
+    const fallbackPath = join(process.cwd(), 'server/data/reviews/hours.json');
+    if (existsSync(fallbackPath)) {
+      const data = readFileSync(fallbackPath, 'utf-8');
+      console.log('[Reviews API] Loaded local fallback');
+      return JSON.parse(data);
+    }
+    return null;
+  } catch (error: any) {
+    console.warn('[Reviews API] Could not load local fallback:', error.message);
+    return null;
+  }
+}
+
+// Process reviews response into formatted output
+function processReviewsResponse(response: any) {
+  if (!response?.result) {
+    return {
+      reviews: [],
+      rating: 0,
+      total_reviews: 0,
+    };
+  }
+
+  const dealershipName = response.result.name || '';
+  const reviews = (response.result.reviews || []).map((review: any) => ({
+    dealership: dealershipName,
+    author_name: review.author_name,
+    rating: review.rating,
+    text: review.text,
+    time: review.time,
+    relative_time_description: review.relative_time_description,
+    profile_photo_url: review.profile_photo_url,
+  }));
+
+  // Shuffle reviews
+  const shuffledReviews = shuffleArray(reviews);
+
+  return {
+    reviews: shuffledReviews,
+    rating: response.result.rating || 0,
+    total_reviews: response.result.user_ratings_total || reviews.length,
+  };
+}
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
 
   // CDN URL for reviews (set via NUXT_PUBLIC_CDN_URL env var)
   const cdnUrl = config.public.cdnUrl;
-  
-  if (!cdnUrl) {
-    // Return empty data if CDN URL not configured
-    return {
-      reviews: [],
-      rating: 0,
-      total_reviews: 0,
-    };
-  }
 
-  try {
-    // Fetch reviews from CDN (pre-cached from Google Places API)
-    const response = await $fetch<any>(`${cdnUrl}/reviews/hours.json`);
+  // Try CDN first
+  if (cdnUrl) {
+    try {
+      // Fetch reviews from CDN (pre-cached from Google Places API)
+      const response = await $fetch<any>(`${cdnUrl}/reviews/hours.json`, {
+        timeout: 5000, // 5 second timeout for faster fallback
+      });
 
-    if (!response?.result) {
-      return {
-        reviews: [],
-        rating: 0,
-        total_reviews: 0,
-      };
+      return processReviewsResponse(response);
+    } catch (error: any) {
+      console.warn('[Reviews API] CDN fetch failed, trying fallback:', error.message);
     }
+  }
 
-    const dealershipName = response.result.name || '';
-    const reviews = (response.result.reviews || []).map((review: any) => ({
-      dealership: dealershipName,
-      author_name: review.author_name,
-      rating: review.rating,
-      text: review.text,
-      time: review.time,
-      relative_time_description: review.relative_time_description,
-      profile_photo_url: review.profile_photo_url
-    }));
-
-    // Shuffle reviews
-    const shuffledReviews = shuffleArray(reviews);
-
+  // Try local fallback for development
+  const localData = loadLocalReviewsFallback();
+  if (localData) {
     return {
-      reviews: shuffledReviews,
-      rating: response.result.rating || 0,
-      total_reviews: response.result.user_ratings_total || reviews.length,
-    };
-  } catch (error: any) {
-    console.error('Error fetching reviews:', error);
-
-    return {
-      reviews: [],
-      rating: 0,
-      total_reviews: 0,
+      ...processReviewsResponse(localData),
+      _source: 'local-fallback',
     };
   }
+
+  // Return empty data if neither CDN nor fallback worked
+  return {
+    reviews: [],
+    rating: 0,
+    total_reviews: 0,
+  };
 });
+
 
 
 

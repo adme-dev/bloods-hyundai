@@ -330,7 +330,7 @@ const open = () => {
   nextTick(() => {
     searchInput.value?.focus();
   });
-  if (process.client) {
+  if (import.meta.client) {
     document.body.style.overflow = 'hidden';
   }
 };
@@ -339,7 +339,7 @@ const close = () => {
   isOpen.value = false;
   searchQuery.value = '';
   results.value = { vehicles: [], models: [], pages: [] };
-  if (process.client) {
+  if (import.meta.client) {
     document.body.style.overflow = '';
   }
 };
@@ -385,21 +385,26 @@ eventBus.useEvent('search:close', () => {
   close();
 });
 
-// Keyboard shortcut
-if (process.client) {
-  onMounted(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        isOpen.value ? close() : open();
-      }
-    };
+// Keyboard shortcut handler
+const handleKeydown = (e: KeyboardEvent) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    isOpen.value ? close() : open();
+  }
+};
+
+onMounted(() => {
+  if (import.meta.client) {
     window.addEventListener('keydown', handleKeydown);
-    onUnmounted(() => {
-      window.removeEventListener('keydown', handleKeydown);
-    });
-  });
-}
+  }
+});
+
+onUnmounted(() => {
+  if (import.meta.client) {
+    window.removeEventListener('keydown', handleKeydown);
+    document.body.style.overflow = '';
+  }
+});
 </script>
 
 <style scoped>
@@ -430,6 +435,7 @@ if (process.client) {
   animation: slideInFromTop 0.2s ease-out;
 }
 </style>
+
 
 
 

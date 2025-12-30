@@ -26,3 +26,5 @@ const props = defineProps<TabsTriggerProps & { class?: HTMLAttributes['class'] }
 
 
 
+
+

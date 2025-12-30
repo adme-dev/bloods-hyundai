@@ -405,18 +405,18 @@ const closeModal = () => {
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     resetForm();
-    if (process.client) {
+    if (import.meta.client) {
       document.body.style.overflow = 'hidden';
     }
   } else {
-    if (process.client) {
+    if (import.meta.client) {
       document.body.style.overflow = '';
     }
   }
 });
 
 onBeforeUnmount(() => {
-  if (process.client) {
+  if (import.meta.client) {
     document.body.style.overflow = '';
   }
 });

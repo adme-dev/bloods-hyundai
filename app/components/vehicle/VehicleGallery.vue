@@ -346,3 +346,5 @@ const allPhotosImage = computed(() => {
 }
 </style>
 
+
+

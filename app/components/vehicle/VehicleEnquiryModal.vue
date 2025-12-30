@@ -853,7 +853,7 @@ const closeModal = () => {
 
 // Embla carousel functions
 const initCarousels = () => {
-  if (!process.client) return;
+  if (!import.meta.client) return;
   
   // Destroy existing instances
   if (mainEmbla.value) {
@@ -920,7 +920,7 @@ watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     resetForm();
     selectedIndex.value = 0;
-    if (process.client) {
+    if (import.meta.client) {
       document.body.style.overflow = 'hidden';
       // Initialize carousels after modal opens
       setTimeout(() => {
@@ -928,7 +928,7 @@ watch(() => props.isOpen, (isOpen) => {
       }, 100);
     }
   } else {
-    if (process.client) {
+    if (import.meta.client) {
       document.body.style.overflow = '';
     }
     // Cleanup carousels
@@ -944,7 +944,7 @@ watch(() => props.isOpen, (isOpen) => {
 });
 
 onBeforeUnmount(() => {
-  if (process.client) {
+  if (import.meta.client) {
     document.body.style.overflow = '';
   }
   if (mainEmbla.value) {

@@ -250,7 +250,9 @@ const scrollThumbsRight = () => {
 // Close handler
 const close = () => {
   emit('close');
-  document.body.style.overflow = '';
+  if (import.meta.client) {
+    document.body.style.overflow = '';
+  }
 };
 
 // Click backdrop to close
@@ -290,6 +292,8 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 // Watch for lightbox open/close
 watch(() => props.isOpen, (isOpen) => {
+  if (!import.meta.client) return;
+
   if (isOpen) {
     document.body.style.overflow = 'hidden';
     // Set initial index
@@ -311,14 +315,18 @@ watch(() => props.initialIndex, (newIndex) => {
   }
 });
 
-// Lifecycle
+// Lifecycle - only add event listeners on client
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
+  if (import.meta.client) {
+    window.addEventListener('keydown', handleKeydown);
+  }
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
-  document.body.style.overflow = '';
+  if (import.meta.client) {
+    window.removeEventListener('keydown', handleKeydown);
+    document.body.style.overflow = '';
+  }
 });
 </script>
 

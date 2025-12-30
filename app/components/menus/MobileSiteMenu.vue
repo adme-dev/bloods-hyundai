@@ -248,8 +248,8 @@
               </div>
 
               <!-- Saved Vehicles -->
-              <NuxtLink 
-                to="/favorites" 
+              <NuxtLink
+                to="/favorites"
                 class="mobile-site-menu__standalone-link"
                 @click="close"
               >
@@ -259,9 +259,11 @@
                   </svg>
                   Saved Vehicles
                 </span>
-                <span v-if="savedVehicleCount > 0" class="mobile-site-menu__badge">
-                  {{ savedVehicleCount }}
-                </span>
+                <ClientOnly>
+                  <span v-if="savedVehicleCount > 0" class="mobile-site-menu__badge">
+                    {{ savedVehicleCount }}
+                  </span>
+                </ClientOnly>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
@@ -1023,6 +1025,8 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 }
 </style>
+
+
 
 
 

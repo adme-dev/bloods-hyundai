@@ -21,10 +21,15 @@ export const db = drizzle(pool, { schema });
 /**
  * Set tenant context for Row-Level Security (RLS)
  * This must be called before any queries that need tenant isolation
- * 
+ *
  * @param dealerId - UUID of the dealer to set as current tenant
  */
 export async function setTenantContext(dealerId: string) {
+  // Validate UUID format to prevent SQL injection
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(dealerId)) {
+    throw new Error('Invalid dealer ID format');
+  }
   await pool.query(`SET LOCAL app.current_dealer_id = '${dealerId}'`);
 }
 
@@ -63,6 +68,8 @@ export function getPool() {
 
 // Export schema for use in other files
 export { schema };
+
+
 
 
 

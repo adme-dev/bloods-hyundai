@@ -16,23 +16,10 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     // Fetch all vehicles from carsales-feed
-    const config = useRuntimeConfig();
-    let feedUrl = '/api/carsales-feed';
-    
-    // In development, use explicit localhost URL
-    if (process.env.NODE_ENV === 'development' || !event.node.req.headers.host) {
-      const port = process.env.PORT || 3000;
-      feedUrl = `http://localhost:${port}/api/carsales-feed`;
-    } else {
-      // In production, construct from request headers
-      const protocol = event.node.req.headers['x-forwarded-proto'] || 'https';
-      const host = event.node.req.headers.host;
-      feedUrl = `${protocol}://${host}/api/carsales-feed`;
-    }
-    
+    // Use relative URL with $fetch - Nitro handles internal routing automatically
     console.log(`[Vehicle Detail API] Fetching vehicle ${vehicleId} from carsales feed`);
-    
-    const feedResponse = await $fetch<{ vehiclesData: any[]; filters: any[] }>(feedUrl, {
+
+    const feedResponse = await $fetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
       headers: {
         'Accept': 'application/json',
       },

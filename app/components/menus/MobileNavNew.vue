@@ -53,18 +53,20 @@
 
           <!-- Saved Vehicles -->
           <li>
-            <NuxtLink 
-              to="/favorites" 
+            <NuxtLink
+              to="/favorites"
               class="uk-accordion-title nav-title uk-text-bold uk-flex uk-flex-middle"
               @click="closeNav"
             >
               <span class="uk-flex-1">Saved Vehicles</span>
-              <span 
-                v-if="savedVehicleCount > 0" 
-                class="uk-badge uk-margin-small-right"
-              >
-                {{ savedVehicleCount }}
-              </span>
+              <ClientOnly>
+                <span
+                  v-if="savedVehicleCount > 0"
+                  class="uk-badge uk-margin-small-right"
+                >
+                  {{ savedVehicleCount }}
+                </span>
+              </ClientOnly>
               <span class="uk-icon" uk-icon="arrow-right"></span>
             </NuxtLink>
           </li>
@@ -318,6 +320,7 @@ const isLinkExternal = (url: string) => {
   color: #fff;
 }
 </style>
+
 
 
 

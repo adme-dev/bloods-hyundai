@@ -51,9 +51,10 @@ export default defineEventHandler(async (event) => {
     );
   }
   
-  // Pagination
-  const page = parseInt(query.page as string) || 1;
-  const limit = parseInt(query.limit as string) || 20;
+  // Pagination with security limit to prevent DoS
+  const MAX_LIMIT = 100;
+  const page = Math.max(1, parseInt(query.page as string) || 1);
+  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(query.limit as string) || 20));
   const offset = (page - 1) * limit;
   
   // Get enquiries with assigned user
@@ -90,6 +91,8 @@ export default defineEventHandler(async (event) => {
     },
   };
 });
+
+
 
 
 
