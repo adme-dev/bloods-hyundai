@@ -8,8 +8,8 @@
       </div>
 
       <div v-else-if="vehicleCategories && vehicleCategories.length > 0" class="showroom-menu uk-background-default">
-        <!-- Mobile filter -->
-        <div class="uk-hidden@l">
+        <!-- Mobile filter - hidden on lg screens (1024px+) -->
+        <div class="block lg:hidden">
           <div @click="showMobileFilter = !showMobileFilter" class="uk-padding uk-padding-remove-bottom uk-link uk-text-bold">
             <UkIcon icon="settings" :ratio="1.2" class="uk-padding-small uk-margin-small-right" />
             Filter
@@ -46,8 +46,8 @@
           </ul>
         </div>
 
-        <!-- Desktop tabs -->
-        <ul class="uk-subnav model--Category showroomnav uk-tab uk-flex uk-flex-center@s uk-flex-nowrap uk-margin-remove-top uk-light uk-visible@l">
+        <!-- Desktop tabs - visible only on lg screens (1024px+) -->
+        <ul class="uk-subnav model--Category showroomnav uk-tab uk-flex uk-flex-center@s uk-flex-nowrap uk-margin-remove-top uk-light hidden lg:flex">
           <li :class="{ 'uk-active': itemToShow === -1 }">
             <a 
               href="#"
@@ -80,7 +80,7 @@
               In stock
             </NuxtLink>
           </li>
-          <li class="close-btn uk-visible@l">
+          <li class="close-btn hidden lg:block">
             <button type="button" @click="closeModel" class="close-link" title="Close menu">
               <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path fill="none" stroke="#ffffff" stroke-width="1.5" d="M16,16 L4,4"></path>

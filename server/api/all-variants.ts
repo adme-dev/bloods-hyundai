@@ -159,7 +159,7 @@ export default defineEventHandler(async (event) => {
       'i30 sedan hybrid': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_Hybrid_Front34_640x331.png',
       // Hatch & Sedan
       'i30 n line': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_N_Line_Front34_640x331.png',
-      'i30 sedan': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_Front34_640x331.png',
+      'i30 sedan': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_Hybrid_Front34_640x331.png',
       'i30 sedan n line': '/content/dam/hyundai/au/en/models/front-3-4-models/i30_Sedan_NLine_Front34_640x331.png',
       // Runout
       '2025 tucson': '/content/dam/hyundai/au/en/models/front-3-4-models/TUCSON_Hybrid_Front34_640x331.png',
