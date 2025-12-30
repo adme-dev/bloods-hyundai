@@ -186,6 +186,12 @@ const props = defineProps<Props>();
 
 const vehiclesStore = useVehiclesStore();
 
+// SSR hydration guard - prevents mismatch when localStorage state differs
+const isMounted = ref(false);
+onMounted(() => {
+  isMounted.value = true;
+});
+
 // Comparison state using array persistence to avoid Set serialization issues
 const comparisonIds = useLocalStorage<any>('comparisonVehicles', []);
 
@@ -201,6 +207,8 @@ const normalizeComparisonIds = (raw: any): (string | number)[] => {
 
 const comparisonSet = computed(() => new Set(normalizeComparisonIds(comparisonIds.value)));
 const isInComparison = computed(() => {
+  // Return false during SSR to prevent hydration mismatch
+  if (!isMounted.value) return false;
   const vehicleId = props.vehicle.stockid || props.vehicle.identifier || props.vehicle.id;
   return comparisonSet.value.has(vehicleId);
 });

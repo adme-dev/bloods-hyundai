@@ -1054,10 +1054,19 @@ const pageSubtitle = computed(() => {
 });
 
 // Header background image from first vehicle result
+// Use client-only rendering to avoid SSR hydration mismatch
+const isClientMounted = ref(false);
+onMounted(() => {
+  isClientMounted.value = true;
+});
+
 const headerBackgroundStyle = computed(() => {
+  // Return empty object on SSR to prevent hydration mismatch
+  if (!isClientMounted.value) return {};
+
   const firstVehicle = vehicles.value?.[0];
   const imageUrl = firstVehicle?.images?.[0] || firstVehicle?.thumb || '';
-  
+
   if (imageUrl) {
     return {
       backgroundImage: `url(${imageUrl})`,
@@ -2166,7 +2175,7 @@ const checkStockParam = () => {
       trackEnquiryModalOpen({
         vehicle,
         source: 'stock_param',
-        page_url: window.location.href,
+        page_url: import.meta.client ? window.location.href : '',
       });
       vehiclesStore.setVehicleEnquiryPopUp(true, vehicle);
     }
