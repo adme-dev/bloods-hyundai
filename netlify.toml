@@ -2,12 +2,17 @@
 
 [build]
   command = "npm run build"
-   publish = "dist"
+  publish = "dist"
   # No publish directory needed - Netlify preset handles this automatically
 
 [build.environment]
   NODE_VERSION = "20"
-  NODE_OPTIONS = "--max-old-space-size=4096"
+  # Increase memory for large builds and enable concurrent workers
+  NODE_OPTIONS = "--max-old-space-size=8192"
+  # Disable source maps in production to speed up build
+  GENERATE_SOURCEMAP = "false"
+  # Enable Vite multi-threading
+  VITE_BUILD_THREADS = "true"
 
 # Functions config
 [functions]

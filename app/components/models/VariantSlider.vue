@@ -522,7 +522,7 @@ $bg-light: #f8f9fa;
   color: #fff;
 
   &:hover {
-    background: darken($primary-blue, 10%);
+    background: color.adjust($primary-blue, $lightness: -10%);
     color: #fff;
   }
 }
