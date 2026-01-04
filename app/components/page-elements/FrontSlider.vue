@@ -312,6 +312,13 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+/* Mobile: Use portrait-friendly aspect ratio for mobile images */
+@media (max-width: 768px) {
+  .slide-image {
+    aspect-ratio: 3 / 4;
+  }
+}
+
 .slide-video video {
   width: 100%;
   height: 100%;
