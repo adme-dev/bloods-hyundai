@@ -1,109 +1,123 @@
 <template>
   <div class="error-page">
-    <main class="error-content">
-      <!-- Error Code -->
-      <p class="error-code">{{ error.statusCode || 500 }}</p>
-      
-      <!-- Heading -->
-      <h1 class="error-heading">
-        {{ is404 ? 'Page not found' : 'Something went wrong' }}
-      </h1>
-      
-      <!-- Description -->
-      <p class="error-description">
-        {{ is404 
-          ? "Sorry, we couldn't find the page you're looking for." 
-          : "An unexpected error occurred. Please try again later." 
-        }}
-      </p>
-      
-      <!-- Action Buttons -->
-      <div class="error-actions">
-        <NuxtLink to="/" class="btn-primary">
-          Go back home
-        </NuxtLink>
-        <NuxtLink to="/contact" class="btn-secondary">
-          Contact support <span aria-hidden="true">&rarr;</span>
-        </NuxtLink>
+    <!-- Hero Section with Background Image -->
+    <div class="error-hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="error-code">{{ error.statusCode || 500 }}</p>
+        <h1 class="error-heading">
+          {{ is404 ? "You've hit a dead end." : 'Something went wrong' }}
+        </h1>
+        <p class="error-subheading">
+          {{ is404 ? 'U-turn?' : 'Please try again later.' }}
+        </p>
       </div>
+    </div>
 
-      <!-- Quick Links for 404 -->
-      <div v-if="is404" class="quick-links">
-        <h2 class="quick-links-title">Popular pages</h2>
-        <ul class="quick-links-list">
-          <li>
-            <NuxtLink to="/car-sales" class="quick-link">
-              <span class="quick-link-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                </svg>
-              </span>
-              <span class="quick-link-content">
-                <span class="quick-link-name">Browse Vehicles</span>
-                <span class="quick-link-desc">Explore our full range of new and used cars</span>
-              </span>
-              <span class="quick-link-arrow">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+    <!-- Action Section -->
+    <main class="error-actions-section">
+      <div class="actions-container">
+        <!-- Primary Actions -->
+        <div class="primary-actions">
+          <NuxtLink to="/" class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+            </svg>
+            Go home
+          </NuxtLink>
+          <NuxtLink to="/contact" class="btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+            </svg>
+            Customer care
+          </NuxtLink>
+        </div>
+
+        <!-- Quick Links Grid -->
+        <div v-if="is404" class="quick-links-grid">
+          <NuxtLink to="/service" class="quick-link-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Book a Service</span>
+              <span class="card-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
               </span>
-            </NuxtLink>
-          </li>
-          <li>
-            <NuxtLink to="/sell-my-car" class="quick-link">
-              <span class="quick-link-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-              </span>
-              <span class="quick-link-content">
-                <span class="quick-link-name">Sell Your Car</span>
-                <span class="quick-link-desc">Get a free valuation for your vehicle</span>
-              </span>
-              <span class="quick-link-arrow">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            </div>
+          </NuxtLink>
+
+          <NuxtLink to="/test-drive" class="quick-link-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Test Drive</span>
+              <span class="card-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
               </span>
-            </NuxtLink>
-          </li>
-          <li>
-            <NuxtLink to="/service" class="quick-link">
-              <span class="quick-link-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
-                </svg>
-              </span>
-              <span class="quick-link-content">
-                <span class="quick-link-name">Book a Service</span>
-                <span class="quick-link-desc">Schedule your next vehicle service</span>
-              </span>
-              <span class="quick-link-arrow">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            </div>
+          </NuxtLink>
+
+          <NuxtLink to="/models" class="quick-link-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Browse Models</span>
+              <span class="card-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
               </span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </div>
+            </div>
+          </NuxtLink>
 
-      <!-- Retry button for non-404 errors -->
-      <div v-if="!is404" class="retry-section">
-        <button @click="handleRetry" class="btn-retry">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="retry-icon">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-          </svg>
-          Try again
-        </button>
-      </div>
+          <NuxtLink to="/car-sales" class="quick-link-card">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+              </svg>
+            </div>
+            <div class="card-content">
+              <span class="card-title">Special Offers</span>
+              <span class="card-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
+              </span>
+            </div>
+          </NuxtLink>
+        </div>
 
-      <!-- Dev Error Details -->
-      <div v-if="isDev && error.stack" class="dev-details">
-        <details>
-          <summary>Error Details (Development Only)</summary>
-          <pre>{{ error.stack }}</pre>
-        </details>
+        <!-- Retry button for non-404 errors -->
+        <div v-if="!is404" class="retry-section">
+          <button @click="handleRetry" class="btn-retry">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="btn-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+            </svg>
+            Try again
+          </button>
+        </div>
+
+        <!-- Dev Error Details -->
+        <div v-if="isDev && error.stack" class="dev-details">
+          <details>
+            <summary>Error Details (Development Only)</summary>
+            <pre>{{ error.stack }}</pre>
+          </details>
+        </div>
       </div>
     </main>
   </div>
@@ -135,54 +149,93 @@ if (process.dev) {
 .error-page {
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to bottom, #ffffff, #f9fafb);
-  padding: 3rem 1.5rem;
+  flex-direction: column;
+  background-color: #f5f5f5;
 }
 
-.error-content {
-  max-width: 32rem;
+// Hero Section
+.error-hero {
+  position: relative;
+  height: 50vh;
+  min-height: 320px;
+  max-height: 500px;
+  background-image: url('https://hyundaioem.b-cdn.net/raw/corporate/hero-404.jpg');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 30, 80, 0.4) 0%,
+    rgba(0, 30, 80, 0.6) 100%
+  );
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
   text-align: center;
+  padding: 2rem;
+  color: #ffffff;
 }
 
 .error-code {
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #002c5f; // Hyundai blue
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.75rem;
+  margin: 0 0 1rem 0;
+  opacity: 0.9;
 }
 
 .error-heading {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0 0 1rem 0;
-  line-height: 1.2;
-  
-  @media (min-width: 640px) {
-    font-size: 3rem;
-  }
+  font-family: 'Hyundai Sans Head', 'Hyundai Sans', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.1;
 }
 
-.error-description {
-  font-size: 1rem;
-  color: #6b7280;
-  line-height: 1.75;
-  margin: 0 0 2.5rem 0;
+.error-subheading {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 400;
+  margin: 0;
+  opacity: 0.9;
 }
 
-.error-actions {
+// Actions Section
+.error-actions-section {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background-color: #ffffff;
+}
+
+.actions-container {
+  width: 100%;
+  max-width: 900px;
+}
+
+.primary-actions {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   align-items: center;
   justify-content: center;
-  
+  margin-bottom: 3rem;
+
   @media (min-width: 640px) {
     flex-direction: row;
+    gap: 1.5rem;
   }
 }
 
@@ -190,138 +243,147 @@ if (process.dev) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #ffffff;
-  background-color: #002c5f;
-  border-radius: 0.5rem;
+  background-color: #001E50;
+  border-radius: 50px;
   text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  
+  transition: all 0.3s ease;
+  min-width: 180px;
+
   &:hover {
     background-color: #00407a;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 30, 80, 0.3);
+  }
+
+  .btn-icon {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 }
 
 .btn-secondary {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 0.875rem;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #002c5f;
+  color: #001E50;
+  background-color: transparent;
+  border: 2px solid #001E50;
+  border-radius: 50px;
   text-decoration: none;
-  transition: color 0.2s ease;
-  
+  transition: all 0.3s ease;
+  min-width: 180px;
+
   &:hover {
-    color: #00407a;
+    background-color: #001E50;
+    color: #ffffff;
+    transform: translateY(-2px);
+  }
+
+  .btn-icon {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 }
 
-.quick-links {
-  margin-top: 4rem;
-  border-top: 1px solid #e5e7eb;
-  padding-top: 2.5rem;
-  text-align: center;
+// Quick Links Grid
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
 }
 
-.quick-links-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #111827;
-  margin: 0 0 1rem 0;
-}
-
-.quick-links-list {
-  list-style: none;
-  margin: 0 auto;
-  padding: 0;
+.quick-link-card {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  max-width: 24rem;
-  
-  li {
-    border-bottom: 1px solid #e5e7eb;
-    
-    &:first-child {
-      border-top: 1px solid #e5e7eb;
-    }
-  }
-}
-
-.quick-link {
-  display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 0;
+  padding: 1.5rem 1rem;
+  background-color: #f9fafb;
+  border-radius: 12px;
   text-decoration: none;
-  transition: all 0.2s ease;
-  
+  transition: all 0.3s ease;
+
   &:hover {
-    .quick-link-name {
-      color: #002c5f;
+    background-color: #001E50;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 30, 80, 0.2);
+
+    .card-icon {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
     }
-    
-    .quick-link-arrow {
+
+    .card-title {
+      color: #ffffff;
+    }
+
+    .card-arrow {
+      color: #00aad2;
       transform: translateX(4px);
     }
   }
 }
 
-.quick-link-icon {
-  flex-shrink: 0;
+.card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.5rem;
-  color: #002c5f;
-  
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color: #e5e7eb;
+  border-radius: 50%;
+  color: #001E50;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+
   svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
   }
 }
 
-.quick-link-content {
-  flex: 1;
-  text-align: left;
+.card-content {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.quick-link-name {
-  font-size: 0.875rem;
+.card-title {
+  font-size: 0.9rem;
   font-weight: 600;
   color: #111827;
-  transition: color 0.2s ease;
+  text-align: center;
+  transition: color 0.3s ease;
 }
 
-.quick-link-desc {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.quick-link-arrow {
-  flex-shrink: 0;
+.card-arrow {
   color: #9ca3af;
-  transition: transform 0.2s ease;
-  
+  transition: all 0.3s ease;
+
   svg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1rem;
+    height: 1rem;
   }
 }
 
+// Retry Section
 .retry-section {
+  display: flex;
+  justify-content: center;
   margin-top: 2rem;
 }
 
@@ -329,52 +391,53 @@ if (process.dev) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #374151;
   background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
+  border: 2px solid #d1d5db;
+  border-radius: 50px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
+  transition: all 0.3s ease;
+
   &:hover {
     background-color: #f9fafb;
-    border-color: #9ca3af;
+    border-color: #001E50;
+    color: #001E50;
   }
-  
-  .retry-icon {
+
+  .btn-icon {
     width: 1.25rem;
     height: 1.25rem;
   }
 }
 
+// Dev Details
 .dev-details {
   margin-top: 3rem;
-  text-align: left;
-  
+
   details {
     background-color: #1f2937;
-    border-radius: 0.75rem;
+    border-radius: 12px;
     overflow: hidden;
-    
+
     summary {
-      padding: 1rem 1.25rem;
+      padding: 1rem 1.5rem;
       font-size: 0.875rem;
       font-weight: 600;
       color: #f9fafb;
       cursor: pointer;
       user-select: none;
-      
+
       &:hover {
         background-color: #374151;
       }
     }
-    
+
     pre {
       margin: 0;
-      padding: 1.25rem;
+      padding: 1.5rem;
       font-size: 0.75rem;
       color: #d1d5db;
       background-color: #111827;
@@ -386,11 +449,3 @@ if (process.dev) {
   }
 }
 </style>
-
-
-
-
-
-
-
-

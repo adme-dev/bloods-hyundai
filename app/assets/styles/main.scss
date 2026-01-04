@@ -336,14 +336,30 @@ body, p, span, li, td, th, label, input, textarea, select, button {
 }
 
 // Links - Hyundai accent blue
+// Added underline for accessibility (links must not rely on color alone)
 a {
   color: var(--color-primary-light);
-  text-decoration: none;
-  transition: color 0.2s ease;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 
   &:hover {
     color: var(--color-primary);
   }
+}
+
+// Remove underline from navigation links, buttons, and card links
+a.uk-button,
+a.no-underline,
+.uk-navbar-nav a,
+.uk-nav a,
+.primary-nav a,
+.footer-wrap a,
+.uk-card a,
+a:has(img),
+a:has(.uk-card) {
+  text-decoration: none;
 }
 
 // Hyundai hero heading style

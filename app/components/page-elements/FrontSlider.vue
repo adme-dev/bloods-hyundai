@@ -1,5 +1,6 @@
 <template>
-  <div class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden">
+  <!-- CLS prevention: min-height reserves space before content loads -->
+  <div class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden" style="min-height: 300px;">
     <!-- SSR placeholder - shows first slide while JS loads -->
     <div v-if="!isMounted && homeSlides.length" class="hero-carousel hero-carousel--ssr">
       <div class="hero-viewport">
@@ -17,6 +18,8 @@
                     :src="homeSlides[0].desktop || homeSlides[0].mobile"
                     :alt="strippedHeadingContent(homeSlides[0].heading_content) || siteName"
                     class="slide-image"
+                    width="1600"
+                    height="600"
                     loading="eager"
                     fetchpriority="high"
                   />
@@ -53,6 +56,8 @@
                     :src="slide.desktop || slide.mobile"
                     :alt="strippedHeadingContent(slide.heading_content) || siteName"
                     class="slide-image"
+                    width="1600"
+                    height="600"
                     :loading="index === 0 ? 'eager' : 'lazy'"
                     :fetchpriority="index === 0 ? 'high' : 'auto'"
                   />
@@ -302,6 +307,9 @@ onUnmounted(() => {
   width: 100%;
   height: auto;
   display: block;
+  /* Maintain aspect ratio to prevent CLS */
+  aspect-ratio: 16 / 6;
+  object-fit: cover;
 }
 
 .slide-video video {
