@@ -261,13 +261,15 @@ const categories = computed<Category[]>(() => {
 // Get all unique models from all categories (this page shows all offers)
 const currentModels = computed<Model[]>(() => {
   if (!offersData.value?.categories) return [];
-  
+
   // Return all unique models from all categories
+  // Use model name as key since OEM data sometimes reuses IDs across different models
   const modelMap = new Map<string, Model>();
   for (const category of offersData.value.categories) {
     for (const model of category.models) {
-      if (!modelMap.has(model.id)) {
-        modelMap.set(model.id, model);
+      const uniqueKey = model.name; // Use name instead of id as unique key
+      if (!modelMap.has(uniqueKey)) {
+        modelMap.set(uniqueKey, model);
       }
     }
   }

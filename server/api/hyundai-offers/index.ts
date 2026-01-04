@@ -115,20 +115,37 @@ function extractOffersData(html: string): any {
 }
 
 function extractHeroBanner(html: string): string {
+  // Look for hero banner images - prioritize current year/quarter banners
   const patterns = [
-    /src="([^"]*DAC-Q4-Web-BANNER[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
-    /src="([^"]*offers[^"]*banner[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
-    /src="([^"]*\/content\/dam\/hyundai\/au\/en\/offers\/[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
+    // Match 2026 retail offers banners (current campaign)
+    /src="([^"]*2026-retail-offers[^"]*1920x720[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
+    // Match Q1 2026 banners
+    /src="([^"]*Q1[_-]?2026[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
+    // Match current year retail offers
+    /src="([^"]*retail-offers[^"]*1920x720[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
+    // Match offers-images path with 1920x720 dimensions (hero size) - get last match
+    /src="([^"]*\/offers-images\/[^"]*1920x720[^"]*\.(?:jpg|png|webp)[^"]*)"/gi,
   ];
 
-  for (const regex of patterns) {
-    const match = html.match(regex);
+  // Try specific patterns first
+  for (let i = 0; i < patterns.length - 1; i++) {
+    const match = html.match(patterns[i]);
     if (match && match[1]) {
       return prependBaseUrl(match[1]);
     }
   }
 
-  return 'https://www.hyundai.com/content/dam/hyundai/au/en/images/offers/2025/10/imgi_18_DAC-Q4-Web-BANNER_1920x720.jpg';
+  // For the last pattern, get all matches and use the last one (newest banner usually at bottom)
+  const allMatches = [...html.matchAll(patterns[patterns.length - 1])];
+  if (allMatches.length > 0) {
+    const lastMatch = allMatches[allMatches.length - 1];
+    if (lastMatch && lastMatch[1]) {
+      return prependBaseUrl(lastMatch[1]);
+    }
+  }
+
+  // Fallback - should rarely be needed
+  return 'https://www.hyundai.com/content/dam/hyundai/au/en/offers-images/2025/2026-retail-offers/104249_DAC_Q1_2026_Web_banners_V1_1920x720.png';
 }
 
 function prependBaseUrl(path: string | null): string | null {
@@ -232,12 +249,18 @@ function transformOffersData(rawData: any, heroBanner: string) {
     return variant;
   });
 
-  // Build categories
-  const variantsByModelAndGroup: Record<string, Variant> = {};
+  // Build categories - index variants by variantGroup name for matching
+  const variantsByGroup: Record<string, Variant> = {};
   for (const v of allVariants) {
-    const key = `${v.modelGroup}|${v.variantGroup}`.toLowerCase();
-    if (!variantsByModelAndGroup[key] || v.hasValueOffer) {
-      variantsByModelAndGroup[key] = v;
+    // Primary key: just the variantGroup (e.g., "i30 Sedan", "TUCSON Elite")
+    const key = v.variantGroup.toLowerCase().trim();
+    if (!variantsByGroup[key] || v.hasValueOffer) {
+      variantsByGroup[key] = v;
+    }
+    // Secondary key: modelGroup|variantGroup for more specific matches
+    const altKey = `${v.modelGroup}|${v.variantGroup}`.toLowerCase().trim();
+    if (!variantsByGroup[altKey] || v.hasValueOffer) {
+      variantsByGroup[altKey] = v;
     }
   }
 
@@ -245,8 +268,17 @@ function transformOffersData(rawData: any, heroBanner: string) {
     const modelVariants = (model.variantGroupList || [])
       .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
       .map((variantGroup: any) => {
-        const lookupKey = `${model.name}|${variantGroup.name}`.toLowerCase();
-        const matchedVariant = variantsByModelAndGroup[lookupKey];
+        // Try multiple lookup strategies
+        const variantName = (variantGroup.name || '').toLowerCase().trim();
+        const modelName = (model.name || '').toLowerCase().trim();
+
+        // Try: exact variantGroup name match first (most common)
+        let matchedVariant = variantsByGroup[variantName];
+
+        // Try: model.name|variantGroup.name
+        if (!matchedVariant) {
+          matchedVariant = variantsByGroup[`${modelName}|${variantName}`];
+        }
 
         return {
           id: matchedVariant?.id || variantGroup.id,
