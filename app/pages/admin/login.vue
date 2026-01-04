@@ -61,10 +61,7 @@
           </button>
         </div>
         
-        <div class="text-center text-xs text-gray-500">
-          <p>Default credentials:</p>
-          <p class="font-mono">admin@salehyundai.com.au / Admin123!</p>
-        </div>
+
       </form>
     </div>
   </div>
