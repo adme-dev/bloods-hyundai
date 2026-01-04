@@ -424,16 +424,8 @@ const retryLoad = async () => {
   }
 };
 
-// Ensure models are loaded when component mounts
-onMounted(async () => {
-  if (!modelsStore.isInitialized && !modelsStore.loading) {
-    try {
-      await modelsStore.fetchModels();
-    } catch (err) {
-      console.error('Failed to load models on mount:', err);
-    }
-  }
-});
+// Models are fetched via SSR in the store (useAllVariants with server: true, lazy: false)
+// No onMounted fetch needed - data arrives with the HTML payload
 
 // Close dropdown when clicking outside
 onClickOutside(categoryDropdownRef, () => {

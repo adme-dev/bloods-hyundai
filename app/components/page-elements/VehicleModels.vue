@@ -1,12 +1,10 @@
 <template>
-  <!-- Off-canvas models menu - wrapped in ClientOnly to prevent hydration mismatch from UIkit -->
-  <ClientOnly>
-    <div id="offcanvas-models" uk-offcanvas="flip: true; overlay: true; mode: slide">
-      <div class="uk-offcanvas-bar uk-padding-remove uk-background-secondary" style="width: 100%; max-width: 100%;">
-        <LazyNavModels />
-      </div>
+  <!-- Off-canvas models menu - parent wraps in ClientOnly to prevent hydration mismatch from UIkit -->
+  <div id="offcanvas-models" uk-offcanvas="flip: true; overlay: true; mode: slide">
+    <div class="uk-offcanvas-bar uk-padding-remove uk-background-secondary" style="width: 100%; max-width: 100%;">
+      <LazyNavModels />
     </div>
-  </ClientOnly>
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -183,8 +183,10 @@ export default defineNuxtConfig({
   // Route rules for hybrid rendering
   // Note: Prerendering disabled during migration. Re-enable when API is ready.
   routeRules: {
+    // Home page - ISR with 1 hour cache for performance
+    '/': { isr: 3600 },
+
     // Static pages - prerender at build time (disabled for now)
-    // '/': { prerender: true },
     // '/contact': { prerender: true },
     // '/site-map': { prerender: true },
 

@@ -16,7 +16,9 @@
 
     <footer>
       <LazyFooterLinks />
-      <LazyVehicleModels />
+      <ClientOnly>
+        <LazyVehicleModels />
+      </ClientOnly>
       <LazyGlobalSearch />
       <LazyMobileSiteMenu />
     </footer>

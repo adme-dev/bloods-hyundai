@@ -1,5 +1,5 @@
 <template>
-  <div class="vehicle-for-sale-page bg-slate-50 text-slate-900">
+  <div class="vehicle-for-sale-page bg-slate-50 text-slate-900 overflow-x-hidden">
     <!-- Loading -->
     <div v-if="pending" class="flex min-h-[60vh] items-center justify-center">
       <div uk-spinner="ratio: 2"></div>
@@ -150,10 +150,10 @@
       </ClientOnly>
 
       <!-- Main Content -->
-      <section class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-6 lg:py-8">
-        <div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <section class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-6 lg:py-8 overflow-hidden">
+        <div class="grid gap-6 lg:grid-cols-[2fr_1fr] min-w-0">
           <!-- Details -->
-          <div class="space-y-4">
+          <div class="space-y-4 min-w-0">
 
             <!-- Highlights -->
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -411,7 +411,7 @@
       </section>
 
       <!-- Related Vehicles Section -->
-      <section v-if="relatedVehicles.length > 0" class="bg-white py-12">
+      <section v-if="relatedVehicles.length > 0" class="bg-white py-12 overflow-hidden">
         <div class="mx-auto max-w-7xl px-4 lg:px-6">
           <div class="mb-8">
             <h2 class="text-2xl font-bold text-slate-900 md:text-3xl">Similar Vehicles</h2>
@@ -1246,6 +1246,8 @@ const closeTestDrive = () => {
     padding: 0.5rem 0.75rem !important;
     height: auto !important;
     min-height: unset !important;
+    word-break: break-word; /* Prevent long VIN numbers from overflowing */
+    overflow-wrap: break-word;
   }
   
   /* Reset space-y children */

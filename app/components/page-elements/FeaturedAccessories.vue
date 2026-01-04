@@ -197,10 +197,21 @@ const props = withDefaults(defineProps<Props>(), {
 // Swiper modules
 const modules = [Navigation, Pagination];
 
-// State
-const loading = ref(true);
-const error = ref<string | null>(null);
-const accessories = ref<FeaturedAccessory[]>([]);
+// Fetch featured accessories with SSR support using useAsyncData
+const { data: accessoriesData, status, error } = await useAsyncData(
+  'featured-accessories',
+  () => $fetch<{ success: boolean; accessories: FeaturedAccessory[]; error?: string }>('/api/featured-accessories', {
+    params: { limit: props.limit },
+  }),
+  {
+    // Cache for 5 minutes to reduce API calls
+    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] || nuxtApp.static.data[key],
+  }
+);
+
+// Computed state from useAsyncData
+const loading = computed(() => status.value === 'pending');
+const accessories = computed(() => accessoriesData.value?.accessories || []);
 
 // Navigate to the accessory's model page
 const navigateToAccessory = (accessory: FeaturedAccessory) => {
@@ -211,36 +222,6 @@ const navigateToAccessory = (accessory: FeaturedAccessory) => {
 const formatPrice = (price: number) => {
   return price.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
-
-// Fetch featured accessories
-const fetchFeaturedAccessories = async () => {
-  loading.value = true;
-  error.value = null;
-
-  try {
-    const response = await $fetch<{ success: boolean; accessories: FeaturedAccessory[]; error?: string }>('/api/featured-accessories', {
-      params: { limit: props.limit },
-    });
-
-    if (response?.success && response.accessories) {
-      accessories.value = response.accessories;
-    } else {
-      error.value = response?.error || 'Failed to load accessories';
-      accessories.value = [];
-    }
-  } catch (err: any) {
-    console.error('Failed to fetch featured accessories:', err);
-    error.value = 'Unable to load accessories';
-    accessories.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
-
-// Fetch on mount
-onMounted(() => {
-  fetchFeaturedAccessories();
-});
 </script>
 
 <style scoped>

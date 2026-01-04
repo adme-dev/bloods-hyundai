@@ -148,47 +148,32 @@ const props = withDefaults(defineProps<Props>(), {
 // Swiper modules
 const modules = [Navigation, Pagination];
 
-// State
-const loading = ref(true);
-const error = ref<string | null>(null);
-const vehicles = ref<any[]>([]);
+// Fetch vehicles with SSR support using useAsyncData
+const { data: vehiclesData, status, error } = await useAsyncData(
+  'special-offers-vehicles',
+  async () => {
+    const response = await $fetch<{ vehiclesData: any[] }>('/api/carsales-feed');
+    if (response?.vehiclesData) {
+      // Filter vehicles that have stock_special flag
+      return response.vehiclesData.filter(
+        (vehicle: any) => vehicle.stock_special?.value?.includes('stock-special')
+      );
+    }
+    return [];
+  },
+  {
+    // Cache for 5 minutes to reduce API calls
+    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] || nuxtApp.static.data[key],
+  }
+);
+
+// Computed state from useAsyncData
+const loading = computed(() => status.value === 'pending');
+const vehicles = computed(() => vehiclesData.value || []);
 
 // Computed: limit displayed vehicles
 const displayedVehicles = computed(() => {
   return vehicles.value.slice(0, props.limit);
-});
-
-// Fetch vehicles with stock_special flag
-const fetchSpecialOffers = async () => {
-  loading.value = true;
-  error.value = null;
-
-  try {
-    // Fetch from carsales-feed and filter for stock_special vehicles
-    const response = await $fetch<{ vehiclesData: any[] }>('/api/carsales-feed');
-
-    if (response?.vehiclesData) {
-      // Filter vehicles that have stock_special flag
-      const specialVehicles = response.vehiclesData.filter(
-        (vehicle: any) => vehicle.stock_special?.value?.includes('stock-special')
-      );
-
-      vehicles.value = specialVehicles;
-    } else {
-      vehicles.value = [];
-    }
-  } catch (err: any) {
-    console.error('Failed to fetch special offers:', err);
-    error.value = 'Unable to load special offers';
-    vehicles.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
-
-// Fetch on mount
-onMounted(() => {
-  fetchSpecialOffers();
 });
 </script>
 

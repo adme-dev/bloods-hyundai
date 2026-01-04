@@ -199,6 +199,7 @@ onUnmounted(() => {
   background-color: #fff;
   padding: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Contain carousel overflow */
 }
 
 /* Header */
@@ -255,6 +256,7 @@ onUnmounted(() => {
 /* Carousel */
 .youtube-carousel {
   position: relative;
+  overflow: hidden; /* Contain negative margin overflow from CarouselContent */
 }
 
 /* Navigation buttons - positioned inside the carousel */
