@@ -340,13 +340,14 @@
             <div class="space-y-1.5 mb-4">
               <div
                 v-for="option in allConditionsWithTrueCounts"
-                v-show="option.trueCount > 0 || isFilterOptionSelected('condition', option.value)"
                 :key="option.value"
                 :class="[
                   'flex items-center py-3 px-4 cursor-pointer rounded-lg -mx-3 sm:mx-0',
                   isFilterOptionSelected('condition', option.value)
                     ? 'bg-black text-white dark:bg-gray-200 dark:text-gray-900'
-                    : 'text-gray-900 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100',
+                    : option.trueCount === 0
+                      ? 'bg-gray-50 text-gray-400 dark:bg-gray-50 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-100'
+                      : 'text-gray-900 dark:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-100',
                 ]"
                 @click="toggleFilterOption('condition', option.value)"
               >
@@ -364,7 +365,9 @@
                     'flex-1 cursor-pointer font-semibold text-lg select-none',
                     isFilterOptionSelected('condition', option.value)
                       ? 'text-white dark:text-gray-900'
-                      : 'text-gray-900 dark:text-gray-900',
+                      : option.trueCount === 0
+                        ? 'text-gray-400 dark:text-gray-400'
+                        : 'text-gray-900 dark:text-gray-900',
                   ]"
                   @click.stop
                 >
@@ -375,7 +378,9 @@
                     'ml-auto text-lg',
                     isFilterOptionSelected('condition', option.value)
                       ? 'text-white/90 dark:text-gray-900'
-                      : 'text-gray-600 dark:text-gray-600',
+                      : option.trueCount === 0
+                        ? 'text-gray-400 dark:text-gray-400'
+                        : 'text-gray-600 dark:text-gray-600',
                   ]"
                 >
                   {{ option.trueCount }}
@@ -452,7 +457,9 @@
                     'flex items-center py-4 px-4 mb-2 cursor-pointer rounded-lg transition-colors border',
                     isMakeSelected(make)
                       ? 'bg-gray-100 dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-300'
-                      : 'bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-gray-200 dark:border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-50',
+                      : getMakeCount(make) === 0
+                        ? 'bg-gray-50 dark:bg-gray-50 text-gray-400 dark:text-gray-400 border-gray-100 dark:border-gray-100 hover:bg-gray-100 dark:hover:bg-gray-100'
+                        : 'bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-gray-200 dark:border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-50',
                   ]"
                   @click="toggleMakeSelection(make)"
                 >
@@ -466,12 +473,22 @@
                   />
                   <label
                     :for="`make-${make}`"
-                    class="flex-1 cursor-pointer font-bold text-lg text-gray-900 dark:text-gray-900"
+                    :class="[
+                      'flex-1 cursor-pointer font-bold text-lg',
+                      isMakeSelected(make) || getMakeCount(make) > 0
+                        ? 'text-gray-900 dark:text-gray-900'
+                        : 'text-gray-400 dark:text-gray-400',
+                    ]"
                     @click.stop="toggleMakeSelection(make)"
                   >
                     {{ make }}
                   </label>
-                  <span class="ml-auto text-lg font-normal text-gray-900 dark:text-gray-900">
+                  <span
+                    :class="[
+                      'ml-auto text-lg font-normal',
+                      getMakeCount(make) > 0 ? 'text-gray-900 dark:text-gray-900' : 'text-gray-400 dark:text-gray-400',
+                    ]"
+                  >
                     ({{ getMakeCount(make) }})
                   </span>
                 </div>
@@ -485,7 +502,9 @@
                       'flex items-center py-3 px-4 cursor-pointer rounded-lg transition-colors border',
                       isFilterOptionSelected('model', model.value)
                         ? 'bg-gray-100 dark:bg-gray-100 text-gray-900 dark:text-gray-900 border-gray-300 dark:border-gray-300'
-                        : 'bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-gray-200 dark:border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-50',
+                        : (model.count ?? 0) === 0
+                          ? 'bg-gray-50 dark:bg-gray-50 text-gray-400 dark:text-gray-400 border-gray-100 dark:border-gray-100 hover:bg-gray-100 dark:hover:bg-gray-100'
+                          : 'bg-white dark:bg-white text-gray-900 dark:text-gray-900 border-gray-200 dark:border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-50',
                     ]"
                     @click="toggleFilterOption('model', model.value)"
                   >
@@ -499,12 +518,22 @@
                     />
                     <label
                       :for="`model-${model.value}`"
-                      class="flex-1 cursor-pointer font-semibold text-base text-gray-900 dark:text-gray-900"
+                      :class="[
+                        'flex-1 cursor-pointer font-semibold text-base',
+                        isFilterOptionSelected('model', model.value) || (model.count ?? 0) > 0
+                          ? 'text-gray-900 dark:text-gray-900'
+                          : 'text-gray-400 dark:text-gray-400',
+                      ]"
                       @click.stop="toggleFilterOption('model', model.value)"
                     >
                       {{ model.displayValue }}
                     </label>
-                    <span class="ml-auto text-base text-gray-900 dark:text-gray-900">
+                    <span
+                      :class="[
+                        'ml-auto text-base',
+                        (model.count ?? 0) > 0 ? 'text-gray-900 dark:text-gray-900' : 'text-gray-400 dark:text-gray-400',
+                      ]"
+                    >
                       ({{ model.count ?? 0 }})
                     </span>
                   </div>
@@ -542,7 +571,6 @@ import { useMediaQuery, useDebounceFn } from '@vueuse/core';
 import { useCustomizedSearchStore, type CustomizedSearchFilters } from '~/stores/customizedSearch';
 import { useRouter, useRoute } from 'vue-router';
 import { useVehiclesStore } from '~/stores/vehicles';
-import { calculateWeeklyPayment } from '~/utils/finance';
 import ResponsiveFilterDialog from '~/components/filters/ResponsiveFilterDialog.vue';
 
 const mainStore = useMainStore();
@@ -750,85 +778,16 @@ const updateBudgetFilter = () => {
   updateBudgetFilterDebounced([weeklyBudget.value[0], weeklyBudget.value[1]]);
 };
 
-// Condition counts should be independent of other filters for display purposes
-// But when showing in dialog, they should respect current filter context
+// Condition counts using faceted logic from the store
+// Shows counts excluding condition filter - each option shows "how many if I select this"
 const allConditionsWithTrueCounts = computed(() => {
-  // Get condition filter from vehicles store availableFilters object
   const allConditionValues = vehiclesStore.availableFilters?.condition || [];
-  const filters = customizedSearchStore.filters;
-  const allVehicles = vehiclesStore.vehicles;
+  const facetedCounts = customizedSearchStore.facetedConditionCounts;
 
-  // For button display: show counts independent of other filters
-  // For dialog display: show counts based on current filter context
-  // We'll calculate both and use contextual counts in dialog
-  
-  // Base vehicles (no filters applied) - for independent counts
-  const baseVehicles = allVehicles;
-
-  // Contextual vehicles (with current filters except condition) - for dialog counts
-  const contextualVehicles = allVehicles.filter((vehicle: any) => {
-    // Apply perweek filter
-    if (filters.perweek) {
-      const price = vehicle.egc_price || vehicle.dap_price || vehicle.price || 0;
-      if (price > 0) {
-        const weeklyPayment = calculateWeeklyPayment(price);
-        if (weeklyPayment < filters.perweek.min || weeklyPayment > filters.perweek.max) {
-          return false;
-        }
-      } else {
-        return false;
-      }
-    }
-
-    // Apply make/model filters (but not condition)
-    const hasSelectedMakes = filters.make.length > 0;
-    const hasSelectedModels = filters.model.length > 0;
-    if (hasSelectedMakes || hasSelectedModels) {
-      const vehicleMake = typeof vehicle.make === 'string' 
-        ? vehicle.make.toLowerCase()
-        : vehicle.make?.displayValue?.[0]?.toLowerCase() || vehicle.model?.displayMake?.[0]?.displayValue?.[0]?.toLowerCase() || '';
-      const vehicleModel = typeof vehicle.model === 'string'
-        ? vehicle.model.toLowerCase()
-        : vehicle.model?.value?.[0]?.toLowerCase() || vehicle.model?.displayValue?.[0]?.toLowerCase() || '';
-      let makeModelMatch = false;
-
-      if (hasSelectedModels) {
-        makeModelMatch = filters.model.some((selectedModel) => {
-          const [makePart, ...modelParts] = selectedModel.toLowerCase().split('_');
-          return vehicleMake === makePart && vehicleModel === modelParts.join('_');
-        });
-      }
-
-      if (!makeModelMatch && hasSelectedMakes) {
-        makeModelMatch = filters.make.some((selectedMake) => selectedMake.toLowerCase() === vehicleMake);
-      }
-
-      if (!makeModelMatch) return false;
-    }
-
-    return true;
-  });
-
-  // Calculate counts for each condition
   return allConditionValues.map((conditionValue: string) => {
     const displayValue = conditionValue.charAt(0).toUpperCase() + conditionValue.slice(1);
     const value = conditionValue;
-
-    // Use contextual counts (respects current filters) for dialog display
-    const trueCount = contextualVehicles.filter((vehicle: any) => {
-      if (!vehicle) return false;
-      const vehicleConditions = typeof vehicle.condition === 'string'
-        ? [vehicle.condition]
-        : Array.isArray(vehicle.condition?.value) 
-          ? vehicle.condition.value 
-          : vehicle.condition?.value 
-            ? [vehicle.condition.value]
-            : [];
-      return vehicleConditions.some((vc: string) => {
-        if (!vc) return false;
-        return vc.toLowerCase() === value.toLowerCase();
-      });
-    }).length;
+    const trueCount = facetedCounts[value.toLowerCase()] || 0;
 
     return {
       value,

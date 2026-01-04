@@ -89,10 +89,14 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     };
   });
 
-  // Filtered makes and models (with counts based on current filters)
+  // Filtered makes and models (with counts based on current filters EXCLUDING make/model)
+  // This implements faceted search - each facet shows counts independent of its own selections
   const filteredMakesAndModels = computed(() => {
     const allVehicles = vehiclesStore.vehicles || [];
-    const filtered = filterVehicles(allVehicles);
+
+    // Filter vehicles by condition and perweek only (not by make/model)
+    // This way make/model counts show what's available given condition selection
+    const filtered = filterVehiclesExcluding(allVehicles, ['make', 'model']);
 
     // Count vehicles by make and model
     const makeCounts = new Map<string, number>();
@@ -100,18 +104,18 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
 
     filtered.forEach((vehicle: any) => {
       // Handle both flat string format and object format
-      const vehicleMake = typeof vehicle.make === 'string' 
-        ? vehicle.make 
+      const vehicleMake = typeof vehicle.make === 'string'
+        ? vehicle.make
         : vehicle.make?.displayValue?.[0] || vehicle.model?.displayMake?.[0]?.displayValue?.[0] || '';
       const vehicleModel = typeof vehicle.model === 'string'
         ? vehicle.model
         : vehicle.model?.displayValue?.[0] || vehicle.model?.value?.[0] || '';
-      
+
       if (vehicleMake) {
         const makeLower = vehicleMake.toLowerCase();
         makeCounts.set(makeLower, (makeCounts.get(makeLower) || 0) + 1);
       }
-      
+
       if (vehicleMake && vehicleModel) {
         const modelKey = `${vehicleMake.toLowerCase()}_${vehicleModel.toLowerCase()}`;
         modelCounts.set(modelKey, (modelCounts.get(modelKey) || 0) + 1);
@@ -131,15 +135,16 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     return { makes, models };
   });
 
-  // Filter vehicles based on current filters
-  function filterVehicles(vehicles: any[]) {
+  // Filter vehicles based on current filters, optionally excluding certain filter types
+  // Used for faceted search where each facet shows counts independent of its own selections
+  function filterVehiclesExcluding(vehicles: any[], excludeFilters: string[] = []) {
     return vehicles.filter((vehicle: any) => {
       // Condition filter - handle flat string format
-      if (filters.value.condition.length > 0) {
+      if (!excludeFilters.includes('condition') && filters.value.condition.length > 0) {
         const vehicleCondition = typeof vehicle.condition === 'string'
           ? vehicle.condition
           : vehicle.condition?.value?.[0] || '';
-        if (!vehicleCondition || !filters.value.condition.some((c) => 
+        if (!vehicleCondition || !filters.value.condition.some((c) =>
           vehicleCondition.toLowerCase() === c.toLowerCase()
         )) {
           return false;
@@ -147,11 +152,11 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
       }
 
       // Make filter - handle flat string format
-      if (filters.value.make.length > 0) {
-        const vehicleMake = typeof vehicle.make === 'string' 
-          ? vehicle.make 
+      if (!excludeFilters.includes('make') && filters.value.make.length > 0) {
+        const vehicleMake = typeof vehicle.make === 'string'
+          ? vehicle.make
           : vehicle.make?.displayValue?.[0] || vehicle.model?.displayMake?.[0]?.displayValue?.[0] || '';
-        if (!vehicleMake || !filters.value.make.some((make) => 
+        if (!vehicleMake || !filters.value.make.some((make) =>
           vehicleMake.toLowerCase() === make.toLowerCase()
         )) {
           return false;
@@ -159,14 +164,14 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
       }
 
       // Model filter - handle flat string format
-      if (filters.value.model.length > 0) {
-        const vehicleMake = typeof vehicle.make === 'string' 
-          ? vehicle.make 
+      if (!excludeFilters.includes('model') && filters.value.model.length > 0) {
+        const vehicleMake = typeof vehicle.make === 'string'
+          ? vehicle.make
           : vehicle.make?.displayValue?.[0] || vehicle.model?.displayMake?.[0]?.displayValue?.[0] || '';
         const vehicleModel = typeof vehicle.model === 'string'
           ? vehicle.model
           : vehicle.model?.displayValue?.[0] || vehicle.model?.value?.[0] || '';
-        
+
         const matches = filters.value.model.some((selectedModel) => {
           const [makePart, ...modelParts] = selectedModel.toLowerCase().split('_');
           const modelPart = modelParts.join('_');
@@ -176,7 +181,7 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
       }
 
       // Perweek filter
-      if (filters.value.perweek) {
+      if (!excludeFilters.includes('perweek') && filters.value.perweek) {
         const price = vehicle.egc_price || vehicle.dap_price || vehicle.price || 0;
         if (price > 0) {
           const weeklyPayment = calculateWeeklyPayment(price);
@@ -189,7 +194,7 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
       }
 
       // Model badges filter - handle flat string format
-      if (Object.keys(filters.value.modelBadges).length > 0) {
+      if (!excludeFilters.includes('modelBadges') && Object.keys(filters.value.modelBadges).length > 0) {
         const vehicleModel = typeof vehicle.model === 'string'
           ? vehicle.model.toLowerCase()
           : vehicle.model?.value?.[0]?.toLowerCase() || '';
@@ -208,10 +213,38 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     });
   }
 
+  // Filter vehicles based on ALL current filters (for final count)
+  function filterVehicles(vehicles: any[]) {
+    return filterVehiclesExcluding(vehicles, []);
+  }
+
   // Filtered vehicle count
   const filteredVehicleCount = computed(() => {
     const allVehicles = vehiclesStore.vehicles || [];
     return filterVehicles(allVehicles).length;
+  });
+
+  // Faceted condition counts - shows counts excluding condition filter
+  // This allows each condition option to show "how many if I select this"
+  const facetedConditionCounts = computed(() => {
+    const allVehicles = vehiclesStore.vehicles || [];
+    const allConditions = availableFilters.value.condition || [];
+
+    // Filter vehicles excluding condition filter (faceted approach)
+    const vehiclesForConditionFacet = filterVehiclesExcluding(allVehicles, ['condition']);
+
+    // Count vehicles for each condition
+    const counts: Record<string, number> = {};
+    allConditions.forEach((condition: string) => {
+      counts[condition.toLowerCase()] = vehiclesForConditionFacet.filter((vehicle: any) => {
+        const vehicleCondition = typeof vehicle.condition === 'string'
+          ? vehicle.condition
+          : vehicle.condition?.value?.[0] || '';
+        return vehicleCondition.toLowerCase() === condition.toLowerCase();
+      }).length;
+    });
+
+    return counts;
   });
 
   // Selected makes
@@ -370,17 +403,36 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     return model?.displayBody || '';
   }
 
-  // Grouped models by make
+  // Grouped models by make (includes all models, sorted by count)
   const filteredGroupedModels = computed(() => {
     const grouped: Record<string, FilterOption[]> = {};
-    filteredMakesAndModels.value.models.forEach((model) => {
+
+    // Include all models, sorted by count (highest first)
+    const sortedModels = [...filteredMakesAndModels.value.models].sort(
+      (a, b) => (b.count ?? 0) - (a.count ?? 0)
+    );
+
+    sortedModels.forEach((model) => {
       const makeName = model.displayMake || 'Other';
       if (!grouped[makeName]) {
         grouped[makeName] = [];
       }
       grouped[makeName].push(model);
     });
-    return grouped;
+
+    // Sort makes by total count (highest first)
+    const sortedGrouped: Record<string, FilterOption[]> = {};
+    const makeEntries = Object.entries(grouped).sort((a, b) => {
+      const aTotal = a[1].reduce((sum, m) => sum + (m.count ?? 0), 0);
+      const bTotal = b[1].reduce((sum, m) => sum + (m.count ?? 0), 0);
+      return bTotal - aTotal;
+    });
+
+    makeEntries.forEach(([make, models]) => {
+      sortedGrouped[make] = models;
+    });
+
+    return sortedGrouped;
   });
 
   return {
@@ -392,6 +444,7 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     allMakesAndModels,
     filteredMakesAndModels,
     filteredVehicleCount,
+    facetedConditionCounts,
     selectedMakes,
     selectedModels,
     filteredGroupedModels,
