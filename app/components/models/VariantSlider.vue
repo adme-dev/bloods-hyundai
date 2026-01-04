@@ -198,6 +198,7 @@ interface Variant {
 interface Props {
   model: string;
   modelTitle?: string;
+  powertrainFilter?: string | null; // Optional: 'Electric', 'Hybrid', or null for all
 }
 
 const props = defineProps<Props>();
@@ -214,22 +215,35 @@ const showAllFeatures = ref<Record<number, boolean>>({});
 // Site name from config or default
 const siteName = computed(() => config.public.siteName || 'Sale Hyundai');
 
+// Apply powertrainFilter prop to pre-filter variant groups when set
+const baseFilteredVariantGroups = computed(() => {
+  if (!variantGroups.value.length) return [];
+
+  // If a powertrainFilter prop is provided, filter to only that powertrain
+  if (props.powertrainFilter) {
+    return variantGroups.value.filter(v => v.powertrain === props.powertrainFilter);
+  }
+
+  return variantGroups.value;
+});
+
 // Computed
 const powertrainOptions = computed(() => {
-  if (!variantGroups.value.length) return [];
-  const powertrains = [...new Set(variantGroups.value.map(v => v.powertrain).filter(Boolean))];
+  if (!baseFilteredVariantGroups.value.length) return [];
+  const powertrains = [...new Set(baseFilteredVariantGroups.value.map(v => v.powertrain).filter(Boolean))];
   return powertrains;
 });
 
 const filteredVariants = computed(() => {
-  if (checkedPowertrain.value.length === 0) return variantGroups.value;
-  return variantGroups.value.filter(variant =>
+  // Start with base filtered groups (already filtered by powertrainFilter prop if set)
+  if (checkedPowertrain.value.length === 0) return baseFilteredVariantGroups.value;
+  return baseFilteredVariantGroups.value.filter(variant =>
     checkedPowertrain.value.includes(variant.powertrain)
   );
 });
 
 const itemsCount = computed(() => filteredVariants.value.length);
-const totalCount = computed(() => variantGroups.value.length);
+const totalCount = computed(() => baseFilteredVariantGroups.value.length);
 
 // Get offers for a specific variant group by matching variants
 const getVariantGroupOffers = (variantGroupName: string): Offer[] => {

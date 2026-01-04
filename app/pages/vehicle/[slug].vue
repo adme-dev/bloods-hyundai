@@ -221,8 +221,9 @@
       <div v-else id="start" class="uk-margin-large-top">
         <LazyVariantSlider
           v-if="vehicle.model"
-          :model="vehicle.model"
+          :model="vehicleBaseModel"
           :model-title="formattedModelName"
+          :powertrain-filter="vehiclePowertrainFilter"
         />
       </div>
 
@@ -317,26 +318,44 @@ const formattedModelName = computed(() => {
     .join(' ');
 });
 
-// Extract base model name for related vehicles search
-// Converts slugs like 'i30-sedan-n' to 'i30', 'santa-fe' to 'santa-fe', etc.
+// Extract base model name for API calls and related vehicles search
+// Converts slugs like 'kona-electric' to 'kona', 'i30-sedan-n' to 'i30', etc.
 const vehicleSearchModel = computed(() => {
   const slugValue = slug.value;
   if (!slugValue) return '';
-  
+
   // Common model name patterns that should be preserved as-is
   const knownModels = ['santa-fe', 'staria-load', 'palisade', 'tucson', 'venue', 'kona', 'i30', 'inster', 'ioniq'];
-  
+
   // Check if slug starts with a known model
   for (const model of knownModels) {
     if (slugValue === model || slugValue.startsWith(model + '-')) {
       return model;
     }
   }
-  
+
   // Fallback: use the first part of the slug (before any variant suffix)
   // This handles cases like 'tucson-n-line' -> 'tucson'
   const parts = slugValue.split('-');
   return parts[0];
+});
+
+// Base model name for the calculator API (same as vehicleSearchModel)
+const vehicleBaseModel = computed(() => vehicleSearchModel.value);
+
+// Detect powertrain type from slug for filtering variants
+// e.g., 'kona-electric' -> 'Electric', 'kona-hybrid' -> 'Hybrid', 'kona' -> null
+const vehiclePowertrainFilter = computed(() => {
+  const slugValue = slug.value?.toLowerCase() || '';
+
+  if (slugValue.includes('electric') || slugValue.includes('-ev')) {
+    return 'Electric';
+  }
+  if (slugValue.includes('hybrid')) {
+    return 'Hybrid';
+  }
+
+  return null; // No filter - show all powertrains
 });
 
 // SEO
