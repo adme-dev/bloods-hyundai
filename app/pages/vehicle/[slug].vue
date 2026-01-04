@@ -219,10 +219,10 @@
 
       <!-- Variant Slider (if no form) -->
       <div v-else id="start" class="uk-margin-large-top">
-        <LazyVariantSlider 
-          v-if="vehicle.model" 
-          :model="vehicle.model" 
-          :model-title="slug" 
+        <LazyVariantSlider
+          v-if="vehicle.model"
+          :model="vehicle.model"
+          :model-title="formattedModelName"
         />
       </div>
 
@@ -299,6 +299,23 @@ const isScrapedData = computed(() => {
 
 // Hero slide data
 const heroSlide = computed(() => vehicle.value?.header?.slides?.[0] || {});
+
+// Formatted model name for display (uses header heading or formats the slug)
+const formattedModelName = computed(() => {
+  // First try to get the proper name from the header heading
+  const heading = heroSlide.value?.heading;
+  if (heading) {
+    // Remove trailing period if present (e.g., "KONA Electric." -> "KONA Electric")
+    return heading.replace(/\.$/, '');
+  }
+
+  // Fallback: format the slug nicely
+  // "kona-electric" -> "Kona Electric"
+  return slug.value
+    .split('-')
+    .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+});
 
 // Extract base model name for related vehicles search
 // Converts slugs like 'i30-sedan-n' to 'i30', 'santa-fe' to 'santa-fe', etc.

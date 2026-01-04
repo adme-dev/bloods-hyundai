@@ -16,10 +16,10 @@
     <div v-else-if="variantGroups.length > 0">
       <div class="uk-width-1-1 uk-text-center">
         <div class="uk-h2 uk-margin-remove uk-margin-large-top">
-          <span class="uk-text-bold"><span class="uk-text-capitalize">{{ modelTitle }}</span> </span>
-          <span class="uk-text-light">trims</span>
+          <span class="uk-text-bold">{{ modelTitle }} </span>
+          <span class="uk-text-light">Trims</span>
         </div>
-        <div class="uk-width-1-1">Discover / Enquire: <span class="uk-text-capitalize">{{ modelTitle }}</span> range below.</div>
+        <div class="uk-width-1-1">Discover / Enquire: {{ modelTitle }} range below.</div>
       </div>
 
       <div class="uk-container uk-container-xsmall uk-text-center uk-margin-small-top uk-overflow-hidden">
