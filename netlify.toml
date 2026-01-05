@@ -4,6 +4,10 @@
   command = "npm run build"
   publish = "dist"
 
+# Skip Netlify's asset processing - Nuxt/Vite already handles bundling/minification
+[build.processing]
+  skip_processing = true
+
 [build.environment]
   NODE_VERSION = "20"
   # Increase memory for large builds and enable concurrent workers
@@ -28,7 +32,31 @@
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-# Static assets caching
+# No cache for HTML pages (SPA/SSG entry points)
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# No cache for root index (Nuxt SSG)
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Nuxt build manifest - MUST not be cached to detect new deployments
+[[headers]]
+  for = "/_nuxt/builds/latest.json"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Nuxt build meta files - immutable (unique per build)
+[[headers]]
+  for = "/_nuxt/builds/meta/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Static assets caching (JS/CSS with content hashes)
 [[headers]]
   for = "/_nuxt/*"
   [headers.values]
@@ -39,25 +67,7 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# No cache for HTML
-[[headers]]
-  for = "/*.html"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Nuxt build manifest - no cache to ensure fresh builds are detected
-[[headers]]
-  for = "/_nuxt/builds/latest.json"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Nuxt build meta files - immutable once created
-[[headers]]
-  for = "/_nuxt/builds/meta/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# JSON short cache (for other JSON files)
+# JSON short cache (API responses, data files)
 [[headers]]
   for = "/*.json"
   [headers.values]
