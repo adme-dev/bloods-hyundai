@@ -26,8 +26,13 @@
 - **Payments:** Stripe (for vehicle reservations)
 
 ### Deployment
-- **Platform:** Netlify
-- **Preset:** `netlify` in Nitro config
+- **Primary Platform:** Netlify
+  - Preset: `netlify` (via `@netlify/nuxt` module)
+  - Build command: `npm run build`
+- **Secondary Platform:** Cloudflare Pages
+  - Preset: `cloudflare-pages`
+  - Build command: `npm run build:cloudflare`
+  - Config files: `wrangler.toml`, `_headers`, `_redirects`
 - **Build:** Static generation where possible, SSR for dynamic content
 
 ## Project Structure
@@ -92,11 +97,20 @@ npm install
 # Development server
 npm run dev
 
-# Build for production
+# Build for Netlify (default)
 npm run build
+
+# Build for Cloudflare Pages
+npm run build:cloudflare
 
 # Preview production build
 npm run preview
+
+# Preview Cloudflare build locally
+npm run preview:cloudflare
+
+# Deploy to Cloudflare Pages
+npm run deploy:cloudflare
 ```
 
 ## Known Technical Considerations
