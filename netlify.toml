@@ -27,8 +27,7 @@
   CI = "true"
   # Force fresh npm install to get correct platform-specific binaries
   NPM_FLAGS = "--prefer-offline=false"
-  # Increase memory for large builds
-  NODE_OPTIONS = "--max-old-space-size=8192"
+  # NODE_OPTIONS is set in package.json build script, not here (avoids conflicts)
   # Disable source maps in production to speed up build
   GENERATE_SOURCEMAP = "false"
   # Disable Vite's detailed logging to reduce I/O overhead
