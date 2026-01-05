@@ -46,6 +46,12 @@ export default defineNuxtConfig({
     },
   },
 
+  // Sitemap configuration - enable zero runtime for faster builds
+  sitemap: {
+    // Disable runtime generation to reduce server bundle size
+    experimentalWarmUp: false,
+  },
+
   // Disable OG Image generation (causing compatibility issues with getter functions in useSeoMeta)
   ogImage: {
     enabled: false,
@@ -311,6 +317,19 @@ export default defineNuxtConfig({
   vitalizer: {
     disablePrefetchLinks: true,
     disablePreloadLinks: true,
+  },
+
+  // Icon module configuration - optimize for faster builds
+  icon: {
+    // Use local bundle to avoid network requests during build
+    mode: 'svg',
+    // Only scan components that use icons (faster)
+    clientBundle: {
+      scan: true,
+      // Include commonly used icons explicitly to reduce scanning time
+      icons: [],
+    },
+    serverBundle: 'local',
   },
 
   // Nuxt Image - Image optimization and CDN integration
