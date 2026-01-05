@@ -5,6 +5,7 @@ export default defineNuxtConfig({
 
   // Modules (sitemap disabled in dev for memory optimization)
   modules: [
+    '@netlify/nuxt',
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
@@ -140,7 +141,7 @@ export default defineNuxtConfig({
 
   // Nitro server config
   nitro: {
-    preset: 'netlify',
+    // preset handled automatically by @netlify/nuxt module
     // Disable prerendering during initial migration
     // prerender: {
     //   routes: ['/sitemap.xml'],
