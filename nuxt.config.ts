@@ -164,7 +164,20 @@ export default defineNuxtConfig({
     // Preset auto-detection:
     // - When NITRO_PRESET=cloudflare-pages is set, uses cloudflare-pages
     // - Otherwise, @netlify/nuxt module handles the preset
-    ...(isCloudflare ? { preset: 'cloudflare-pages' } : {}),
+    ...(isCloudflare ? { 
+      preset: 'cloudflare-pages',
+      // Enable Node.js compatibility for Cloudflare Workers
+      // Required for node:buffer, node:crypto, node:path, etc.
+      cloudflare: {
+        pages: {
+          routes: {
+            exclude: ['/api/*']
+          }
+        }
+      }
+    } : {}),
+    // Node.js compatibility flags for Cloudflare
+    compatibilityDate: '2024-12-05',
     // Compression for faster response delivery
     compressPublicAssets: true,
     // Security headers for all responses

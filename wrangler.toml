@@ -1,15 +1,16 @@
 # Cloudflare Pages configuration for Sale Hyundai Nuxt
 # Documentation: https://developers.cloudflare.com/pages/platform/wrangler-configuration/
 #
-# NOTE: Cloudflare Pages uses its own build settings from the dashboard.
-# This file is used for local development with `wrangler pages dev` and
-# provides additional configuration hints.
-#
 # To deploy:
 # 1. Use Cloudflare Pages dashboard with Git integration, OR
-# 2. Run: npm run build:cloudflare && npx wrangler pages deploy .output/public
+# 2. Run: npm run build:cloudflare && npx wrangler pages deploy dist
 
 name = "sale-hyundai"
+
+# REQUIRED: Output directory for Cloudflare Pages (tells CF Pages this is a valid config)
+pages_build_output_dir = "dist"
+
+# Compatibility settings for Node.js APIs (buffer, crypto, path, etc.)
 compatibility_date = "2024-12-05"
 compatibility_flags = ["nodejs_compat"]
 
