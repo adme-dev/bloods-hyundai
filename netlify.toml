@@ -13,9 +13,9 @@
   # Note: Using npm install (not npm ci) because package-lock.json is gitignored
   # to avoid cross-platform native binding issues (oxc-parser, esbuild)
   command = "rm -rf node_modules && npm install && npm run build"
-  # Nitro's netlify preset outputs to .netlify/publish for static assets
-  # and .netlify/functions-internal/ for serverless functions
-  publish = ".netlify/publish"
+  # @netlify/nuxt module auto-configures publish directory
+  # Do NOT set publish here - let the module handle it
+  # If you must set it, use: publish = "dist" (Nuxt's default static output)
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
 
