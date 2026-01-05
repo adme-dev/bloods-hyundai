@@ -9,8 +9,10 @@
 
 [build]
   command = "npm run build"
-  # Nuxt outputs static assets to .output/public - this is the publish directory
-  publish = ".output/public"
+  # @netlify/nuxt auto-detects NETLIFY=true and outputs to .netlify/functions-internal/
+  # DO NOT set publish directory - Netlify auto-detects the correct structure
+  # If you see "Deploy directory does not exist" errors, clear the Publish directory
+  # in Netlify Dashboard → Site configuration → Build settings
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
 
