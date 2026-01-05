@@ -103,39 +103,24 @@ export default defineNuxtConfig({
             @use "~/assets/styles/_variables.scss" as *;
             @use "~/assets/styles/_mixins.scss" as *;
           `,
-          // Silence Sass deprecation warnings during build
-          silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions'],
         },
       },
     },
-    // Build optimizations for faster Netlify builds
+    // Build optimizations
     build: {
-      // Disable source maps in production to speed up build significantly
-      sourcemap: false,
-      // Use esbuild for faster minification
-      minify: 'esbuild',
-      cssMinify: 'esbuild',
-      // Increase chunk size warning limit (reduces console noise)
-      chunkSizeWarningLimit: 1000,
+      sourcemap: process.env.NODE_ENV === 'development',
+      // Enable minification in production
+      minify: process.env.NODE_ENV === 'production' ? 'esbuild' : false,
+      cssMinify: process.env.NODE_ENV === 'production',
       // Optimize chunk splitting for better caching
       rollupOptions: {
         output: {
           manualChunks: {
             'vendor-vue': ['vue', 'vue-router'],
             'vendor-pinia': ['pinia'],
-            'vendor-vueuse': ['@vueuse/core'],
           },
         },
       },
-      // Target modern browsers only for faster builds
-      target: 'esnext',
-    },
-    // Use esbuild for faster transpilation
-    esbuild: {
-      // Drop debugger in production
-      drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
-      // Use faster target
-      target: 'esnext',
     },
     server: {
       hmr: {
