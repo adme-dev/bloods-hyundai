@@ -4,10 +4,6 @@
   command = "npm run build"
   publish = "dist"
 
-# Required: Netlify Nuxt plugin for proper SSR deployment
-[[plugins]]
-  package = "@netlify/nuxt"
-
 [build.environment]
   NODE_VERSION = "20"
   # Increase memory for large builds and enable concurrent workers
