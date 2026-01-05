@@ -8,7 +8,9 @@
 # 2. The module should auto-configure everything
 
 [build]
-  command = "npm run build"
+  # Delete cached node_modules and reinstall fresh to get correct Linux binaries
+  # This fixes oxc-parser native binding issues
+  command = "rm -rf node_modules && npm ci && npm run build"
   # Nuxt's Netlify preset outputs static assets to .netlify/build
   # Server functions go to .netlify/functions-internal/
   publish = ".netlify/build"

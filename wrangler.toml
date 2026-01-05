@@ -1,40 +1,18 @@
 # Cloudflare Pages configuration for Sale Hyundai Nuxt
 # Documentation: https://developers.cloudflare.com/pages/platform/wrangler-configuration/
 #
-# To deploy:
-# 1. Use Cloudflare Pages dashboard with Git integration, OR
-# 2. Run: npm run build:cloudflare && npx wrangler pages deploy dist
+# IMPORTANT: Configure build settings in Cloudflare Dashboard:
+# - Build command: npm run build
+# - Build output directory: dist
+#
+# To deploy manually:
+# npm run build:cloudflare && npx wrangler pages deploy dist
 
 name = "sale-hyundai"
 
-# REQUIRED: Output directory for Cloudflare Pages (Nuxt outputs to dist with cloudflare-pages preset)
+# Output directory for Cloudflare Pages (Nuxt cloudflare-pages preset outputs to dist)
 pages_build_output_dir = "dist"
-
-# Build configuration for Cloudflare Pages
-[build]
-command = "npm run build:cloudflare"
 
 # Compatibility settings for Node.js APIs (buffer, crypto, path, etc.)
 compatibility_date = "2024-12-05"
 compatibility_flags = ["nodejs_compat"]
-
-# Environment variables for production
-[vars]
-NODE_ENV = "production"
-CF_PAGES = "1"
-
-# KV Namespace bindings (if needed in future)
-# [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-# R2 bucket bindings (already using for dealer assets)
-# [[r2_buckets]]
-# binding = "DEALER_ASSETS"
-# bucket_name = "dealer-assets"
-
-# D1 database bindings (if migrating from NEON)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "sale-hyundai"
-# database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
