@@ -4,7 +4,13 @@
   >
     <!-- Vehicle Image -->
     <div class="relative aspect-[4/3] w-full overflow-hidden bg-muted">
-      <NuxtLink :to="vehicleLink" class="block h-full w-full">
+      <component 
+        :is="disableLink ? 'div' : NuxtLink" 
+        :to="disableLink ? undefined : vehicleLink" 
+        class="block h-full w-full"
+        :class="{ 'cursor-pointer': !disableLink }"
+        @click="disableLink ? openEnquire() : undefined"
+      >
         <NuxtImg
           v-if="mainImage"
           :src="mainImage"
@@ -21,7 +27,7 @@
             {{ vehicleMake }}
           </span>
         </div>
-      </NuxtLink>
+      </component>
 
       <!-- Photo Count Badge - Bottom Left -->
       <div v-if="photoCount > 0" class="absolute bottom-3 left-3 z-10">
@@ -66,12 +72,15 @@
 
       <!-- Title -->
       <h3 class="m-0 text-base font-bold leading-snug text-slate-900 line-clamp-1">
-        <NuxtLink 
-          :to="vehicleLink" 
+        <component 
+          :is="disableLink ? 'span' : NuxtLink"
+          :to="disableLink ? undefined : vehicleLink" 
           class="hover:text-primary transition-colors no-link-style"
+          :class="{ 'cursor-pointer': disableLink }"
+          @click="disableLink ? openEnquire() : undefined"
         >
           {{ shortTitle }}
-        </NuxtLink>
+        </component>
       </h3>
 
       <!-- Subtitle (Specs summary) -->
@@ -133,7 +142,16 @@
           </svg>
           Enquire
         </button>
+        <!-- When links are disabled, show Enquire as the primary action -->
+        <button
+          v-if="disableLink"
+          class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+          @click="openEnquire"
+        >
+          Get Details
+        </button>
         <NuxtLink
+          v-else
           :to="vehicleLink"
           class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
         >
@@ -148,11 +166,19 @@
 interface Props {
   vehicle: any;
   viewMode?: 'grid' | 'list';
+  disableLink?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   viewMode: 'grid',
+  disableLink: false,
 });
+
+// Need to resolve NuxtLink for dynamic component usage
+const NuxtLink = resolveComponent('NuxtLink');
+
+// Expose disableLink as a computed for template usage
+const disableLink = computed(() => props.disableLink);
 
 const vehiclesStore = useVehiclesStore();
 

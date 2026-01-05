@@ -174,10 +174,16 @@ export default defineNuxtConfig({
             exclude: ['/api/*']
           }
         }
-      }
+      },
+      // Replace Node.js-only modules with empty stubs for Cloudflare Workers
+      alias: {
+        // 'ws' is not needed - Cloudflare has native WebSocket support
+        'ws': 'unenv/runtime/mock/empty',
+      },
     } : {}),
     // Node.js compatibility flags for Cloudflare
-    compatibilityDate: '2024-12-05',
+    // Using latest date for best Node.js runtime compatibility
+    compatibilityDate: '2025-01-01',
     // Compression for faster response delivery
     compressPublicAssets: true,
     // Security headers for all responses

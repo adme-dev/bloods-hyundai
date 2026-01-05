@@ -1,10 +1,12 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import * as schema from '../database/schema';
-import ws from 'ws';
 
-// Configure Neon for WebSocket support (required for serverless)
-neonConfig.webSocketConstructor = ws;
+// Configure Neon for WebSocket support
+// Cloudflare Workers with nodejs_compat_v2 have native WebSocket support
+// The @neondatabase/serverless package auto-detects the environment
+// In development (Node.js), it will use the 'ws' package if needed
+// Note: 'ws' is aliased to empty in Cloudflare builds (see nuxt.config.ts)
 
 // Create connection pool
 const connectionString = process.env.NEON_DATABASE_URL;
