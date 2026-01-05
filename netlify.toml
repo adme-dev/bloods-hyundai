@@ -10,7 +10,9 @@
 [build]
   # Delete cached node_modules and reinstall fresh to get correct Linux binaries
   # This fixes oxc-parser native binding issues
-  command = "rm -rf node_modules && npm ci && npm run build"
+  # Note: Using npm install (not npm ci) because package-lock.json is gitignored
+  # to avoid cross-platform native binding issues (oxc-parser, esbuild)
+  command = "rm -rf node_modules && npm install && npm run build"
   # Static assets are output to dist/ by the Netlify preset
   # Server functions are in .netlify/functions-internal/ (auto-detected)
   publish = "dist"
