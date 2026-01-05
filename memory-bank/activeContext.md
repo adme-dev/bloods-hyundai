@@ -6,6 +6,12 @@ Building a **Multi-Tenant Enquiry Management System** to centralize form submiss
 Additionally, developing an **Accessories Store R&D App** to showcase Hyundai Genuine Accessories with shopping cart functionality.
 
 ## Recent Changes
+- **Added Cloudflare Pages deployment support** (January 2026)
+  - Auto-detection of deployment platform (`CF_PAGES=1` for Cloudflare, `NETLIFY=true` for Netlify)
+  - Dual deployment strategy (Netlify primary, Cloudflare staging/failover)
+  - Updated `nuxt.config.ts` to conditionally set Nitro preset and image provider
+  - Created `wrangler.toml`, `_headers`, `_redirects` for Cloudflare Pages
+  - Documentation: `CLOUDFLARE_DEPLOYMENT.md`
 - Created comprehensive PRD for Multi-Tenant Enquiry Management System (v2.0)
 - Designed multi-tenant database schema with Row-Level Security (RLS)
 - Documented dealer onboarding flow

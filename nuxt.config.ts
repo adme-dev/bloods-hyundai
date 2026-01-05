@@ -1,7 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
-// Detect if we're building for Cloudflare (via NITRO_PRESET env var)
-const isCloudflare = process.env.NITRO_PRESET === 'cloudflare-pages';
+// Detect if we're building for Cloudflare
+// Cloudflare Pages sets CF_PAGES=1 environment variable automatically
+// We also check for explicit NITRO_PRESET override
+const isCloudflare = 
+  process.env.CF_PAGES === '1' || 
+  process.env.NITRO_PRESET?.startsWith('cloudflare');
 
 export default defineNuxtConfig({
   // Nuxt 4 - no compatibility flag needed anymore

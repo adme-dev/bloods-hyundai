@@ -21,20 +21,25 @@ With **Nuxt 4** and **Nitro 2.x** using the `netlify` preset, the build output s
 - Netlify automatically detects the correct structure
 
 ## Solution
-Removed the `publish` configuration from `netlify.toml`:
+Set `publish = "dist"` in `netlify.toml`:
 
 ```toml
 [build]
   command = "npm run build"
-  # No publish directory needed - Netlify preset handles this automatically
+  # Static assets go to dist/, serverless functions to .netlify/functions-internal/
+  publish = "dist"
 ```
 
+**Important:** If the Netlify Dashboard has a different publish directory set (visible in build logs as `publishOrigin: ui`), you must either:
+1. Clear it in the dashboard: Site configuration → Build & deploy → Build settings → Clear "Publish directory"
+2. Or ensure it matches `dist`
+
 ## Why This Works
-The Netlify preset in Nitro 2.x is designed to work seamlessly with Netlify's platform:
-1. Build outputs to `.netlify/functions-internal/`
-2. Netlify automatically detects this structure
-3. All routes (static, SSR, ISR) are handled by the serverless function
-4. Static assets are automatically served from the function
+The Netlify preset in Nitro 2.x outputs to two locations:
+1. **Static assets** → `dist/` (JS, CSS, images, etc.)
+2. **Serverless functions** → `.netlify/functions-internal/` (auto-detected by Netlify)
+
+The `publish = "dist"` tells Netlify where to find static assets, while the functions are auto-discovered.
 
 ## Verification
 After this change, the deployment should succeed. The site will work with:

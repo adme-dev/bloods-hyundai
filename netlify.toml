@@ -2,8 +2,10 @@
 
 [build]
   command = "npm run build"
-  # No publish directory needed - @netlify/nuxt module handles output automatically
-  # See NETLIFY_DEPLOYMENT_FIX.md for details
+  # IMPORTANT: Leave publish BLANK for @netlify/nuxt module to work correctly
+  # The module outputs to .netlify/functions-internal/ which Netlify auto-detects
+  # Do NOT set publish = "dist" - that's for Cloudflare builds only!
+  publish = ""
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
 

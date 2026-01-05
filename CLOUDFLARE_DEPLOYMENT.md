@@ -4,7 +4,12 @@ This project supports deployment to both Netlify and Cloudflare Pages. This guid
 
 ## Overview
 
-The project uses Nuxt 4 with Nitro, which supports multiple deployment presets. The configuration automatically switches between Netlify and Cloudflare based on the `NITRO_PRESET` environment variable.
+The project uses Nuxt 4 with Nitro, which supports multiple deployment presets. The configuration **automatically detects** the deployment platform:
+
+- **Cloudflare Pages** - Detected via `CF_PAGES=1` environment variable (set automatically by Cloudflare)
+- **Netlify** - Detected via `NETLIFY=true` environment variable (set automatically by Netlify)
+
+No manual `NITRO_PRESET` configuration is required.
 
 ## Prerequisites
 
@@ -23,10 +28,12 @@ The project uses Nuxt 4 with Nitro, which supports multiple deployment presets. 
    - Choose the `sale-hyundai-nuxt` repository
 
 2. **Configure build settings:**
-   - **Framework preset:** None (custom)
-   - **Build command:** `npm run build:cloudflare`
-   - **Build output directory:** `.output/public`
+   - **Framework preset:** Nuxt.js (or None/custom)
+   - **Build command:** `npm run build` (Cloudflare Pages sets `CF_PAGES=1` automatically)
+   - **Build output directory:** `dist` (Nitro generates this for cloudflare-pages preset)
    - **Root directory:** `/` (leave as default)
+   
+   > **Note:** You can also use `npm run build:cloudflare` if you want to explicitly set the preset.
 
 3. **Set environment variables:**
    Add all required environment variables (see [Environment Variables](#environment-variables) section below)
@@ -216,10 +223,11 @@ Ensure the build output includes `.output/server/` directory. Check that `NITRO_
 
 ### Static Assets 404
 
-Verify `pages_build_output_dir` in `wrangler.toml` matches the Nitro output:
-```toml
-pages_build_output_dir = ".output/public"
-```
+The Nitro `cloudflare-pages` preset outputs to `dist/` directory. Ensure the Cloudflare Pages build output directory is set to `dist`.
+
+### ASSETS Binding Error
+
+If you see `The name 'ASSETS' is reserved in Pages projects`, this means the Nitro-generated wrangler config conflicts with Cloudflare Pages. This is fixed in the latest configuration - Cloudflare Pages handles asset binding automatically.
 
 ### Image Optimization Not Working
 
