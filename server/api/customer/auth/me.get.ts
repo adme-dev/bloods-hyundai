@@ -1,7 +1,7 @@
 import { db } from '../../../utils/db';
 import { customers } from '../../../database/schema';
 import { eq } from 'drizzle-orm';
-import jwt from 'jsonwebtoken';
+import { verifyCustomerToken } from '../../../utils/customer-jwt';
 
 export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'customer_token');
@@ -14,13 +14,8 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const config = useRuntimeConfig();
-    const decoded = jwt.verify(token, config.jwtSecret || 'default-secret') as {
-      customerId: string;
-      dealerId: string;
-      email: string;
-      type: string;
-    };
+    // Verify token using jose (Cloudflare Workers compatible)
+    const decoded = await verifyCustomerToken(token);
 
     if (decoded.type !== 'customer') {
       throw createError({

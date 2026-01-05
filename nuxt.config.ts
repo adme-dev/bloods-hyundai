@@ -167,13 +167,14 @@ export default defineNuxtConfig({
     ...(isCloudflare ? { 
       preset: 'cloudflare-pages',
       // Enable Node.js compatibility for Cloudflare Workers
-      // Required for node:buffer, node:crypto, node:path, etc.
       cloudflare: {
         pages: {
           routes: {
             exclude: ['/api/*']
           }
-        }
+        },
+        // Explicitly enable node compatibility
+        nodeCompat: true,
       },
       // Replace Node.js-only modules with empty stubs for Cloudflare Workers
       alias: {

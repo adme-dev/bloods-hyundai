@@ -2,7 +2,7 @@ import { db } from '../../../utils/db';
 import { customers, dealers } from '../../../database/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { signCustomerToken } from '../../../utils/customer-jwt';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -74,18 +74,13 @@ export default defineEventHandler(async (event) => {
     .set({ lastLogin: new Date(), updatedAt: new Date() })
     .where(eq(customers.id, customer.id));
 
-  // Generate JWT
-  const config = useRuntimeConfig();
-  const accessToken = jwt.sign(
-    {
-      customerId: customer.id,
-      dealerId: dealer.id,
-      email: customer.email,
-      type: 'customer',
-    },
-    config.jwtSecret || 'default-secret',
-    { expiresIn: '7d' }
-  );
+  // Generate JWT using jose (Cloudflare Workers compatible)
+  const accessToken = await signCustomerToken({
+    customerId: customer.id,
+    dealerId: dealer.id,
+    email: customer.email,
+    type: 'customer',
+  });
 
   // Set HTTP-only cookie
   setCookie(event, 'customer_token', accessToken, {
