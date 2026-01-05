@@ -23,6 +23,8 @@
   NODE_VERSION = "20"
   # Mark as CI environment for optimizations
   CI = "true"
+  # Force fresh npm install to get correct platform-specific binaries
+  NPM_FLAGS = "--prefer-offline=false"
   # Increase memory for large builds
   NODE_OPTIONS = "--max-old-space-size=8192"
   # Disable source maps in production to speed up build

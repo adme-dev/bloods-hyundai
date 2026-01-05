@@ -10,8 +10,8 @@
     "dev:minimal": "NODE_OPTIONS='--max-old-space-size=8192' NUXT_MINIMAL=1 nuxt dev",
     "generate": "NODE_OPTIONS='--max-old-space-size=8192' nuxt generate",
     "preview": "nuxt preview",
-    "preview:cloudflare": "npx wrangler pages dev .output/public",
-    "deploy:cloudflare": "npm run build:cloudflare && npx wrangler pages deploy .output/public",
+    "preview:cloudflare": "npx wrangler pages dev dist",
+    "deploy:cloudflare": "npm run build:cloudflare && npx wrangler pages deploy dist",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck"
   },
