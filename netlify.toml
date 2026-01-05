@@ -11,9 +11,9 @@
   # Delete cached node_modules and reinstall fresh to get correct Linux binaries
   # This fixes oxc-parser native binding issues
   command = "rm -rf node_modules && npm ci && npm run build"
-  # Nuxt's Netlify preset outputs static assets to .netlify/build
-  # Server functions go to .netlify/functions-internal/
-  publish = ".netlify/build"
+  # Static assets are output to dist/ by the Netlify preset
+  # Server functions are in .netlify/functions-internal/ (auto-detected)
+  publish = "dist"
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
 
