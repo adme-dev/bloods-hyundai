@@ -1,0 +1,8 @@
+# Cloudflare Pages redirects
+# https://developers.cloudflare.com/pages/configuration/redirects/
+
+# Redirect www to non-www (canonical URL)
+# https://www.salehyundai.com.au/* https://salehyundai.com.au/:splat 301
+
+# Legacy URL redirects (add as needed)
+# /old-path /new-path 301

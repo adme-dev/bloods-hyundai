@@ -1,0 +1,42 @@
+# Cloudflare Pages custom headers
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+# Security headers for all pages
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(self), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+# No cache for HTML pages (SSR entry points)
+/*.html
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# No cache for root
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Nuxt build manifest - MUST not be cached to detect new deployments
+/_nuxt/builds/latest.json
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Nuxt build meta files - immutable (unique per build)
+/_nuxt/builds/meta/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Static assets caching (JS/CSS with content hashes)
+/_nuxt/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# JSON short cache (API responses, data files)
+/*.json
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# Images
+/images/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

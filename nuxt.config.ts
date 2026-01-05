@@ -1,11 +1,17 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+
+// Detect if we're building for Cloudflare (via NITRO_PRESET env var)
+const isCloudflare = process.env.NITRO_PRESET === 'cloudflare-pages';
+
 export default defineNuxtConfig({
   // Nuxt 4 - no compatibility flag needed anymore
   devtools: { enabled: false },
 
   // Modules (sitemap disabled in dev for memory optimization)
+  // Note: @netlify/nuxt only included when NOT building for Cloudflare
   modules: [
-    '@netlify/nuxt',
+    // Conditionally include Netlify module (not needed for Cloudflare)
+    ...(isCloudflare ? [] : ['@netlify/nuxt']),
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
@@ -141,11 +147,10 @@ export default defineNuxtConfig({
 
   // Nitro server config
   nitro: {
-    // preset handled automatically by @netlify/nuxt module
-    // Disable prerendering during initial migration
-    // prerender: {
-    //   routes: ['/sitemap.xml'],
-    // },
+    // Preset auto-detection:
+    // - When NITRO_PRESET=cloudflare-pages is set, uses cloudflare-pages
+    // - Otherwise, @netlify/nuxt module handles the preset
+    ...(isCloudflare ? { preset: 'cloudflare-pages' } : {}),
     // Compression for faster response delivery
     compressPublicAssets: true,
     // Security headers for all responses
@@ -291,9 +296,15 @@ export default defineNuxtConfig({
 
   // Nuxt Image - Image optimization and CDN integration
   image: {
-    // Use Netlify provider in production for consistent SSR/client URL generation
-    // In development, use 'none' to bypass IPX proxy issues with external CDNs
-    provider: process.env.NODE_ENV === 'production' ? 'netlify' : 'none',
+    // Provider selection:
+    // - Cloudflare: use 'cloudflare' provider (via Cloudflare Image Resizing)
+    // - Netlify: use 'netlify' provider
+    // - Development: use 'none' to bypass IPX proxy issues with external CDNs
+    provider: process.env.NODE_ENV !== 'production' 
+      ? 'none' 
+      : isCloudflare 
+        ? 'cloudflare' 
+        : 'netlify',
     // Quality setting for optimized images
     quality: 80,
     // Default format (webp for better compression)
