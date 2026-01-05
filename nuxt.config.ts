@@ -176,11 +176,6 @@ export default defineNuxtConfig({
         // Explicitly enable node compatibility
         nodeCompat: true,
       },
-      // Replace Node.js-only modules with empty stubs for Cloudflare Workers
-      alias: {
-        // 'ws' is not needed - Cloudflare has native WebSocket support
-        'ws': 'unenv/runtime/mock/empty',
-      },
     } : {}),
     // Node.js compatibility flags for Cloudflare
     // Using latest date for best Node.js runtime compatibility
