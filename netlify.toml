@@ -9,6 +9,8 @@
 
 [build]
   command = "npm run build"
+  # Nuxt outputs static assets to .output/public - this is the publish directory
+  publish = ".output/public"
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
 
