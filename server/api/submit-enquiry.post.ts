@@ -181,12 +181,15 @@ export default defineEventHandler(async (event) => {
     // 2. Parse and validate request body
     const body = await readBody<EnquirySubmission>(event);
     
-    if (!body.type || !body.firstName || !body.lastName || !body.email) {
+    if (!body.type || !body.firstName || !body.email) {
       throw createError({
         statusCode: 400,
-        message: 'Missing required fields: type, firstName, lastName, email',
+        message: 'Missing required fields: type, firstName, email',
       });
     }
+    
+    // If lastName is not provided, use a placeholder
+    const lastName = body.lastName || 'Not Provided';
     
     // 3. Get request metadata
     const ipAddress = getRequestIP(event, { xForwardedFor: true });
@@ -221,7 +224,7 @@ export default defineEventHandler(async (event) => {
         type: body.type,
         source: body.source || referer || 'website',
         firstName: body.firstName,
-        lastName: body.lastName,
+        lastName: lastName,
         email: body.email,
         phone: body.phone,
         postcode: body.postcode,
