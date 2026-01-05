@@ -389,9 +389,7 @@ const resetForm = () => {
 .input-icon-wrapper {
   position: relative;
   display: block;
-}
-
-.form-input-icon {
+}.form-input-icon {
   position: absolute !important;
   left: 0.75rem !important;
   top: 50% !important;
