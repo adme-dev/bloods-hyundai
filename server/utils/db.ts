@@ -1,21 +1,14 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import * as schema from '../database/schema';
+// @ts-expect-error - ws may be mocked in some environments
+import ws from 'ws';
 
 // Configure Neon for WebSocket support
 // Cloudflare Workers have native WebSocket, but Node.js (Netlify) needs the ws package
 // The ws import is aliased to empty for Cloudflare builds in nuxt.config.ts
-// Using synchronous require for compatibility with esbuild's target
-if (typeof globalThis.WebSocket === 'undefined') {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const ws = require('ws');
-    if (ws) {
-      neonConfig.webSocketConstructor = ws;
-    }
-  } catch {
-    // ws not available - will use native WebSocket if present
-  }
+if (ws && typeof ws === 'function') {
+  neonConfig.webSocketConstructor = ws;
 }
 
 // Create connection pool
