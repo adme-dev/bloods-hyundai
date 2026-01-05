@@ -110,15 +110,19 @@ export default defineNuxtConfig({
             @use "~/assets/styles/_variables.scss" as *;
             @use "~/assets/styles/_mixins.scss" as *;
           `,
+          // Silence deprecation warnings for faster builds
+          silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions'],
         },
       },
     },
     // Build optimizations
     build: {
-      sourcemap: process.env.NODE_ENV === 'development',
-      // Enable minification in production
-      minify: process.env.NODE_ENV === 'production' ? 'esbuild' : false,
-      cssMinify: process.env.NODE_ENV === 'production',
+      sourcemap: false, // Always disable sourcemaps in production builds
+      // Enable minification in production with esbuild (fastest)
+      minify: 'esbuild',
+      cssMinify: 'esbuild',
+      // Target modern browsers for smaller bundles
+      target: 'esnext',
       // Optimize chunk splitting for better caching
       rollupOptions: {
         output: {
@@ -127,8 +131,14 @@ export default defineNuxtConfig({
             'vendor-pinia': ['pinia'],
           },
         },
+        // Reduce memory usage during large builds
+        maxParallelFileOps: 2,
       },
+      // Reduce chunk size warnings threshold
+      chunkSizeWarningLimit: 1000,
     },
+    // Reduce logging overhead in CI
+    logLevel: process.env.CI ? 'warn' : 'info',
     server: {
       hmr: {
         overlay: false,

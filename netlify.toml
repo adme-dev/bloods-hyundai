@@ -3,6 +3,12 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  # Ignore files that don't affect the build to skip unnecessary deploys
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
+
+# Enable Netlify build cache for node_modules and .nuxt
+[build.cache]
+  enabled = true
 
 # Skip Netlify's asset processing - Nuxt/Vite already handles bundling/minification
 [build.processing]
@@ -10,16 +16,18 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Mark as CI environment for optimizations
+  CI = "true"
   # Increase memory for large builds
   NODE_OPTIONS = "--max-old-space-size=8192"
   # Disable source maps in production to speed up build
   GENERATE_SOURCEMAP = "false"
   # Disable Vite's detailed logging to reduce I/O overhead
   VITE_LOG_LEVEL = "warn"
-  # Use SWC for faster TypeScript/JavaScript transforms
-  NUXT_BUILD_SWC = "true"
-  # Skip type checking during build (run separately in CI if needed)
+  # Skip type checking during build
   NUXT_TYPESCRIPT_TYPECHECK = "false"
+  # Silence SCSS deprecation warnings (reduces console I/O)
+  SASS_SILENCE_DEPRECATION_WARNINGS = "true"
 
 # Functions config
 [functions]
