@@ -126,13 +126,17 @@ export default defineNuxtConfig({
             'vendor-vueuse': ['@vueuse/core'],
           },
         },
+        // Limit parallel transformations on CI
+        maxParallelFileOps: process.env.NETLIFY ? 2 : undefined,
       },
       // Target modern browsers only for faster builds
       target: 'esnext',
+      // Reduce CSS code splitting to speed up build
+      cssCodeSplit: true,
     },
     // Use esbuild for faster transpilation
     esbuild: {
-      // Drop debugger in production
+      // Drop debugger and console in production
       drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
       // Use faster target
       target: 'esnext',
@@ -151,6 +155,12 @@ export default defineNuxtConfig({
       // Reduce initial dep optimization memory
       holdUntilCrawlEnd: false,
     },
+  },
+  
+  // UnoCSS configuration for faster builds
+  unocss: {
+    // Disable file system watcher during build for faster performance
+    hmrTopLevelAwait: false,
   },
 
   // Nitro server config

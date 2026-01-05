@@ -7,12 +7,14 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  # Increase memory for large builds and enable concurrent workers
+  # Increase memory for large builds
   NODE_OPTIONS = "--max-old-space-size=8192"
   # Disable source maps in production to speed up build
   GENERATE_SOURCEMAP = "false"
-  # Enable Vite multi-threading
-  VITE_BUILD_THREADS = "true"
+  # Tell Nuxt we're on Netlify for conditional optimizations
+  NETLIFY = "true"
+  # Reduce Vite parallelism on CI for more stable builds
+  VITE_CJS_IGNORE_WARNING = "true"
 
 # Functions config
 [functions]
