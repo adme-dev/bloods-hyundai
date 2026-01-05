@@ -2,8 +2,11 @@
 
 [build]
   command = "npm run build"
-  # publish directory NOT set - the @netlify/plugin-nuxt handles this automatically
-  # Setting publish = "dist" causes 404s because Nuxt outputs to .output/public
+  publish = "dist"
+
+# Required: Netlify Nuxt plugin for proper SSR deployment
+[[plugins]]
+  package = "@netlify/nuxt"
 
 [build.environment]
   NODE_VERSION = "20"
