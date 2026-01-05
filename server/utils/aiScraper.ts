@@ -3,12 +3,9 @@
  *
  * Uses Cheerio to clean and structure HTML, then Groq's fast LLM
  * to intelligently extract vehicle information with high accuracy.
- * 
- * Uses custom Groq client for Cloudflare Workers compatibility
- * (groq-sdk has private class fields that don't bundle properly)
  */
 
-import { GroqClient } from './groq-client';
+import Groq from 'groq-sdk';
 import * as cheerio from 'cheerio';
 
 export interface AIExtractedVehicleData {
@@ -425,7 +422,7 @@ export async function extractVehicleDataWithAI(
     console.log(`[AI Scraper] Token reduction: ~${Math.round((1 - formattedContent.length / html.length) * 100)}%`);
 
     // Step 3: Send to Groq for intelligent structuring
-    const groq = new GroqClient({ apiKey });
+    const groq = new Groq({ apiKey });
 
     const completion = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',

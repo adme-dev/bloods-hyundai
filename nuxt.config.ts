@@ -1,21 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-
-// Detect if we're building for Cloudflare
-// Cloudflare Pages sets CF_PAGES=1 environment variable automatically
-// We also check for explicit NITRO_PRESET override
-const isCloudflare = 
-  process.env.CF_PAGES === '1' || 
-  process.env.NITRO_PRESET?.startsWith('cloudflare');
-
 export default defineNuxtConfig({
   // Nuxt 4 - no compatibility flag needed anymore
   devtools: { enabled: false },
 
   // Modules (sitemap disabled in dev for memory optimization)
-  // Note: @netlify/nuxt only included when NOT building for Cloudflare
   modules: [
-    // Conditionally include Netlify module (not needed for Cloudflare)
-    ...(isCloudflare ? [] : ['@netlify/nuxt']),
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
@@ -114,35 +103,40 @@ export default defineNuxtConfig({
             @use "~/assets/styles/_variables.scss" as *;
             @use "~/assets/styles/_mixins.scss" as *;
           `,
-          // Silence deprecation warnings for faster builds
+          // Silence Sass deprecation warnings during build
           silenceDeprecations: ['legacy-js-api', 'import', 'global-builtin', 'color-functions'],
         },
       },
     },
-    // Build optimizations
+    // Build optimizations for faster Netlify builds
     build: {
-      sourcemap: false, // Always disable sourcemaps in production builds
-      // Enable minification in production with esbuild (fastest)
+      // Disable source maps in production to speed up build significantly
+      sourcemap: false,
+      // Use esbuild for faster minification
       minify: 'esbuild',
       cssMinify: 'esbuild',
-      // Target modern browsers for smaller bundles
-      target: 'esnext',
+      // Increase chunk size warning limit (reduces console noise)
+      chunkSizeWarningLimit: 1000,
       // Optimize chunk splitting for better caching
       rollupOptions: {
         output: {
           manualChunks: {
             'vendor-vue': ['vue', 'vue-router'],
             'vendor-pinia': ['pinia'],
+            'vendor-vueuse': ['@vueuse/core'],
           },
         },
-        // Reduce memory usage during large builds
-        maxParallelFileOps: 2,
       },
-      // Reduce chunk size warnings threshold
-      chunkSizeWarningLimit: 1000,
+      // Target modern browsers only for faster builds
+      target: 'esnext',
     },
-    // Reduce logging overhead in CI
-    logLevel: process.env.CI ? 'warn' : 'info',
+    // Use esbuild for faster transpilation
+    esbuild: {
+      // Drop debugger in production
+      drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+      // Use faster target
+      target: 'esnext',
+    },
     server: {
       hmr: {
         overlay: false,
@@ -161,25 +155,11 @@ export default defineNuxtConfig({
 
   // Nitro server config
   nitro: {
-    // Preset auto-detection:
-    // - When NITRO_PRESET=cloudflare-pages is set, uses cloudflare-pages
-    // - Otherwise, @netlify/nuxt module handles the preset
-    ...(isCloudflare ? { 
-      preset: 'cloudflare-pages',
-      // Enable Node.js compatibility for Cloudflare Workers
-      cloudflare: {
-        pages: {
-          routes: {
-            exclude: ['/api/*']
-          }
-        },
-        // Explicitly enable node compatibility
-        nodeCompat: true,
-      },
-    } : {}),
-    // Node.js compatibility flags for Cloudflare
-    // Using latest date for best Node.js runtime compatibility
-    compatibilityDate: '2025-01-01',
+    preset: 'netlify',
+    // Disable prerendering during initial migration
+    // prerender: {
+    //   routes: ['/sitemap.xml'],
+    // },
     // Compression for faster response delivery
     compressPublicAssets: true,
     // Security headers for all responses
@@ -325,15 +305,9 @@ export default defineNuxtConfig({
 
   // Nuxt Image - Image optimization and CDN integration
   image: {
-    // Provider selection:
-    // - Cloudflare: use 'cloudflare' provider (via Cloudflare Image Resizing)
-    // - Netlify: use 'netlify' provider
-    // - Development: use 'none' to bypass IPX proxy issues with external CDNs
-    provider: process.env.NODE_ENV !== 'production' 
-      ? 'none' 
-      : isCloudflare 
-        ? 'cloudflare' 
-        : 'netlify',
+    // Use Netlify provider in production for consistent SSR/client URL generation
+    // In development, use 'none' to bypass IPX proxy issues with external CDNs
+    provider: process.env.NODE_ENV === 'production' ? 'netlify' : 'none',
     // Quality setting for optimized images
     quality: 80,
     // Default format (webp for better compression)

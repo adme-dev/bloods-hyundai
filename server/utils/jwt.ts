@@ -1,30 +1,27 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-/**
- * Get JWT secrets lazily to avoid module load-time errors
- * and to properly access runtime config
- */
-function getSecrets() {
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-  // Try runtime config first, then fall back to process.env
-  const jwtSecret = process.env.NUXT_JWT_SECRET;
-  const jwtRefreshSecret = process.env.NUXT_JWT_REFRESH_SECRET;
-  
-  // In production, require secrets to be set
-  if (isProduction && (!jwtSecret || jwtSecret.length < 32)) {
-    throw new Error('NUXT_JWT_SECRET must be set to a secure value (min 32 characters) in production');
-  }
-  
-  // Use the same secret for refresh if not explicitly set (with warning)
-  const finalJwtSecret = jwtSecret || 'dev-only-secret-key-min-32-chars-long';
-  const finalRefreshSecret = jwtRefreshSecret || finalJwtSecret;
-  
-  return {
-    secret: new TextEncoder().encode(finalJwtSecret),
-    refreshSecret: new TextEncoder().encode(finalRefreshSecret),
-  };
+// In production, require JWT secrets to be set via environment variables
+// Fallback to dev secrets only in development mode
+const isProduction = process.env.NODE_ENV === 'production';
+
+const JWT_SECRET = process.env.NUXT_JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.NUXT_JWT_REFRESH_SECRET;
+
+// Fail fast in production if secrets are not configured
+if (isProduction && (!JWT_SECRET || JWT_SECRET.length < 32)) {
+  throw new Error('NUXT_JWT_SECRET must be set to a secure value (min 32 characters) in production');
 }
+if (isProduction && (!JWT_REFRESH_SECRET || JWT_REFRESH_SECRET.length < 32)) {
+  throw new Error('NUXT_JWT_REFRESH_SECRET must be set to a secure value (min 32 characters) in production');
+}
+
+// Use dev fallbacks only in non-production
+const jwtSecret = JWT_SECRET || 'dev-only-secret-key-min-32-chars-long';
+const jwtRefreshSecret = JWT_REFRESH_SECRET || 'dev-only-refresh-secret-min-32-chars';
+
+// Convert string secret to Uint8Array for jose
+const secret = new TextEncoder().encode(jwtSecret);
+const refreshSecret = new TextEncoder().encode(jwtRefreshSecret);
 
 export interface JWTPayload {
   userId: string;
@@ -40,7 +37,6 @@ export interface JWTPayload {
  * Expires in 1 hour
  */
 export async function signAccessToken(payload: JWTPayload): Promise<string> {
-  const { secret } = getSecrets();
   return await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -53,7 +49,6 @@ export async function signAccessToken(payload: JWTPayload): Promise<string> {
  * Expires in 7 days
  */
 export async function signRefreshToken(payload: { userId: string; dealerId: string }): Promise<string> {
-  const { refreshSecret } = getSecrets();
   return await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -65,7 +60,6 @@ export async function signRefreshToken(payload: { userId: string; dealerId: stri
  * Verify and decode an access token
  */
 export async function verifyAccessToken(token: string): Promise<JWTPayload> {
-  const { secret } = getSecrets();
   try {
     const { payload } = await jwtVerify(token, secret);
     return payload as JWTPayload;
@@ -78,7 +72,6 @@ export async function verifyAccessToken(token: string): Promise<JWTPayload> {
  * Verify and decode a refresh token
  */
 export async function verifyRefreshToken(token: string): Promise<{ userId: string; dealerId: string }> {
-  const { refreshSecret } = getSecrets();
   try {
     const { payload } = await jwtVerify(token, refreshSecret);
     return payload as { userId: string; dealerId: string };
@@ -86,13 +79,3 @@ export async function verifyRefreshToken(token: string): Promise<{ userId: strin
     throw new Error('Invalid or expired refresh token');
   }
 }
-
-
-
-
-
-
-
-
-
-

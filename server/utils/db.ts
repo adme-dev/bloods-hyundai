@@ -3,16 +3,8 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import * as schema from '../database/schema';
 import ws from 'ws';
 
-// Configure Neon for WebSocket support
-// Cloudflare Workers have native WebSocket built-in
-// Node.js environments (Netlify, local dev) need the ws package
-// 
-// The ws import will be bundled for Node.js environments
-// For Cloudflare, ws is tree-shaken if not used, and we check for native WebSocket first
-if (typeof globalThis.WebSocket === 'undefined' && ws) {
-  // Node.js environment without native WebSocket - configure ws
-  neonConfig.webSocketConstructor = ws;
-}
+// Configure Neon for WebSocket support (required for serverless)
+neonConfig.webSocketConstructor = ws;
 
 // Create connection pool
 const connectionString = process.env.NEON_DATABASE_URL;
@@ -76,13 +68,3 @@ export function getPool() {
 
 // Export schema for use in other files
 export { schema };
-
-
-
-
-
-
-
-
-
-

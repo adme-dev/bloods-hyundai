@@ -3,12 +3,9 @@
  *
  * Main orchestrator for the vehicle enrichment process using Groq AI,
  * ANCAP API, and optional market data sources.
- * 
- * Uses custom Groq client for Cloudflare Workers compatibility
- * (groq-sdk has private class fields that don't bundle properly)
  */
 
-import { GroqClient } from '../utils/groq-client';
+import Groq from 'groq-sdk';
 import { vehicleEnrichmentCache } from './vehicle-enrichment-cache';
 import type {
   VehicleEnrichment,
@@ -35,7 +32,7 @@ const AI_TEMPERATURE = 0.2;
 const ANCAP_BASE_URL = 'https://www.ancap.com.au/api';
 
 class GroqEnrichmentService {
-  private groq: GroqClient | null = null;
+  private groq: Groq | null = null;
   private initialized = false;
 
   /**
@@ -53,7 +50,7 @@ class GroqEnrichmentService {
     }
 
     try {
-      this.groq = new GroqClient({ apiKey });
+      this.groq = new Groq({ apiKey });
       this.initialized = true;
       console.log('[GroqEnrichment] Groq client initialized');
     } catch (error) {

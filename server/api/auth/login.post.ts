@@ -113,8 +113,7 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error: any) {
-    console.error('[Auth Login] Error:', error?.message || error);
-    console.error('[Auth Login] Stack:', error?.stack);
+    console.error('[Auth Login] Error:', error);
     
     if (error.statusCode) {
       throw error;
@@ -122,9 +121,7 @@ export default defineEventHandler(async (event) => {
     
     throw createError({
       statusCode: 500,
-      message: process.env.NODE_ENV === 'production' 
-        ? 'Login failed. Please try again.' 
-        : `Login failed: ${error?.message || 'Unknown error'}`,
+      message: 'Login failed. Please try again.',
     });
   }
 });

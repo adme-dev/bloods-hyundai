@@ -1,7 +1,7 @@
 import { db } from '../../utils/db';
 import { serviceAppointments, customers } from '../../database/schema';
 import { eq, and, desc, or } from 'drizzle-orm';
-import { verifyCustomerToken } from '../../utils/customer-jwt';
+import jwt from 'jsonwebtoken';
 
 export default defineEventHandler(async (event) => {
   const token = getCookie(event, 'customer_token');
@@ -10,11 +10,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Not authenticated' });
   }
 
+  const config = useRuntimeConfig();
   let decoded: { customerId: string; dealerId: string };
 
   try {
-    // Verify token using jose (Cloudflare Workers compatible)
-    decoded = await verifyCustomerToken(token);
+    decoded = jwt.verify(token, config.jwtSecret || 'default-secret') as typeof decoded;
   } catch {
     throw createError({ statusCode: 401, message: 'Invalid token' });
   }

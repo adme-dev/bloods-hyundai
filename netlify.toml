@@ -1,43 +1,18 @@
-# Netlify configuration for Nuxt 4 with @netlify/nuxt module
-# 
-# IMPORTANT: The @netlify/nuxt module handles deployment automatically.
-# It creates .netlify/functions-internal/ for serverless functions.
-# 
-# If you see "Deploy directory does not exist" errors, check:
-# 1. Netlify Dashboard → Site configuration → Build settings → Clear "Publish directory"
-# 2. The module should auto-configure everything
+# Netlify configuration for Nuxt 4
 
 [build]
-  # Delete cached node_modules and reinstall fresh to get correct Linux binaries
-  # This fixes oxc-parser native binding issues
-  # Note: Using npm install (not npm ci) because package-lock.json is gitignored
-  # to avoid cross-platform native binding issues (oxc-parser, esbuild)
-  command = "rm -rf node_modules && npm install && npm run build"
-  # Nitro netlify preset outputs static assets to dist/
-  # Functions go to .netlify/functions-internal/ (auto-detected)
+  command = "npm run build"
   publish = "dist"
-  # Ignore files that don't affect the build to skip unnecessary deploys
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
-
-# Skip Netlify's asset processing - Nuxt/Vite already handles bundling/minification
-[build.processing]
-  skip_processing = true
+  # No publish directory needed - Netlify preset handles this automatically
 
 [build.environment]
   NODE_VERSION = "20"
-  # Mark as CI environment for optimizations
-  CI = "true"
-  # Force fresh npm install to get correct platform-specific binaries
-  NPM_FLAGS = "--prefer-offline=false"
-  # NODE_OPTIONS is set in package.json build script, not here (avoids conflicts)
+  # Increase memory for large builds and enable concurrent workers
+  NODE_OPTIONS = "--max-old-space-size=8192"
   # Disable source maps in production to speed up build
   GENERATE_SOURCEMAP = "false"
-  # Disable Vite's detailed logging to reduce I/O overhead
-  VITE_LOG_LEVEL = "warn"
-  # Skip type checking during build
-  NUXT_TYPESCRIPT_TYPECHECK = "false"
-  # Silence SCSS deprecation warnings (reduces console I/O)
-  SASS_SILENCE_DEPRECATION_WARNINGS = "true"
+  # Enable Vite multi-threading
+  VITE_BUILD_THREADS = "true"
 
 # Functions config
 [functions]
@@ -54,31 +29,7 @@
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-# No cache for HTML pages (SPA/SSG entry points)
-[[headers]]
-  for = "/*.html"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# No cache for root index (Nuxt SSG)
-[[headers]]
-  for = "/"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Nuxt build manifest - MUST not be cached to detect new deployments
-[[headers]]
-  for = "/_nuxt/builds/latest.json"
-  [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
-
-# Nuxt build meta files - immutable (unique per build)
-[[headers]]
-  for = "/_nuxt/builds/meta/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Static assets caching (JS/CSS with content hashes)
+# Static assets caching
 [[headers]]
   for = "/_nuxt/*"
   [headers.values]
@@ -89,7 +40,13 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# JSON short cache (API responses, data files)
+# No cache for HTML
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# JSON short cache
 [[headers]]
   for = "/*.json"
   [headers.values]
@@ -106,11 +63,3 @@
     "https://www.hyundai.com/.*",
     "https://carsales.pxcrush.net/.*"
   ]
-
-
-
-
-
-
-
-

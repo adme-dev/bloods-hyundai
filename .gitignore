@@ -111,11 +111,9 @@ $RECYCLE.BIN/
 # Optional REPL history
 .node_repl_history
 
-# Package manager lock files
-# package-lock.json is excluded to avoid cross-platform native binding issues
-# (oxc-parser, esbuild) - let each platform generate its own lockfile
-# See: https://github.com/npm/cli/issues/4828
-package-lock.json
+# Package manager lock files (keep only one)
+# Uncomment the ones you DON'T use:
+# package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
 

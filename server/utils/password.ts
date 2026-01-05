@@ -1,10 +1,4 @@
-/**
- * Password hashing utilities using bcryptjs
- * 
- * Uses bcryptjs (pure JavaScript) instead of bcrypt (native)
- * for Cloudflare Workers compatibility.
- */
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
 
