@@ -2,13 +2,10 @@
 
 [build]
   command = "npm run build"
-  publish = "dist"
+  # No publish directory needed - @netlify/nuxt module handles output automatically
+  # See NETLIFY_DEPLOYMENT_FIX.md for details
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
-
-# Enable Netlify build cache for node_modules and .nuxt
-[build.cache]
-  enabled = true
 
 # Skip Netlify's asset processing - Nuxt/Vite already handles bundling/minification
 [build.processing]
