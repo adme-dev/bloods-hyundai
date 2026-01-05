@@ -1,11 +1,14 @@
-# Netlify configuration for Nuxt 4
+# Netlify configuration for Nuxt 4 with @netlify/nuxt module
+# 
+# IMPORTANT: The @netlify/nuxt module handles deployment automatically.
+# It creates .netlify/functions-internal/ for serverless functions.
+# 
+# If you see "Deploy directory does not exist" errors, check:
+# 1. Netlify Dashboard → Site configuration → Build settings → Clear "Publish directory"
+# 2. The module should auto-configure everything
 
 [build]
   command = "npm run build"
-  # IMPORTANT: Leave publish BLANK for @netlify/nuxt module to work correctly
-  # The module outputs to .netlify/functions-internal/ which Netlify auto-detects
-  # Do NOT set publish = "dist" - that's for Cloudflare builds only!
-  publish = ""
   # Ignore files that don't affect the build to skip unnecessary deploys
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ':!*.md' ':!memory-bank/' ':!.github/'"
 
