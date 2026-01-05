@@ -32,9 +32,7 @@
     <LazySpecialOffersVehicles class="overflow-hidden"/>
 
     <!-- Dealership Reviews -->
-    <section class="uk-section">
-      <LazyDealershipReviews />
-    </section>
+    <LazyDealershipReviews />
 
     <!-- Vehicle Enquiry Modal (for stock specials cards) -->
     <LazyVehicleEnquiryModal

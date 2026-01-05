@@ -1,5 +1,5 @@
 <template>
-  <div class="dealership-reviews overflow-hidden">
+  <div class="dealership-reviews overflow-hidden relative z-0">
     <div class="uk-container">
       <h2 class="uk-text-center uk-h1 uk-text-bold uk-margin-medium-bottom" style="color: #002855;">
         Customer <b>Reviews</b>
@@ -159,7 +159,8 @@ const getInitials = (name: string) => {
 
 <style lang="scss" scoped>
 .dealership-reviews {
-  padding: 40px 0;
+  padding: 60px 0;
+  isolation: isolate; /* Create new stacking context */
 }
 
 .uk-card {

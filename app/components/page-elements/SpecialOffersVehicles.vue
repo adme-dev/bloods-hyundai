@@ -1,5 +1,5 @@
 <template>
-  <section class="special-offers-vehicles py-16 bg-slate-50 overflow-hidden">
+  <section class="special-offers-vehicles py-16 bg-slate-50 overflow-hidden relative z-0">
     <div class="mx-auto container px-4">
       <!-- Section Header -->
       <div class="text-center mb-10">
@@ -178,6 +178,10 @@ const displayedVehicles = computed(() => {
 </script>
 
 <style scoped>
+.special-offers-vehicles {
+  isolation: isolate; /* Create new stacking context */
+}
+
 .special-offers-swiper {
   padding: 8px 4px 50px;
   overflow: visible;
