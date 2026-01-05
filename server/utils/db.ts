@@ -3,10 +3,20 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import * as schema from '../database/schema';
 
 // Configure Neon for WebSocket support
-// Cloudflare Workers with nodejs_compat_v2 have native WebSocket support
-// The @neondatabase/serverless package auto-detects the environment
-// In development (Node.js), it will use the 'ws' package if needed
-// Note: 'ws' is aliased to empty in Cloudflare builds (see nuxt.config.ts)
+// Cloudflare Workers have native WebSocket, but Node.js (Netlify) needs the ws package
+// The ws import is aliased to empty for Cloudflare builds in nuxt.config.ts
+// Using synchronous require for compatibility with esbuild's target
+if (typeof globalThis.WebSocket === 'undefined') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const ws = require('ws');
+    if (ws) {
+      neonConfig.webSocketConstructor = ws;
+    }
+  } catch {
+    // ws not available - will use native WebSocket if present
+  }
+}
 
 // Create connection pool
 const connectionString = process.env.NEON_DATABASE_URL;
