@@ -367,8 +367,13 @@ const directionsUrl = computed(() => {
 });
 
 const mapUrl = computed(() => {
+  // Use official Google Maps embed URL from site config (preferred - no API restrictions)
+  if (mainStore.site?.map_embed) {
+    return mainStore.site.map_embed;
+  }
+  // Fallback to constructing URL from address
   if (formattedAddress.value) {
-    return `https://maps.google.com/maps?q=${encodeURIComponent(siteName.value + ' ' + formattedAddress.value)}&z=16&output=embed`;
+    return `https://www.google.com/maps/embed/v1/place?key=&q=${encodeURIComponent(siteName.value + ' ' + formattedAddress.value)}`;
   }
   return '';
 });
