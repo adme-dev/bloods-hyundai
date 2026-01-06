@@ -1,103 +1,49 @@
 # Netlify configuration for Nuxt 4
-# IMPORTANT: This configuration prevents CSS/JS 404 errors during deployments
-# Uses @netlify/nuxt module for proper platform integration
+# Let @netlify/nuxt module handle build output and functions configuration
 
 [build]
   command = "npm run build"
-  # @netlify/nuxt module outputs to .netlify/publish
-  publish = ".netlify/publish"
+  # Let @netlify/nuxt auto-configure publish directory
 
 [build.environment]
   NODE_VERSION = "20"
-  # Increase memory for large builds
   NODE_OPTIONS = "--max-old-space-size=8192"
-  # Disable source maps in production to speed up build
   GENERATE_SOURCEMAP = "false"
-  # Tell Nuxt we're on Netlify for conditional optimizations
   NETLIFY = "true"
-  # Reduce Vite parallelism on CI for more stable builds
-  VITE_CJS_IGNORE_WARNING = "true"
 
-# CRITICAL: Skip ALL post-processing to prevent Netlify from modifying Nuxt's hashed assets
-# This is the most common cause of CSS/JS 404 errors after deployment
+# Skip post-processing to prevent asset modification
 [build.processing]
   skip_processing = true
 
-# Functions config
-[functions]
-  node_bundler = "esbuild"
-  # Include all files from server output
-  included_files = [".output/server/**"]
-
 # =============================================================================
-# HEADERS CONFIGURATION
-# Netlify merges headers for matching paths - later rules override earlier ones
+# HEADERS - Prevent caching of SSR pages to avoid stale asset references
 # =============================================================================
 
-# Default headers for ALL responses (security + no-cache for HTML pages)
-# CRITICAL: SSR pages must never be edge-cached to prevent stale asset references
 [[headers]]
   for = "/*"
   [headers.values]
-    # Security headers
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Content-Type-Options = "nosniff"
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    # CRITICAL: Disable ALL Netlify caching for SSR pages to prevent stale asset references
+    # Prevent SSR page caching
     Cache-Control = "no-cache, no-store, must-revalidate"
-    Pragma = "no-cache"
-    # Disable Netlify's Durable Cache for SSR responses
     Netlify-CDN-Cache-Control = "no-store"
-    # Disable edge caching
-    CDN-Cache-Control = "no-store"
 
-# =============================================================================
-# OVERRIDE: Static assets with long-term caching (hashed filenames = immutable)
-# =============================================================================
-
-# CSS files with correct MIME type
-[[headers]]
-  for = "/_nuxt/*.css"
-  [headers.values]
-    Content-Type = "text/css; charset=utf-8"
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# JS files with correct MIME type
-[[headers]]
-  for = "/_nuxt/*.js"
-  [headers.values]
-    Content-Type = "application/javascript; charset=utf-8"
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# All other _nuxt assets (images, fonts, etc.)
+# Static assets - long cache
 [[headers]]
   for = "/_nuxt/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Static assets folder
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# UIkit static files
-[[headers]]
-  for = "/uikit*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# JSON API responses - short cache
-[[headers]]
-  for = "/api/*"
-  [headers.values]
-    Cache-Control = "no-store"
-
-# Netlify Image CDN - Allow remote images from these domains
-# Required for NuxtImage to work with external image sources
+# Netlify Image CDN
 [images]
   remote_images = [
     "https://hyundaioem.b-cdn.net/.*",
