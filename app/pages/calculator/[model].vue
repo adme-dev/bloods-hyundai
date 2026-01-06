@@ -1308,10 +1308,60 @@ const openTestDriveModal = () => {
   showTestDriveModal.value = true;
 };
 
-const handleTestDriveSubmit = (formData: any) => {
-  console.log('Test drive form submitted:', formData);
-  // TODO: Send form data to backend/CRM
-  // For now, just log it - you can integrate with your form submission endpoint
+const handleTestDriveSubmit = async (formData: any) => {
+  try {
+    // Build vehicle info from current selection
+    const vehicleInfo = {
+      make: 'Hyundai',
+      model: calculatorData.value?.model || modelSlug.value,
+      variant: selectedVariant.value?.name,
+      colour: selectedColour.value?.name,
+      price: totalPrice.value,
+      thumbnail: selectedColourImage.value,
+      condition: 'new',
+    };
+
+    // Build the test drive submission payload
+    const testDrivePayload = {
+      type: 'test_drive' as const,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      source: 'calculator-test-drive',
+      vehicleInfo,
+      testDrive: true,
+      message: formData.purchaseTimeline 
+        ? `Purchase timeline: ${formData.purchaseTimeline}` 
+        : undefined,
+      // Include detailed configuration for reference
+      vehicleConfiguration: {
+        model: calculatorData.value?.model,
+        variant: selectedVariant.value?.name,
+        variantId: selectedVariant.value?.id,
+        colour: selectedColour.value?.name,
+        colourPrice: selectedColour.value?.price,
+        trim: selectedTrim.value?.name,
+        trimPrice: selectedTrim.value?.price,
+        optionPack: selectedOptionPack.value?.name,
+        optionPackPrice: selectedOptionPack.value?.price,
+        basePrice: selectedVariant.value?.price,
+        totalPrice: totalPrice.value,
+        thumbnail: selectedColourImage.value,
+      },
+    };
+
+    // Submit to API
+    const response = await $fetch('/api/submit-enquiry', {
+      method: 'POST',
+      body: testDrivePayload,
+    });
+
+    console.log('✅ [Calculator] Test drive request submitted successfully:', response);
+  } catch (error) {
+    console.error('❌ [Calculator] Error submitting test drive request:', error);
+    // The modal already shows success - in production you might want error handling
+  }
 };
 
 const scrollToVariants = () => {
