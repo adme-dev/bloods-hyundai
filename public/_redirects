@@ -1,10 +1,9 @@
 # Netlify _redirects file
 # https://docs.netlify.com/routing/redirects/
-# Note: Nuxt's Netlify preset auto-generates SSR routing rules
-# These rules are for additional custom redirects only
+# Note: Nuxt's Netlify preset handles routing. Keep this file minimal.
 
-# Redirect www to non-www (canonical URL)
-https://www.salehyundai.com.au/* https://salehyundai.com.au/:splat 301!
+# DO NOT add www to non-www redirect here - it causes redirect loops with SSR
+# Configure domain redirects in Netlify Dashboard > Domain settings instead
 
 # Legacy URL redirects (add as needed)
 # /old-path /new-path 301
