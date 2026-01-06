@@ -4,9 +4,8 @@
 
 [build]
   command = "npm run build"
-  # The @netlify/nuxt module outputs to .output/public for static assets
-  # and .output/server for serverless functions - Netlify auto-detects this
-  publish = ".output/public"
+  # Nuxt outputs to dist/ for static files - Netlify auto-detects functions from .output/server
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
