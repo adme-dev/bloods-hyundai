@@ -4,8 +4,8 @@
 
 [build]
   command = "npm run build"
-  # Note: @netlify/nuxt module auto-detects the publish directory
-  # Do NOT specify 'publish' here - let the module handle it
+  # @netlify/nuxt module outputs to .netlify/publish
+  publish = ".netlify/publish"
 
 [build.environment]
   NODE_VERSION = "20"
