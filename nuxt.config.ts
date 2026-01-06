@@ -212,18 +212,19 @@ export default defineNuxtConfig({
   },
 
   // Route rules for hybrid rendering
-  // Note: Prerendering disabled during migration. Re-enable when API is ready.
+  // IMPORTANT: ISR disabled to prevent stale asset hash references after deployments
+  // Netlify's Durable Cache stores ISR pages, causing 404s for new asset hashes
   routeRules: {
-    // Home page - ISR with 1 hour cache for performance
-    '/': { isr: 3600 },
+    // Home page - SSR only (no ISR caching to prevent stale assets)
+    '/': { ssr: true },
 
     // Static pages - prerender at build time (disabled for now)
     // '/contact': { prerender: true },
     // '/site-map': { prerender: true },
 
-    // ISR for offers - revalidate every hour
-    '/special-offers': { isr: 3600 },
-    '/special-offer/**': { isr: 3600 },
+    // Special offers - SSR only (no ISR caching)
+    '/special-offers': { ssr: true },
+    '/special-offer/**': { ssr: true },
 
     // SSR for dynamic content
     '/car-sales/**': { ssr: true },
@@ -237,20 +238,12 @@ export default defineNuxtConfig({
     '/secure-vehicle/**': { ssr: false },
     '/payment-success': { ssr: false },
     
-    // Accessories store - SSR for SEO, cache for 1 hour
+    // Accessories store - SSR for SEO (no ISR to prevent stale assets)
     '/accessories': {
       ssr: true,
-      isr: 3600,
-      headers: {
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      },
     },
     '/accessories/**': {
       ssr: true,
-      isr: 3600,
-      headers: {
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      },
     },
   },
 

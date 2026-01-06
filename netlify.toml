@@ -46,9 +46,13 @@
     X-Content-Type-Options = "nosniff"
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    # Default: No caching for HTML/SSR pages - prevents stale asset hash references
+    # CRITICAL: Disable ALL Netlify caching for SSR pages to prevent stale asset references
     Cache-Control = "no-cache, no-store, must-revalidate"
     Pragma = "no-cache"
+    # Disable Netlify's Durable Cache for SSR responses
+    Netlify-CDN-Cache-Control = "no-store"
+    # Disable edge caching
+    CDN-Cache-Control = "no-store"
 
 # =============================================================================
 # OVERRIDE: Static assets with long-term caching (hashed filenames = immutable)
