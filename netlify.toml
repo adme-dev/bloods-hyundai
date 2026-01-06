@@ -29,52 +29,68 @@
   # Include all files from server output
   included_files = [".output/server/**"]
 
-# Security headers
+# =============================================================================
+# HEADERS CONFIGURATION
+# Netlify merges headers for matching paths - later rules override earlier ones
+# =============================================================================
+
+# Default headers for ALL responses (security + no-cache for HTML pages)
+# CRITICAL: SSR pages must never be edge-cached to prevent stale asset references
 [[headers]]
   for = "/*"
   [headers.values]
+    # Security headers
     X-Frame-Options = "DENY"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Content-Type-Options = "nosniff"
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    # Default: No caching for HTML/SSR pages - prevents stale asset hash references
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
 
-# Static assets caching with proper MIME types
-# CRITICAL: Ensure CSS/JS files have correct Content-Type headers
+# =============================================================================
+# OVERRIDE: Static assets with long-term caching (hashed filenames = immutable)
+# =============================================================================
+
+# CSS files with correct MIME type
 [[headers]]
   for = "/_nuxt/*.css"
   [headers.values]
     Content-Type = "text/css; charset=utf-8"
     Cache-Control = "public, max-age=31536000, immutable"
 
+# JS files with correct MIME type
 [[headers]]
   for = "/_nuxt/*.js"
   [headers.values]
     Content-Type = "application/javascript; charset=utf-8"
     Cache-Control = "public, max-age=31536000, immutable"
 
+# All other _nuxt assets (images, fonts, etc.)
 [[headers]]
   for = "/_nuxt/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Static assets folder
 [[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# No cache for HTML
+# UIkit static files
 [[headers]]
-  for = "/*.html"
+  for = "/uikit*.js"
   [headers.values]
-    Cache-Control = "no-cache, no-store, must-revalidate"
+    Cache-Control = "public, max-age=31536000, immutable"
 
-# JSON short cache
+# JSON API responses - short cache
 [[headers]]
-  for = "/*.json"
+  for = "/api/*"
   [headers.values]
-    Cache-Control = "public, max-age=3600, must-revalidate"
+    Cache-Control = "no-store"
 
 # Netlify Image CDN - Allow remote images from these domains
 # Required for NuxtImage to work with external image sources
