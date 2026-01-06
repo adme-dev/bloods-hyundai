@@ -1,9 +1,12 @@
 # Netlify configuration for Nuxt 4
+# IMPORTANT: This configuration prevents CSS/JS 404 errors during deployments
+# Uses @netlify/nuxt module for proper platform integration
 
 [build]
   command = "npm run build"
-  publish = "dist"
-  # No publish directory needed - Netlify preset handles this automatically
+  # The @netlify/nuxt module outputs to .output/public for static assets
+  # and .output/server for serverless functions - Netlify auto-detects this
+  publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -16,9 +19,16 @@
   # Reduce Vite parallelism on CI for more stable builds
   VITE_CJS_IGNORE_WARNING = "true"
 
+# CRITICAL: Skip ALL post-processing to prevent Netlify from modifying Nuxt's hashed assets
+# This is the most common cause of CSS/JS 404 errors after deployment
+[build.processing]
+  skip_processing = true
+
 # Functions config
 [functions]
   node_bundler = "esbuild"
+  # Include all files from server output
+  included_files = [".output/server/**"]
 
 # Security headers
 [[headers]]
@@ -31,7 +41,20 @@
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-# Static assets caching
+# Static assets caching with proper MIME types
+# CRITICAL: Ensure CSS/JS files have correct Content-Type headers
+[[headers]]
+  for = "/_nuxt/*.css"
+  [headers.values]
+    Content-Type = "text/css; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_nuxt/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
+
 [[headers]]
   for = "/_nuxt/*"
   [headers.values]

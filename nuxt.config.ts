@@ -5,6 +5,8 @@ export default defineNuxtConfig({
 
   // Modules (sitemap disabled in dev for memory optimization)
   modules: [
+    // Netlify integration - MUST be first for proper platform primitives
+    '@netlify/nuxt',
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
@@ -170,12 +172,8 @@ export default defineNuxtConfig({
   },
 
   // Nitro server config
+  // Note: preset is auto-detected by @netlify/nuxt module - don't set manually
   nitro: {
-    preset: 'netlify',
-    // Disable prerendering during initial migration
-    // prerender: {
-    //   routes: ['/sitemap.xml'],
-    // },
     // Compression for faster response delivery
     compressPublicAssets: true,
     // Security headers for all responses
@@ -310,6 +308,11 @@ export default defineNuxtConfig({
   experimental: {
     // Disable automatic image preloading - causes warnings with ClientOnly components
     writeEarlyHints: false,
+    // Disable app manifest to prevent builds/meta/*.json 404 errors on Netlify
+    // The manifest causes issues when the build ID changes between deployments
+    appManifest: false,
+    // Disable payload extraction to prevent _payload.json 404 errors during navigation
+    payloadExtraction: false,
   },
 
   // Nuxt Vitalizer - Lighthouse score optimization

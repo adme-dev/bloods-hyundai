@@ -17,6 +17,7 @@
     "@aws-sdk/s3-request-presigner": "^3.948.0",
     "@fedorae/nuxt-uikit": "^3.1.14",
     "@neondatabase/serverless": "^1.0.2",
+    "@netlify/nuxt": "^0.2.18",
     "@nuxt/icon": "^2.1.1",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/robots": "^5.6.1",
@@ -89,4 +90,3 @@
     "vue-tsc": "^2.1.10"
   }
 }
-
