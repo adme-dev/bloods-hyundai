@@ -196,26 +196,29 @@ const tabs = [
   },
 ];
 
+// Default phone from site config
+const defaultPhone = computed(() => mainStore.site?.phone || '');
+
 // Quick contact cards
 const quickContacts = computed(() => ({
   sales: {
     label: 'Sales Enquiry',
-    phone: departments.value.sales?.phone || '(03) 5144 2877',
+    phone: departments.value.sales?.phone || defaultPhone.value,
     icon: Car,
   },
   service: {
     label: 'Service Enquiry',
-    phone: departments.value.service?.phone || '(03) 5144 2877',
+    phone: departments.value.service?.phone || defaultPhone.value,
     icon: Wrench,
   },
   parts: {
     label: 'Parts Enquiry',
-    phone: departments.value.parts?.phone || '(03) 5144 2877',
+    phone: departments.value.parts?.phone || defaultPhone.value,
     icon: Package,
   },
   general: {
     label: 'General Enquiry',
-    phone: departments.value.sales?.phone || '(03) 5144 2877',
+    phone: departments.value.sales?.phone || defaultPhone.value,
     icon: Phone,
   },
 }));

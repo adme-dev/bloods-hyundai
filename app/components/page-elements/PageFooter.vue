@@ -87,10 +87,10 @@
 <script setup lang="ts">
 const mainStore = useMainStore();
 
-// Site config
+// Site config - use showroom_address from config (not 'address')
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
 const logo = computed(() => mainStore.site?.footer_logo || mainStore.site?.logo || '/images/logo-white.png');
-const address = computed(() => mainStore.site?.address || '');
+const address = computed(() => mainStore.site?.showroom_address || '');
 const phone = computed(() => mainStore.site?.phone || '');
 const email = computed(() => mainStore.site?.email || '');
 const social = computed(() => mainStore.site?.social || {});

@@ -300,7 +300,7 @@ const route = useRoute();
 
 // Computed values from store
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
-const address = computed(() => mainStore.site?.showroom_address || '36/38 Foster St, Sale VIC 3850');
+const address = computed(() => mainStore.site?.showroom_address || '');
 const mapDirections = computed(() => mainStore.site?.map_directions || '#');
 const loading = computed(() => mainStore.loading);
 

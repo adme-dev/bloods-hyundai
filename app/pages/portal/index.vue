@@ -183,8 +183,8 @@
                 </div>
                 <div>
                   <div class="text-sm text-gray-500">Phone</div>
-                  <a href="tel:0351448100" class="font-medium text-primary hover:underline">
-                    (03) 5144 8100
+                  <a :href="`tel:${servicePhoneFormatted}`" class="font-medium text-primary hover:underline">
+                    {{ servicePhone }}
                   </a>
                 </div>
               </div>
@@ -230,6 +230,11 @@ definePageMeta({
 
 const loading = ref(true)
 const customer = ref<any>(null)
+
+// Site config for contact info
+const mainStore = useMainStore()
+const servicePhone = computed(() => mainStore.site?.departments?.service?.phone || mainStore.site?.phone || '')
+const servicePhoneFormatted = computed(() => servicePhone.value.replace(/[^0-9+]/g, ''))
 
 // Check authentication
 const { data: authData, error: authError } = await useFetch('/api/customer/auth/me', {

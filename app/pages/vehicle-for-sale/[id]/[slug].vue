@@ -1,5 +1,5 @@
 <template>
-  <div class="vehicle-for-sale-page bg-slate-50 text-slate-900 overflow-x-hidden">
+  <div class="vehicle-for-sale-page bg-slate-50 text-slate-900">
     <!-- Loading -->
     <div v-if="pending" class="flex min-h-[60vh] items-center justify-center">
       <div uk-spinner="ratio: 2"></div>
@@ -150,10 +150,10 @@
       </ClientOnly>
 
       <!-- Main Content -->
-      <section class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-6 lg:py-8 overflow-hidden">
-        <div class="grid gap-6 lg:grid-cols-[2fr_1fr] min-w-0">
-          <!-- Details -->
-          <div class="space-y-4 min-w-0">
+      <section class="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 lg:py-8">
+        <div class="grid gap-6 lg:grid-cols-[1fr_380px]">
+          <!-- Details Column -->
+          <div class="space-y-4 min-w-0 order-2 lg:order-1">
 
             <!-- Highlights -->
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -315,9 +315,9 @@
             </ClientOnly>
           </div>
 
-          <!-- Sidebar -->
-          <aside class="relative">
-            <div class="sticky top-24 space-y-4">
+          <!-- Sidebar (hidden on mobile - uses mobile CTA bar instead) -->
+          <aside class="hidden lg:block order-1 lg:order-2">
+            <div class="sticky top-28 space-y-4">
               <!-- Enquiry Card -->
               <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div class="flex items-start justify-between">
@@ -927,10 +927,10 @@ useSchemaOrg([
       availability: 'https://schema.org/InStock',
       seller: {
         '@type': 'AutoDealer',
-        name: 'Sale Hyundai',
+        name: mainStore.site?.name || 'Sale Hyundai',
         address: {
           '@type': 'PostalAddress',
-          streetAddress: vehicle.value?.address?.line1 || '36-38 Foster Street',
+          streetAddress: vehicle.value?.address?.line1 || mainStore.site?.showroom_address?.split(',')[0] || '',
           addressLocality: vehicle.value?.address?.suburb || 'Sale',
           addressRegion: vehicle.value?.address?.state || 'Victoria',
           postalCode: vehicle.value?.address?.postcode || '3850',
@@ -1016,10 +1016,10 @@ useHead(() => {
       availability: 'https://schema.org/InStock',
       seller: {
         '@type': 'AutoDealer',
-        name: 'Sale Hyundai',
+        name: mainStore.site?.name || 'Sale Hyundai',
         address: {
           '@type': 'PostalAddress',
-          streetAddress: vehicle.value?.address?.line1 || '36-38 Foster Street',
+          streetAddress: vehicle.value?.address?.line1 || mainStore.site?.showroom_address?.split(',')[0] || '',
           addressLocality: vehicle.value?.address?.suburb || 'Sale',
           addressRegion: vehicle.value?.address?.state || 'Victoria',
           postalCode: vehicle.value?.address?.postcode || '3850',

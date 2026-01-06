@@ -143,7 +143,7 @@ const mapLink = computed(() => departments.value.sales?.map_directions || '#');
 
 const currentPhone = computed(() => {
   const dept = departments.value[selectedDepartment.value];
-  return dept?.phone || departments.value.sales?.phone || '(03) 5144 2877';
+  return dept?.phone || departments.value.sales?.phone || mainStore.site?.phone || '';
 });
 </script>
 
