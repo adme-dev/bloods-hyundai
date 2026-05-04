@@ -2,16 +2,9 @@
   <div class="car-sales-page min-h-screen bg-slate-50 text-slate-900">
     <LazyPageSchema />
 
-    <!-- Hero / Breadcrumb -->
-    <section class="car-sales-header relative overflow-hidden">
-      <!-- Background image with blur -->
-      <div 
-        class="absolute inset-0 scale-110 blur-sm"
-        :style="headerBackgroundStyle"
-      ></div>
-      <!-- Overlay gradient -->
-      <div class="absolute inset-0 bg-gradient-to-r from-[#001E50]/95 via-[#001E50]/65 to-[#001E50]/40"></div>
-      <div class="relative z-10 max-w-7xl mx-auto px-4 py-6 lg:px-6 lg:py-8">
+    <!-- Hero / Breadcrumb - Slim blue header strip -->
+    <section class="car-sales-header relative">
+      <div class="max-w-7xl mx-auto px-4 py-4 lg:px-6 lg:py-5">
         <nav class="flex items-center gap-2 text-sm text-white/70 m-0" aria-label="Breadcrumb">
           <NuxtLink to="/" class="hover:text-white transition-colors">Home</NuxtLink>
           <span>›</span>
@@ -1061,23 +1054,6 @@ const pageSubtitle = computed(() => {
 const isClientMounted = ref(false);
 onMounted(() => {
   isClientMounted.value = true;
-});
-
-const headerBackgroundStyle = computed(() => {
-  // Return empty object on SSR to prevent hydration mismatch
-  if (!isClientMounted.value) return {};
-
-  const firstVehicle = vehicles.value?.[0];
-  const imageUrl = firstVehicle?.images?.[0] || firstVehicle?.thumb || '';
-
-  if (imageUrl) {
-    return {
-      backgroundImage: `url(${imageUrl})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    };
-  }
-  return {};
 });
 
 const conditionOptions = computed(() => filterOptions.value.conditions);
