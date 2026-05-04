@@ -36,16 +36,16 @@
       />
 
       <div class="flex flex-col gap-6 xl:flex-row">
-        <!-- Filters - wrapped in ClientOnly to prevent hydration mismatch -->
-        <ClientOnly>
-          <aside
-            :class="[
-              'w-full xl:w-72 xl:sticky xl:top-4 xl:self-start xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:scrollbar-thin xl:scrollbar-thumb-slate-300 xl:scrollbar-track-transparent',
-              showFiltersMobile
-                ? 'fixed inset-0 z-40 overflow-y-auto bg-white p-4 xl:static xl:p-0'
-                : 'hidden xl:block'
-            ]"
-          >
+        <!-- Filters - only render after hydration to prevent mismatch -->
+        <aside
+          v-if="isClientMounted"
+          :class="[
+            'w-full xl:w-72 xl:sticky xl:top-4 xl:self-start xl:max-h-[calc(100vh-2rem)] xl:overflow-y-auto xl:scrollbar-thin xl:scrollbar-thumb-slate-300 xl:scrollbar-track-transparent',
+            showFiltersMobile
+              ? 'fixed inset-0 z-40 overflow-y-auto bg-white p-4 xl:static xl:p-0'
+              : 'hidden xl:block'
+          ]"
+        >
           <div class="flex items-center justify-between xl:hidden mb-2">
             <h3 class="text-lg font-semibold text-slate-800">Filters</h3>
             <button
@@ -532,29 +532,6 @@
             </div>
           </div>
         </aside>
-          <template #fallback>
-            <!-- SSR placeholder for filters - prevents hydration mismatch -->
-            <aside class="w-full xl:w-72 xl:sticky xl:top-4 xl:self-start hidden xl:block">
-              <div class="rounded-2xl border border-slate-200 bg-white shadow-sm animate-pulse">
-                <div class="px-4 py-3">
-                  <div class="h-3 w-16 bg-slate-200 rounded mb-2"></div>
-                  <div class="h-5 w-32 bg-slate-200 rounded"></div>
-                </div>
-                <div class="border-t border-slate-100 px-4 py-4 space-y-4">
-                  <div class="h-10 bg-slate-100 rounded-xl"></div>
-                  <div class="space-y-2">
-                    <div class="h-4 w-24 bg-slate-200 rounded"></div>
-                    <div class="flex gap-2">
-                      <div class="h-8 w-20 bg-slate-100 rounded-full"></div>
-                      <div class="h-8 w-16 bg-slate-100 rounded-full"></div>
-                      <div class="h-8 w-18 bg-slate-100 rounded-full"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </template>
-        </ClientOnly>
 
         <!-- Results -->
         <div class="flex-1 space-y-4">
