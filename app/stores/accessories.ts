@@ -376,6 +376,9 @@ export const useAccessoriesStore = defineStore('accessories', () => {
   };
 }, {
   persist: {
+    // Only persist on client to prevent SSR hydration mismatch
+    // Storage is undefined on server, so persist is skipped during SSR
+    storage: import.meta.client ? localStorage : undefined,
     paths: ['cartItems', 'selectedModel'],
   },
 });
