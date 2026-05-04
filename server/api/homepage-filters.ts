@@ -19,32 +19,49 @@ const SELLER_IDS = {
 const ALL_SELLER_IDS = Object.values(SELLER_IDS);
 
 /**
+ * Extract condition values from database field
+ * Database may store condition as:
+ * - Simple string: "used", "new", "demo"
+ * - JSON object: {"value": ["used"], "displayValue": ["Used"]}
+ */
+function getConditionValues(condition: any): string[] {
+  if (!condition) return [];
+
+  // If it's a string, return as single-element array
+  if (typeof condition === 'string') {
+    return [condition.toLowerCase()];
+  }
+
+  // If it's an object with value array (like JSON files)
+  if (typeof condition === 'object' && Array.isArray(condition.value)) {
+    return condition.value.map((v: string) => v.toLowerCase());
+  }
+
+  return [];
+}
+
+/**
  * Business logic filter - matches carsales-feed.ts logic
- * - Blood Motor Group: include all vehicles
- * - Blood Hyundai / Geelong Mazda:
- *   - Hyundai brand → only Demo or New
- *   - Other brands → only Used
+ * - Blood Motor Group: include ALL (new car inventory)
+ * - Blood Hyundai: include ALL Hyundai (dealer's full inventory)
+ * - Geelong Mazda: include only USED (trade-ins at Blood Hyundai)
  */
 function shouldIncludeVehicle(vehicle: VehicleRow): boolean {
-  // Blood Motor Group (new-cars bucket) - include all
+  // Blood Motor Group - include all (new car inventory)
   if (vehicle.seller_id === SELLER_IDS.BLOOD_MOTOR_GROUP) {
     return true;
   }
 
-  // For Blood Hyundai and Geelong Mazda buckets
-  const isHyundai = vehicle.make?.toLowerCase() === 'hyundai';
-  const condition = vehicle.condition?.toLowerCase() || '';
-  const isDemo = condition.includes('demo');
-  const isNew = condition.includes('new');
-  const isUsed = condition.includes('used');
-
-  if (isHyundai) {
-    // Hyundai should be demo or new
-    return isDemo || isNew;
-  } else {
-    // Non-Hyundai should be used
-    return isUsed;
+  // Blood Hyundai - include all Hyundai (their main brand)
+  if (vehicle.seller_id === SELLER_IDS.BLOOD_HYUNDAI) {
+    const isHyundai = vehicle.make?.toLowerCase() === 'hyundai';
+    return isHyundai;
   }
+
+  // Geelong Mazda - include only used (trade-ins)
+  const conditionValues = getConditionValues(vehicle.condition);
+  const isUsed = conditionValues.some(v => v.includes('used'));
+  return isUsed;
 }
 
 // Weekly payment calculation (matches carsales-feed.ts)
@@ -62,7 +79,7 @@ const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slic
 
 interface VehicleRow {
   seller_id: string;
-  condition: string | null;
+  condition: string | { value: string[]; displayValue?: string[] } | null;
   make: string | null;
   model: string | null;
   body_style: string | null;

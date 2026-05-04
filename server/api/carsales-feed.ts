@@ -169,17 +169,19 @@ export default defineCachedEventHandler(async (event) => {
         const isUsed = conditionValues.some((value: string) => value.toLowerCase().includes('used'));
 
         let shouldIncludeVehicle = false;
-        
-        // If it's from the "new-cars" bucket, include all vehicles (they're all new/demo inventory)
+
+        // Blood Motor Group bucket (index 1): include ALL (new car inventory)
+        // Blood Hyundai bucket (index 0): include ALL Hyundai (dealer's full inventory)
+        // Geelong Mazda bucket (index 2): include only USED (trade-ins at Blood Hyundai)
         if (isNewCarsBucket) {
+          // Blood Motor Group - include all
           shouldIncludeVehicle = true;
+        } else if (urlIndex === 0) {
+          // Blood Hyundai - include all Hyundai (their main brand inventory)
+          shouldIncludeVehicle = isHyundai;
         } else {
-          // For the "used" bucket: Hyundai should be demo/new, others should be used
-          if (isHyundai) {
-            shouldIncludeVehicle = isDemo || isNew;
-          } else {
-            shouldIncludeVehicle = isUsed;
-          }
+          // Geelong Mazda (urlIndex === 2) - include only used (trade-ins)
+          shouldIncludeVehicle = isUsed;
         }
 
         // Debug logging for first few vehicles
