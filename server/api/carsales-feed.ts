@@ -89,8 +89,9 @@ const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalid
 export default defineCachedEventHandler(async (event) => {
   // Supabase data URLs
   const urls = [
-    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/sale-motor-group/data.json',
-    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/sale-motor-group-new-cars/data.json'
+    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-hyundai/data.json',
+    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-motor-group/data.json',
+    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/geelong-mazda/data.json'
   ];
 
   try {
