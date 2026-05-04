@@ -570,12 +570,13 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useMediaQuery, useDebounceFn } from '@vueuse/core';
 import { useCustomizedSearchStore, type CustomizedSearchFilters } from '~/stores/customizedSearch';
 import { useRouter, useRoute } from 'vue-router';
-import { useVehiclesStore } from '~/stores/vehicles';
 import ResponsiveFilterDialog from '~/components/filters/ResponsiveFilterDialog.vue';
 
 const mainStore = useMainStore();
-const vehiclesStore = useVehiclesStore();
 const customizedSearchStore = useCustomizedSearchStore();
+
+// Use lightweight homepage filters (~6KB) instead of full vehicle data (~700KB)
+const homepageFilters = useHomepageFilters();
 const router = useRouter();
 const route = useRoute();
 
@@ -616,30 +617,28 @@ const getSelectedCountForTab = (tabId: DialogTabId): number => {
 
 onMounted(async () => {
   try {
-    if (vehiclesStore.vehicles.length === 0) {
-      await vehiclesStore.fetchVehicles();
-    }
+    // Fetch lightweight filter data (~6KB) instead of full vehicle data (~700KB)
+    await homepageFilters.fetchFilters();
   } catch (error) {
-    console.error('Failed to fetch vehicles:', error);
+    console.error('Failed to fetch filters:', error);
   } finally {
     isInitializing.value = false;
   }
 });
 
-const minWeeklyBudget = computed(() => customizedSearchStore.perweekRange.min);
-const maxWeeklyBudget = computed(() => customizedSearchStore.perweekRange.max);
+// Use lightweight filter data from homepage-filters endpoint
+const minWeeklyBudget = computed(() => homepageFilters.perweekRange.value.min);
+const maxWeeklyBudget = computed(() => homepageFilters.perweekRange.value.max);
 
-const modelSearchQuery = computed({
-  get: () => customizedSearchStore.modelSearchQuery,
-  set: (val) => customizedSearchStore.setModelSearchQuery(val),
-});
+const modelSearchQuery = ref('');
 
-const filteredMakes = computed(() => customizedSearchStore.filteredMakesAndModels.makes);
-const filteredModels = computed(() => customizedSearchStore.filteredMakesAndModels.models);
-const filteredVehicleCount = computed(() => customizedSearchStore.filteredVehicleCount);
+// Use data from lightweight endpoint
+const filteredMakes = computed(() => homepageFilters.makes.value);
+const filteredModels = computed(() => homepageFilters.modelOptions.value);
+const filteredVehicleCount = computed(() => homepageFilters.totalCount.value);
 
 const groupedModelsForDialog = computed(() => {
-  const grouped = customizedSearchStore.filteredGroupedModels;
+  const grouped = homepageFilters.groupedModels.value;
   const q = (modelSearchQuery.value || '').trim().toLowerCase();
   if (!q) return grouped;
 
@@ -660,7 +659,7 @@ const groupedModelsForDialog = computed(() => {
   return filtered;
 });
 
-const clearModelSearch = () => customizedSearchStore.clearModelSearch();
+const clearModelSearch = () => { modelSearchQuery.value = ''; };
 
 const isFilterOptionSelected = (filterName: keyof CustomizedSearchFilters, optionValue: string) => {
   const selected = customizedSearchStore.filters[filterName];
@@ -728,12 +727,16 @@ const getActiveFilterText = (
     const totalSelections = selectedMakes.length + selectedModels.length;
     if (totalSelections === 0) return defaultText;
     if (totalSelections === 1) {
-      if (selectedModels.length === 1) {
-        const model = customizedSearchStore.selectedModels.find((m) => m.value === selectedModels[0]);
-        return model ? `${model.displayMake} ${model.displayValue}` : selectedModels[0];
+      if (selectedModels.length === 1 && selectedModels[0]) {
+        // Look up model in lightweight data
+        const model = homepageFilters.modelOptions.value.find((m) => m.value === selectedModels[0]);
+        return model ? `${model.displayMake || ''} ${model.displayValue}`.trim() : selectedModels[0];
       }
-      const make = customizedSearchStore.selectedMakes.find(
-        (m) => m.value.toLowerCase() === selectedMakes[0].toLowerCase()
+      // Look up make in lightweight data
+      const makeValue = selectedMakes[0];
+      if (!makeValue) return defaultText;
+      const make = homepageFilters.makes.value.find(
+        (m) => m.value.toLowerCase() === makeValue.toLowerCase()
       );
       return make ? `${make.displayValue} (Make)` : defaultText;
     }
@@ -778,23 +781,13 @@ const updateBudgetFilter = () => {
   updateBudgetFilterDebounced([weeklyBudget.value[0], weeklyBudget.value[1]]);
 };
 
-// Condition counts using faceted logic from the store
-// Shows counts excluding condition filter - each option shows "how many if I select this"
+// Condition counts from lightweight homepage-filters endpoint
 const allConditionsWithTrueCounts = computed(() => {
-  const allConditionValues = vehiclesStore.availableFilters?.condition || [];
-  const facetedCounts = customizedSearchStore.facetedConditionCounts;
-
-  return allConditionValues.map((conditionValue: string) => {
-    const displayValue = conditionValue.charAt(0).toUpperCase() + conditionValue.slice(1);
-    const value = conditionValue;
-    const trueCount = facetedCounts[value.toLowerCase()] || 0;
-
-    return {
-      value,
-      displayValue,
-      trueCount,
-    };
-  });
+  return homepageFilters.conditionOptions.value.map((option) => ({
+    value: option.value,
+    displayValue: option.displayValue,
+    trueCount: option.count || 0,
+  }));
 });
 
 interface ActiveFilterItem {
@@ -813,7 +806,6 @@ const activeFiltersDisplay = computed((): ActiveFilterItem[] => {
     make: 'Make',
     model: 'Model',
     condition: 'Condition',
-    badge: 'Badge',
     modelBadges: 'Model Badges',
     perweek: 'Weekly Budget',
   };
@@ -842,12 +834,14 @@ const activeFiltersDisplay = computed((): ActiveFilterItem[] => {
       value.forEach((itemValue) => {
         let displayValue = String(itemValue);
         if (filterName === 'make') {
-          const make = customizedSearchStore.selectedMakes.find(
+          // Look up make in lightweight data
+          const make = homepageFilters.makes.value.find(
             (m) => m.value.toLowerCase() === itemValue.toLowerCase()
           );
           displayValue = make?.displayValue || itemValue.charAt(0).toUpperCase() + itemValue.slice(1);
         } else if (filterName === 'model') {
-          const model = customizedSearchStore.selectedModels.find((m) => m.value === itemValue);
+          // Look up model in lightweight data
+          const model = homepageFilters.modelOptions.value.find((m) => m.value === itemValue);
           displayValue = model ? `${model.displayMake} ${model.displayValue}` : itemValue;
         } else if (filterName === 'condition') {
           const condition = allConditionsWithTrueCounts.value.find((c) => c.value === itemValue);
