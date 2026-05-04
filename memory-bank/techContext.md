@@ -21,6 +21,7 @@
 ### External Services
 - **CMS:** WordPress REST API (for content pages)
 - **CDN:** BunnyCDN for static assets and JSON data
+- **Vehicle Data:** Supabase (direct queries for homepage filters, storage JSON for full data)
 - **Analytics:** Google Tag Manager via `nuxt-gtag`
 - **SEO:** `@nuxtjs/seo` module
 - **Payments:** Stripe (for vehicle reservations)
@@ -71,6 +72,8 @@ NUXT_PUBLIC_GTM_ID          # Google Tag Manager ID
 NUXT_JWT_SECRET             # JWT signing secret
 NUXT_STRIPE_SECRET_KEY      # Stripe API key
 NEON_DATABASE_URL           # PostgreSQL connection (planned)
+SUPABASE_URL                # Supabase project URL
+SUPABASE_KEY                # Supabase service role key
 ```
 
 ## Key APIs
@@ -84,6 +87,8 @@ Planned: `POST /api/enquiry` → NEON Database
 - `GET /api/vehicle/[slug]` - Vehicle detail
 - `GET /api/vehicle-detail/[id]` - Stock vehicle detail
 - `GET /api/search` - Vehicle search
+- `GET /api/carsales-feed` - Full vehicle inventory (~700KB, for car-sales pages)
+- `GET /api/homepage-filters` - Lightweight filter aggregates (~10KB, for homepage)
 
 ### Content
 - `GET /api/page/[slug]` - WordPress page content
@@ -118,6 +123,8 @@ npm run deploy:cloudflare
 - shadcn-vue components in `app/components/ui/` follow Vue port conventions
 - Forms currently submit to external WordPress API, migration to NEON planned
 - Some pages use ISR (incremental static regeneration) for performance
+- Homepage uses route-aware SSR optimization - only car-sales pages preload full vehicle data
+- Homepage fetches lightweight filter aggregates via `/api/homepage-filters` (73% payload reduction)
 
 
 

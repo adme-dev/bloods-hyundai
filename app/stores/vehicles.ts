@@ -151,15 +151,17 @@ export const useVehiclesStore = defineStore('vehicles', () => {
 
   // Actions
   /**
-   * Hydrate vehicles data from Nuxt payload
-   * Data is preloaded server-side via vehicles-data.server.ts plugin
-   * No client-side API calls are made - data is always in SSR payload
+   * Hydrate vehicles data from Nuxt payload or fetch client-side
+   *
+   * Data flow:
+   * - /car-sales/* pages: Data is preloaded server-side via plugin (SSR payload)
+   * - Homepage: No preload, fetches client-side for lighter initial page load
    */
   const fetchVehicles = async () => {
     if (isDataLoaded.value) return;
 
     try {
-      // Get data from Nuxt payload (populated by vehicles-data.server.ts plugin)
+      // Try to get data from Nuxt payload first (populated by vehicles-data.server.ts plugin)
       const nuxtApp = useNuxtApp();
       const cachedData = nuxtApp.payload?.data?.[CACHE_KEY] || nuxtApp.static?.data?.[CACHE_KEY];
 
@@ -167,11 +169,28 @@ export const useVehiclesStore = defineStore('vehicles', () => {
         vehicles.value = cachedData.vehiclesData || [];
         filters.value = cachedData.filters || [];
         isDataLoaded.value = true;
-      } else {
-        console.warn('[vehicles store] No vehicle data in payload - check vehicles-data.server.ts plugin');
+        return;
+      }
+
+      // No payload data - fetch client-side (homepage case)
+      // This happens when the page doesn't preload vehicle data for performance
+      if (import.meta.client) {
+        const response = await $fetch<{ vehiclesData: any[]; filters: any }>('/api/carsales-feed');
+        if (response) {
+          vehicles.value = response.vehiclesData || [];
+          filters.value = response.filters || [];
+          isDataLoaded.value = true;
+
+          // Cache in payload for subsequent navigation
+          nuxtApp.payload.data = nuxtApp.payload.data || {};
+          nuxtApp.payload.data[CACHE_KEY] = {
+            vehiclesData: response.vehiclesData || [],
+            filters: response.filters || [],
+          };
+        }
       }
     } catch (error) {
-      console.error('Error hydrating vehicles store:', error);
+      console.error('Error fetching vehicles:', error);
     }
   };
 

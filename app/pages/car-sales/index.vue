@@ -736,7 +736,9 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useLocalStorage } from '@vueuse/core';
+import { useDebounceFn } from '@vueuse/core';
+// Note: useLocalStorage is auto-imported from ~/composables/useLocalStorage.ts
+// which properly defers localStorage read until after hydration
 
 const route = useRoute();
 const router = useRouter();

@@ -38,6 +38,10 @@ NUXT_PUBLIC_SITE_URL="https://www.salehyundai.com.au"
 # API Configuration
 NUXT_PUBLIC_API_URL="https://your-api-url.com"
 
+# Supabase (for vehicle data and homepage filters)
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_KEY="your-supabase-service-role-key"
+
 # CDN URLs
 NUXT_PUBLIC_CDN_URL="https://your-cdn.com"
 NUXT_PUBLIC_OEM_CDN_URL="https://hyundaioem.b-cdn.net"
@@ -110,6 +114,8 @@ All API routes are in `server/api/`:
 - `/api/form` - Form submissions
 - `/api/stripe/*` - Payment routes
 - `/api/reviews` - Google reviews
+- `/api/homepage-filters` - Lightweight filter aggregates for homepage (optimized, ~10KB)
+- `/api/carsales-feed` - Full vehicle data with filters (~700KB, used on car-sales pages)
 
 ## Migration from Vue 2
 
@@ -160,6 +166,16 @@ The project is configured for Netlify deployment with SSR support.
 - **ISR (Incremental Static Regeneration):** `/special-offers/*` - revalidates hourly
 - **SSR:** `/car-sales/*`, `/vehicle/*`, `/cars-for-sale/*`
 - **SPA:** `/secure-vehicle/*`, `/payment-success`
+
+### Performance Optimization
+
+The homepage uses a route-aware SSR payload optimization to reduce initial page load:
+
+- **Homepage (`/`)**: Uses lightweight `/api/homepage-filters` endpoint (~10KB) instead of full vehicle data
+- **Car Sales pages (`/car-sales/*`, `/vehicle-for-sale/*`)**: Full vehicle data preloaded via SSR (~700KB)
+- **Result**: 73% reduction in homepage SSR payload (from ~542KB to ~145KB)
+
+See [SSR_PAYLOAD_OPTIMIZATION.md](./SSR_PAYLOAD_OPTIMIZATION.md) for technical details.
 
 ## License
 

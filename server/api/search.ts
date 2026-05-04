@@ -30,9 +30,7 @@ export default defineEventHandler(async (event) => {
     }
 
     let vehicles = feedResponse.vehiclesData || [];
-    console.log('[Search API] Received vehicles count:', vehicles.length);
-    console.log('[Search API] Query params:', JSON.stringify(query));
-    
+
     // Helper function to extract numeric price
     const getPrice = (vehicle: any): number => {
       const price = vehicle.price;
@@ -149,10 +147,6 @@ export default defineEventHandler(async (event) => {
     
     // Apply faceted filtering if any make/model/badge filters are set
     if (makes.length > 0 || models.length > 0 || badges.length > 0) {
-      console.log(`[Search API] Faceted filters - Makes: [${makes.join(', ')}] | Models: [${models.join(', ')}] | Badges: [${badges.join(', ')}]`);
-      console.log(`[Search API] Make-Models map: ${JSON.stringify(Object.fromEntries([...makeModelsMap.entries()].map(([k,v]) => [k, [...v]])))}`);
-      console.log(`[Search API] Model-Badges map: ${JSON.stringify(Object.fromEntries([...modelBadgesMap.entries()].map(([k,v]) => [k, [...v]])))}`);
-      
       vehicles = vehicles.filter(vehicle => {
         const vMake = getVehicleMake(vehicle);
         const vModel = getVehicleModel(vehicle);
@@ -250,36 +244,28 @@ export default defineEventHandler(async (event) => {
     if (query.minPrice) {
       const minPrice = parseInt(String(query.minPrice));
       if (!isNaN(minPrice)) {
-        const beforeCount = vehicles.length;
         vehicles = vehicles.filter(vehicle => getPrice(vehicle) >= minPrice);
-        console.log(`[Search API] Price filter (minPrice >= ${minPrice}): ${beforeCount} -> ${vehicles.length}`);
       }
     }
-    
+
     if (query.maxPrice) {
       const maxPrice = parseInt(String(query.maxPrice));
       if (!isNaN(maxPrice)) {
-        const beforeCount = vehicles.length;
         vehicles = vehicles.filter(vehicle => getPrice(vehicle) <= maxPrice);
-        console.log(`[Search API] Price filter (maxPrice <= ${maxPrice}): ${beforeCount} -> ${vehicles.length}`);
       }
     }
-    
+
     if (query.minYear) {
       const minYear = parseInt(String(query.minYear));
       if (!isNaN(minYear)) {
-        const beforeCount = vehicles.length;
         vehicles = vehicles.filter(vehicle => getYear(vehicle) >= minYear);
-        console.log(`[Search API] Year filter (minYear >= ${minYear}): ${beforeCount} -> ${vehicles.length}`);
       }
     }
-    
+
     if (query.maxYear) {
       const maxYear = parseInt(String(query.maxYear));
       if (!isNaN(maxYear)) {
-        const beforeCount = vehicles.length;
         vehicles = vehicles.filter(vehicle => getYear(vehicle) <= maxYear);
-        console.log(`[Search API] Year filter (maxYear <= ${maxYear}): ${beforeCount} -> ${vehicles.length}`);
       }
     }
     
@@ -342,9 +328,7 @@ export default defineEventHandler(async (event) => {
     const start = (page - 1) * limit;
     const end = start + limit;
     const paginatedVehicles = vehicles.slice(start, end);
-    
-    console.log(`[Search API] Final results: ${total} total, page ${page}, showing ${paginatedVehicles.length} vehicles`);
-    
+
     return {
       success: true,
       vehicles: paginatedVehicles,
