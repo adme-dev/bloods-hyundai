@@ -3,14 +3,14 @@
     <LazyPageSchema />
 
     <!-- Hero / Breadcrumb - Slim blue header strip -->
-    <section class="relative" style="background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);">
-      <div class="max-w-7xl mx-auto px-4 py-4 lg:px-6 lg:py-5">
+    <div class="px-4 py-4 lg:px-6 lg:py-5" style="background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);">
+      <div class="max-w-7xl mx-auto">
         <nav class="flex items-center gap-2 text-sm text-white/70 m-0" aria-label="Breadcrumb">
           <NuxtLink to="/" class="hover:text-white transition-colors">Home</NuxtLink>
           <span>›</span>
           <span class="text-white">Cars for Sale</span>
         </nav>
-        
+
         <h1 class="text-3xl md:text-4xl font-bold text-white m-0">
           {{ pageTitle }}
         </h1>
@@ -18,7 +18,7 @@
           {{ pageSubtitle }}
         </p>
       </div>
-    </section>
+    </div>
 
     <section class="relative mx-auto w-full max-w-full px-4 py-6 lg:px-8 lg:py-10">
       <!-- Mobile overlay backdrop -->
