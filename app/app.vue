@@ -5,6 +5,7 @@
     </NuxtLayout>
     <ClientOnly>
       <ToastContainer />
+      <AutoPopup />
     </ClientOnly>
   </div>
 </template>
