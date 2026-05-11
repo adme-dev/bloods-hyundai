@@ -39,7 +39,7 @@
 
           <!-- Book a Service -->
           <NuxtLink
-            to="/service"
+            to="/service-booking"
             class="hidden md:flex items-center gap-2 hover:text-gray-300 transition-colors"
           >
             <!-- Wrench/Service icon -->
