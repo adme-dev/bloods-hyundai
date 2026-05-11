@@ -52,7 +52,7 @@
 
           <!-- Book a Test Drive -->
           <NuxtLink
-            to="/test-drive"
+            to="/models"
             class="hidden lg:flex items-center gap-2 hover:text-gray-300 transition-colors"
           >
             <!-- Car icon -->
