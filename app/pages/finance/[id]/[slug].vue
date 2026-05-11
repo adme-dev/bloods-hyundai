@@ -135,8 +135,36 @@
             </div>
           </div>
 
-          <!-- Finance Calculator & Form -->
-          <div class="finance-calculator-section">
+          <!-- Finance Widget (External) -->
+          <div v-if="useFinanceWidget && financeWidgetIframeUrl" class="finance-calculator-section">
+            <Card class="rounded-2xl shadow-xl overflow-hidden">
+              <div class="bg-gradient-to-br from-[#001E50] to-[#1a4a8a] text-white p-6">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
+                    </svg>
+                  </div>
+                  <div class="text-xl font-semibold">Apply for Finance</div>
+                </div>
+              </div>
+              <div v-if="financeWidgetPending" class="flex items-center justify-center py-16">
+                <div class="loading-spinner"></div>
+              </div>
+              <div v-else class="finance-widget-container">
+                <iframe
+                  :src="financeWidgetIframeUrl"
+                  class="finance-widget-iframe"
+                  title="Finance Application"
+                  allow="geolocation; payment"
+                  sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                />
+              </div>
+            </Card>
+          </div>
+
+          <!-- Finance Calculator & Form (Internal) -->
+          <div v-else class="finance-calculator-section">
             <Card class="rounded-2xl shadow-xl overflow-hidden">
               <!-- Calculator Header -->
               <div class="bg-gradient-to-br from-[#001E50] to-[#1a4a8a] text-white p-6">
@@ -408,6 +436,51 @@ const mainStore = useMainStore();
 
 const vehicleId = computed(() => route.params.id as string);
 
+// Finance widget settings type
+interface FinanceWidgetSettings {
+  success: boolean;
+  settings: {
+    useFinanceWidget: boolean;
+    financeWidgetIframe: string | null;
+    financeWidgetProvider: string | null;
+  };
+}
+
+// Fetch finance widget settings to determine if we should show the widget
+const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<FinanceWidgetSettings>('/api/finance-widget-settings', {
+  lazy: true,
+  default: (): FinanceWidgetSettings => ({
+    success: true,
+    settings: {
+      useFinanceWidget: false,
+      financeWidgetIframe: null,
+      financeWidgetProvider: null,
+    },
+  }),
+});
+
+// Computed properties for finance widget
+const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
+
+// Extract base iframe URL from settings (handles both URL and HTML)
+const financeWidgetBaseUrl = computed(() => {
+  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
+  if (!input) return null;
+
+  // If it's already a URL
+  if (/^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  // Try to extract src from iframe HTML
+  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
+  if (srcMatch) {
+    return srcMatch[1];
+  }
+
+  return null;
+});
+
 // Fetch vehicle data
 const { data: apiResponse, status } = await useFetch<any>(`/api/vehicle-detail/${vehicleId.value}`, {
   key: `vehicle-finance-${vehicleId.value}`,
@@ -504,6 +577,34 @@ const hasAdditionalInfo = computed(() => {
 const vehicleUrl = computed(() => {
   const slug = route.params.slug as string;
   return `/vehicle-for-sale/${vehicleId.value}/${slug}`;
+});
+
+// Build the full iframe URL with vehicle parameters (computed after vehicle is loaded)
+const financeWidgetIframeUrl = computed(() => {
+  const baseUrl = financeWidgetBaseUrl.value;
+  if (!baseUrl || !vehicle.value) return null;
+
+  // Get vehicle data
+  const condition = getDisplay(vehicle.value?.condition) || '';
+  const price = vehicle.value?.price || 0;
+  const year = getDisplay(vehicle.value?.year) || '';
+  const make = getDisplay(vehicle.value?.make) || '';
+  const model = getDisplay(vehicle.value?.model) || '';
+  const kms = vehicle.value?.kms || 0;
+  const vin = vehicle.value?.vin || '';
+
+  // Build URL with vehicle parameters
+  const params = new URLSearchParams();
+  if (condition) params.append('condition', condition);
+  if (price) params.append('amount', String(price));
+  if (year) params.append('buildyear', year);
+  if (make) params.append('make', make);
+  if (model) params.append('model', model);
+  if (kms) params.append('kilometers', String(kms));
+  if (vin) params.append('vin', vin);
+
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${params.toString()}`;
 });
 
 // Calculator state
@@ -867,6 +968,30 @@ useSeoMeta({
 .finance-calculator-section {
   max-width: 500px;
   width: 100%;
+}
+
+/* Finance Widget Container */
+.finance-widget-container {
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-widget-iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 600px;
+  border: none;
+}
+
+@media (min-width: 768px) {
+  .finance-widget-container {
+    min-height: 700px;
+  }
+
+  .finance-widget-iframe {
+    min-height: 700px;
+  }
 }
 
 @media (min-width: 1024px) {
