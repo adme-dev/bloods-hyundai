@@ -254,9 +254,50 @@ function getHigherPriority(
 }
 
 /**
+ * BMGroup email addresses for routing (Bloods Hyundai)
+ */
+const BMGROUP_EMAILS = {
+  parts: 'bmgparts@bmgroup.com.au',         // Parts, Fleet, Contact
+  service: 'bmgservice6@bmgroup.com.au',    // Service
+  sellCar: ['hyundai@bmgroup.com.au', 'bmgused@bmgroup.com.au', 'bmgreception1@bmgroup.com.au'],
+  showroom: 'hyundai@bmgroup.com.au',       // Showroom, Test Drive, Finance
+  salesNew: 'hyundai@bmgroup.com.au',       // New vehicle sales
+  salesDemo: 'hyundai@bmgroup.com.au',      // Demo vehicle sales
+  salesUsed: 'bmgused@bmgroup.com.au',      // Used vehicle sales
+};
+
+/**
+ * Check if dealer is BMGroup (Bloods Hyundai)
+ */
+function isBMGroupDealer(dealer: any): boolean {
+  return dealer.slug === 'bloods-hyundai' || dealer.name?.toLowerCase().includes('blood');
+}
+
+/**
  * Get default recipients based on enquiry type
  */
 function getDefaultRecipients(enquiry: any, dealer: any): string[] {
+  const isBMGroup = isBMGroupDealer(dealer);
+
+  // BMGroup-specific email routing
+  if (isBMGroup) {
+    const bmgEmails: Record<string, string | string[]> = {
+      vehicle: BMGROUP_EMAILS.showroom,
+      contact: BMGROUP_EMAILS.parts,
+      finance: BMGROUP_EMAILS.showroom,
+      service: BMGROUP_EMAILS.service,
+      parts: BMGROUP_EMAILS.parts,
+      fleet: BMGROUP_EMAILS.parts,
+      test_drive: BMGROUP_EMAILS.showroom,
+      sell_car: BMGROUP_EMAILS.sellCar,
+      accessories: BMGROUP_EMAILS.parts,
+      special_offer: BMGROUP_EMAILS.showroom,
+    };
+    const email = bmgEmails[enquiry.type] || BMGROUP_EMAILS.parts;
+    return Array.isArray(email) ? email : [email];
+  }
+
+  // Default email routing for other dealers
   const defaultEmails: Record<string, string> = {
     vehicle: dealer.email || 'sales@dealer.com',
     contact: dealer.email || 'reception@dealer.com',
@@ -267,7 +308,7 @@ function getDefaultRecipients(enquiry: any, dealer: any): string[] {
     sell_car: dealer.email || 'sales@dealer.com',
     accessories: dealer.email || 'parts@dealer.com',
   };
-  
+
   const defaultEmail = defaultEmails[enquiry.type] || dealer.email || 'reception@dealer.com';
   return [defaultEmail];
 }
@@ -277,47 +318,52 @@ function getDefaultRecipients(enquiry: any, dealer: any): string[] {
  */
 export function createDefaultRoutingRules(dealer: any): RoutingRule[] {
   const dealerEmail = dealer.email || 'reception@dealer.com';
-  
+  const isBMGroup = isBMGroupDealer(dealer);
+
   return [
+    // Vehicle Enquiries - New
     {
       id: 'new-vehicle',
       name: 'New Vehicle Enquiries',
       enabled: true,
       conditions: [
         { field: 'type', operator: 'equals', value: 'vehicle' },
-        { field: 'metadata.vehicle_condition', operator: 'equals', value: 'New' },
+        { field: 'vehicleInfo.condition', operator: 'equals', value: 'New' },
       ],
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.salesNew : dealerEmail],
         priority: 'high',
       },
     },
+    // Vehicle Enquiries - Demo
     {
       id: 'demo-vehicle',
       name: 'Demo Vehicle Enquiries',
       enabled: true,
       conditions: [
         { field: 'type', operator: 'equals', value: 'vehicle' },
-        { field: 'metadata.vehicle_condition', operator: 'equals', value: 'Demo' },
+        { field: 'vehicleInfo.condition', operator: 'equals', value: 'Demo' },
       ],
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.salesDemo : dealerEmail],
         priority: 'high',
       },
     },
+    // Vehicle Enquiries - Used
     {
       id: 'used-vehicle',
       name: 'Used Vehicle Enquiries',
       enabled: true,
       conditions: [
         { field: 'type', operator: 'equals', value: 'vehicle' },
-        { field: 'metadata.vehicle_condition', operator: 'equals', value: 'Used' },
+        { field: 'vehicleInfo.condition', operator: 'equals', value: 'Used' },
       ],
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.salesUsed : dealerEmail],
         priority: 'normal',
       },
     },
+    // Test Drive Requests
     {
       id: 'test-drive',
       name: 'Test Drive Requests',
@@ -326,10 +372,11 @@ export function createDefaultRoutingRules(dealer: any): RoutingRule[] {
         { field: 'type', operator: 'equals', value: 'test_drive' },
       ],
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.showroom : dealerEmail],
         priority: 'high',
       },
     },
+    // Finance Enquiries
     {
       id: 'finance',
       name: 'Finance Enquiries',
@@ -338,10 +385,11 @@ export function createDefaultRoutingRules(dealer: any): RoutingRule[] {
         { field: 'type', operator: 'equals', value: 'finance' },
       ],
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.showroom : dealerEmail],
         priority: 'normal',
       },
     },
+    // Service Bookings
     {
       id: 'service',
       name: 'Service Bookings',
@@ -350,17 +398,83 @@ export function createDefaultRoutingRules(dealer: any): RoutingRule[] {
         { field: 'type', operator: 'equals', value: 'service' },
       ],
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.service : dealerEmail],
         priority: 'normal',
       },
     },
+    // Sell My Car
+    {
+      id: 'sell-car',
+      name: 'Sell My Car Enquiries',
+      enabled: true,
+      conditions: [
+        { field: 'type', operator: 'equals', value: 'sell_car' },
+      ],
+      actions: {
+        send_to: isBMGroup ? BMGROUP_EMAILS.sellCar : [dealerEmail],
+        priority: 'normal',
+      },
+    },
+    // Parts Enquiries
+    {
+      id: 'parts',
+      name: 'Parts Enquiries',
+      enabled: true,
+      conditions: [
+        { field: 'type', operator: 'equals', value: 'parts' },
+      ],
+      actions: {
+        send_to: [isBMGroup ? BMGROUP_EMAILS.parts : dealerEmail],
+        priority: 'normal',
+      },
+    },
+    // Fleet Enquiries
+    {
+      id: 'fleet',
+      name: 'Fleet Enquiries',
+      enabled: true,
+      conditions: [
+        { field: 'type', operator: 'equals', value: 'fleet' },
+      ],
+      actions: {
+        send_to: [isBMGroup ? BMGROUP_EMAILS.parts : dealerEmail],
+        priority: 'normal',
+      },
+    },
+    // Contact Form
+    {
+      id: 'contact',
+      name: 'Contact Form Enquiries',
+      enabled: true,
+      conditions: [
+        { field: 'type', operator: 'equals', value: 'contact' },
+      ],
+      actions: {
+        send_to: [isBMGroup ? BMGROUP_EMAILS.parts : dealerEmail],
+        priority: 'normal',
+      },
+    },
+    // Accessories Enquiries
+    {
+      id: 'accessories',
+      name: 'Accessories Enquiries',
+      enabled: true,
+      conditions: [
+        { field: 'type', operator: 'equals', value: 'accessories' },
+      ],
+      actions: {
+        send_to: [isBMGroup ? BMGROUP_EMAILS.parts : dealerEmail],
+        priority: 'normal',
+      },
+    },
+    // Catch-all for any other enquiries
     {
       id: 'default',
       name: 'All Other Enquiries',
       enabled: true,
       conditions: [], // No conditions = catch all
       actions: {
-        send_to: [dealerEmail],
+        send_to: [isBMGroup ? BMGROUP_EMAILS.parts : dealerEmail],
         priority: 'normal',
       },
     },
