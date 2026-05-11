@@ -58,12 +58,125 @@
               <Input
                 id="title"
                 v-model="form.title"
-                placeholder="Apply for Finance"
+                placeholder="Special Offer"
               />
             </div>
 
-            <!-- Iframe URL -->
-            <div class="space-y-2">
+            <!-- Content Type Selection -->
+            <div class="space-y-3">
+              <Label>Content Type</Label>
+              <div class="grid grid-cols-2 gap-4">
+                <label
+                  class="flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-colors"
+                  :class="form.contentType === 'custom' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'"
+                >
+                  <input
+                    type="radio"
+                    v-model="form.contentType"
+                    value="custom"
+                    class="sr-only"
+                  />
+                  <FileText class="h-8 w-8" :class="form.contentType === 'custom' ? 'text-primary' : 'text-muted-foreground'" />
+                  <div class="text-center">
+                    <span class="font-medium block">Custom Content</span>
+                    <span class="text-xs text-muted-foreground">HTML with images</span>
+                  </div>
+                </label>
+                <label
+                  class="flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-colors"
+                  :class="form.contentType === 'iframe' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'"
+                >
+                  <input
+                    type="radio"
+                    v-model="form.contentType"
+                    value="iframe"
+                    class="sr-only"
+                  />
+                  <Globe class="h-8 w-8" :class="form.contentType === 'iframe' ? 'text-primary' : 'text-muted-foreground'" />
+                  <div class="text-center">
+                    <span class="font-medium block">External Iframe</span>
+                    <span class="text-xs text-muted-foreground">Finance widget URL</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Custom Content Editor -->
+            <div v-if="form.contentType === 'custom'" class="space-y-4">
+              <!-- Image Upload -->
+              <div class="space-y-2">
+                <Label>Popup Image (Optional)</Label>
+                <div class="border-2 border-dashed rounded-lg p-4">
+                  <div v-if="form.imageUrl" class="relative">
+                    <img :src="form.imageUrl" alt="Popup image" class="max-h-48 mx-auto rounded" />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      class="absolute top-2 right-2"
+                      @click="removeImage"
+                    >
+                      <X class="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div v-else class="text-center py-4">
+                    <ImageIcon class="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                    <p class="text-sm text-muted-foreground mb-2">Upload an image for your popup</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      class="hidden"
+                      ref="imageInput"
+                      @change="handleImageUpload"
+                    />
+                    <Button variant="outline" size="sm" @click="$refs.imageInput.click()" :disabled="uploading">
+                      <Upload v-if="!uploading" class="mr-2 h-4 w-4" />
+                      <Loader2 v-else class="mr-2 h-4 w-4 animate-spin" />
+                      {{ uploading ? 'Uploading...' : 'Upload Image' }}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- HTML Content -->
+              <div class="space-y-2">
+                <Label for="htmlContent">Content (HTML)</Label>
+                <Textarea
+                  id="htmlContent"
+                  v-model="form.htmlContent"
+                  placeholder="<h2>Special Offer!</h2>
+<p>Get approved for finance today with our exclusive rates.</p>
+<a href='/finance' class='btn'>Apply Now</a>"
+                  :rows="8"
+                  class="font-mono text-sm"
+                />
+                <p class="text-xs text-muted-foreground">
+                  Enter HTML content. You can use basic HTML tags like &lt;h2&gt;, &lt;p&gt;, &lt;a&gt;, &lt;ul&gt;, etc.
+                </p>
+              </div>
+
+              <!-- Button Configuration -->
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label for="buttonText">Button Text</Label>
+                  <Input
+                    id="buttonText"
+                    v-model="form.buttonText"
+                    placeholder="Apply Now"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <Label for="buttonUrl">Button Link</Label>
+                  <Input
+                    id="buttonUrl"
+                    v-model="form.buttonUrl"
+                    placeholder="/finance"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Iframe URL (when iframe mode) -->
+            <div v-else class="space-y-2">
               <Label for="iframeUrl">Iframe URL</Label>
               <Textarea
                 id="iframeUrl"
@@ -78,7 +191,7 @@
             </div>
 
             <!-- Display Mode -->
-            <div class="space-y-3">
+            <div class="space-y-3 pt-4 border-t">
               <Label>Display On</Label>
               <div class="flex flex-col gap-3">
                 <label class="flex items-center gap-3 cursor-pointer">
@@ -125,7 +238,7 @@
             </div>
 
             <!-- Date Range -->
-            <div class="space-y-4">
+            <div class="space-y-4 pt-4 border-t">
               <Label class="text-base">Schedule (Optional)</Label>
               <p class="text-sm text-muted-foreground -mt-2">Set start and end dates to automatically enable/disable the popup</p>
 
@@ -183,21 +296,39 @@
             </div>
 
             <!-- Preview -->
-            <div v-if="form.iframeUrl" class="space-y-2 pt-4 border-t">
+            <div class="space-y-2 pt-4 border-t">
               <Label>Preview</Label>
               <div class="border rounded-lg overflow-hidden bg-gray-50">
-                <div class="p-2 bg-gray-100 border-b flex items-center justify-between">
-                  <span class="text-xs text-muted-foreground">{{ form.title }}</span>
+                <div class="p-3 bg-gray-100 border-b flex items-center justify-between">
+                  <span class="font-medium">{{ form.title }}</span>
                   <Badge variant="outline" class="text-xs">Preview</Badge>
                 </div>
                 <div class="p-4">
-                  <div class="aspect-video max-h-[300px]">
+                  <!-- Custom Content Preview -->
+                  <div v-if="form.contentType === 'custom'" class="space-y-4">
+                    <img v-if="form.imageUrl" :src="form.imageUrl" alt="Popup image" class="max-h-48 mx-auto rounded" />
+                    <div v-if="form.htmlContent" v-html="form.htmlContent" class="prose prose-sm max-w-none"></div>
+                    <div v-if="form.buttonText" class="text-center">
+                      <span class="inline-block px-6 py-2 bg-primary text-primary-foreground rounded font-medium">
+                        {{ form.buttonText }}
+                      </span>
+                    </div>
+                    <p v-if="!form.imageUrl && !form.htmlContent && !form.buttonText" class="text-center text-muted-foreground py-8">
+                      Add content above to see preview
+                    </p>
+                  </div>
+                  <!-- Iframe Preview -->
+                  <div v-else class="aspect-video max-h-[300px]">
                     <iframe
+                      v-if="form.iframeUrl"
                       :src="form.iframeUrl"
                       class="w-full h-full border-0 rounded"
                       title="Popup Preview"
                       sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
                     />
+                    <p v-else class="text-center text-muted-foreground py-8">
+                      Enter an iframe URL to see preview
+                    </p>
                   </div>
                 </div>
               </div>
@@ -246,6 +377,9 @@
               <span>{{ isCurrentlyActive ? 'Active' : 'Scheduled' }}</span>
             </div>
             <p class="text-muted-foreground">
+              Content type: {{ form.contentType === 'custom' ? 'Custom HTML' : 'External Iframe' }}
+            </p>
+            <p class="text-muted-foreground">
               <template v-if="form.displayMode === 'all'">
                 Displaying on all pages
               </template>
@@ -287,6 +421,11 @@ import {
   RefreshCw,
   CheckCircle2,
   Info,
+  FileText,
+  Globe,
+  Upload,
+  X,
+  Image as ImageIcon,
 } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
@@ -322,8 +461,13 @@ const { data, pending, error, refresh } = await useFetch('/api/admin/settings/po
 // Form state
 const form = reactive({
   enabled: false,
+  contentType: 'custom' as 'custom' | 'iframe',
   iframeUrl: '',
-  title: 'Apply for Finance',
+  title: 'Special Offer',
+  htmlContent: '',
+  imageUrl: '',
+  buttonText: '',
+  buttonUrl: '',
   displayMode: 'all' as 'all' | 'specific',
   specificPages: [] as string[],
   startDate: '',
@@ -332,12 +476,21 @@ const form = reactive({
   delaySeconds: 3,
 });
 
+// Image upload state
+const uploading = ref(false);
+const imageInput = ref<HTMLInputElement | null>(null);
+
 // Initialize form when data loads
 watch(data, (newData) => {
   if (newData?.settings) {
     form.enabled = newData.settings.enabled ?? false;
+    form.contentType = newData.settings.contentType ?? 'custom';
     form.iframeUrl = newData.settings.iframeUrl ?? '';
-    form.title = newData.settings.title ?? 'Apply for Finance';
+    form.title = newData.settings.title ?? 'Special Offer';
+    form.htmlContent = newData.settings.htmlContent ?? '';
+    form.imageUrl = newData.settings.imageUrl ?? '';
+    form.buttonText = newData.settings.buttonText ?? '';
+    form.buttonUrl = newData.settings.buttonUrl ?? '';
     form.displayMode = newData.settings.displayMode ?? 'all';
     form.specificPages = newData.settings.specificPages ?? [];
     form.startDate = newData.settings.startDate ? formatDateForInput(newData.settings.startDate) : '';
@@ -375,6 +528,50 @@ const isCurrentlyActive = computed(() => {
   return true;
 });
 
+// Image upload handler
+const handleImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  uploading.value = true;
+
+  try {
+    // Get presigned URL
+    const presignResponse = await $fetch<{ url: string; key: string }>('/api/admin/upload/presign', {
+      method: 'POST',
+      body: {
+        filename: file.name,
+        contentType: file.type,
+        folder: 'popup',
+      },
+    });
+
+    // Upload to R2
+    await fetch(presignResponse.url, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    });
+
+    // Set the image URL
+    const baseUrl = presignResponse.url.split('?')[0];
+    form.imageUrl = baseUrl;
+  } catch (err) {
+    console.error('Image upload failed:', err);
+  } finally {
+    uploading.value = false;
+    if (target) target.value = '';
+  }
+};
+
+// Remove image
+const removeImage = () => {
+  form.imageUrl = '';
+};
+
 // Save state
 const saving = ref(false);
 const saveError = ref('');
@@ -391,8 +588,13 @@ const saveSettings = async () => {
       method: 'PUT',
       body: {
         enabled: form.enabled,
+        contentType: form.contentType,
         iframeUrl: form.iframeUrl || null,
-        title: form.title || 'Apply for Finance',
+        title: form.title || 'Special Offer',
+        htmlContent: form.htmlContent || null,
+        imageUrl: form.imageUrl || null,
+        buttonText: form.buttonText || null,
+        buttonUrl: form.buttonUrl || null,
         displayMode: form.displayMode,
         specificPages: form.specificPages,
         startDate: form.startDate || null,

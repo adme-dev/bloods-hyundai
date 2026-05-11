@@ -2,10 +2,10 @@
   <Teleport to="body">
     <Transition name="popup-fade">
       <div v-if="showPopup" class="auto-popup-overlay" @click.self="closePopup">
-        <div class="auto-popup-modal">
+        <div class="auto-popup-modal" :class="{ 'iframe-mode': popupSettings?.contentType === 'iframe' }">
           <!-- Header -->
           <div class="popup-header">
-            <h2 class="popup-title">{{ popupSettings?.title || 'Apply for Finance' }}</h2>
+            <h2 class="popup-title">{{ popupSettings?.title || 'Special Offer' }}</h2>
             <button class="close-btn" @click="closePopup" aria-label="Close">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
@@ -15,14 +15,52 @@
 
           <!-- Content -->
           <div class="popup-content">
-            <iframe
-              v-if="popupSettings?.iframeUrl"
-              :src="popupSettings.iframeUrl"
-              class="popup-iframe"
-              title="Finance Application"
-              allow="geolocation; payment"
-              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            />
+            <!-- Custom Content Mode -->
+            <template v-if="popupSettings?.contentType === 'custom'">
+              <div class="custom-content">
+                <!-- Image -->
+                <img
+                  v-if="popupSettings?.imageUrl"
+                  :src="popupSettings.imageUrl"
+                  alt="Popup image"
+                  class="popup-image"
+                />
+
+                <!-- HTML Content -->
+                <div
+                  v-if="popupSettings?.htmlContent"
+                  v-html="popupSettings.htmlContent"
+                  class="popup-html-content"
+                ></div>
+
+                <!-- Button -->
+                <div v-if="popupSettings?.buttonText" class="popup-button-container">
+                  <NuxtLink
+                    v-if="popupSettings?.buttonUrl"
+                    :to="popupSettings.buttonUrl"
+                    class="popup-button"
+                    @click="closePopup"
+                  >
+                    {{ popupSettings.buttonText }}
+                  </NuxtLink>
+                  <button v-else class="popup-button" @click="closePopup">
+                    {{ popupSettings.buttonText }}
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Iframe Mode -->
+            <template v-else>
+              <iframe
+                v-if="popupSettings?.iframeUrl"
+                :src="popupSettings.iframeUrl"
+                class="popup-iframe"
+                title="Finance Application"
+                allow="geolocation; payment"
+                sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              />
+            </template>
           </div>
         </div>
       </div>
@@ -35,8 +73,13 @@ import { ref, computed, onMounted, watch } from 'vue';
 
 interface PopupSettings {
   enabled: boolean;
+  contentType: 'custom' | 'iframe';
   iframeUrl: string | null;
   title: string;
+  htmlContent: string | null;
+  imageUrl: string | null;
+  buttonText: string | null;
+  buttonUrl: string | null;
   displayMode: 'all' | 'specific';
   specificPages: string[];
   showOncePerSession: boolean;
@@ -57,10 +100,26 @@ const hasShownThisSession = ref(false);
 // Get current route
 const route = useRoute();
 
+// Check if popup has content to display
+const hasContent = computed(() => {
+  if (!popupSettings.value?.enabled) return false;
+
+  if (popupSettings.value.contentType === 'iframe') {
+    return !!popupSettings.value.iframeUrl;
+  }
+
+  // Custom content mode - needs at least one of: image, html, or button
+  return !!(
+    popupSettings.value.imageUrl ||
+    popupSettings.value.htmlContent ||
+    popupSettings.value.buttonText
+  );
+});
+
 // Check if popup should show on current page
 const shouldShowOnCurrentPage = computed(() => {
   if (!popupSettings.value?.enabled) return false;
-  if (!popupSettings.value?.iframeUrl) return false;
+  if (!hasContent.value) return false;
 
   // Check display mode
   if (popupSettings.value.displayMode === 'all') {
@@ -153,18 +212,23 @@ $text-gray: #666;
   justify-content: center;
   z-index: 10001;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 .auto-popup-modal {
   background: #fff;
   border-radius: 12px;
   width: 100%;
-  max-width: 600px;
+  max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
   overflow: hidden;
+
+  &.iframe-mode {
+    max-width: 600px;
+  }
 }
 
 .popup-header {
@@ -200,15 +264,112 @@ $text-gray: #666;
 
 .popup-content {
   flex: 1;
-  min-height: 500px;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
+// Custom content styles
+.custom-content {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.popup-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.popup-html-content {
+  text-align: left;
+  margin-bottom: 1.5rem;
+  font-family: 'HyundaiSansHead', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: $text-dark;
+
+  :deep(h1), :deep(h2), :deep(h3) {
+    color: $primary-blue;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+  }
+
+  :deep(h2) {
+    font-size: 1.5rem;
+  }
+
+  :deep(h3) {
+    font-size: 1.25rem;
+  }
+
+  :deep(p) {
+    margin-bottom: 1rem;
+    color: $text-gray;
+  }
+
+  :deep(ul), :deep(ol) {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    color: $text-gray;
+  }
+
+  :deep(li) {
+    margin-bottom: 0.5rem;
+  }
+
+  :deep(a) {
+    color: $primary-blue;
+    text-decoration: underline;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  :deep(strong) {
+    font-weight: 600;
+    color: $text-dark;
+  }
+}
+
+.popup-button-container {
+  margin-top: 1rem;
+}
+
+.popup-button {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  background: $primary-blue;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: 'HyundaiSansHead', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background 0.2s, transform 0.2s;
+
+  &:hover {
+    background: darken($primary-blue, 10%);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Iframe styles
 .popup-iframe {
   width: 100%;
   height: 100%;
   min-height: 500px;
   border: none;
+}
+
+.iframe-mode .popup-content {
+  min-height: 500px;
 }
 
 // Transition
@@ -242,14 +403,26 @@ $text-gray: #666;
     max-width: 100%;
     max-height: 95vh;
     border-radius: 16px 16px 0 0;
+
+    &.iframe-mode {
+      max-width: 100%;
+    }
   }
 
   .popup-content {
+    min-height: auto;
+  }
+
+  .iframe-mode .popup-content {
     min-height: 400px;
   }
 
   .popup-iframe {
     min-height: 400px;
+  }
+
+  .popup-image {
+    max-height: 200px;
   }
 }
 </style>

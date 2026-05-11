@@ -23,8 +23,13 @@ export default defineEventHandler(async (event) => {
     const settings = (dealer.settings as Record<string, any>) || {};
     const popupSettings = settings.popup || {
       enabled: false,
+      contentType: 'custom', // 'custom' | 'iframe'
       iframeUrl: '',
-      title: 'Apply for Finance',
+      title: 'Special Offer',
+      htmlContent: '',
+      imageUrl: '',
+      buttonText: '',
+      buttonUrl: '',
       displayMode: 'all', // 'all' | 'specific'
       specificPages: [], // Array of page paths
       startDate: null,
