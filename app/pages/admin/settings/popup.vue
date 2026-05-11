@@ -273,14 +273,30 @@
                 <div class="space-y-0.5">
                   <Label>Show Once Per Session</Label>
                   <p class="text-sm text-muted-foreground">
-                    Only show the popup once per browser session (recommended)
+                    Only show the popup once per browser session
                   </p>
                 </div>
                 <Switch v-model="form.showOncePerSession" />
               </div>
 
+              <!-- Cooldown Minutes (when not using session-once) -->
+              <div v-if="!form.showOncePerSession" class="space-y-2">
+                <Label for="cooldownMinutes">Re-show after (minutes)</Label>
+                <Input
+                  id="cooldownMinutes"
+                  type="number"
+                  v-model.number="form.cooldownMinutes"
+                  min="1"
+                  max="1440"
+                  class="w-32"
+                />
+                <p class="text-xs text-muted-foreground">
+                  If the user closes the popup, show it again after this many minutes (e.g., 5 = every 5 minutes)
+                </p>
+              </div>
+
               <div class="space-y-2">
-                <Label for="delaySeconds">Delay (seconds)</Label>
+                <Label for="delaySeconds">Initial delay (seconds)</Label>
                 <Input
                   id="delaySeconds"
                   type="number"
@@ -473,6 +489,7 @@ const form = reactive({
   startDate: '',
   endDate: '',
   showOncePerSession: true,
+  cooldownMinutes: 5,
   delaySeconds: 3,
 });
 
@@ -496,6 +513,7 @@ watch(data, (newData) => {
     form.startDate = newData.settings.startDate ? formatDateForInput(newData.settings.startDate) : '';
     form.endDate = newData.settings.endDate ? formatDateForInput(newData.settings.endDate) : '';
     form.showOncePerSession = newData.settings.showOncePerSession ?? true;
+    form.cooldownMinutes = newData.settings.cooldownMinutes ?? 5;
     form.delaySeconds = newData.settings.delaySeconds ?? 3;
   }
 }, { immediate: true });
@@ -600,6 +618,7 @@ const saveSettings = async () => {
         startDate: form.startDate || null,
         endDate: form.endDate || null,
         showOncePerSession: form.showOncePerSession,
+        cooldownMinutes: form.cooldownMinutes,
         delaySeconds: form.delaySeconds,
       },
     });

@@ -42,6 +42,7 @@ export default defineEventHandler(async (event) => {
         startDate: body.startDate || null,
         endDate: body.endDate || null,
         showOncePerSession: body.showOncePerSession ?? true,
+        cooldownMinutes: body.cooldownMinutes ?? 5,
         delaySeconds: body.delaySeconds ?? 3,
       },
     };

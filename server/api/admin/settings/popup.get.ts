@@ -35,6 +35,7 @@ export default defineEventHandler(async (event) => {
       startDate: null,
       endDate: null,
       showOncePerSession: true,
+      cooldownMinutes: 5, // Minutes before showing popup again after dismissal
       delaySeconds: 3,
     };
 

@@ -83,6 +83,7 @@ interface PopupSettings {
   displayMode: 'all' | 'specific';
   specificPages: string[];
   showOncePerSession: boolean;
+  cooldownMinutes: number;
   delaySeconds: number;
 }
 
@@ -144,14 +145,36 @@ const closePopup = () => {
   showPopup.value = false;
   hasShownThisSession.value = true;
 
-  // Store in sessionStorage
+  // Store dismissal time for cooldown logic
   if (import.meta.client) {
-    sessionStorage.setItem('autoPopupShown', 'true');
+    if (popupSettings.value?.showOncePerSession) {
+      // Use sessionStorage for once-per-session mode
+      sessionStorage.setItem('autoPopupShown', 'true');
+    } else {
+      // Use localStorage with timestamp for cooldown mode
+      localStorage.setItem('autoPopupDismissedAt', Date.now().toString());
+    }
   }
 };
 
 // Track if we've already started the popup timer
 const popupTimerStarted = ref(false);
+
+// Check if popup is within cooldown period
+const isWithinCooldown = (): boolean => {
+  if (!import.meta.client) return false;
+
+  const dismissedAt = localStorage.getItem('autoPopupDismissedAt');
+  if (!dismissedAt) return false;
+
+  const dismissedTime = parseInt(dismissedAt, 10);
+  if (isNaN(dismissedTime)) return false;
+
+  const cooldownMs = (popupSettings.value?.cooldownMinutes || 5) * 60 * 1000;
+  const now = Date.now();
+
+  return (now - dismissedTime) < cooldownMs;
+};
 
 // Initialize popup display
 const initPopup = () => {
@@ -160,10 +183,16 @@ const initPopup = () => {
   if (!shouldShowOnCurrentPage.value) return;
   if (popupTimerStarted.value) return; // Don't start multiple timers
 
-  // Check if already shown this session
+  // Check if already shown this session (for once-per-session mode)
   if (popupSettings.value.showOncePerSession) {
     const alreadyShown = sessionStorage.getItem('autoPopupShown');
     if (alreadyShown) {
+      hasShownThisSession.value = true;
+      return;
+    }
+  } else {
+    // Check cooldown period (for repeat display mode)
+    if (isWithinCooldown()) {
       hasShownThisSession.value = true;
       return;
     }

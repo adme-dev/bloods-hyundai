@@ -68,6 +68,7 @@ export default defineEventHandler(async (event) => {
         displayMode: popupSettings.displayMode || 'all',
         specificPages: popupSettings.specificPages || [],
         showOncePerSession: popupSettings.showOncePerSession ?? true,
+        cooldownMinutes: popupSettings.cooldownMinutes ?? 5,
         delaySeconds: popupSettings.delaySeconds ?? 3,
       },
     };
