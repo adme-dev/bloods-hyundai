@@ -87,7 +87,7 @@ interface PopupSettings {
 }
 
 // Fetch popup settings
-const { data: popupData } = await useFetch<{ success: boolean; settings: PopupSettings }>('/api/popup-settings', {
+const { data: popupData, status } = useFetch<{ success: boolean; settings: PopupSettings }>('/api/popup-settings', {
   lazy: true,
 });
 
@@ -150,11 +150,15 @@ const closePopup = () => {
   }
 };
 
+// Track if we've already started the popup timer
+const popupTimerStarted = ref(false);
+
 // Initialize popup display
 const initPopup = () => {
   if (!import.meta.client) return;
   if (!popupSettings.value?.enabled) return;
   if (!shouldShowOnCurrentPage.value) return;
+  if (popupTimerStarted.value) return; // Don't start multiple timers
 
   // Check if already shown this session
   if (popupSettings.value.showOncePerSession) {
@@ -165,18 +169,21 @@ const initPopup = () => {
     }
   }
 
+  // Mark timer as started
+  popupTimerStarted.value = true;
+
   // Show after delay
   const delay = (popupSettings.value.delaySeconds || 0) * 1000;
   setTimeout(() => {
-    if (!hasShownThisSession.value && shouldShowOnCurrentPage.value) {
+    if (!hasShownThisSession.value && shouldShowOnCurrentPage.value && popupSettings.value?.enabled) {
       showPopup.value = true;
     }
   }, delay);
 };
 
-// Watch for settings load
+// Watch for settings load - this is the primary trigger
 watch(popupSettings, (newSettings) => {
-  if (newSettings?.enabled) {
+  if (newSettings?.enabled && !popupTimerStarted.value) {
     initPopup();
   }
 }, { immediate: true });
@@ -184,14 +191,18 @@ watch(popupSettings, (newSettings) => {
 // Watch for route changes (for specific pages mode)
 watch(() => route.path, () => {
   if (popupSettings.value?.enabled && !popupSettings.value?.showOncePerSession) {
-    // Reset and re-check on route change if not using session-once mode
+    // Reset timer flag and re-check on route change if not using session-once mode
+    popupTimerStarted.value = false;
+    hasShownThisSession.value = false;
     initPopup();
   }
 });
 
-// Initialize on mount
+// Initialize on mount as backup
 onMounted(() => {
-  initPopup();
+  if (popupSettings.value?.enabled && !popupTimerStarted.value) {
+    initPopup();
+  }
 });
 </script>
 
