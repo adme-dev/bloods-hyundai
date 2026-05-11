@@ -221,6 +221,28 @@
 
             <!-- Form Section -->
             <div class="form-section">
+              <!-- Finance Widget Mode -->
+              <template v-if="useFinanceWidget && financeWidgetIframeUrl">
+                <header class="modal-header">
+                  <h2 class="modal-title">Apply for Finance</h2>
+                </header>
+                <div v-if="financeWidgetPending" class="finance-loading">
+                  <div class="loading-spinner"></div>
+                  <p>Loading finance application...</p>
+                </div>
+                <div v-else class="finance-widget-container">
+                  <iframe
+                    :src="financeWidgetIframeUrl"
+                    class="finance-widget-iframe"
+                    title="Finance Application"
+                    allow="geolocation; payment"
+                    sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                  />
+                </div>
+              </template>
+
+              <!-- Standard Enquiry Form Mode -->
+              <template v-else>
               <!-- Header -->
               <header class="modal-header">
                 <h2 class="modal-title">Enquire on this vehicle</h2>
@@ -386,6 +408,7 @@
                   Close
                 </button>
               </div>
+              </template>
             </div>
           </div>
         </div>
@@ -405,6 +428,16 @@
 
 <script setup lang="ts">
 import EmblaCarousel from 'embla-carousel';
+
+// Finance widget settings type
+interface FinanceWidgetSettings {
+  success: boolean;
+  settings: {
+    useFinanceWidget: boolean;
+    financeWidgetIframe: string | null;
+    financeWidgetProvider: string | null;
+  };
+}
 
 interface Vehicle {
   stockid?: string | number;
@@ -441,6 +474,72 @@ const emit = defineEmits<{
 
 const mainStore = useMainStore();
 const { getUtmParams } = useUtmParams();
+
+// Fetch finance widget settings to determine if we should show the widget
+const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<FinanceWidgetSettings>('/api/finance-widget-settings', {
+  lazy: true,
+  default: (): FinanceWidgetSettings => ({
+    success: true,
+    settings: {
+      useFinanceWidget: false,
+      financeWidgetIframe: null,
+      financeWidgetProvider: null,
+    },
+  }),
+});
+
+// Computed properties for finance widget
+const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
+
+// Extract base iframe URL from settings (handles both URL and HTML)
+const financeWidgetBaseUrl = computed(() => {
+  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
+  if (!input) return null;
+
+  // If it's already a URL
+  if (/^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  // Try to extract src from iframe HTML
+  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
+  if (srcMatch) {
+    return srcMatch[1];
+  }
+
+  return null;
+});
+
+// Build the full iframe URL with vehicle parameters
+const financeWidgetIframeUrl = computed(() => {
+  const baseUrl = financeWidgetBaseUrl.value;
+  if (!baseUrl) return null;
+
+  const vehicle = props.vehicle;
+  if (!vehicle) return baseUrl;
+
+  // Get vehicle data using getDisplay helper (defined below)
+  const condition = getDisplay(vehicle?.condition) || '';
+  const price = typeof vehicle?.price === 'number' ? vehicle.price : (typeof vehicle?.price === 'string' ? parseFloat(vehicle.price) : 0);
+  const year = getDisplay(vehicle?.year) || '';
+  const make = getDisplay(vehicle?.make) || '';
+  const model = getDisplay(vehicle?.model) || '';
+  const kms = vehicle?.kms || 0;
+  const vin = (vehicle as any)?.vin || '';
+
+  // Build URL with vehicle parameters
+  const params = new URLSearchParams();
+  if (condition) params.append('condition', condition);
+  if (price) params.append('amount', String(price));
+  if (year) params.append('buildyear', year);
+  if (make) params.append('make', make);
+  if (model) params.append('model', model);
+  if (kms) params.append('kilometers', String(kms));
+  if (vin) params.append('vin', vin);
+
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${params.toString()}`;
+});
 
 // Embla Carousel refs
 const mainCarouselRef = ref<HTMLElement | null>(null);
@@ -2002,6 +2101,41 @@ onBeforeUnmount(() => {
   .success-text {
     font-size: 0.9375rem;
     margin-bottom: 1.5rem;
+  }
+}
+
+/* Finance Widget Styles */
+.finance-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+  color: #64748b;
+}
+
+.finance-widget-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+}
+
+.finance-widget-iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 500px;
+  border: none;
+}
+
+@media (min-width: 768px) {
+  .finance-widget-container {
+    min-height: 600px;
+  }
+
+  .finance-widget-iframe {
+    min-height: 600px;
   }
 }
 </style>

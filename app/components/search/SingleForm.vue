@@ -1,6 +1,26 @@
 <template>
   <div class="car-sales-form">
-    <div class="uk-card uk-card-hover uk-padding-small">
+    <!-- Finance Widget Mode -->
+    <div v-if="useFinanceWidget && financeWidgetIframeUrl" class="uk-card uk-card-hover uk-padding-small">
+      <div class="uk-width-1-1 uk-h4 uk-text-bold uk-margin-remove uk-text-center">
+        Apply for Finance
+      </div>
+      <div v-if="financeWidgetPending" class="uk-flex uk-flex-center uk-padding">
+        <div uk-spinner="ratio: 1.5"></div>
+      </div>
+      <div v-else class="finance-widget-container">
+        <iframe
+          :src="financeWidgetIframeUrl"
+          class="finance-widget-iframe"
+          title="Finance Application"
+          allow="geolocation; payment"
+          sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        />
+      </div>
+    </div>
+
+    <!-- Standard Enquiry Form Mode -->
+    <div v-else class="uk-card uk-card-hover uk-padding-small">
       <div class="uk-width-1-1 uk-h4 uk-text-bold uk-margin-remove uk-text-center">
         Enquire on this vehicle
       </div>
@@ -110,7 +130,7 @@
           <strong>Hi {{ form.name }}</strong>
         </div>
         <div>Thank you for your enquiry. One of our staff members will be in touch shortly.</div>
-        <button 
+        <button
           class="uk-button uk-button-primary uk-margin-top"
           @click="resetForm"
         >
@@ -125,6 +145,16 @@
 import { useAnalytics } from '~/composables/useAnalytics';
 import { useUtmParams } from '~/composables/useUtmParams';
 
+// Finance widget settings type
+interface FinanceWidgetSettings {
+  success: boolean;
+  settings: {
+    useFinanceWidget: boolean;
+    financeWidgetIframe: string | null;
+    financeWidgetProvider: string | null;
+  };
+}
+
 interface Vehicle {
   stockid?: string | number;
   slug?: string;
@@ -133,6 +163,9 @@ interface Vehicle {
   make?: { displayValue?: string[] };
   model?: { displayValue?: string[] };
   badge?: { displayValue?: string[] };
+  year?: { displayValue?: string[] };
+  price?: number;
+  kms?: number;
   [key: string]: any;
 }
 
@@ -145,6 +178,80 @@ const props = defineProps<{
 const mainStore = useMainStore();
 const { trackVehicleEnquiry } = useAnalytics();
 const { getUtmParams } = useUtmParams();
+
+// Fetch finance widget settings to determine if we should show the widget
+const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<FinanceWidgetSettings>('/api/finance-widget-settings', {
+  lazy: true,
+  default: (): FinanceWidgetSettings => ({
+    success: true,
+    settings: {
+      useFinanceWidget: false,
+      financeWidgetIframe: null,
+      financeWidgetProvider: null,
+    },
+  }),
+});
+
+// Computed properties for finance widget
+const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
+
+// Helper to extract display value from vehicle field
+const getDisplay = (field: { displayValue?: string[] } | string | number | undefined): string => {
+  if (!field) return '';
+  if (typeof field === 'string') return field;
+  if (typeof field === 'number') return String(field);
+  return field.displayValue?.[0] || '';
+};
+
+// Extract base iframe URL from settings (handles both URL and HTML)
+const financeWidgetBaseUrl = computed(() => {
+  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
+  if (!input) return null;
+
+  // If it's already a URL
+  if (/^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  // Try to extract src from iframe HTML
+  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
+  if (srcMatch) {
+    return srcMatch[1];
+  }
+
+  return null;
+});
+
+// Build the full iframe URL with vehicle parameters
+const financeWidgetIframeUrl = computed(() => {
+  const baseUrl = financeWidgetBaseUrl.value;
+  if (!baseUrl) return null;
+
+  const vehicle = props.item;
+  if (!vehicle) return baseUrl;
+
+  // Get vehicle data using getDisplay helper
+  const condition = getDisplay(vehicle?.condition) || props.condition || '';
+  const price = vehicle?.price || 0;
+  const year = getDisplay(vehicle?.year) || '';
+  const make = getDisplay(vehicle?.make) || '';
+  const model = getDisplay(vehicle?.model) || '';
+  const kms = vehicle?.kms || 0;
+  const vin = (vehicle as any)?.vin || '';
+
+  // Build URL with vehicle parameters
+  const params = new URLSearchParams();
+  if (condition) params.append('condition', condition);
+  if (price) params.append('amount', String(price));
+  if (year) params.append('buildyear', year);
+  if (make) params.append('make', make);
+  if (model) params.append('model', model);
+  if (kms) params.append('kilometers', String(kms));
+  if (vin) params.append('vin', vin);
+
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${params.toString()}`;
+});
 
 // Form state
 const form = reactive({
@@ -289,6 +396,31 @@ const resetForm = () => {
 
 .enquiry-form {
   position: relative;
+}
+
+/* Finance Widget Container */
+.finance-widget-container {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-widget-iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 500px;
+  border: none;
+  border-radius: 4px;
+}
+
+@media (min-width: 768px) {
+  .finance-widget-container {
+    min-height: 600px;
+  }
+
+  .finance-widget-iframe {
+    min-height: 600px;
+  }
 }
 
 @media (min-width: 960px) {
