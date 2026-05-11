@@ -107,8 +107,6 @@ const departmentList = [
 
 // Get hours for department
 const getHours = (dept: string) => {
-  const siteHours = mainStore.site?.trading_hours;
-  
   // Default hours
   const defaultHours = {
     Monday: '8:30am - 5:30pm',
@@ -120,20 +118,43 @@ const getHours = (dept: string) => {
     Sunday: 'Closed',
   };
 
-  if (siteHours && typeof siteHours === 'object') {
-    if (siteHours[dept]?.hours) {
-      return siteHours[dept].hours;
+  // Try trading_hours.{dept}.hours format first (new format)
+  const siteHours = mainStore.site?.trading_hours;
+  if (siteHours && typeof siteHours === 'object' && siteHours[dept]?.hours) {
+    return siteHours[dept].hours;
+  }
+
+  // Try departments.{dept}.trading format (CDN config format)
+  const deptTrading = mainStore.site?.departments?.[dept]?.trading;
+  if (deptTrading && typeof deptTrading === 'object') {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const hours: Record<string, string> = {};
+
+    for (const day of days) {
+      const dayData = deptTrading[day];
+      if (Array.isArray(dayData) && dayData[0]) {
+        const { open, close, current } = dayData[0];
+        if (current?.value === 'closed' || (!open && !close)) {
+          hours[day.charAt(0).toUpperCase() + day.slice(1)] = 'Closed';
+        } else {
+          hours[day.charAt(0).toUpperCase() + day.slice(1)] = `${open} - ${close}`;
+        }
+      } else {
+        hours[day.charAt(0).toUpperCase() + day.slice(1)] = defaultHours[day.charAt(0).toUpperCase() + day.slice(1) as keyof typeof defaultHours];
+      }
     }
+
+    return hours;
   }
 
   return defaultHours;
 };
 
 // Check if day is today
-const isToday = (day: string) => {
+const isToday = (day: string | number) => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const today = new Date().getDay();
-  return days[today] === day;
+  return days[today] === String(day);
 };
 
 // Contact info
