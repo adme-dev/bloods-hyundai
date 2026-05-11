@@ -1,9 +1,9 @@
 <template>
   <div v-if="isOpen" class="enquire-modal-overlay" @click.self="closeModal">
-    <div class="enquire-modal">
+    <div class="enquire-modal" :class="{ 'finance-widget-mode': useFinanceWidget && financeWidgetIframeUrl }">
       <!-- Header -->
       <div class="modal-header">
-        <h2 class="modal-title">Contact us</h2>
+        <h2 class="modal-title">{{ useFinanceWidget && financeWidgetIframeUrl ? 'Apply for Finance' : 'Contact us' }}</h2>
         <div class="header-actions">
           <button class="close-text-btn" @click="closeModal">Close</button>
           <button class="close-btn" @click="closeModal" aria-label="Close">
@@ -14,6 +14,25 @@
         </div>
       </div>
 
+      <!-- Finance Widget Mode -->
+      <template v-if="useFinanceWidget && financeWidgetIframeUrl">
+        <div v-if="financeWidgetPending" class="finance-loading">
+          <div class="spinner"></div>
+          <p>Loading finance application...</p>
+        </div>
+        <div v-else class="finance-widget-container">
+          <iframe
+            :src="financeWidgetIframeUrl"
+            class="finance-widget-iframe"
+            title="Finance Application"
+            allow="geolocation; payment"
+            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          />
+        </div>
+      </template>
+
+      <!-- Standard Contact Form Mode -->
+      <template v-else>
       <!-- Intro Text -->
       <div class="intro-section">
         <p class="intro-text">
@@ -142,13 +161,14 @@
         <p class="mandatory-note">All fields marked with * are mandatory.</p>
 
         <!-- Submit Button -->
-        <button 
-          class="btn-submit" 
+        <button
+          class="btn-submit"
           :disabled="!isFormValid || isSubmitting"
           @click="submitForm">
           {{ isSubmitting ? 'Submitting...' : 'Submit' }}
         </button>
       </div>
+      </template>
 
       <!-- Success Message -->
       <div v-if="showSuccess" class="success-overlay">
@@ -173,6 +193,54 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useAnalytics } from '~/composables/useAnalytics';
+
+// Finance widget settings type
+interface FinanceWidgetSettings {
+  success: boolean;
+  settings: {
+    useFinanceWidget: boolean;
+    financeWidgetIframe: string | null;
+    financeWidgetProvider: string | null;
+  };
+}
+
+// Fetch finance widget settings
+const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<FinanceWidgetSettings>('/api/finance-widget-settings', {
+  lazy: true,
+  default: (): FinanceWidgetSettings => ({
+    success: true,
+    settings: {
+      useFinanceWidget: false,
+      financeWidgetIframe: null,
+      financeWidgetProvider: null,
+    },
+  }),
+});
+
+// Computed properties for finance widget
+const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
+
+// Extract base iframe URL from settings (handles both URL and HTML)
+const financeWidgetBaseUrl = computed(() => {
+  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
+  if (!input) return null;
+
+  // If it's already a URL
+  if (/^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  // Try to extract src from iframe HTML
+  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
+  if (srcMatch) {
+    return srcMatch[1];
+  }
+
+  return null;
+});
+
+// Build iframe URL (no vehicle params for general enquiry modal)
+const financeWidgetIframeUrl = computed(() => financeWidgetBaseUrl.value);
 
 interface AppliedOffer {
   offerId: string;
@@ -434,10 +502,61 @@ $bg-light: #f5f5f5;
   position: relative;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  
+
   * {
     box-sizing: border-box;
   }
+
+  &.finance-widget-mode {
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// Finance Widget Styles
+.finance-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $primary-blue;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  p {
+    color: $text-gray;
+    margin: 0;
+  }
+}
+
+.finance-widget-container {
+  flex: 1;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem 1rem;
+}
+
+.finance-widget-iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 500px;
+  border: none;
+  border-radius: 4px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .modal-header {
