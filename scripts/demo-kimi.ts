@@ -3,7 +3,10 @@
  * Run: npx tsx scripts/demo-kimi.ts
  */
 
-const KIMI_API_KEY = process.env.KIMI_API_KEY || 'sk-cNBTimwVO72sH92kjA06KWAtIvLo9Dmi6RhAdbqqsHniPW25';
+const KIMI_API_KEY = process.env.KIMI_API_KEY;
+if (!KIMI_API_KEY) {
+  throw new Error('KIMI_API_KEY environment variable is required');
+}
 const KIMI_BASE_URL = 'https://api.moonshot.ai/v1';
 
 interface VehicleContent {
