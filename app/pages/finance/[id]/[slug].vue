@@ -437,14 +437,19 @@ const mainStore = useMainStore();
 const vehicleId = computed(() => route.params.id as string);
 
 // Finance widget settings type
+type VehicleCondition = 'new' | 'used' | 'demo';
+
 interface FinanceWidgetSettings {
   success: boolean;
   settings: {
     useFinanceWidget: boolean;
     financeWidgetIframe: string | null;
     financeWidgetProvider: string | null;
+    enabledConditions: VehicleCondition[];
   };
 }
+
+const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
 
 // Fetch finance widget settings to determine if we should show the widget
 const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<FinanceWidgetSettings>('/api/finance-widget-settings', {
@@ -455,12 +460,23 @@ const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<Fina
       useFinanceWidget: false,
       financeWidgetIframe: null,
       financeWidgetProvider: null,
+      enabledConditions: DEFAULT_CONDITIONS,
     },
   }),
 });
 
 // Computed properties for finance widget
-const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
+const useFinanceWidget = computed(() => {
+  const settings = financeWidgetData.value?.settings;
+  if (!settings?.useFinanceWidget) return false;
+
+  const enabled = settings.enabledConditions ?? DEFAULT_CONDITIONS;
+  const condition = (getDisplay(vehicle.value?.condition) || '').toLowerCase();
+  if (condition !== 'new' && condition !== 'used' && condition !== 'demo') {
+    return false;
+  }
+  return enabled.includes(condition);
+});
 
 // Extract base iframe URL from settings (handles both URL and HTML)
 const financeWidgetBaseUrl = computed(() => {
