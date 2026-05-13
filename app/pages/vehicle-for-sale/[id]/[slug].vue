@@ -492,10 +492,11 @@ const comparisonSet = computed(() => new Set(normalizeComparisonIds(comparisonId
 
 const vehicleId = computed(() => route.params.id as string);
 const slugParam = computed(() => route.params.slug as string);
+const vehicleDetailUrl = computed(() => `/api/vehicle-detail/${vehicleId.value}`);
 
 // Fetch vehicle data from the carsales feed
-const { data: apiResponse, status } = await useFetch<any>(`/api/vehicle-detail/${vehicleId.value}`, {
-  key: `vehicle-detail-${vehicleId.value}`,
+const { data: apiResponse, status } = await useFetch<any>(vehicleDetailUrl, {
+  watch: [vehicleId],
 });
 
 // Fetch all vehicles for related vehicles section (uses shared SSR cache)
@@ -508,11 +509,34 @@ const { data: allVehiclesResponse } = await useFetch<{ vehiclesData: any[] }>('/
   },
 });
 
-// Derive pending state from status
-const pending = computed(() => status.value === 'pending');
+const responseVehicleMatchesRoute = computed(() => {
+  const responseVehicle = apiResponse.value?.vehicle;
+  if (!responseVehicle || !vehicleId.value) return false;
 
-// Extract vehicle from response
-const vehicle = computed(() => apiResponse.value?.vehicle || null);
+  const possibleIds = [
+    responseVehicle.identifier,
+    responseVehicle.stockid,
+    responseVehicle.stockNumber,
+    responseVehicle.id,
+  ];
+
+  return possibleIds.some((id) => id && String(id) === String(vehicleId.value));
+});
+
+const hasStaleVehicleResponse = computed(() => {
+  return !!apiResponse.value?.vehicle && !responseVehicleMatchesRoute.value;
+});
+
+// Derive pending state from status, including the brief client-navigation window
+// where the previous vehicle response no longer matches the current route.
+const pending = computed(() => status.value === 'pending' || hasStaleVehicleResponse.value);
+
+// Extract vehicle from response. Guard against stale data when Nuxt reuses this
+// page instance for client-side navigation between vehicle detail URLs.
+const vehicle = computed(() => {
+  if (!responseVehicleMatchesRoute.value) return null;
+  return apiResponse.value?.vehicle || null;
+});
 
 // Build enrichment ID from vehicle data
 const enrichmentId = computed(() => {
@@ -1043,17 +1067,23 @@ useHead(() => {
 // Analytics tracking
 const { trackEnquiryModalOpen, trackVehicleView } = useAnalytics();
 
-// Track vehicle view on page load and add to recently viewed
-onMounted(() => {
-  if (vehicle.value) {
-    trackVehicleView(vehicle.value);
-    // Add to recently viewed vehicles
-    const id = vehicle.value.stockid || vehicle.value.id || vehicle.value.identifier;
-    if (id) {
-      vehiclesStore.addToRecentlyViewed(id);
-    }
-  }
-});
+// Track vehicle views and recently viewed entries when route-reactive data changes.
+if (import.meta.client) {
+  watch(
+    vehicle,
+    (currentVehicle) => {
+      if (!currentVehicle) return;
+
+      trackVehicleView(currentVehicle);
+
+      const id = currentVehicle.stockid || currentVehicle.id || currentVehicle.identifier;
+      if (id) {
+        vehiclesStore.addToRecentlyViewed(id);
+      }
+    },
+    { immediate: true }
+  );
+}
 
 // Enquiry modal state
 const enquiryModalOpen = ref(false);
@@ -1283,8 +1313,5 @@ const closeTestDrive = () => {
   }
 }
 </style>
-
-
-
 
 
