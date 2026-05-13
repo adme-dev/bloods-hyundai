@@ -96,6 +96,39 @@
               </ul>
             </div>
 
+            <div class="space-y-2">
+              <Label class="text-base">Display on</Label>
+              <p class="text-xs text-muted-foreground">
+                The finance widget will replace the standard enquiry form only for vehicles matching these conditions. Other vehicles will continue to show the built-in enquiry form.
+              </p>
+              <div class="flex flex-col gap-2 pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    :model-value="form.enabledConditions.includes('new')"
+                    @update:model-value="(v: boolean | 'indeterminate') => toggleCondition('new', v)"
+                  />
+                  <span class="text-sm">New</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    :model-value="form.enabledConditions.includes('demo')"
+                    @update:model-value="(v: boolean | 'indeterminate') => toggleCondition('demo', v)"
+                  />
+                  <span class="text-sm">Demo</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    :model-value="form.enabledConditions.includes('used')"
+                    @update:model-value="(v: boolean | 'indeterminate') => toggleCondition('used', v)"
+                  />
+                  <span class="text-sm">Used</span>
+                </label>
+              </div>
+              <p v-if="!conditionsValid" class="text-xs text-red-600 pt-1">
+                Select at least one condition, or turn off the widget entirely.
+              </p>
+            </div>
+
             <!-- Preview -->
             <div v-if="form.financeWidgetIframe" class="space-y-2">
               <Label>Preview</Label>
@@ -146,7 +179,7 @@
               Settings saved successfully
             </p>
             <div v-else></div>
-            <Button @click="saveSettings" :disabled="saving">
+            <Button @click="saveSettings" :disabled="saving || (form.useFinanceWidget && !conditionsValid)">
               <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
               {{ saving ? 'Saving...' : 'Save Changes' }}
             </Button>
@@ -208,6 +241,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '~/components/ui/label';
 import { Switch } from '~/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { Checkbox } from '~/components/ui/checkbox';
 import { Textarea } from '~/components/ui/textarea';
 import { Badge } from '~/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
@@ -221,10 +255,19 @@ definePageMeta({
 const { data, pending, error, refresh } = await useFetch('/api/admin/settings/finance-widget');
 
 // Form state - using reactive for better v-model compatibility
-const form = reactive({
+type VehicleCondition = 'new' | 'used' | 'demo';
+const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
+
+const form = reactive<{
+  useFinanceWidget: boolean;
+  financeWidgetIframe: string;
+  financeWidgetProvider: string;
+  enabledConditions: VehicleCondition[];
+}>({
   useFinanceWidget: false,
   financeWidgetIframe: '',
   financeWidgetProvider: '',
+  enabledConditions: [...DEFAULT_CONDITIONS],
 });
 
 // Initialize form when data loads
@@ -233,8 +276,29 @@ watch(data, (newData) => {
     form.useFinanceWidget = newData.settings.useFinanceWidget ?? false;
     form.financeWidgetIframe = newData.settings.financeWidgetIframe ?? '';
     form.financeWidgetProvider = newData.settings.financeWidgetProvider ?? '';
+    const incoming = (newData.settings as any).enabledConditions;
+    form.enabledConditions = Array.isArray(incoming) && incoming.length > 0
+      ? incoming.filter((c: any): c is VehicleCondition =>
+          c === 'new' || c === 'used' || c === 'demo'
+        )
+      : [...DEFAULT_CONDITIONS];
+    if (form.enabledConditions.length === 0) {
+      form.enabledConditions = [...DEFAULT_CONDITIONS];
+    }
   }
 }, { immediate: true });
+
+const conditionsValid = computed(() => form.enabledConditions.length > 0);
+
+const toggleCondition = (condition: VehicleCondition, checked: boolean | 'indeterminate') => {
+  const isChecked = checked === true;
+  const idx = form.enabledConditions.indexOf(condition);
+  if (isChecked && idx === -1) {
+    form.enabledConditions.push(condition);
+  } else if (!isChecked && idx !== -1) {
+    form.enabledConditions.splice(idx, 1);
+  }
+};
 
 // Extract iframe URL from input (handles both URL and HTML)
 const iframeUrl = computed(() => {
@@ -273,6 +337,7 @@ const saveSettings = async () => {
         useFinanceWidget: form.useFinanceWidget,
         financeWidgetIframe: form.financeWidgetIframe || null,
         financeWidgetProvider: form.financeWidgetProvider || null,
+        enabledConditions: form.enabledConditions,
       },
     });
 
