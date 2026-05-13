@@ -2,11 +2,16 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../../utils/db';
 import { dealers } from '../../../database/schema';
 
+export type VehicleCondition = 'new' | 'used' | 'demo';
+
 export interface FinanceWidgetSettings {
   useFinanceWidget: boolean;
   financeWidgetIframe: string | null;
   financeWidgetProvider: string | null;
+  enabledConditions: VehicleCondition[];
 }
+
+const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
 
 /**
  * Admin API endpoint to get finance widget settings
@@ -39,12 +44,20 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Extract finance widget settings from dealer settings
-    const settings = dealer.settings as Record<string, any> || {};
+    const settings = (dealer.settings as Record<string, any>) || {};
+    const stored = settings.financeWidget ?? {};
+    const storedConditions: unknown = stored.enabledConditions;
+    const enabledConditions: VehicleCondition[] = Array.isArray(storedConditions)
+      ? storedConditions.filter((c): c is VehicleCondition =>
+          c === 'new' || c === 'used' || c === 'demo'
+        )
+      : DEFAULT_CONDITIONS;
+
     const financeWidgetSettings: FinanceWidgetSettings = {
-      useFinanceWidget: settings.financeWidget?.useFinanceWidget ?? false,
-      financeWidgetIframe: settings.financeWidget?.financeWidgetIframe ?? null,
-      financeWidgetProvider: settings.financeWidget?.financeWidgetProvider ?? null,
+      useFinanceWidget: stored.useFinanceWidget ?? false,
+      financeWidgetIframe: stored.financeWidgetIframe ?? null,
+      financeWidgetProvider: stored.financeWidgetProvider ?? null,
+      enabledConditions: enabledConditions.length > 0 ? enabledConditions : DEFAULT_CONDITIONS,
     };
 
     return {
