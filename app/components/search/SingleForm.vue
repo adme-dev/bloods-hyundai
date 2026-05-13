@@ -146,14 +146,19 @@ import { useAnalytics } from '~/composables/useAnalytics';
 import { useUtmParams } from '~/composables/useUtmParams';
 
 // Finance widget settings type
+type VehicleCondition = 'new' | 'used' | 'demo';
+
 interface FinanceWidgetSettings {
   success: boolean;
   settings: {
     useFinanceWidget: boolean;
     financeWidgetIframe: string | null;
     financeWidgetProvider: string | null;
+    enabledConditions: VehicleCondition[];
   };
 }
+
+const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
 
 interface Vehicle {
   stockid?: string | number;
@@ -188,12 +193,25 @@ const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<Fina
       useFinanceWidget: false,
       financeWidgetIframe: null,
       financeWidgetProvider: null,
+      enabledConditions: DEFAULT_CONDITIONS,
     },
   }),
 });
 
 // Computed properties for finance widget
-const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
+const useFinanceWidget = computed(() => {
+  const settings = financeWidgetData.value?.settings;
+  if (!settings?.useFinanceWidget) return false;
+
+  const enabled = settings.enabledConditions ?? DEFAULT_CONDITIONS;
+  // SingleForm receives the vehicle either via `props.item` or a fallback `props.condition` string
+  const conditionRaw = getDisplay(props.item?.condition) || props.condition || '';
+  const condition = conditionRaw.toLowerCase();
+  if (condition !== 'new' && condition !== 'used' && condition !== 'demo') {
+    return false;
+  }
+  return enabled.includes(condition);
+});
 
 // Helper to extract display value from vehicle field
 const getDisplay = (field: { displayValue?: string[] } | string | number | undefined): string => {
