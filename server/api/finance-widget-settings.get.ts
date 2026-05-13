@@ -2,6 +2,9 @@ import { eq } from 'drizzle-orm';
 import { db } from '../utils/db';
 import { dealers } from '../database/schema';
 
+type VehicleCondition = 'new' | 'used' | 'demo';
+const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
+
 /**
  * Public API endpoint to get finance widget settings
  * Used by frontend components (VehicleEnquiryForm, Finance page) to determine
@@ -9,9 +12,17 @@ import { dealers } from '../database/schema';
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-
-  // Get dealer slug from config or default
   const dealerSlug = config.public.dealerSlug || 'bloods-hyundai';
+
+  const fallback = {
+    success: true as const,
+    settings: {
+      useFinanceWidget: false,
+      financeWidgetIframe: null as string | null,
+      financeWidgetProvider: null as string | null,
+      enabledConditions: DEFAULT_CONDITIONS,
+    },
+  };
 
   try {
     const [dealer] = await db
@@ -22,40 +33,28 @@ export default defineEventHandler(async (event) => {
       .where(eq(dealers.slug, dealerSlug))
       .limit(1);
 
-    if (!dealer) {
-      // Return default settings if dealer not found
-      return {
-        success: true,
-        settings: {
-          useFinanceWidget: false,
-          financeWidgetIframe: null,
-          financeWidgetProvider: null,
-        },
-      };
-    }
+    if (!dealer) return fallback;
 
-    // Extract finance widget settings
-    const settings = dealer.settings as Record<string, any> || {};
-    const financeWidgetSettings = {
-      useFinanceWidget: settings.financeWidget?.useFinanceWidget ?? false,
-      financeWidgetIframe: settings.financeWidget?.financeWidgetIframe ?? null,
-      financeWidgetProvider: settings.financeWidget?.financeWidgetProvider ?? null,
-    };
+    const settings = (dealer.settings as Record<string, any>) || {};
+    const stored = settings.financeWidget ?? {};
+    const storedConditions: unknown = stored.enabledConditions;
+    const enabledConditions: VehicleCondition[] = Array.isArray(storedConditions)
+      ? storedConditions.filter((c): c is VehicleCondition =>
+          c === 'new' || c === 'used' || c === 'demo'
+        )
+      : DEFAULT_CONDITIONS;
 
-    return {
-      success: true,
-      settings: financeWidgetSettings,
-    };
-  } catch (error: any) {
-    console.error('Error fetching finance widget settings:', error);
-    // Return default settings on error
     return {
       success: true,
       settings: {
-        useFinanceWidget: false,
-        financeWidgetIframe: null,
-        financeWidgetProvider: null,
+        useFinanceWidget: stored.useFinanceWidget ?? false,
+        financeWidgetIframe: stored.financeWidgetIframe ?? null,
+        financeWidgetProvider: stored.financeWidgetProvider ?? null,
+        enabledConditions: enabledConditions.length > 0 ? enabledConditions : DEFAULT_CONDITIONS,
       },
     };
+  } catch (error: any) {
+    console.error('Error fetching finance widget settings:', error);
+    return fallback;
   }
 });
