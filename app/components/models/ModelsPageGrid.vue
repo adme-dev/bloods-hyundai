@@ -135,7 +135,7 @@
                     Details
                   </NuxtLink>
                   <NuxtLink
-                    :to="'/calculator/' + vehicle.slug"
+                    :to="'/calculator/' + getCalculatorSlug(vehicle.slug)"
                     class="inline-block px-3 py-1.5 text-xs font-semibold uppercase tracking-wide bg-primary border-2 border-primary text-white rounded hover:bg-primary-dark hover:border-primary-dark transition-colors"
                   >
                     Enquire
@@ -232,6 +232,15 @@ const selectCategory = (category: string) => {
 
 const slugify = (text: string) => {
   return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+};
+
+// Strip "hybrid" and "electric" suffixes from slug for calculator links
+// e.g., "kona-hybrid" -> "kona", "ioniq-5-electric" -> "ioniq-5"
+const getCalculatorSlug = (slug: string) => {
+  return slug
+    .replace(/-hybrid$/i, '')
+    .replace(/-electric$/i, '')
+    .replace(/-ev$/i, '');
 };
 </script>
 
