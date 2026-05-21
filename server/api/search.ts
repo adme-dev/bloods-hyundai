@@ -294,15 +294,22 @@ export default defineEventHandler(async (event) => {
     }
     
     // Apply sorting
-    const sortBy = query.sort || 'price-asc';
+    const sortBy = String(query.sort || 'price-asc');
     const sortOrder = query.order || (sortBy.includes('desc') ? 'desc' : 'asc');
-    
+
     vehicles.sort((a, b) => {
       let aVal: any, bVal: any;
-      
+
       if (sortBy.includes('price')) {
         aVal = getPrice(a);
         bVal = getPrice(b);
+
+        // POA vehicles (price = 0) should always sort to the end
+        const aIsPOA = aVal === 0;
+        const bIsPOA = bVal === 0;
+        if (aIsPOA && !bIsPOA) return 1;  // a is POA, push to end
+        if (!aIsPOA && bIsPOA) return -1; // b is POA, push to end
+        if (aIsPOA && bIsPOA) return 0;   // both POA, keep order
       } else if (sortBy.includes('year')) {
         aVal = getYear(a);
         bVal = getYear(b);
@@ -313,7 +320,7 @@ export default defineEventHandler(async (event) => {
         aVal = a.title || '';
         bVal = b.title || '';
       }
-      
+
       if (sortOrder === 'desc') {
         return bVal > aVal ? 1 : bVal < aVal ? -1 : 0;
       } else {
