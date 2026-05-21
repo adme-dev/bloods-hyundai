@@ -297,6 +297,12 @@ export default defineEventHandler(async (event) => {
     const sortBy = String(query.sort || 'price-asc');
     const sortOrder = query.order || (sortBy.includes('desc') ? 'desc' : 'asc');
 
+    // Helper to check if vehicle is "new" condition
+    const isNewCondition = (vehicle: any): boolean => {
+      const conditions = vehicle.condition?.value || [];
+      return conditions.some((c: string) => c.toLowerCase().includes('new'));
+    };
+
     vehicles.sort((a, b) => {
       let aVal: any, bVal: any;
 
@@ -310,6 +316,12 @@ export default defineEventHandler(async (event) => {
         if (aIsPOA && !bIsPOA) return 1;  // a is POA, push to end
         if (!aIsPOA && bIsPOA) return -1; // b is POA, push to end
         if (aIsPOA && bIsPOA) return 0;   // both POA, keep order
+
+        // New vehicles should appear before used vehicles
+        const aIsNew = isNewCondition(a);
+        const bIsNew = isNewCondition(b);
+        if (aIsNew && !bIsNew) return -1; // a is new, comes first
+        if (!aIsNew && bIsNew) return 1;  // b is new, comes first
       } else if (sortBy.includes('year')) {
         aVal = getYear(a);
         bVal = getYear(b);
