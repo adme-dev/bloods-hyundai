@@ -234,14 +234,7 @@ const slugify = (text: string) => {
   return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 };
 
-// Strip "hybrid" and "electric" suffixes from slug for calculator links
-// e.g., "kona-hybrid" -> "kona", "ioniq-5-electric" -> "ioniq-5"
-const getCalculatorSlug = (slug: string) => {
-  return slug
-    .replace(/-hybrid$/i, '')
-    .replace(/-electric$/i, '')
-    .replace(/-ev$/i, '');
-};
+// getCalculatorSlug is auto-imported from ~/utils
 </script>
 
 <style scoped>

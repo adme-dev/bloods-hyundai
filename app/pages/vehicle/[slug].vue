@@ -71,7 +71,7 @@
                   </a>
                   <NuxtLink
                     v-else
-                    :to="`/calculator/${slug}`"
+                    :to="`/calculator/${vehicleBaseModel}`"
                     class="uk-width-1-1 uk-width-auto@s uk-button uk-button-default tm-button-default text-inherit heading-btn"
                   >
                     {{ heroSlide.button || 'Calculate Repayments' }}

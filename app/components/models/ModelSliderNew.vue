@@ -99,8 +99,8 @@
                           </NuxtLink>
                         </div>
                         <div>
-                          <NuxtLink 
-                            :to="'/calculator/' + vehicle.slug"
+                          <NuxtLink
+                            :to="'/calculator/' + getCalculatorSlug(vehicle.slug)"
                             class="coloredsvg uk-text-center uk-button uk-button-primary uk-text-light uk-text-capitalize"
                           >
                             Enquire <span uk-icon="chevron-right"></span>

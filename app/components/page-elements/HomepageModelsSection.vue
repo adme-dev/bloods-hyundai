@@ -138,7 +138,7 @@
 
                     <NuxtLink
                       v-if="!model.isComingSoon"
-                      :to="`/calculator/${model.slug}`"
+                      :to="`/calculator/${getCalculatorSlug(model.slug)}`"
                       class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                     >
                       <span>Range / Build</span>
@@ -285,7 +285,7 @@
 
                           <NuxtLink
                             v-if="!model.isComingSoon"
-                            :to="`/calculator/${model.slug}`"
+                            :to="`/calculator/${getCalculatorSlug(model.slug)}`"
                             class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
                           >
                             <span>Range / Build</span>

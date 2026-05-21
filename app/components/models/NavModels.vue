@@ -150,7 +150,7 @@
                       </NuxtLink>
                       <NuxtLink
                         v-if="!vehicle.isComingSoon"
-                        :to="'/calculator/' + vehicle.slug"
+                        :to="'/calculator/' + getCalculatorSlug(vehicle.slug)"
                         class="nav-model-btn nav-model-btn--enquire"
                         @click="closeModel"
                       >

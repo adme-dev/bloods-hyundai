@@ -151,14 +151,26 @@ export function getQueryParams(url: string): Record<string, string> {
  */
 export function buildQueryString(params: Record<string, any>): string {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value != null && value !== '') {
       searchParams.append(key, String(value));
     }
   });
-  
+
   return searchParams.toString();
+}
+
+/**
+ * Strip "hybrid", "electric", and "ev" suffixes from vehicle slug for calculator links
+ * The calculator page expects the base model name without powertrain suffix
+ * e.g., "kona-hybrid" -> "kona", "ioniq-5-electric" -> "ioniq-5"
+ */
+export function getCalculatorSlug(slug: string): string {
+  return slug
+    .replace(/-hybrid$/i, '')
+    .replace(/-electric$/i, '')
+    .replace(/-ev$/i, '');
 }
 
 
