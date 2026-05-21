@@ -1865,7 +1865,12 @@ const clearFilters = () => {
   // Clear faceted filter maps
   modelMakeMap.value = {};
   badgeModelMap.value = {};
-  applyFilters();
+  // Reset sort to default and page to 1
+  sortBy.value = 'featured';
+  currentPage.value = 1;
+  // Navigate to clean URL and fetch vehicles
+  router.replace({ path: '/car-sales', query: {} });
+  fetchVehicles();
 };
 
 const removeChip = (chip: { key: string; value?: string | number }) => {
