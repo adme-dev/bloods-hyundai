@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db } from '../utils/db';
+import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
 
 type VehicleCondition = 'new' | 'used' | 'demo';

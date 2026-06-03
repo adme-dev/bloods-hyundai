@@ -245,6 +245,12 @@ export default defineNuxtConfig({
     '/accessories/**': {
       ssr: true,
     },
+
+    // Public DB-backed dealer settings — change rarely, hit on most pageviews.
+    // SWR keeps the Neon compute idle between revalidations.
+    '/api/finance-widget-settings':  { swr: 300 },
+    '/api/service-booking-settings': { swr: 300 },
+    '/api/popup-settings':           { swr: 300 },
   },
 
   // App config
