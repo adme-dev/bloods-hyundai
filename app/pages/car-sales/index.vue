@@ -738,16 +738,21 @@ const route = useRoute();
 const router = useRouter();
 const vehiclesStore = useVehiclesStore();
 
-// SSR-only data fetching - hidden from browser network tab, 10-min server cache
-// Using useFetch with getCachedData to prevent client-side refetching
-const { data: carsalesFeedData } = await useFetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
+// SSR-only data fetching - hidden from browser network tab, 10-min server cache.
+// `default` + explicit error handling means a failed/slow API never crashes SSR —
+// the page renders 200 with an empty listing instead of bubbling up as a 500.
+const { data: carsalesFeedData, error: carsalesFeedError } = await useFetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
   key: 'carsales-feed-data',
   dedupe: 'defer',
-  // Return cached data on client - prevents network request
+  default: () => ({ vehiclesData: [], filters: [] }),
   getCachedData: (key, nuxtApp) => {
     return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
   },
 });
+
+if (carsalesFeedError.value) {
+  console.error('[car-sales page] feed fetch failed, rendering empty listing:', carsalesFeedError.value?.message);
+}
 
 // Initialize filter data immediately from SSR-cached data (runs during SSR and client hydration)
 const initializeFiltersFromCache = () => {

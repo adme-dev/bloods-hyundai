@@ -86,7 +86,7 @@ function createFiltersFromVehicles(vehicles: any[]) {
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
-export default defineCachedEventHandler(async (event) => {
+const buildFeed = defineCachedFunction(async () => {
   // Supabase data URLs
   const urls = [
     'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-hyundai/data.json',
@@ -94,44 +94,49 @@ export default defineCachedEventHandler(async (event) => {
     'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/geelong-mazda/data.json'
   ];
 
+  const PER_URL_DEADLINE_MS = 6000;
+
+  const fetchOne = async (url: string, index: number): Promise<any[]> => {
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), PER_URL_DEADLINE_MS);
+    const startedAt = Date.now();
+    try {
+      const rawResponse = await $fetch<string>(url, {
+        responseType: 'text',
+        signal: controller.signal,
+        retry: 0,
+      });
+
+      let data: any;
+      try {
+        data = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
+      } catch (parseError: any) {
+        console.error(`[Carsales Feed] URL ${index}: Failed to parse JSON:`, parseError.message);
+        return [];
+      }
+
+      if (!Array.isArray(data)) {
+        console.error(`[Carsales Feed] URL ${index} (${url}): Response is not an array, type: ${typeof data}`);
+        return [];
+      }
+
+      console.log(`[Carsales Feed] URL ${index} (${url}): Success in ${Date.now() - startedAt}ms, ${data.length} vehicles`);
+      return data;
+    } catch (error: any) {
+      const mode = controller.signal.aborted ? 'abort/timeout' : 'reject';
+      console.error(`[Carsales Feed] URL ${index} (${url}): ${mode} after ${Date.now() - startedAt}ms -`, error?.message);
+      return [];
+    } finally {
+      clearTimeout(abortTimer);
+    }
+  };
+
   try {
     console.log('[Carsales Feed] Fetching from URLs:', urls);
-    
-    const responses = await Promise.all(
-      urls.map(async (url, index) => {
-        try {
-          // Fetch the raw response
-          const rawResponse = await $fetch<string>(url, { 
-            timeout: 10000,
-            responseType: 'text'
-          });
-          
-          // Parse JSON manually
-          let data: any;
-          try {
-            data = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
-          } catch (parseError: any) {
-            console.error(`[Carsales Feed] URL ${index}: Failed to parse JSON:`, parseError.message);
-            console.error(`[Carsales Feed] URL ${index}: Response sample:`, rawResponse?.substring(0, 500));
-            return [];
-          }
-          
-          if (!Array.isArray(data)) {
-            console.error(`[Carsales Feed] URL ${index} (${url}): Response is not an array, type: ${typeof data}`);
-            if (data && typeof data === 'object') {
-              console.error(`[Carsales Feed] URL ${index}: Response keys:`, Object.keys(data));
-            }
-            return [];
-          }
-          
-          console.log(`[Carsales Feed] URL ${index} (${url}): Success, received ${data.length} vehicles`);
-          return data;
-        } catch (error: any) {
-          console.error(`[Carsales Feed] URL ${index} (${url}): Error -`, error.message);
-          return [];
-        }
-      })
-    );
+
+    const settled = await Promise.allSettled(urls.map((url, index) => fetchOne(url, index)));
+    const responses = settled.map((r) => (r.status === 'fulfilled' ? r.value : []));
+    const successfulBuckets = responses.filter((r) => r.length > 0).length;
 
     console.log('[Carsales Feed] Received responses:', responses.map(r => Array.isArray(r) ? r.length : 'not array'));
 
@@ -233,13 +238,15 @@ export default defineCachedEventHandler(async (event) => {
 
     const filters = createFiltersFromVehicles(vehicles);
 
-    console.log('[Carsales Feed] Returning vehicles:', vehicles.length, 'filters:', filters.length);
+    console.log('[Carsales Feed] Returning vehicles:', vehicles.length, 'filters:', filters.length, 'successfulBuckets:', successfulBuckets);
 
     return {
       vehiclesData: vehicles,
       filters,
       _cached: false,
       _timestamp: Date.now(),
+      _partial: successfulBuckets < urls.length,
+      _empty: vehicles.length === 0,
     };
   } catch (error: any) {
     console.error('Error fetching carsales feed:', error);
@@ -248,6 +255,8 @@ export default defineCachedEventHandler(async (event) => {
       filters: [],
       _cached: false,
       _timestamp: Date.now(),
+      _empty: true,
+      _error: error?.message || 'unknown',
     };
   }
 }, {
@@ -255,11 +264,24 @@ export default defineCachedEventHandler(async (event) => {
   staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'carsales-feed',
   getKey: () => 'carsales-feed-data',
-  shouldBypassCache: (event) => {
-    // Allow cache bypass with ?refresh=true query param (for admin use)
-    const query = getQuery(event);
-    return query.refresh === 'true';
+  // Reject empty/error entries — a failed cold render must not poison subsequent requests.
+  validate: (entry: any) => {
+    return !entry?.value?._empty;
   },
+});
+
+export default defineEventHandler(async (event) => {
+  const query = getQuery(event);
+  if (query.refresh === 'true') {
+    // Admin cache-bust: drop the cached entry so the next call repopulates from source.
+    try {
+      const storage = useStorage('cache');
+      await storage.removeItem('nitro:functions:carsales-feed:carsales-feed-data.json');
+    } catch (err: any) {
+      console.warn('[Carsales Feed] cache bust failed:', err?.message);
+    }
+  }
+  return await buildFeed();
 });
 
 
