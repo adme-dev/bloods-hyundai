@@ -31,9 +31,9 @@ export default defineNuxtConfig({
 
   // Nuxt SEO configuration
   site: {
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://salehyundai.com.au',
-    name: 'Sale Hyundai',
-    description: 'Sale Hyundai - Your trusted Hyundai dealer in Sale, Victoria. Browse new and used vehicles, book a test drive, and explore our latest offers.',
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://bloodhyundai.com.au',
+    name: 'Blood Hyundai',
+    description: 'Blood Hyundai - Browse new and used Hyundai vehicles, book a test drive, and explore our latest offers.',
     defaultLocale: 'en-AU',
   },
 
@@ -42,9 +42,9 @@ export default defineNuxtConfig({
   schemaOrg: {
     identity: {
       type: 'Organization',
-      name: 'Sale Hyundai',
-      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://salehyundai.com.au',
-      logo: `${process.env.NUXT_PUBLIC_SITE_URL || 'https://salehyundai.com.au'}/logo.png`,
+      name: 'Blood Hyundai',
+      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://bloodhyundai.com.au',
+      logo: `${process.env.NUXT_PUBLIC_SITE_URL || 'https://bloodhyundai.com.au'}/logo.png`,
     },
   },
 
@@ -80,7 +80,7 @@ export default defineNuxtConfig({
 
     // Public (exposed to client)
     public: {
-      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Sale Hyundai',
+      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Blood Hyundai',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
       apiUrl: process.env.NUXT_PUBLIC_API_URL || '',
       cdnUrl: process.env.NUXT_PUBLIC_CDN_URL || '',
@@ -222,9 +222,9 @@ export default defineNuxtConfig({
     // '/contact': { prerender: true },
     // '/site-map': { prerender: true },
 
-    // Special offers - SSR only (no ISR caching)
-    '/special-offers': { ssr: true },
-    '/special-offer/**': { ssr: true },
+    // Special offers - SSR with SWR edge cache to prevent cold-render timeouts on cache miss
+    '/special-offers': { ssr: true, swr: 600 },
+    '/special-offer/**': { ssr: true, swr: 600 },
 
     // SSR for dynamic content
     '/car-sales/**': { ssr: true },
@@ -355,6 +355,7 @@ export default defineNuxtConfig({
     // Allow images from these domains (required for Netlify Image CDN)
     domains: [
       'hyundaioem.b-cdn.net',
+      'bloodhyundai.com.au',
       'salehyundai.com.au',
       'driveAgentMedia.b-cdn.net',
       'driveagent.b-cdn.net',

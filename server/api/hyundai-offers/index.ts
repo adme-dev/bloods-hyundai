@@ -50,8 +50,9 @@ export default defineEventHandler(async (event) => {
   const url = 'https://www.hyundai.com/au/en/offers';
 
   try {
-    // Fetch the HTML page
+    // Fetch the HTML page (5s timeout keeps us well under Netlify's 10s function limit)
     const html = await $fetch<string>(url, {
+      timeout: 5000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         Accept: 'text/html,application/xhtml+xml',
