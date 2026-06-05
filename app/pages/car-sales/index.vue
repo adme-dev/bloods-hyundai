@@ -2007,7 +2007,10 @@ const fetchVehicles = async () => {
   }
 };
 
-const updateUrl = () => {
+// Build the canonical query object that represents the current filter state.
+// Shared by updateUrl() and the external-navigation watcher so both agree on
+// what the URL "should" look like for a given set of filters.
+const buildQueryFromFilters = (): Record<string, string> => {
   const query: Record<string, string> = {};
   if (filters.condition.length) query.condition = filters.condition.join(',');
   if (filters.make.length) query.make = filters.make.join(',');
@@ -2027,13 +2030,21 @@ const updateUrl = () => {
   if (searchKeywords.value) query.q = searchKeywords.value;
   if (sortBy.value !== 'featured') query.sort = sortBy.value;
   if (currentPage.value > 1) query.page = String(currentPage.value);
-  router.replace({ query });
+  return query;
+};
+
+const updateUrl = () => {
+  router.replace({ query: buildQueryFromFilters() });
 };
 
 const syncFromQuery = () => {
   const q = route.query;
-  if (q.condition) filters.condition = (q.condition as string).split(',');
-  
+  // Derive each filter fully from the query so this is idempotent: a key being
+  // ABSENT must reset that filter to its default. This lets the function run both
+  // on initial mount AND when an external navigation (e.g. the mega-menu) changes
+  // the URL in place — without leaving stale filters from the previous URL.
+  filters.condition = q.condition ? (q.condition as string).split(',') : [];
+
   // Parse makes from query
   const queryMakes = q.make ? (q.make as string).split(',') : [];
   
@@ -2107,27 +2118,30 @@ const syncFromQuery = () => {
     
     filters.badge = validBadges;
     badgeModelMap.value = newBadgeModelMap;
+  } else {
+    filters.badge = [];
+    badgeModelMap.value = {};
   }
-  
-  if (q.body) filters.body = (q.body as string).split(',');
-  if (q.fuel) filters.fuel = (q.fuel as string).split(',');
-  if (q.transmission) filters.transmission = (q.transmission as string).split(',');
-  if (q.colour) filters.colour = (q.colour as string).split(',');
-  if (q.price_min) filters.priceMin = parseInt(q.price_min as string);
-  if (q.price_max) filters.priceMax = parseInt(q.price_max as string);
-  if (q.year_min) filters.yearMin = parseInt(q.year_min as string);
-  if (q.year_max) filters.yearMax = parseInt(q.year_max as string);
-  if (q.kms_min) filters.kmsMin = parseInt(q.kms_min as string);
-  if (q.kms_max) filters.kmsMax = parseInt(q.kms_max as string);
-  if (q.suburb) filters.suburb = q.suburb as string;
+
+  filters.body = q.body ? (q.body as string).split(',') : [];
+  filters.fuel = q.fuel ? (q.fuel as string).split(',') : [];
+  filters.transmission = q.transmission ? (q.transmission as string).split(',') : [];
+  filters.colour = q.colour ? (q.colour as string).split(',') : [];
+  filters.priceMin = q.price_min ? parseInt(q.price_min as string) : null;
+  filters.priceMax = q.price_max ? parseInt(q.price_max as string) : null;
+  filters.yearMin = q.year_min ? parseInt(q.year_min as string) : null;
+  filters.yearMax = q.year_max ? parseInt(q.year_max as string) : null;
+  filters.kmsMin = q.kms_min ? parseInt(q.kms_min as string) : null;
+  filters.kmsMax = q.kms_max ? parseInt(q.kms_max as string) : null;
+  filters.suburb = q.suburb ? (q.suburb as string) : '';
   if (q.perweek) {
     const [minWeek = NaN, maxWeek = NaN] = (q.perweek as string).split('-').map(v => parseInt(v));
     if (!isNaN(minWeek)) filters.priceMin = Math.round(calculatePriceFromWeekly(minWeek));
     if (!isNaN(maxWeek)) filters.priceMax = Math.round(calculatePriceFromWeekly(maxWeek));
   }
-  if (q.q) searchKeywords.value = q.q as string;
-  if (q.sort) sortBy.value = q.sort as string;
-  if (q.page) currentPage.value = parseInt(q.page as string);
+  searchKeywords.value = q.q ? (q.q as string) : '';
+  sortBy.value = q.sort ? (q.sort as string) : 'featured';
+  currentPage.value = q.page ? parseInt(q.page as string) : 1;
 };
 
 const debouncedSearch = useDebounceFn(() => {
@@ -2195,6 +2209,35 @@ watch(() => route.query.stock, (stockId) => {
     checkStockParam();
   }
 });
+
+// Keys that map to the filter state (everything updateUrl writes except `stock`,
+// which is handled separately above).
+const FILTER_QUERY_KEYS = [
+  'condition', 'make', 'model', 'badge', 'body', 'fuel', 'transmission',
+  'colour', 'price_min', 'price_max', 'year_min', 'year_max', 'kms_min',
+  'kms_max', 'suburb', 'q', 'sort', 'page',
+] as const;
+
+// Produce a stable string signature for the filter-related portion of a query
+// object so we can cheaply detect when the URL diverges from current filters.
+const filterQuerySignature = (q: Record<string, any>): string =>
+  FILTER_QUERY_KEYS
+    .map((key) => `${key}=${q[key] ?? ''}`)
+    .join('&');
+
+// Re-sync filters + re-fetch when the URL query changes from OUTSIDE the page
+// (e.g. the "Our stock" mega-menu links to /car-sales?condition=used while we're
+// already on this route). Internal changes go through applyFilters()/updateUrl(),
+// which keep the URL and filters in agreement — so the signatures match and this
+// watcher is a no-op, avoiding a duplicate fetch.
+watch(
+  () => filterQuerySignature(route.query as Record<string, any>),
+  (incoming) => {
+    if (incoming === filterQuerySignature(buildQueryFromFilters())) return;
+    syncFromQuery();
+    fetchVehicles();
+  }
+);
 </script>
 
 <style scoped>
