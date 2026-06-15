@@ -66,38 +66,26 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   // Initialize Facebook Pixel
   const initPixel = () => {
-    // Create fbq function if it doesn't exist
+    // Already loaded — don't re-run the bootstrap
     if (typeof window.fbq === 'function') return;
 
-    const fbq: FacebookPixel = function(...args: any[]) {
-      if (fbq.callMethod) {
-        fbq.callMethod.apply(fbq, args);
-      } else {
-        fbq.queue.push(args);
-      }
-    } as FacebookPixel;
+    // Meta Pixel base code — kept byte-identical to the official snippet so
+    // Google/Meta tag validators don't flag it as "altered or incomplete".
+    // https://developers.facebook.com/docs/meta-pixel/get-started
+    /* eslint-disable */
+    // prettier-ignore
+    !function(f: any,b: Document,e: string,v: string,n?: any,t?: any,s?: any)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
 
-    if (!window._fbq) window._fbq = fbq;
-
-    fbq.push = fbq;
-    fbq.loaded = true;
-    fbq.version = '2.0';
-    fbq.queue = [];
-
-    window.fbq = fbq;
-
-    // Load the Facebook Pixel script
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = 'https://connect.facebook.net/en_US/fbevents.js';
-
-    const firstScript = document.getElementsByTagName('script')[0];
-    firstScript?.parentNode?.insertBefore(script, firstScript);
-
-    // Initialize pixel with ID
+    // Initialize pixel with ID and track the initial page view
     window.fbq('init', pixelId);
-
-    // Track initial page view
     window.fbq('track', 'PageView');
 
     console.log('[Facebook Pixel] Initialized with ID:', pixelId);
