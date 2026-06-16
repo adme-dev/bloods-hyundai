@@ -170,6 +170,33 @@
 
     <Card>
       <CardHeader>
+        <CardTitle>Header</CardTitle>
+        <CardDescription>Control elements shown in the site's top header bar</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Star class="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-semibold">Google Reviews link</h3>
+              <p class="text-sm text-muted-foreground">
+                Show the "Google Reviews" link in the top header bar
+              </p>
+            </div>
+          </div>
+          <Switch
+            :model-value="headerReviewsEnabled"
+            :disabled="headerReviewsSaving"
+            @update:model-value="toggleHeaderReviews"
+          />
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
         <CardTitle>API configuration</CardTitle>
         <CardDescription>Credentials and endpoints for dealer website integrations</CardDescription>
       </CardHeader>
@@ -264,7 +291,8 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
-import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw, Palette, Mail, GitBranch, Wrench, Banknote, MessageSquare } from 'lucide-vue-next';
+import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw, Palette, Mail, GitBranch, Wrench, Banknote, MessageSquare, Star } from 'lucide-vue-next';
+import { Switch } from '~/components/ui/switch';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
@@ -287,6 +315,32 @@ definePageMeta({
 
 const { data, pending, error, refresh } = await useFetch('/api/admin/settings');
 const dealer = computed(() => data.value?.dealer);
+
+// Header "Google Reviews" link toggle
+const headerReviewsEnabled = ref(false);
+const headerReviewsSaving = ref(false);
+
+const { data: headerReviewsData } = await useFetch('/api/admin/settings/header-reviews');
+watchEffect(() => {
+  headerReviewsEnabled.value = headerReviewsData.value?.settings?.enabled ?? false;
+});
+
+const toggleHeaderReviews = async (value: boolean) => {
+  const previous = headerReviewsEnabled.value;
+  headerReviewsEnabled.value = value; // optimistic
+  headerReviewsSaving.value = true;
+  try {
+    await $fetch('/api/admin/settings/header-reviews', {
+      method: 'PUT',
+      body: { enabled: value },
+    });
+  } catch (err) {
+    console.error('Failed to update header reviews setting', err);
+    headerReviewsEnabled.value = previous; // revert on failure
+  } finally {
+    headerReviewsSaving.value = false;
+  }
+};
 
 const showApiKey = ref(false);
 const showPasswordModal = ref(false);

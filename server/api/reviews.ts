@@ -56,24 +56,31 @@ function processReviewsResponse(response: any) {
       )}&query_place_id=${placeId}`
     : response.result.url || 'https://www.google.com/maps';
 
-  const reviews = (response.result.reviews || []).map((review: any) => ({
-    dealership: dealershipName,
-    author_name: review.author_name,
-    author_url: review.author_url,
-    rating: review.rating,
-    text: review.text,
-    time: review.time,
-    relative_time_description: review.relative_time_description,
-    profile_photo_url: review.profile_photo_url,
-  }));
+  const reviews = (response.result.reviews || [])
+    // Only surface positive reviews (4 stars and above). Filtering here at the
+    // source guarantees no consumer (homepage cards, footer, header, etc.) can
+    // ever display a sub-4-star review.
+    .filter((review: any) => (review.rating ?? 0) >= 4)
+    .map((review: any) => ({
+      dealership: dealershipName,
+      author_name: review.author_name,
+      author_url: review.author_url,
+      rating: review.rating,
+      text: review.text,
+      time: review.time,
+      relative_time_description: review.relative_time_description,
+      profile_photo_url: review.profile_photo_url,
+    }));
 
   // Shuffle reviews
   const shuffledReviews = shuffleArray(reviews);
 
   return {
     reviews: shuffledReviews,
+    // Aggregate rating & count reflect Google's official listing (computed from
+    // ALL reviews), independent of the 4-star+ display filter above.
     rating: response.result.rating || 0,
-    total_reviews: response.result.user_ratings_total || reviews.length,
+    total_reviews: response.result.user_ratings_total || 0,
     place_id: placeId,
     place_url: placeUrl,
   };

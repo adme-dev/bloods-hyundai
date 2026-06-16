@@ -2,10 +2,11 @@
   <div class="top-bar bg-[#1a1a1a] text-white text-sm">
     <div class="max-w-[1400px] mx-auto px-4 lg:px-8">
       <div class="flex items-center justify-between h-10">
-        <!-- Left side - Google Reviews -->
-        <a 
-          :href="googleMapsUrl" 
-          target="_blank" 
+        <!-- Left side - Google Reviews (toggled via admin settings, hidden by default) -->
+        <a
+          v-if="reviewsLinkEnabled"
+          :href="googleMapsUrl"
+          target="_blank"
           rel="noopener noreferrer"
           class="hidden sm:flex items-center gap-2 hover:text-gray-300 transition-colors"
         >
@@ -19,6 +20,8 @@
           <span class="font-medium">Google Reviews</span>
           <span v-if="totalReviews > 0" class="text-gray-400">({{ totalReviews }})</span>
         </a>
+        <!-- Spacer keeps the right-side items anchored when the reviews link is hidden -->
+        <span v-else aria-hidden="true"></span>
 
         <!-- Right side - Address, Book a Service, Phone -->
         <div class="flex items-center gap-6 md:gap-8">
@@ -102,9 +105,23 @@ const googleMapsUrl = computed(() => {
 // Reviews data
 const totalReviews = computed(() => reviewsStore.totalReviews);
 
-// Fetch reviews on mount if not already loaded
+// Whether the header "Google Reviews" link is shown — controlled from
+// admin settings (Settings → Header Reviews). Hidden by default.
+const { data: headerSettings } = await useFetch('/api/header-settings', {
+  key: 'header-settings',
+  default: () => ({ success: true, settings: { reviewsEnabled: false } }),
+});
+const reviewsLinkEnabled = computed(
+  () => headerSettings.value?.settings?.reviewsEnabled ?? false
+);
+
+// Fetch reviews on mount if not already loaded (only when the link is shown)
 onMounted(async () => {
-  if (reviewsStore.totalReviews === 0 && !reviewsStore.loading) {
+  if (
+    reviewsLinkEnabled.value &&
+    reviewsStore.totalReviews === 0 &&
+    !reviewsStore.loading
+  ) {
     await reviewsStore.fetchGoogleReviews();
   }
 });
