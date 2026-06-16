@@ -118,10 +118,69 @@
         </div>
       </div>
 
-      <!-- Empty State -->
-      <div v-else class="uk-text-center uk-padding">
+      <!-- Loading State -->
+      <div v-else-if="reviewsStore.loading" class="uk-text-center uk-padding">
         <p class="uk-text-muted">Loading reviews...</p>
         <div uk-spinner></div>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="reviewsStore.error" class="review-summary-empty uk-text-center uk-padding">
+        <p class="uk-text-muted uk-margin-small-bottom">Customer reviews are temporarily unavailable.</p>
+        <a
+          :href="reviewsStore.placeUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="google-badge"
+        >
+          <NuxtImg
+            src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
+            alt="Google"
+            width="20"
+            height="20"
+          />
+          <span class="uk-margin-small-left">View reviews on Google</span>
+        </a>
+      </div>
+
+      <!-- No displayable review cards -->
+      <div v-else class="review-summary-empty uk-text-center uk-padding">
+        <div v-if="hasReviewSummary" class="review-summary-card">
+          <div class="review-summary-rating">{{ reviewsStore.averageRating }}</div>
+          <div class="uk-flex uk-flex-center uk-margin-small">
+            <span v-for="n in 5" :key="n" class="star">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <polygon
+                  :fill="n <= Math.round(reviewsStore.rating) ? '#ffc107' : '#e0e0e0'"
+                  points="10 1 12.2 6.2 18 6.8 13.8 10.8 15 16.5 10 13.4 5 16.5 6.2 10.8 2 6.8 7.8 6.2"
+                />
+              </svg>
+            </span>
+          </div>
+          <p class="uk-text-muted uk-margin-small-bottom">
+            Based on {{ reviewsStore.totalReviews }} Google reviews
+          </p>
+        </div>
+        <p v-else class="uk-text-muted uk-margin-small-bottom">Customer reviews are available on Google.</p>
+        <a
+          :href="reviewsStore.placeUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="google-badge"
+        >
+          <NuxtImg
+            src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png"
+            alt="Google"
+            width="20"
+            height="20"
+          />
+          <span class="uk-margin-small-left">View reviews on Google</span>
+        </a>
       </div>
     </div>
   </div>
@@ -150,6 +209,8 @@ const positiveReviews = computed(() => {
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 12);
 });
+
+const hasReviewSummary = computed(() => reviewsStore.rating > 0 || reviewsStore.totalReviews > 0);
 
 // Helper functions
 const truncateText = (text: string, maxLength: number) => {
@@ -218,6 +279,22 @@ const getInitials = (name: string) => {
   min-height: 80px;
 }
 
+.review-summary-empty {
+  min-height: 180px;
+}
+
+.review-summary-card {
+  margin: 0 auto 16px;
+  max-width: 320px;
+}
+
+.review-summary-rating {
+  color: #002855;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .star {
   margin-right: 2px;
 }
@@ -242,7 +319,6 @@ const getInitials = (name: string) => {
   padding: 0 20px 40px;
 }
 </style>
-
 
 
 
