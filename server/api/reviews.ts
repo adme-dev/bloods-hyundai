@@ -43,9 +43,19 @@ function processReviewsResponse(response: any) {
   }
 
   const dealershipName = response.result.name || '';
+  const placeId = response.result.place_id || '';
+
+  // Google Maps URL for the dealership listing (falls back to a place_id search URL)
+  const placeUrl =
+    response.result.url ||
+    (placeId
+      ? `https://search.google.com/local/reviews?placeid=${placeId}`
+      : 'https://www.google.com/maps');
+
   const reviews = (response.result.reviews || []).map((review: any) => ({
     dealership: dealershipName,
     author_name: review.author_name,
+    author_url: review.author_url,
     rating: review.rating,
     text: review.text,
     time: review.time,
@@ -60,6 +70,8 @@ function processReviewsResponse(response: any) {
     reviews: shuffledReviews,
     rating: response.result.rating || 0,
     total_reviews: response.result.user_ratings_total || reviews.length,
+    place_id: placeId,
+    place_url: placeUrl,
   };
 }
 

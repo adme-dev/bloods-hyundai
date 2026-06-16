@@ -130,9 +130,15 @@ let emblaApi: any = null;
 // Site name for fallback
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
 
-// Filter slides by date range
+// Filter slides by date range.
+// IMPORTANT: date filtering depends on `new Date()` ("now"), which differs
+// between the SSR render and client hydration (server timezone/clock vs the
+// user's), causing hydration mismatches. During SSR and the initial hydration
+// pass we return the full slide set; once mounted (client-only) we apply the
+// date-range filter. This keeps server and client markup identical at hydration.
 const homeSlides = computed(() => {
   const slides = mainStore.site?.promotional?.[0]?.slides || [];
+  if (!isMounted.value) return slides;
   return slides.filter((slide: any) => isDateInRange(slide.start, slide.end));
 });
 

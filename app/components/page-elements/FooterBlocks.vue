@@ -61,9 +61,19 @@ import { isDateInRange } from '~/utils/date';
 
 const mainStore = useMainStore();
 
+// Date filtering depends on `new Date()`, which differs between the SSR render
+// and client hydration (server clock/timezone vs the user's), causing hydration
+// mismatches near date boundaries. Render the full set during SSR + initial
+// hydration, then apply the date-range filter once mounted (client-only).
+const isMounted = ref(false);
+onMounted(() => {
+  isMounted.value = true;
+});
+
 // Filter footer blocks by date range
 const footerBlocks = computed(() => {
   const blocks = mainStore.site?.promotional?.[0]?.footerblocks || [];
+  if (!isMounted.value) return blocks;
   return blocks.filter((block: any) => {
     // Check date range using start_date and end_date fields
     return isDateInRange(block.start_date, block.end_date);

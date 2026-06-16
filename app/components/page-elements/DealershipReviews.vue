@@ -16,7 +16,14 @@
             uk-height-match="target: > li > div > .uk-card"
           >
             <li v-for="review in positiveReviews" :key="review.time">
-              <div class="uk-card uk-padding-small uk-flex uk-flex-column">
+              <component
+                :is="reviewsLink ? 'a' : 'div'"
+                :href="reviewsLink || undefined"
+                :target="reviewsLink ? '_blank' : undefined"
+                :rel="reviewsLink ? 'noopener noreferrer' : undefined"
+                class="uk-card uk-padding-small uk-flex uk-flex-column review-card"
+                :class="{ 'review-card--link': reviewsLink }"
+              >
                 <!-- Author Info -->
                 <div class="uk-flex uk-flex-middle uk-margin-bottom">
                   <NuxtImg
@@ -70,7 +77,7 @@
                     {{ review.relative_time_description }}
                   </span>
                 </div>
-              </div>
+              </component>
             </li>
           </ul>
 
@@ -94,8 +101,8 @@
 
         <!-- Google Badge -->
         <div class="uk-text-center uk-margin-top">
-          <a 
-            href="https://www.google.com/maps" 
+          <a
+            :href="reviewsStore.placeUrl"
             target="_blank"
             rel="noopener noreferrer"
             class="google-badge"
@@ -122,6 +129,11 @@
 
 <script setup lang="ts">
 const reviewsStore = useReviewsStore();
+
+// Clicking a review card (or the badge) should take users to the dealership's
+// Google reviews page — NOT the individual reviewer's contributor profile,
+// which is what `author_url` points to. Use the business place URL instead.
+const reviewsLink = computed(() => reviewsStore.placeUrl);
 
 // Fetch reviews on mount (client-side only)
 onMounted(() => {
@@ -168,6 +180,23 @@ const getInitials = (name: string) => {
   border-radius: 15px;
   background-color: #fff;
   height: 100%;
+}
+
+.review-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+.review-card--link {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: #002855;
+    box-shadow: 0 6px 18px rgba(0, 40, 85, 0.12);
+    transform: translateY(-2px);
+    text-decoration: none;
+  }
 }
 
 .review-avatar {

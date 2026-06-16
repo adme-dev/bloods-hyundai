@@ -20,6 +20,7 @@ interface ReviewsData {
   total_reviews: number;
   reviews: Review[];
   place_id?: string;
+  place_url?: string;
   business_hours?: any;
 }
 
@@ -29,6 +30,7 @@ export const useReviewsStore = defineStore('reviews', () => {
   const rating = ref<number>(0);
   const totalReviews = ref<number>(0);
   const businessHours = ref<any>(null);
+  const placeUrl = ref<string>('https://www.google.com/maps');
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -54,6 +56,9 @@ export const useReviewsStore = defineStore('reviews', () => {
       rating.value = data.rating || 0;
       totalReviews.value = data.total_reviews || 0;
       businessHours.value = data.business_hours || null;
+      if (data.place_url) {
+        placeUrl.value = data.place_url;
+      }
       return data;
     } catch (e: any) {
       error.value = e.message || 'Failed to fetch reviews';
@@ -69,6 +74,7 @@ export const useReviewsStore = defineStore('reviews', () => {
     rating,
     totalReviews,
     businessHours,
+    placeUrl,
     loading,
     error,
 
