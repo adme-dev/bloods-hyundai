@@ -45,12 +45,16 @@ function processReviewsResponse(response: any) {
   const dealershipName = response.result.name || '';
   const placeId = response.result.place_id || '';
 
-  // Google Maps URL for the dealership listing (falls back to a place_id search URL)
-  const placeUrl =
-    response.result.url ||
-    (placeId
-      ? `https://search.google.com/local/reviews?placeid=${placeId}`
-      : 'https://www.google.com/maps');
+  // Google Maps URL that opens the dealership's place page (with reviews visible).
+  // Uses Google's official Maps URL API (https://developers.google.com/maps/documentation/urls/get-started)
+  // built from place_id — this reliably lands on the business listing and never
+  // resolves to a directions/route view. Falls back to the place's `url` (a
+  // `cid` link), then a bare maps URL.
+  const placeUrl = placeId
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        dealershipName || 'dealership'
+      )}&query_place_id=${placeId}`
+    : response.result.url || 'https://www.google.com/maps';
 
   const reviews = (response.result.reviews || []).map((review: any) => ({
     dealership: dealershipName,

@@ -1485,9 +1485,17 @@ const modelOptions = computed(() => {
 // Cascading filter computed properties
 const filteredMakeOptions = computed(() => {
   const search = makeModelSearch.value.toLowerCase().trim();
-  if (!search) return makeOptions.value;
-  
-  return makeOptions.value.filter((make: string) => {
+
+  // Hide makes with no matching vehicles under the active (non-hierarchical)
+  // filters — e.g. a make with zero "new" cars on ?condition=new. Keep any make
+  // that is currently selected so it stays de-selectable.
+  const visibleMakes = makeOptions.value.filter((make: string) =>
+    getFacetedMakeCount(make) > 0 || filters.make.includes(make)
+  );
+
+  if (!search) return visibleMakes;
+
+  return visibleMakes.filter((make: string) => {
     // Check if make matches
     if (make.toLowerCase().includes(search)) return true;
     // Check if any model for this make matches
@@ -1548,8 +1556,12 @@ const getModelsForMake = (make: string) => {
       });
     }
   });
-  
-  return uniqueModels;
+
+  // Hide models with no matching vehicles under the active (non-hierarchical)
+  // filters. Keep any model that is currently selected so it stays de-selectable.
+  return uniqueModels.filter((model: any) =>
+    getFacetedModelCount(make, model.value) > 0 || filters.model.includes(model.value)
+  );
 };
 
 const getBadgesForModel = (make: string, modelValue: string) => {
@@ -1576,11 +1588,17 @@ const getBadgesForModel = (make: string, modelValue: string) => {
     }
   });
   
-  return Array.from(badgeCounts.entries()).map(([value, data]) => ({
-    value,
-    displayValue: data.displayValue,
-    count: data.count,
-  }));
+  return Array.from(badgeCounts.entries())
+    .map(([value, data]) => ({
+      value,
+      displayValue: data.displayValue,
+      count: data.count,
+    }))
+    // Hide badges with no matching vehicles under the active (non-hierarchical)
+    // filters. Keep any badge that is currently selected so it stays de-selectable.
+    .filter((badge: any) =>
+      getFacetedBadgeCount(make, modelValue, badge.value) > 0 || filters.badge.includes(badge.value)
+    );
 };
 
 const getMakeVehicleCount = (make: string) => {
