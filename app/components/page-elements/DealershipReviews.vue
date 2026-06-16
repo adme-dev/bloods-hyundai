@@ -16,14 +16,16 @@
             uk-height-match="target: > li > div > .uk-card"
           >
             <li v-for="review in positiveReviews" :key="review.time">
-              <component
-                :is="reviewsLink ? 'a' : 'div'"
-                :href="reviewsLink || undefined"
-                :target="reviewsLink ? '_blank' : undefined"
-                :rel="reviewsLink ? 'noopener noreferrer' : undefined"
-                class="uk-card uk-padding-small uk-flex uk-flex-column review-card"
-                :class="{ 'review-card--link': reviewsLink }"
-              >
+              <!-- Wrapped in ClientOnly to prevent hydration mismatch from dynamic component -->
+              <ClientOnly>
+                <component
+                  :is="reviewsLink ? 'a' : 'div'"
+                  :href="reviewsLink || undefined"
+                  :target="reviewsLink ? '_blank' : undefined"
+                  :rel="reviewsLink ? 'noopener noreferrer' : undefined"
+                  class="uk-card uk-padding-small uk-flex uk-flex-column review-card"
+                  :class="{ 'review-card--link': reviewsLink }"
+                >
                 <!-- Author Info -->
                 <div class="uk-flex uk-flex-middle uk-margin-bottom">
                   <NuxtImg
@@ -78,6 +80,7 @@
                   </span>
                 </div>
               </component>
+              </ClientOnly>
             </li>
           </ul>
 
