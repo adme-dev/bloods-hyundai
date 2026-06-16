@@ -31,9 +31,6 @@
     <!-- Stock Special Offers -->
     <LazySpecialOffersVehicles class="overflow-hidden"/>
 
-    <!-- Dealership Reviews -->
-    <LazyDealershipReviews />
-
     <!-- Vehicle Enquiry Modal (for stock specials cards) -->
     <LazyVehicleEnquiryModal
       :is-open="vehiclesStore.vehicleEnquiryPopUp.show"
@@ -100,7 +97,6 @@ onMounted(async () => {
   border-width: 0;
 }
 </style>
-
 
 
 
