@@ -50,8 +50,11 @@ NUXT_PUBLIC_OEM_CDN_URL="https://hyundaioem.b-cdn.net"
 NUXT_STRIPE_SECRET_KEY="sk_live_xxxxx"
 NUXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_xxxxx"
 
-# Google Tag Manager
+# Google Tag Manager container (installed with the official GTM snippet)
 NUXT_PUBLIC_GTM_ID="GTM-XXXXXXX"
+
+# Optional Google tag ID for nuxt-gtag (GA4/Google Ads/Floodlight, not GTM)
+NUXT_PUBLIC_GTAG_ID="G-XXXXXXXXXX"
 
 # JWT Secret (for server-side operations)
 NUXT_JWT_SECRET="your-jwt-secret-here"
@@ -180,7 +183,6 @@ See [SSR_PAYLOAD_OPTIMIZATION.md](./SSR_PAYLOAD_OPTIMIZATION.md) for technical d
 ## License
 
 Proprietary - Sale Hyundai
-
 
 
 

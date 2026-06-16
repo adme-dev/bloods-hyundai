@@ -1,3 +1,29 @@
+const googleTagId = process.env.NUXT_PUBLIC_GTAG_ID || process.env.NUXT_PUBLIC_GOOGLE_TAG_ID || ''
+const googleTagManagerId = process.env.NUXT_PUBLIC_GTM_ID || ''
+
+const googleTagManagerScript = googleTagManagerId
+  ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${googleTagManagerId}');`
+  : ''
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://connect.facebook.net https://www.gstatic.com https://maps.googleapis.com https://cdn.jsdelivr.net",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+  "img-src 'self' data: blob: https: http:",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "connect-src 'self' https: wss:",
+  "media-src 'self' blob: data: https://hyundaioem.b-cdn.net",
+  "frame-src 'self' https://www.googletagmanager.com https://www.google.com https://maps.google.com https://www.google.com.au https://www.youtube.com https://player.vimeo.com https://apply.youxpowered.com.au https://consumer.xtime.net.au https://consumer.vela.net.au https://hyundaioem.b-cdn.net https://td.doubleclick.net",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ')
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   // Nuxt 4 - no compatibility flag needed anymore
@@ -96,8 +122,8 @@ export default defineNuxtConfig({
 
   // Google Tag Manager
   gtag: {
-    enabled: process.env.NODE_ENV === 'production',
-    id: process.env.NUXT_PUBLIC_GTM_ID || '',
+    enabled: process.env.NODE_ENV === 'production' && Boolean(googleTagId),
+    id: googleTagId,
   },
 
   // Vite config (replaces vue.config.js)
@@ -194,7 +220,7 @@ export default defineNuxtConfig({
           'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
           'Cross-Origin-Resource-Policy': 'cross-origin',
           // Content Security Policy for XSS protection
-          'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://www.gstatic.com https://maps.googleapis.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https: http:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: wss:; media-src 'self' blob: data: https://hyundaioem.b-cdn.net; frame-src 'self' https://www.google.com https://maps.google.com https://www.google.com.au https://www.youtube.com https://player.vimeo.com https://apply.youxpowered.com.au https://consumer.xtime.net.au https://consumer.vela.net.au https://hyundaioem.b-cdn.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self';",
+          'Content-Security-Policy': contentSecurityPolicy,
         },
       },
       // Cache static assets aggressively
@@ -268,6 +294,21 @@ export default defineNuxtConfig({
         { rel: 'dns-prefetch', href: 'https://hyundaioem.b-cdn.net' },
         { rel: 'preconnect', href: 'https://www.googletagmanager.com' },
         { rel: 'dns-prefetch', href: 'https://www.googletagmanager.com' },
+      ],
+      script: [
+        ...(googleTagManagerScript
+          ? [{
+              innerHTML: googleTagManagerScript,
+            }]
+          : []),
+      ],
+      noscript: [
+        ...(googleTagManagerId
+          ? [{
+              innerHTML: `<iframe src="https://www.googletagmanager.com/ns.html?id=${googleTagManagerId}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`,
+              tagPosition: 'bodyOpen' as const,
+            }]
+          : []),
       ],
       meta: [
         // Security headers as meta tags (backup for server headers)
