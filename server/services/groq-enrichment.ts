@@ -323,7 +323,7 @@ Return a JSON object with this exact structure:
       "highlights": ["top 3 performance highlights"]
     }
   },
-  "description": "A compelling 2-3 sentence marketing description of the vehicle"
+  "description": "A compelling 2-3 sentence marketing description of the MODEL, written for a brand-new example. Describe it generically — never reference a specific car's age, kilometres/mileage, condition, wear, depreciation, resale value, or service history, and never state or imply it is used/second-hand or open with hedging like 'When considering purchasing'."
 }
 
 Use realistic Australian-market specifications. If uncertain about a value, omit it rather than guess. Include as much detail as possible for each category.`;
