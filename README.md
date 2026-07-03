@@ -161,7 +161,7 @@ The project is configured for Netlify deployment with SSR support.
 1. Connect your repo to Netlify
 2. Set environment variables in Netlify dashboard
 3. Build command: `npm run build`
-4. Publish directory: `.output/public`
+4. Publish directory: `dist`
 5. Functions directory: `.netlify/functions-internal`
 
 ### Route Rules
@@ -183,7 +183,6 @@ See [SSR_PAYLOAD_OPTIMIZATION.md](./SSR_PAYLOAD_OPTIMIZATION.md) for technical d
 ## License
 
 Proprietary - Sale Hyundai
-
 
 
 

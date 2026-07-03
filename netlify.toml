@@ -3,7 +3,7 @@
 [build]
   command = "npm run build"
   # Nuxt 4 SSR output with the Netlify preset
-  publish = ".output/public"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20.19.0"
@@ -58,7 +58,6 @@
     "https://www.hyundai.com/.*",
     "https://carsales.pxcrush.net/.*"
   ]
-
 
 
 
