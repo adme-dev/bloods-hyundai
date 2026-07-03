@@ -341,15 +341,14 @@ onUnmounted(() => {
   width: 100%;
   height: auto;
   display: block;
-  /* Maintain aspect ratio to prevent CLS */
-  aspect-ratio: 16 / 6;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* Mobile: Use portrait-friendly aspect ratio for mobile images */
 @media (max-width: 768px) {
   .slide-image {
     aspect-ratio: 3 / 4;
+    object-fit: cover;
   }
 }
 
