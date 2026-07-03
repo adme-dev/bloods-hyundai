@@ -1,6 +1,6 @@
 <template>
   <!-- CLS prevention: min-height reserves space before content loads -->
-  <div class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden" style="min-height: 300px;">
+  <div v-if="homeSlides.length" class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden" style="min-height: 300px;">
     <!-- SSR placeholder - shows first slide while JS loads -->
     <div v-if="!isMounted && homeSlides.length" class="hero-carousel hero-carousel--ssr">
       <div class="hero-viewport">
@@ -130,15 +130,10 @@ let emblaApi: any = null;
 // Site name for fallback
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
 
-// Filter slides by date range.
-// IMPORTANT: date filtering depends on `new Date()` ("now"), which differs
-// between the SSR render and client hydration (server timezone/clock vs the
-// user's), causing hydration mismatches. During SSR and the initial hydration
-// pass we return the full slide set; once mounted (client-only) we apply the
-// date-range filter. This keeps server and client markup identical at hydration.
+// Filter slides by date range before rendering so expired campaigns do not
+// server-render briefly and then disappear into an empty hydrated carousel.
 const homeSlides = computed(() => {
   const slides = mainStore.site?.promotional?.[0]?.slides || [];
-  if (!isMounted.value) return slides;
   return slides.filter((slide: any) => isDateInRange(slide.start, slide.end));
 });
 
@@ -414,4 +409,3 @@ onUnmounted(() => {
   }
 }
 </style>
-

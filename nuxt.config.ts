@@ -1,14 +1,6 @@
 const googleTagId = process.env.NUXT_PUBLIC_GTAG_ID || process.env.NUXT_PUBLIC_GOOGLE_TAG_ID || ''
 const googleTagManagerId = process.env.NUXT_PUBLIC_GTM_ID || ''
 
-const googleTagManagerScript = googleTagManagerId
-  ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${googleTagManagerId}');`
-  : ''
-
 const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://connect.facebook.net https://www.gstatic.com https://maps.googleapis.com https://cdn.jsdelivr.net",
@@ -117,12 +109,15 @@ export default defineNuxtConfig({
       dealerApiKey: process.env.NUXT_PUBLIC_DEALER_API_KEY || '',
       // Facebook Pixel ID for conversion tracking
       facebookPixelId: process.env.NUXT_PUBLIC_FACEBOOK_PIXEL_ID || '',
+      // Google Tag Manager ID, loaded after initial render by analytics-lazy.client.ts
+      gtmId: googleTagManagerId,
     },
   },
 
   // Google Tag Manager
   gtag: {
     enabled: process.env.NODE_ENV === 'production' && Boolean(googleTagId),
+    initMode: 'manual',
     id: googleTagId,
   },
 
@@ -292,15 +287,7 @@ export default defineNuxtConfig({
         // Preconnect to external resources for faster loading
         { rel: 'preconnect', href: 'https://hyundaioem.b-cdn.net' },
         { rel: 'dns-prefetch', href: 'https://hyundaioem.b-cdn.net' },
-        { rel: 'preconnect', href: 'https://www.googletagmanager.com' },
         { rel: 'dns-prefetch', href: 'https://www.googletagmanager.com' },
-      ],
-      script: [
-        ...(googleTagManagerScript
-          ? [{
-              innerHTML: googleTagManagerScript,
-            }]
-          : []),
       ],
       noscript: [
         ...(googleTagManagerId

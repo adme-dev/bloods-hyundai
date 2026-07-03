@@ -12,11 +12,9 @@
       </div>
 
       <!-- Loading State -->
-      <ClientOnly>
-        <div v-if="loading" class="flex justify-center py-16">
-          <div uk-spinner></div>
-        </div>
-      </ClientOnly>
+      <div v-if="loading" class="special-offers-loading" aria-busy="true">
+        <div uk-spinner></div>
+      </div>
 
       <!-- Error State -->
       <div v-if="!loading && error" class="py-16 text-center">
@@ -164,11 +162,14 @@ const { data: vehiclesData, status, error } = await useAsyncData(
   {
     // Cache for 5 minutes to reduce API calls
     getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] || nuxtApp.static.data[key],
+    server: false,
+    lazy: true,
+    default: () => [],
   }
 );
 
 // Computed state from useAsyncData
-const loading = computed(() => status.value === 'pending');
+const loading = computed(() => status.value === 'idle' || status.value === 'pending');
 const vehicles = computed(() => vehiclesData.value || []);
 
 // Computed: limit displayed vehicles
@@ -185,6 +186,13 @@ const displayedVehicles = computed(() => {
 .special-offers-swiper {
   padding: 8px 4px 50px;
   overflow: visible;
+}
+
+.special-offers-loading {
+  min-height: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 :deep(.swiper-pagination) {

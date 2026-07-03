@@ -250,8 +250,13 @@ useSiteMeta({
   keywords: () => `Hyundai offers, Hyundai deals, Hyundai driveaway, Hyundai specials, ${siteName.value} offers, new car offers, Hyundai Tucson deals, Hyundai Kona offers`,
 });
 
-// Fetch offers from API
-const { data: offersData, pending, error, refresh } = await useFetch<OffersData>('/api/hyundai-offers');
+// Fetch offers from API. /special-offers?refresh=true bypasses the API cache for
+// manual campaign checks without disabling normal visitor caching.
+const offersRefreshQuery = computed(() => (route.query.refresh === 'true' ? { refresh: 'true' } : undefined));
+const { data: offersData, pending, error, refresh } = await useFetch<OffersData>('/api/hyundai-offers', {
+  query: offersRefreshQuery,
+  key: computed(() => (route.query.refresh === 'true' ? 'hyundai-offers-refresh' : 'hyundai-offers')),
+});
 
 // Get categories from data (for navigation links)
 const categories = computed<Category[]>(() => {
@@ -950,4 +955,3 @@ onMounted(() => {
   }
 }
 </style>
-

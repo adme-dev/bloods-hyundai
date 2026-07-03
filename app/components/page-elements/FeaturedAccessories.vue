@@ -12,11 +12,9 @@
       </div>
 
       <!-- Loading State -->
-      <ClientOnly>
-        <div v-if="loading" class="flex justify-center py-16">
-          <div uk-spinner></div>
-        </div>
-      </ClientOnly>
+      <div v-if="loading" class="accessories-loading" aria-busy="true">
+        <div uk-spinner></div>
+      </div>
 
       <!-- Error State (silent - just hide section) -->
       <template v-if="!loading && !error && accessories.length > 0">
@@ -206,11 +204,14 @@ const { data: accessoriesData, status, error } = await useAsyncData(
   {
     // Cache for 5 minutes to reduce API calls
     getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] || nuxtApp.static.data[key],
+    server: false,
+    lazy: true,
+    default: () => ({ success: false, accessories: [] }),
   }
 );
 
 // Computed state from useAsyncData
-const loading = computed(() => status.value === 'pending');
+const loading = computed(() => status.value === 'idle' || status.value === 'pending');
 const accessories = computed(() => accessoriesData.value?.accessories || []);
 
 // Navigate to the accessory's model page
@@ -253,10 +254,21 @@ const formatPrice = (price: number) => {
   cursor: not-allowed;
 }
 
+.accessories-loading {
+  min-height: 590px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (min-width: 1024px) {
   .featured-accessories .container {
     padding-left: 3rem;
     padding-right: 3rem;
+  }
+
+  .accessories-loading {
+    min-height: 520px;
   }
 }
 </style>

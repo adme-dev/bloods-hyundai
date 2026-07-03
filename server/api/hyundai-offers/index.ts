@@ -3,6 +3,7 @@
  * Fetches and parses Hyundai Australia offers data
  * Migrated from: src/functions/get-hyundai-offers.js
  */
+import { extractHeroBanner, prependBaseUrl } from '../../utils/hyundaiOffers';
 
 interface Offer {
   id: string | null;
@@ -48,6 +49,7 @@ interface Variant {
 
 export default defineEventHandler(async (event) => {
   const url = 'https://www.hyundai.com/au/en/offers';
+  const refreshRequested = getQuery(event).refresh === 'true';
 
   try {
     // Fetch the HTML page (5s timeout keeps us well under Netlify's 10s function limit)
@@ -78,7 +80,9 @@ export default defineEventHandler(async (event) => {
 
     // Set cache headers
     setResponseHeaders(event, {
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': refreshRequested
+        ? 'no-store, max-age=0'
+        : 'public, max-age=900, stale-while-revalidate=3600',
       'Content-Type': 'application/json',
     });
 
@@ -113,46 +117,6 @@ function extractOffersData(html: string): any {
   }
 
   return null;
-}
-
-function extractHeroBanner(html: string): string {
-  // Look for hero banner images - prioritize current year/quarter banners
-  const patterns = [
-    // Match 2026 retail offers banners (current campaign)
-    /src="([^"]*2026-retail-offers[^"]*1920x720[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
-    // Match Q1 2026 banners
-    /src="([^"]*Q1[_-]?2026[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
-    // Match current year retail offers
-    /src="([^"]*retail-offers[^"]*1920x720[^"]*\.(?:jpg|png|webp)[^"]*)"/i,
-    // Match offers-images path with 1920x720 dimensions (hero size) - get last match
-    /src="([^"]*\/offers-images\/[^"]*1920x720[^"]*\.(?:jpg|png|webp)[^"]*)"/gi,
-  ];
-
-  // Try specific patterns first
-  for (let i = 0; i < patterns.length - 1; i++) {
-    const match = html.match(patterns[i]);
-    if (match && match[1]) {
-      return prependBaseUrl(match[1]);
-    }
-  }
-
-  // For the last pattern, get all matches and use the last one (newest banner usually at bottom)
-  const allMatches = [...html.matchAll(patterns[patterns.length - 1])];
-  if (allMatches.length > 0) {
-    const lastMatch = allMatches[allMatches.length - 1];
-    if (lastMatch && lastMatch[1]) {
-      return prependBaseUrl(lastMatch[1]);
-    }
-  }
-
-  // Fallback - should rarely be needed
-  return 'https://www.hyundai.com/content/dam/hyundai/au/en/offers-images/2025/2026-retail-offers/104249_DAC_Q1_2026_Web_banners_V1_1920x720.png';
-}
-
-function prependBaseUrl(path: string | null): string | null {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `https://www.hyundai.com${path}`;
 }
 
 function transformOffersData(rawData: any, heroBanner: string) {
@@ -349,8 +313,6 @@ function transformOffersData(rawData: any, heroBanner: string) {
     body: data.body || '',
   };
 }
-
-
 
 
 
