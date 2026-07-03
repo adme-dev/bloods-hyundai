@@ -19,7 +19,7 @@
           <!-- Header -->
           <header class="mobile-site-menu__header">
             <NuxtLink to="/" class="mobile-site-menu__logo" @click="close">
-              <NuxtImg
+              <img
                 src="/assets/logos/logo-white-sm.svg"
                 :alt="siteName"
                 width="80"
@@ -1025,7 +1025,6 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 }
 </style>
-
 
 
 

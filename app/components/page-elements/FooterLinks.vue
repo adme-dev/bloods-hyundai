@@ -49,7 +49,7 @@
                 Sales / Service / Parts: <b>{{ phone }}</b>
               </a>
             </div>
-            <NuxtImg
+            <img
               src="/assets/logos/logo-white-sm.svg"
               width="80"
               height="42"
@@ -594,7 +594,6 @@ onMounted(async () => {
   color: rgba(255, 255, 255, 0.3);
 }
 </style>
-
 
 
 

@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="text-center">
         <NuxtLink to="/" class="inline-block">
-          <NuxtImg
+          <img
             src="/assets/logos/logo-black-sm.svg"
             alt="Sale Hyundai"
             class="h-12 mx-auto"

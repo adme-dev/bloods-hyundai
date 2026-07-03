@@ -5,7 +5,7 @@
         <!-- Logo & Contact -->
         <div>
           <div class="footer-logo uk-margin-bottom">
-            <NuxtImg :src="logo" :alt="siteName" width="160" height="50" />
+            <img :src="logo" :alt="siteName" width="160" height="50" />
           </div>
           <div class="footer-address uk-margin-bottom">
             <p v-if="address">{{ address }}</p>
@@ -194,7 +194,6 @@ const currentYear = new Date().getFullYear();
   }
 }
 </style>
-
 
 
 

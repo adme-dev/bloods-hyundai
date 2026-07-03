@@ -1,5 +1,5 @@
 <template>
-  <!-- Schema markup is rendered server-side via useHead -->
+  <span hidden data-page-schema></span>
 </template>
 
 <script setup lang="ts">
@@ -81,7 +81,6 @@ useHead({
   ],
 });
 </script>
-
 
 
 

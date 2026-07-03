@@ -3,10 +3,8 @@
     <LazyPageSchema />
 
     <!-- WordPress Page Content (if available) -->
-    <div v-if="pageContent">
-      <PostContent :content="pageContent" />
-    </div>
-    
+    <PostContent data-allow-mismatch="children" :content="pageContent || ''" />
+
     <!-- Hero Section -->
     <section class="bg-white border-b">
       <div class="container mx-auto px-4 py-12 md:py-16">
@@ -77,15 +75,16 @@
             <!-- Form Column -->
             <div class="lg:col-span-3">
               <TabsContent v-for="tab in tabs" :key="tab.value" :value="tab.value">
-                <!-- Use ServiceForm for service tab -->
-                <ServiceForm v-if="tab.value === 'service'" />
-                <ContactFormCard 
-                  v-else
-                  :form-type="tab.value" 
-                  :site-name="siteName"
-                  :show-registration="tab.value === 'parts'"
-                  :description="tab.description"
-                />
+                <template v-if="activeTab === tab.value">
+                  <ServiceForm v-if="tab.value === 'service'" />
+                  <ContactFormCard
+                    v-else
+                    :form-type="tab.value"
+                    :site-name="siteName"
+                    :show-registration="tab.value === 'parts'"
+                    :description="tab.description"
+                  />
+                </template>
               </TabsContent>
             </div>
 
@@ -241,6 +240,3 @@ const scrollToForm = (department: string) => {
   max-width: 1280px;
 }
 </style>
-
-
-

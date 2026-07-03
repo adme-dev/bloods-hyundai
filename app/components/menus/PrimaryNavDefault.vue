@@ -3,7 +3,7 @@
     <div class="uk-container uk-container-expand">
       <div class="uk-navbar-left">
         <NuxtLink to="/" class="uk-navbar-item uk-logo">
-          <NuxtImg
+          <img
             :src="logo"
             :alt="siteName"
             class="logo-image"
@@ -129,7 +129,6 @@ const toggleMobileNav = () => {
   font-weight: 600;
 }
 </style>
-
 
 
 
