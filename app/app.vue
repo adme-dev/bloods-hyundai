@@ -88,10 +88,15 @@ if (process.client) {
 
 // Fetch site config during SSR - hidden from browser network tab
 // Uses shared cache key 'site-config-data' with 10-min server cache
+const route = useRoute();
+const shouldRefreshSiteConfig = computed(() => route.query.refresh === 'true');
+
 const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
-  key: 'site-config-data',
+  key: computed(() => shouldRefreshSiteConfig.value ? 'site-config-data-refresh' : 'site-config-data'),
+  query: computed(() => shouldRefreshSiteConfig.value ? { refresh: 'true' } : {}),
   dedupe: 'defer',
   getCachedData: (key, nuxtApp) => {
+    if (shouldRefreshSiteConfig.value) return undefined;
     return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
   },
 });
@@ -105,7 +110,6 @@ if (siteConfigData.value?.config) {
 <style lang="scss">
 // UIkit and custom styles are imported via nuxt.config.ts css array
 </style>
-
 
 
 

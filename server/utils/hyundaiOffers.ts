@@ -1,4 +1,4 @@
-const DEFAULT_HERO_BANNER =
+export const DEFAULT_HERO_BANNER =
   'https://www.hyundai.com/content/dam/hyundai/au/en/offers-images/2025/2026-retail-offers/104249_DAC_Q1_2026_Web_banners_V1_1920x720.png';
 
 const OFFER_IMAGE_ATTRIBUTE_RE =

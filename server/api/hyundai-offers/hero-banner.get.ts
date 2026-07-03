@@ -2,7 +2,7 @@
  * GET /api/hyundai-offers/hero-banner
  * Lightweight endpoint for the current Hyundai offers hero creative.
  */
-import { extractHeroBanners } from '../../utils/hyundaiOffers';
+import { DEFAULT_HERO_BANNER, extractHeroBanners } from '../../utils/hyundaiOffers';
 
 const HYUNDAI_OFFERS_URL = 'https://www.hyundai.com/au/en/offers';
 const CACHE_MAX_AGE = 60 * 15;
@@ -48,14 +48,14 @@ export default defineCachedEventHandler(async (event) => {
         : 'public, max-age=300, stale-while-revalidate=1800',
     });
 
-    // Keep the route resilient for UI stability even when Hyundai blocks scraping.
+    // Keep the homepage renderable even when Hyundai blocks or times out.
     return {
-      heroBanner: null,
-      desktop: null,
+      heroBanner: DEFAULT_HERO_BANNER,
+      desktop: DEFAULT_HERO_BANNER,
       mobile: null,
       _timestamp: Date.now(),
       _cache_bypassed: refreshRequested,
-      _error: true,
+      _fallback: true,
     };
   }
 }, {
