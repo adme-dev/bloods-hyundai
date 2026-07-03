@@ -1,5 +1,5 @@
 <template>
-  <footer class="footer-wrap bg-slate-900 text-slate-100" role="contentinfo">
+  <footer ref="reviewsSection" class="footer-wrap bg-slate-900 text-slate-100" role="contentinfo">
     <ClientOnly>
       <template #fallback>
         <div class="bg-white py-6"></div>
@@ -10,7 +10,7 @@
 
       <!-- Google Reviews -->
       <div class="bg-white py-6">
-        <LazyGoogleReviews />
+        <LazyGoogleReviews :should-fetch="shouldFetchReviews" />
       </div>
 
       <div class="py-10">
@@ -339,6 +339,9 @@
 <script setup lang="ts">
 const mainStore = useMainStore();
 const reviewsStore = useReviewsStore();
+const reviewsSection = ref<HTMLElement | null>(null);
+const shouldFetchReviews = ref(false);
+let reviewsObserver: IntersectionObserver | null = null;
 
 // Computed values from store
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
@@ -370,14 +373,29 @@ const directionsUrl = computed(() => {
 const rating = computed(() => reviewsStore.rating || 3.9);
 const totalReviews = computed(() => reviewsStore.totalReviews || 320);
 
+type SocialLinks = Record<string, string>;
+
 // Social links - handle both object and array formats
-const social = computed(() => {
+const social = computed<SocialLinks | null>(() => {
   const socialData = mainStore.site?.social;
   // If it's an empty array or falsy, return null so it won't render
   if (!socialData || (Array.isArray(socialData) && socialData.length === 0)) {
     return null;
   }
-  return socialData;
+
+  if (Array.isArray(socialData)) {
+    const links = socialData.reduce<SocialLinks>((acc, item: any) => {
+      const platform = String(item?.platform || item?.name || item?.type || '').toLowerCase();
+      const url = String(item?.url || item?.href || item?.link || '');
+      if (platform && url) {
+        acc[platform] = url;
+      }
+      return acc;
+    }, {});
+    return Object.keys(links).length ? links : null;
+  }
+
+  return socialData as SocialLinks;
 });
 
 const currentYear = new Date().getFullYear();
@@ -520,11 +538,39 @@ const isLinkExternal = (url: string) => {
   return /^(http|https):\/\//.test(url);
 };
 
-// Fetch reviews if not already loaded
-onMounted(async () => {
-  if (!reviewsStore.reviews?.length && !reviewsStore.loading) {
-    await reviewsStore.fetchGoogleReviews();
+const activateReviews = () => {
+  shouldFetchReviews.value = true;
+  reviewsObserver?.disconnect();
+  reviewsObserver = null;
+};
+
+onMounted(() => {
+  if (reviewsStore.reviews?.length || reviewsStore.loading) {
+    activateReviews();
+    return;
   }
+
+  if (!('IntersectionObserver' in window)) {
+    activateReviews();
+    return;
+  }
+
+  reviewsObserver = new IntersectionObserver(
+    ([entry]) => {
+      if (entry?.isIntersecting) {
+        activateReviews();
+      }
+    },
+    { rootMargin: '800px 0px' }
+  );
+
+  if (reviewsSection.value) {
+    reviewsObserver.observe(reviewsSection.value);
+  }
+});
+
+onBeforeUnmount(() => {
+  reviewsObserver?.disconnect();
 });
 </script>
 
@@ -594,10 +640,6 @@ onMounted(async () => {
   color: rgba(255, 255, 255, 0.3);
 }
 </style>
-
-
-
-
 
 
 

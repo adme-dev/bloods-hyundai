@@ -793,33 +793,44 @@ interface BreadcrumbItem {
   url: string;
 }
 
+const toFilterSlug = (value: string) => {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
   const items: BreadcrumbItem[] = [];
   const make = getDisplay(vehicle.value?.make);
   const model = getDisplay(vehicle.value?.model);
   const year = getDisplay(vehicle.value?.year);
+  const makeSlug = make ? toFilterSlug(make) : '';
+  const modelSlug = model ? toFilterSlug(model) : '';
   
   // Make filter (e.g., "Ford") - clean SEO URL
-  if (make) {
+  if (make && makeSlug) {
     items.push({
       label: make,
-      url: `/car-sales/${make.toLowerCase()}/`,
+      url: `/car-sales/${makeSlug}/`,
     });
   }
   
   // Model filter (e.g., "Ranger") - builds on make
-  if (model && make) {
+  if (model && makeSlug && modelSlug) {
     items.push({
       label: model,
-      url: `/car-sales/${make.toLowerCase()}/${model.toLowerCase()}/`,
+      url: `/car-sales/${makeSlug}/${modelSlug}/`,
     });
   }
   
   // Year filter (e.g., "2025") - most specific, builds on make+model
-  if (year && make) {
-    const yearUrl = model 
-      ? `/car-sales/${make.toLowerCase()}/${model.toLowerCase()}/${year}/`
-      : `/car-sales/${make.toLowerCase()}/${year}/`;
+  if (year && makeSlug) {
+    const yearUrl = modelSlug
+      ? `/car-sales/${makeSlug}/${modelSlug}/${year}/`
+      : `/car-sales/${makeSlug}/${year}/`;
     items.push({
       label: year,
       url: yearUrl,
@@ -1313,5 +1324,4 @@ const closeTestDrive = () => {
   }
 }
 </style>
-
 

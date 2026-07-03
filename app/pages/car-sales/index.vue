@@ -925,6 +925,16 @@ const fetchFilterOptions = () => {
 
 // Helper to capitalize first letter
 const capitalizeFirst = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+const formatFilterLabel = (value: string) => value
+  .split(/[-_\s]+/)
+  .filter(Boolean)
+  .map(capitalizeFirst)
+  .join(' ');
+const getMakeLabel = (makeValue: string) => formatFilterLabel(makeValue);
+const getModelLabel = (modelValue: string) => {
+  const modelInfo = filterOptions.value.models.find((model: any) => model.value === modelValue);
+  return modelInfo?.displayValue || formatFilterLabel(modelValue);
+};
 
 // Dynamic page title based on active filters
 const pageTitle = computed(() => {
@@ -937,17 +947,17 @@ const pageTitle = computed(() => {
   
   // Make filter
   if (filters.make.length === 1 && filters.make[0]) {
-    parts.push(capitalizeFirst(filters.make[0]));
+    parts.push(getMakeLabel(filters.make[0]));
   }
   
   // Model filter
   if (filters.model.length === 1 && filters.model[0]) {
-    parts.push(capitalizeFirst(filters.model[0]));
+    parts.push(getModelLabel(filters.model[0]));
   }
   
   // Body type
   if (filters.body.length === 1 && filters.body[0]) {
-    parts.push(capitalizeFirst(filters.body[0]));
+    parts.push(formatFilterLabel(filters.body[0]));
   }
   
   if (parts.length > 0) {
@@ -966,15 +976,15 @@ const seoDescription = computed(() => {
   }
   
   if (filters.make.length === 1 && filters.make[0]) {
-    parts.push(capitalizeFirst(filters.make[0]));
+    parts.push(getMakeLabel(filters.make[0]));
   }
   
   if (filters.model.length === 1 && filters.model[0]) {
-    parts.push(capitalizeFirst(filters.model[0]));
+    parts.push(getModelLabel(filters.model[0]));
   }
   
   if (filters.body.length === 1 && filters.body[0]) {
-    parts.push(capitalizeFirst(filters.body[0]).toLowerCase());
+    parts.push(formatFilterLabel(filters.body[0]).toLowerCase());
   }
   
   parts.push('cars for sale at Sale Hyundai, Victoria.');
@@ -1046,9 +1056,9 @@ const pageSubtitle = computed(() => {
   const model = filters.model[0];
   
   if (make && model && filters.make.length === 1 && filters.model.length === 1) {
-    return `Browse ${totalCount.value} ${capitalizeFirst(make)} ${capitalizeFirst(model)} vehicles for sale`;
+    return `Browse ${totalCount.value} ${getMakeLabel(make)} ${getModelLabel(model)} vehicles for sale`;
   } else if (make && filters.make.length === 1) {
-    return `Browse ${totalCount.value} ${capitalizeFirst(make)} vehicles for sale`;
+    return `Browse ${totalCount.value} ${getMakeLabel(make)} vehicles for sale`;
   }
   
   return `Browse our full range of ${totalCount.value} new, demo and used vehicles for sale`;
@@ -1839,8 +1849,8 @@ const kmsLabel = computed(() => {
 const activeFilterChips = computed(() => {
   const chips: { key: string; value?: string | number; label: string }[] = [];
   filters.condition.forEach(cond => chips.push({ key: 'condition', value: cond, label: cond }));
-  filters.make.forEach(make => chips.push({ key: 'make', value: make, label: `Make: ${make}` }));
-  filters.model.forEach(model => chips.push({ key: 'model', value: model, label: `Model: ${model}` }));
+  filters.make.forEach(make => chips.push({ key: 'make', value: make, label: `Make: ${getMakeLabel(make)}` }));
+  filters.model.forEach(model => chips.push({ key: 'model', value: model, label: `Model: ${getModelLabel(model)}` }));
   filters.badge.forEach(badge => chips.push({ key: 'badge', value: badge, label: `Badge: ${badge}` }));
   filters.body.forEach(body => chips.push({ key: 'body', value: body, label: `Body: ${body}` }));
   filters.fuel.forEach(fuel => chips.push({ key: 'fuel', value: fuel, label: `Fuel: ${fuel}` }));
@@ -2055,6 +2065,34 @@ const updateUrl = () => {
   router.replace({ query: buildQueryFromFilters() });
 };
 
+const queryValueToList = (value: unknown): string[] => {
+  if (!value) return [];
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .flatMap((item) => String(item).split(','))
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const normalizeFilterSlug = (value: unknown): string => {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const findCanonicalModelOption = (modelValue: string) => {
+  const normalizedModel = normalizeFilterSlug(modelValue);
+  return filterOptions.value.models.find((model: any) => {
+    return (
+      normalizeFilterSlug(model.value) === normalizedModel ||
+      normalizeFilterSlug(model.displayValue) === normalizedModel
+    );
+  });
+};
+
 const syncFromQuery = () => {
   const q = route.query;
   // Derive each filter fully from the query so this is idempotent: a key being
@@ -2064,27 +2102,19 @@ const syncFromQuery = () => {
   filters.condition = q.condition ? (q.condition as string).split(',') : [];
 
   // Parse makes from query
-  const queryMakes = q.make ? (q.make as string).split(',') : [];
+  const queryMakes = queryValueToList(q.make).map(make => make.toLowerCase());
   
   // Parse models and validate they belong to selected makes
   // Also build modelMakeMap for faceted filtering
-  const queryModels = q.model ? (q.model as string).split(',') : [];
+  const queryModels = queryValueToList(q.model);
   const validatedModels: string[] = [];
   const makesFromModels: string[] = [];
   const newModelMakeMap: Record<string, string> = {};
   
   queryModels.forEach(modelValue => {
-    // Try to find the model in filterOptions
-    // Model values should be in slug format (e.g., "transit-custom")
-    let modelInfo = filterOptions.value.models.find((m: any) => m.value === modelValue);
-    
-    // If not found by exact match, try case-insensitive match
-    if (!modelInfo) {
-      const modelValueLower = modelValue.toLowerCase();
-      modelInfo = filterOptions.value.models.find((m: any) => 
-        (m.value || '').toLowerCase() === modelValueLower
-      );
-    }
+    // Accept both canonical slug values (`santa-fe`) and URL/query display
+    // values (`santa fe`, `santa+fe`) from breadcrumbs and external links.
+    const modelInfo = findCanonicalModelOption(modelValue);
     
     if (modelInfo) {
       const modelMake = modelInfo.displayMake?.toLowerCase() || '';
@@ -2279,8 +2309,5 @@ watch(
   }
 }
 </style>
-
-
-
 
 

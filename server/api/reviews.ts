@@ -6,12 +6,26 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
+const REVIEWS_CACHE_MAX_AGE = 60 * 10; // 10 minutes
+const REVIEWS_CACHE_STALE_MAX_AGE = 60 * 30; // 30 minutes
+
+interface ProcessedReviewsResponse {
+  reviews: Record<string, unknown>[];
+  rating: number;
+  total_reviews: number;
+  place_id?: string;
+  place_url?: string;
+  _source?: string;
+}
+
 // Shuffle array helper
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    const current = shuffled[i]!;
+    shuffled[i] = shuffled[j]!;
+    shuffled[j] = current;
   }
   return shuffled;
 }
@@ -33,7 +47,7 @@ function loadLocalReviewsFallback(): any | null {
 }
 
 // Process reviews response into formatted output
-function processReviewsResponse(response: any) {
+function processReviewsResponse(response: any): ProcessedReviewsResponse {
   if (!response?.result) {
     return {
       reviews: [],
@@ -56,7 +70,7 @@ function processReviewsResponse(response: any) {
       )}&query_place_id=${placeId}`
     : response.result.url || 'https://www.google.com/maps';
 
-  const reviews = (response.result.reviews || [])
+  const reviews: ProcessedReviewsResponse['reviews'] = ((response.result.reviews || []) as any[])
     // Only surface positive reviews (4 stars and above). Filtering here at the
     // source guarantees no consumer (homepage cards, footer, header, etc.) can
     // ever display a sub-4-star review.
@@ -86,7 +100,7 @@ function processReviewsResponse(response: any) {
   };
 }
 
-export default defineEventHandler(async (event) => {
+export default defineCachedEventHandler(async (): Promise<ProcessedReviewsResponse> => {
   const config = useRuntimeConfig();
 
   // CDN URL for reviews (set via NUXT_PUBLIC_CDN_URL env var)
@@ -121,10 +135,12 @@ export default defineEventHandler(async (event) => {
     rating: 0,
     total_reviews: 0,
   };
+}, {
+  maxAge: REVIEWS_CACHE_MAX_AGE,
+  staleMaxAge: REVIEWS_CACHE_STALE_MAX_AGE,
+  name: 'reviews',
+  getKey: () => 'google-reviews',
 });
-
-
-
 
 
 

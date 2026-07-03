@@ -10,17 +10,11 @@
             <p class="mt-4 text-gray-600">Loading...</p>
           </div>
         </div>
-        <iframe
-          v-if="mapUrl"
+        <DeferredMapEmbed
           :src="mapUrl"
           class="w-full h-full border-0"
           title="Dealership location"
-          loading="lazy"
-          allowfullscreen
-        ></iframe>
-        <div v-else class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
-          <p>Map unavailable</p>
-        </div>
+        />
       </div>
       
       <!-- Info Card (relative, below map) -->
@@ -130,17 +124,11 @@
       
       <!-- Map Background (Full Width) -->
       <div class="absolute inset-0 w-full h-full">
-        <iframe
-          v-if="mapUrl"
+        <DeferredMapEmbed
           :src="mapUrl"
           class="w-full h-full border-0"
           title="Dealership location"
-          loading="lazy"
-          allowfullscreen
-        ></iframe>
-        <div v-else class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
-          <p>Map unavailable</p>
-        </div>
+        />
       </div>
 
       <!-- Floating Info Panel -->
@@ -238,8 +226,15 @@
 </template>
 
 <script setup lang="ts">
+import DeferredMapEmbed from './DeferredMapEmbed.vue';
+
 const mainStore = useMainStore();
 const reviewsStore = useReviewsStore();
+const props = withDefaults(defineProps<{
+  shouldFetch?: boolean;
+}>(), {
+  shouldFetch: true,
+});
 
 // Site config data
 const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
@@ -430,12 +425,20 @@ const isToday = (day: string | number) => {
   return dayMap[dayStr] === today;
 };
 
-// Fetch reviews on mount
-onMounted(async () => {
+const fetchReviewsIfNeeded = async () => {
   if (!reviewsStore.reviews?.length && !reviewsStore.loading) {
     await reviewsStore.fetchGoogleReviews();
   }
-});
+};
+
+watch(
+  () => props.shouldFetch,
+  (shouldFetch) => {
+    if (!shouldFetch) return;
+    void fetchReviewsIfNeeded();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
