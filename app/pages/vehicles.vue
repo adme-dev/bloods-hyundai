@@ -165,6 +165,7 @@
 <script setup lang="ts">
 const config = useRuntimeConfig();
 const mainStore = useMainStore();
+const { models: modelSummaries } = useModelSummaries();
 
 // State
 const page = ref<any>(null);
@@ -181,7 +182,13 @@ onMounted(async () => {
 });
 
 // Computed
-const vehicles = computed(() => mainStore.models || []);
+const vehicles = computed(() => modelSummaries.value?.length ? modelSummaries.value : (mainStore.models || []));
+
+watch(modelSummaries, (models) => {
+  if (models?.length) {
+    mainStore.models = models;
+  }
+}, { immediate: true });
 
 const categories = computed(() => {
   if (!vehicles.value.length) return [];

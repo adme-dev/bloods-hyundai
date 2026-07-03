@@ -12,7 +12,7 @@ const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const dealerSlug = config.public.dealerSlug || 'bloods-hyundai';
+  const dealerSlug = config.public.dealerSlug || 'blood-hyundai';
 
   const fallback = {
     success: true as const,

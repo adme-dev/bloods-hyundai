@@ -4,7 +4,7 @@
     <LazyPageSchema />
 
     <!-- Visually hidden H1 for SEO and accessibility -->
-    <h1 class="sr-only">Sale Hyundai - New and Used Hyundai Vehicles in Sale, Victoria</h1>
+    <h1 class="sr-only">{{ siteName }} - New and Used Hyundai Vehicles</h1>
 
     <!-- Hero/Slider Section -->
     <LazyFrontSlider v-if="site?.promotional" :slides="site.promotional" />
@@ -41,15 +41,17 @@
 </template>
 
 <script setup lang="ts">
-// Use SEO meta composable
-useSiteMeta({
-  title: 'Home',
-  description: 'Welcome to Sale Hyundai - Your trusted Hyundai dealer in Sale, Victoria. Browse new and used Hyundai vehicles, special offers, and book a service.',
-});
-
 // Get site config from store
 const mainStore = useMainStore();
 const site = computed(() => mainStore.site);
+const config = useRuntimeConfig();
+const siteName = computed(() => site.value?.name || config.public.siteName || 'Blood Hyundai');
+
+// Use SEO meta composable
+useSiteMeta({
+  title: 'Home',
+  description: () => `Welcome to ${siteName.value} - your trusted Hyundai dealer. Browse new and used Hyundai vehicles, special offers, and book a service.`,
+});
 
 // Vehicles store for enquiry modal
 const vehiclesStore = useVehiclesStore();
@@ -97,7 +99,6 @@ onMounted(async () => {
   border-width: 0;
 }
 </style>
-
 
 
 

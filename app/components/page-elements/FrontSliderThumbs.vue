@@ -26,19 +26,19 @@
               <component
                 :is="linkComponent(thumb.link)"
                 :href="isLinkExternal(thumb.link) ? thumb.link : undefined"
-                :to="!isLinkExternal(thumb.link) ? thumb.link : undefined"
+                :to="!isLinkExternal(thumb.link) ? normalizedThumbLink(thumb.link) : undefined"
                 :target="isLinkExternal(thumb.link) ? '_blank' : undefined"
                 :rel="isLinkExternal(thumb.link) ? 'noopener noreferrer' : undefined"
                 class="thumb-card"
               >
                 <div class="thumb-image-wrapper">
-                  <NuxtImg
+                  <img
                     :src="thumb.image"
                     :alt="thumb.button_text || siteName"
+                    width="640"
+                    height="360"
                     class="thumb-image"
                     loading="lazy"
-                    format="webp"
-                    quality="80"
                   />
                   <div class="thumb-overlay">
                     <div v-if="thumb.content" class="thumb-content">
@@ -74,16 +74,17 @@
 <script setup lang="ts">
 import emblaCarouselVue from 'embla-carousel-vue';
 import { isDateInRange } from '~/utils/date';
+import { getConfiguredFrontThumbs } from '~/utils/frontSlides';
 
 const mainStore = useMainStore();
 
 // Site name for fallback alt text
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
 
 // Filter thumbs by date range
 const homeThumbs = computed(() => {
-  const thumbs = mainStore.site?.promotional?.[0]?.thumbs || [];
-  return thumbs.filter((thumb: any) => isDateInRange(thumb.start, thumb.end));
+  return getConfiguredFrontThumbs(mainStore.site?.promotional)
+    .filter((thumb: any) => isDateInRange(thumb.start, thumb.end));
 });
 
 // Embla Carousel setup
@@ -114,11 +115,15 @@ const updateButtons = () => {
 };
 
 // Link helpers
-const isLinkExternal = (link: string) => {
-  return /^(http|https):\/\//.test(link);
+const isLinkExternal = (link?: string) => {
+  return typeof link === 'string' && /^https?:\/\//.test(link);
 };
 
-const linkComponent = (link: string) => {
+const normalizedThumbLink = (link?: string) => {
+  return link || '#';
+};
+
+const linkComponent = (link?: string) => {
   return isLinkExternal(link) ? 'a' : resolveComponent('NuxtLink');
 };
 
@@ -186,7 +191,7 @@ onUnmounted(() => {
   display: block;
   text-decoration: none;
   color: inherit;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -200,13 +205,22 @@ onUnmounted(() => {
   position: relative;
   overflow: hidden;
   background-color: #f3f4f6;
+  border-radius: 8px;
 }
 
 .thumb-image {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 8px;
   transition: transform 0.4s ease;
+}
+
+.thumb-image-wrapper :deep(img) {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
 }
 
 .thumb-card:hover .thumb-image {

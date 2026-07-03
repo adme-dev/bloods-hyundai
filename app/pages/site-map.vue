@@ -120,7 +120,14 @@ useSiteMeta({
 
 // Get models from store
 const mainStore = useMainStore();
-const models = computed(() => mainStore.models || []);
+const { models: modelSummaries } = useModelSummaries();
+const models = computed(() => modelSummaries.value?.length ? modelSummaries.value : (mainStore.models || []));
+
+watch(modelSummaries, (models) => {
+  if (models?.length) {
+    mainStore.models = models;
+  }
+}, { immediate: true });
 </script>
 
 <style lang="scss" scoped>
@@ -143,7 +150,6 @@ const models = computed(() => mainStore.models || []);
   }
 }
 </style>
-
 
 
 

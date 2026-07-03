@@ -270,7 +270,7 @@ const BMGROUP_EMAILS = {
  * Check if dealer is BMGroup (Bloods Hyundai)
  */
 function isBMGroupDealer(dealer: any): boolean {
-  return dealer.slug === 'bloods-hyundai' || dealer.name?.toLowerCase().includes('blood');
+  return ['blood-hyundai', 'bloods-hyundai'].includes(dealer.slug) || dealer.name?.toLowerCase().includes('blood');
 }
 
 /**
@@ -480,7 +480,6 @@ export function createDefaultRoutingRules(dealer: any): RoutingRule[] {
     },
   ];
 }
-
 
 
 

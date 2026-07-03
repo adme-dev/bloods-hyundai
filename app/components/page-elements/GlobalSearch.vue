@@ -249,6 +249,7 @@ const isOpen = ref(false);
 const searchQuery = ref('');
 const searchInput = ref<HTMLInputElement | null>(null);
 const isSearching = ref(false);
+let modelSummaryPromise: Promise<void> | null = null;
 
 // Fuse.js instances
 const vehicleFuse = computed(() => {
@@ -325,8 +326,27 @@ watch(searchQuery, () => {
 });
 
 // Methods
+const ensureModelSummaries = () => {
+  if (mainStore.models.length) return Promise.resolve();
+  if (modelSummaryPromise) return modelSummaryPromise;
+
+  modelSummaryPromise = $fetch<any>('/api/model-summaries')
+    .then((response) => {
+      mainStore.models = response?.models || response?.variants || [];
+    })
+    .catch((error) => {
+      console.error('Failed to load model summaries for search:', error);
+    })
+    .finally(() => {
+      modelSummaryPromise = null;
+    });
+
+  return modelSummaryPromise;
+};
+
 const open = () => {
   isOpen.value = true;
+  ensureModelSummaries();
   nextTick(() => {
     searchInput.value?.focus();
   });
@@ -435,7 +455,6 @@ onUnmounted(() => {
   animation: slideInFromTop 0.2s ease-out;
 }
 </style>
-
 
 
 

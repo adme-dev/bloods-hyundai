@@ -595,7 +595,7 @@ const { trackServiceBooking } = useAnalytics()
 const { getUtmParams } = useUtmParams()
 
 // Site name from runtime config or fallback
-const siteName = computed(() => config.public.siteName || 'Sale Hyundai')
+const siteName = computed(() => config.public.siteName || 'Blood Hyundai')
 
 // Service booking settings type
 interface ServiceBookingSettings {
@@ -608,7 +608,7 @@ interface ServiceBookingSettings {
 }
 
 // Fetch service booking settings to determine internal vs external form
-const { data: settingsData, pending: settingsPending } = await useFetch<ServiceBookingSettings>('/api/service-booking-settings', {
+const { data: settingsData, pending: settingsPending } = useFetch<ServiceBookingSettings>('/api/service-booking-settings', {
   lazy: true,
   default: (): ServiceBookingSettings => ({
     success: true,
@@ -861,8 +861,6 @@ declare global {
   }
 }
 </script>
-
-
 
 
 

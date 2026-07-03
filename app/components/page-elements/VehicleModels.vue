@@ -1,6 +1,11 @@
 <template>
   <!-- Off-canvas models menu - parent wraps in ClientOnly to prevent hydration mismatch from UIkit -->
-  <div id="offcanvas-models" uk-offcanvas="flip: true; overlay: true; mode: slide">
+  <div
+    id="offcanvas-models"
+    hidden
+    aria-hidden="true"
+    uk-offcanvas="flip: true; overlay: true; mode: slide"
+  >
     <div class="uk-offcanvas-bar uk-padding-remove uk-background-secondary" style="width: 100%; max-width: 100%;">
       <LazyNavModels />
     </div>
@@ -17,14 +22,10 @@
   max-width: 100% !important;
 }
 
-@media (min-width: 960px) {
-  #offcanvas-models .uk-offcanvas-bar {
-    width: 80% !important;
-    max-width: 1400px !important;
-  }
+#offcanvas-models.uk-open {
+  display: block;
 }
 </style>
-
 
 
 

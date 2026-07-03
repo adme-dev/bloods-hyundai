@@ -121,6 +121,12 @@ import ServiceForm from '~/components/page-elements/ServiceForm.vue';
 // Store
 const mainStore = useMainStore();
 
+// SEO composables must be registered before any top-level await in setup.
+useSiteMeta({
+  title: 'Contact Us',
+  description: 'Contact Blood Hyundai for sales, service, parts, and finance enquiries.',
+});
+
 // Fetch WordPress page content
 const { data: page } = await useAsyncData(
   'contact-page',
@@ -150,12 +156,7 @@ const pageContent = computed(() => {
   return null
 })
 
-// SEO
-useSiteMeta({
-  title: 'Contact Us',
-  description: 'Contact Sale Hyundai for sales, service, parts, and finance enquiries.',
-});
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
 const lmct = computed(() => mainStore.site?.lmct || '6106');
 const departments = computed(() => mainStore.site?.departments || {});
 
@@ -240,8 +241,6 @@ const scrollToForm = (department: string) => {
   max-width: 1280px;
 }
 </style>
-
-
 
 
 

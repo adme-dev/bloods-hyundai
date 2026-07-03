@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
 
   // Get dealer slug from config or default
-  const dealerSlug = config.public.dealerSlug || process.env.DEALER_SLUG || 'bloods-hyundai';
+  const dealerSlug = config.public.dealerSlug || process.env.DEALER_SLUG || 'blood-hyundai';
 
   try {
     const [dealer] = await db

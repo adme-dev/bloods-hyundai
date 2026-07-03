@@ -1,7 +1,7 @@
 /**
  * Parse a date string that could be in DD-MM-YYYY or standard format
  */
-function parseDate(dateStr: string | Date): Date | null {
+function parseDate(dateStr: string | Date, boundary: 'start' | 'end' = 'start'): Date | null {
   if (!dateStr) return null;
   if (dateStr instanceof Date) return dateStr;
   
@@ -11,7 +11,11 @@ function parseDate(dateStr: string | Date): Date | null {
   
   if (match) {
     const [, day, month, year] = match;
-    return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const parsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (boundary === 'end') {
+      parsed.setHours(23, 59, 59, 999);
+    }
+    return parsed;
   }
   
   // Try standard Date parsing
@@ -24,14 +28,21 @@ function parseDate(dateStr: string | Date): Date | null {
  * Used for promotional content, tickers, etc.
  */
 export function isDateInRange(start?: string | Date, end?: string | Date): boolean {
-  const now = new Date();
+  return isDateInRangeAt(start, end, new Date());
+}
+
+/**
+ * Check if a provided date is within a date range.
+ * Date-only end values are treated as inclusive through the end of that day.
+ */
+export function isDateInRangeAt(start?: string | Date, end?: string | Date, now: Date = new Date()): boolean {
   
   // If no dates provided, always show
   if (!start && !end) return true;
   
   // Parse dates (handles DD-MM-YYYY format)
-  const startDate = start ? parseDate(start) : null;
-  const endDate = end ? parseDate(end) : null;
+  const startDate = start ? parseDate(start, 'start') : null;
+  const endDate = end ? parseDate(end, 'end') : null;
   
   // Check start date
   if (startDate && now < startDate) return false;
@@ -82,7 +93,6 @@ export function getRelativeTime(date: string | Date): string {
   if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
   return 'Just now';
 }
-
 
 
 

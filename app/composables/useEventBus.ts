@@ -12,6 +12,7 @@ type Events = {
   'mobile-nav:open': void;
   'mobile-nav:close': void;
   'mobile-nav:toggle': boolean;
+  'models-menu:close': void;
   'filter:change': { key: string; value: any };
   'filter:reset': void;
   'vehicle:select': { id: string | number };
@@ -62,7 +63,6 @@ export const useEventBus = () => {
     useEvent,
   };
 };
-
 
 
 

@@ -11,41 +11,30 @@
 </template>
 
 <script setup lang="ts">
+import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
+
 // Stores are auto-imported from /stores directory
 // Initialize stores and fetch initial data
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
 
-// Fetch all variants once server-side and populate store
-// This ensures data is available for all components without duplicate fetches
-const { variants } = useAllVariants();
+const loadGlobalModelSummaries = async () => {
+  if (mainStore.models.length) return;
 
-// Fetch site config during SSR - hidden from browser network tab
-// Uses shared cache key 'site-config-data' with 10-min server cache
-const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
-  key: 'site-config-data',
-  dedupe: 'defer',
-  getCachedData: (key, nuxtApp) => {
-    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
-  },
-});
-
-// Populate Pinia store with site config from SSR data
-if (siteConfigData.value?.config) {
-  mainStore.site = siteConfigData.value.config;
-}
-
-// Populate Pinia store with variants
-watch(variants, (newVariants) => {
-  if (newVariants && newVariants.length > 0) {
-    mainStore.models = newVariants;
+  try {
+    const response = await $fetch<any>('/api/model-summaries');
+    mainStore.models = response?.models || response?.variants || [];
+  } catch (error) {
+    console.error('Error loading model summaries:', error);
   }
-}, { immediate: true });
+};
 
 // Mark loading as complete on mount
-// Note: Both site config and vehicles data are hydrated from SSR payload, no client fetch needed
+// Model summaries are loaded after first render so global menus/search do not
+// inflate the initial HTML payload on routes that do not need model data.
 onMounted(() => {
   mainStore.setLoading(false);
+  runWhenIdleOrInteraction(loadGlobalModelSummaries, { timeout: 7000 });
 });
 
 // Global link handler for SPA navigation
@@ -80,7 +69,7 @@ if (process.client) {
     // Hide any open dropdowns
     const dropdowns = document.querySelectorAll('.uk-navbar-dropdown.uk-open');
     dropdowns.forEach((dropdown) => {
-      const drop = $uikit?.drop(dropdown);
+      const drop = ($uikit as any)?.drop(dropdown);
       if (drop) drop.hide(0);
     });
 
@@ -96,14 +85,26 @@ if (process.client) {
     document.removeEventListener('click', handleLink);
   });
 }
+
+// Fetch site config during SSR - hidden from browser network tab
+// Uses shared cache key 'site-config-data' with 10-min server cache
+const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
+  key: 'site-config-data',
+  dedupe: 'defer',
+  getCachedData: (key, nuxtApp) => {
+    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+  },
+});
+
+// Populate Pinia store with site config from SSR data
+if (siteConfigData.value?.config) {
+  mainStore.site = siteConfigData.value.config;
+}
 </script>
 
 <style lang="scss">
 // UIkit and custom styles are imported via nuxt.config.ts css array
 </style>
-
-
-
 
 
 

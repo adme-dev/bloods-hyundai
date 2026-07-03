@@ -1,6 +1,5 @@
 <template>
-  <ClientOnly>
-    <div class="primary-nav">
+  <div class="primary-nav">
       <!-- Loading indicator -->
       <div v-if="loading" class="fixed top-0 left-0 right-0 h-0.5 bg-gray-200 z-[10000]">
         <div class="h-full bg-primary-light animate-pulse" style="animation: loading 1.5s ease-in-out infinite;"></div>
@@ -36,19 +35,38 @@
               <!-- Desktop Navigation Links -->
               <ul class="hidden lg:flex items-center gap-2 list-none m-0 p-0">
               <!-- Models Dropdown -->
-              <li class="relative" id="models-nav-item">
+              <li
+                ref="modelsNavRef"
+                class="relative"
+                id="models-nav-item"
+                @pointerenter="showModelsMenu"
+                @pointerleave="handleModelsPointerLeave"
+                @focusin="showModelsMenu"
+                @focusout="handleModelsFocusOut"
+              >
                 <NuxtLink
                   to="/models"
                   class="flex items-center gap-1 px-4 py-2 text-black font-semibold text-sm hover:text-gray-700 transition-colors cursor-pointer"
                   id="models-nav-link"
-                  @mouseenter="showModelsMenu"
-                  @mouseleave="hideModelsMenu"
+                  :aria-expanded="modelsMenuOpen"
+                  aria-haspopup="true"
                 >
                   Models
                   <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </NuxtLink>
+                <div
+                  id="vehicle-nav-dropdown"
+                  class="nav-dropdown fixed inset-x-0 w-screen max-w-none overflow-y-auto m-0 p-0 bg-white shadow-lg z-[1000] border-t border-gray-200 transition-all duration-200 ease-in-out"
+                  :class="modelsMenuOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible pointer-events-none -translate-y-2.5'"
+                  @mouseenter="keepModelsMenuOpen"
+                  @mouseleave="hideModelsMenu"
+                  @pointerenter="keepModelsMenuOpen"
+                  @pointerleave="handleModelsPointerLeave"
+                >
+                  <LazyNavModels />
+                </div>
               </li>
 
               <!-- Dynamic Nav Items -->
@@ -117,30 +135,23 @@
               </a>
 
               <!-- Accessories Cart -->
-              <button
-                v-if="accessoriesCartCount > 0"
-                class="relative text-black hover:text-gray-700 transition-colors"
-                title="View Cart"
-                @click="openAccessoriesCart"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span
-                  class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
-                >
-                  {{ accessoriesCartCount }}
-                </span>
-              </button>
               <NuxtLink
-                v-else
                 to="/accessories"
                 class="relative text-black hover:text-gray-700 transition-colors"
                 title="Accessories Store"
+                @click="handleAccessoriesNavClick"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
+                <ClientOnly>
+                  <span
+                    v-if="accessoriesCartCount > 0"
+                    class="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
+                  >
+                    {{ accessoriesCartCount }}
+                  </span>
+                </ClientOnly>
               </NuxtLink>
 
               <!-- Saved Vehicles / Favorites -->
@@ -204,30 +215,23 @@
             <!-- Mobile Right: Icons -->
             <div class="lg:hidden flex items-center gap-3 ml-auto">
               <!-- Mobile Accessories Cart -->
-              <button
-                v-if="accessoriesCartCount > 0"
-                class="relative p-2 text-black hover:text-gray-700 transition-colors"
-                title="View Cart"
-                @click="openAccessoriesCart"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span
-                  class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
-                >
-                  {{ accessoriesCartCount }}
-                </span>
-              </button>
               <NuxtLink
-                v-else
                 to="/accessories"
                 class="relative p-2 text-black hover:text-gray-700 transition-colors"
                 title="Accessories Store"
+                @click="handleAccessoriesNavClick"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
+                <ClientOnly>
+                  <span
+                    v-if="accessoriesCartCount > 0"
+                    class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white"
+                  >
+                    {{ accessoriesCartCount }}
+                  </span>
+                </ClientOnly>
               </NuxtLink>
               <button
                 @click="openSearch"
@@ -250,15 +254,6 @@
           </div>
         </div>
         
-        <!-- Full-width Models Dropdown -->
-        <div
-          id="vehicle-nav-dropdown"
-          class="nav-dropdown fixed left-0 right-0 w-screen max-w-none overflow-y-auto m-0 p-0 bg-white shadow-lg z-[1000] border-t border-gray-200 pointer-events-auto hidden opacity-0 -translate-y-2.5 transition-all duration-200 ease-in-out"
-          @mouseenter="keepModelsMenuOpen"
-          @mouseleave="hideModelsMenu"
-        >
-          <LazyNavModels />
-        </div>
       </nav>
 
       <!-- Accessories Cart Sidebar (global) -->
@@ -283,13 +278,7 @@
         @close="showAccessoriesEnquiryModal = false"
         @submitted="handleAccessoriesEnquirySubmitted"
       />
-    </div>
-
-    <template #fallback>
-      <div class="hidden md:block h-10 bg-[#1a1a1a]"></div>
-      <div class="h-16 bg-white"></div>
-    </template>
-  </ClientOnly>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -299,7 +288,7 @@ const eventBus = useEventBus();
 const route = useRoute();
 
 // Computed values from store
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
 const address = computed(() => mainStore.site?.showroom_address || '');
 const mapDirections = computed(() => mainStore.site?.map_directions || '#');
 const loading = computed(() => mainStore.loading);
@@ -326,6 +315,15 @@ const showAccessoriesEnquiryModal = ref(false);
 // Open accessories cart
 const openAccessoriesCart = () => {
   accessoriesStore.toggleCart(true);
+};
+
+const handleAccessoriesNavClick = (event: MouseEvent) => {
+  if (accessoriesCartCount.value <= 0) {
+    return;
+  }
+
+  event.preventDefault();
+  openAccessoriesCart();
 };
 
 // Handle accessories enquire - open the enquiry modal
@@ -379,11 +377,13 @@ let itemHideTimeout: ReturnType<typeof setTimeout> | null = null;
 let itemShowTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Models menu state
+const modelsMenuOpen = ref(false);
 let hideTimeout: ReturnType<typeof setTimeout> | null = null;
 let showTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Nav element ref for calculating dropdown position
 const navRef = ref<HTMLElement | null>(null);
+const modelsNavRef = ref<HTMLElement | null>(null);
 const dropdownTop = ref('64px');
 
 // Calculate dropdown position based on nav element
@@ -404,20 +404,13 @@ onMounted(() => {
   updateDropdownPosition();
   window.addEventListener('resize', updateDropdownPosition);
   window.addEventListener('scroll', updateDropdownPosition);
+  document.addEventListener('pointerdown', handlePointerDownOutsideModelsMenu);
 });
 
 
 // Close all dropdowns on route change
 watch(() => route.fullPath, () => {
-  // Close Models dropdown
-  if (import.meta.client) {
-    const dropdown = document.getElementById('vehicle-nav-dropdown');
-    if (dropdown) {
-      dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2.5');
-      dropdown.classList.remove('opacity-100', 'translate-y-0');
-      dropdown.style.display = 'none';
-    }
-  }
+  closeModelsMenu();
   // Close any active item dropdown
   activeDropdown.value = null;
   // Clear any pending timeouts
@@ -503,17 +496,8 @@ const showModelsMenu = () => {
   }
   
   showTimeout = setTimeout(() => {
-    if (import.meta.client) {
-      // Update position before showing
-      updateDropdownPosition();
-      
-      const dropdown = document.getElementById('vehicle-nav-dropdown');
-      if (dropdown) {
-        dropdown.classList.remove('hidden', 'opacity-0', '-translate-y-2.5');
-        dropdown.classList.add('opacity-100', 'translate-y-0');
-        dropdown.style.display = 'block';
-      }
-    }
+    updateDropdownPosition();
+    modelsMenuOpen.value = true;
     showTimeout = null;
   }, 100);
 };
@@ -529,16 +513,19 @@ const hideModelsMenu = () => {
   }
   
   hideTimeout = setTimeout(() => {
-    if (import.meta.client) {
-      const dropdown = document.getElementById('vehicle-nav-dropdown');
-      if (dropdown) {
-        dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2.5');
-        dropdown.classList.remove('opacity-100', 'translate-y-0');
-        dropdown.style.display = 'none';
-      }
-    }
+    modelsMenuOpen.value = false;
     hideTimeout = null;
   }, 200);
+};
+
+const handleModelsPointerLeave = (event: PointerEvent | FocusEvent) => {
+  const relatedTarget = event.relatedTarget as Node | null;
+
+  if (modelsNavRef.value && relatedTarget && modelsNavRef.value.contains(relatedTarget)) {
+    return;
+  }
+
+  hideModelsMenu();
 };
 
 const keepModelsMenuOpen = () => {
@@ -548,6 +535,48 @@ const keepModelsMenuOpen = () => {
   }
 };
 
+const closeModelsMenu = () => {
+  if (showTimeout) {
+    clearTimeout(showTimeout);
+    showTimeout = null;
+  }
+
+  if (hideTimeout) {
+    clearTimeout(hideTimeout);
+    hideTimeout = null;
+  }
+
+  modelsMenuOpen.value = false;
+};
+
+const handleModelsFocusOut = (event: FocusEvent) => {
+  const current = event.currentTarget as HTMLElement | null;
+  const relatedTarget = event.relatedTarget as Node | null;
+
+  if (current && relatedTarget && current.contains(relatedTarget)) {
+    return;
+  }
+
+  hideModelsMenu();
+};
+
+const handlePointerDownOutsideModelsMenu = (event: PointerEvent) => {
+  const target = event.target as Node | null;
+  const nav = modelsNavRef.value;
+
+  if (!modelsMenuOpen.value || !nav || !target) {
+    return;
+  }
+
+  if (!nav.contains(target)) {
+    closeModelsMenu();
+  }
+};
+
+eventBus.useEvent('models-menu:close', () => {
+  closeModelsMenu();
+});
+
 onUnmounted(() => {
   if (showTimeout) clearTimeout(showTimeout);
   if (hideTimeout) clearTimeout(hideTimeout);
@@ -555,6 +584,7 @@ onUnmounted(() => {
   if (itemHideTimeout) clearTimeout(itemHideTimeout);
   window.removeEventListener('resize', updateDropdownPosition);
   window.removeEventListener('scroll', updateDropdownPosition);
+  document.removeEventListener('pointerdown', handlePointerDownOutsideModelsMenu);
 });
 </script>
 
@@ -629,8 +659,3 @@ onUnmounted(() => {
   border-radius: 8px;
 }
 </style>
-
-
-
-
-

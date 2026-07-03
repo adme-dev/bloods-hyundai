@@ -1,5 +1,8 @@
 const googleTagId = process.env.NUXT_PUBLIC_GTAG_ID || process.env.NUXT_PUBLIC_GOOGLE_TAG_ID || ''
 const googleTagManagerId = process.env.NUXT_PUBLIC_GTM_ID || ''
+const devConnectSources = process.env.NODE_ENV === 'production'
+  ? ''
+  : ' ws://localhost:* ws://127.0.0.1:*'
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -7,7 +10,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
   "img-src 'self' data: blob: https: http:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https: wss:",
+  `connect-src 'self' https: wss:${devConnectSources}`,
   "media-src 'self' blob: data: https://hyundaioem.b-cdn.net",
   "frame-src 'self' https://www.googletagmanager.com https://www.google.com https://maps.google.com https://www.google.com.au https://www.youtube.com https://player.vimeo.com https://apply.youxpowered.com.au https://consumer.xtime.net.au https://consumer.vela.net.au https://hyundaioem.b-cdn.net https://td.doubleclick.net",
   "object-src 'none'",
@@ -17,14 +20,28 @@ const contentSecurityPolicy = [
 ].join('; ')
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const isNetlifyImageProvider =
+  process.env.NUXT_IMAGE_PROVIDER === 'netlify' ||
+  (process.env.NITRO_PRESET === 'netlify' &&
+    process.env.NETLIFY === 'true' &&
+    process.env.NODE_ENV === 'production');
+
+const enableNetlifyNuxt =
+  process.env.NETLIFY === 'true' ||
+  process.env.NITRO_PRESET === 'netlify' ||
+  process.env.NUXT_ENABLE_NETLIFY === 'true';
+
+const hmrPort = Number(process.env.NUXT_HMR_PORT || process.env.PORT || 3000);
+
 export default defineNuxtConfig({
   // Nuxt 4 - no compatibility flag needed anymore
   devtools: { enabled: false },
 
   // Modules (sitemap disabled in dev for memory optimization)
   modules: [
-    // Netlify integration - MUST be first for proper platform primitives
-    '@netlify/nuxt',
+    // Netlify integration is opt-in locally because its edge middleware dev
+    // server can fail independently of Nuxt and restart the whole dev server.
+    ...(enableNetlifyNuxt ? ['@netlify/nuxt'] : []),
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@vueuse/nuxt',
@@ -33,8 +50,6 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     // Comprehensive SEO module (includes sitemap, robots, og-image, schema-org, seo-kit)
     '@nuxtjs/seo',
-    // UIkit loaded globally
-    '@fedorae/nuxt-uikit',
     // UnoCSS/Tailwind utilities - used globally for all pages
     // Note: @nuxtjs/tailwindcss removed - UnoCSS with Tailwind preset handles all utility classes
     '@unocss/nuxt',
@@ -77,8 +92,9 @@ export default defineNuxtConfig({
     enabled: false,
   },
 
-  // CSS imports (UIkit CSS handled by @fedorae/nuxt-uikit module)
+  // CSS imports
   css: [
+    'uikit/dist/css/uikit.min.css',
     '~/assets/styles/main.scss',
   ],
 
@@ -100,6 +116,7 @@ export default defineNuxtConfig({
     public: {
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Blood Hyundai',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      dealerSlug: process.env.NUXT_PUBLIC_DEALER_SLUG || process.env.DEALER_SLUG || 'blood-hyundai',
       apiUrl: process.env.NUXT_PUBLIC_API_URL || '',
       cdnUrl: process.env.NUXT_PUBLIC_CDN_URL || '',
       oemCdnUrl: process.env.NUXT_PUBLIC_OEM_CDN_URL || '',
@@ -173,6 +190,7 @@ export default defineNuxtConfig({
     server: {
       hmr: {
         overlay: false,
+        port: hmrPort,
       },
       watch: {
         // Reduce file watching overhead
@@ -183,6 +201,19 @@ export default defineNuxtConfig({
     optimizeDeps: {
       // Reduce initial dep optimization memory
       holdUntilCrawlEnd: false,
+    },
+  },
+
+  hooks: {
+    'vite:extendConfig'(config, env) {
+      config.server ||= {};
+
+      config.server.hmr = {
+        ...(typeof config.server.hmr === 'object' ? config.server.hmr : {}),
+        overlay: false,
+        port: hmrPort,
+        clientPort: hmrPort,
+      };
     },
   },
   
@@ -286,7 +317,13 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         // Preconnect to external resources for faster loading
         { rel: 'preconnect', href: 'https://hyundaioem.b-cdn.net' },
+        { rel: 'preconnect', href: 'https://driveagent.b-cdn.net' },
+        { rel: 'preconnect', href: 'https://driveagentmedia.b-cdn.net' },
+        { rel: 'preconnect', href: 'https://www.hyundai.com' },
         { rel: 'dns-prefetch', href: 'https://hyundaioem.b-cdn.net' },
+        { rel: 'dns-prefetch', href: 'https://driveagent.b-cdn.net' },
+        { rel: 'dns-prefetch', href: 'https://driveagentmedia.b-cdn.net' },
+        { rel: 'dns-prefetch', href: 'https://www.hyundai.com' },
         { rel: 'dns-prefetch', href: 'https://www.googletagmanager.com' },
       ],
       noscript: [
@@ -364,9 +401,10 @@ export default defineNuxtConfig({
 
   // Nuxt Image - Image optimization and CDN integration
   image: {
-    // Use Netlify provider in production for consistent SSR/client URL generation
-    // In development, use 'none' to bypass IPX proxy issues with external CDNs
-    provider: process.env.NODE_ENV === 'production' ? 'netlify' : 'none',
+    // Use Netlify Image CDN only in Netlify builds. Plain local production
+    // plain local/node dev and non-Netlify contexts do not provide the
+    // /.netlify/images endpoint, so default to ipx in those environments.
+    provider: isNetlifyImageProvider ? 'netlify' : 'ipx',
     // Quality setting for optimized images
     quality: 80,
     // Default format (webp for better compression)

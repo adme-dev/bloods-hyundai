@@ -3,7 +3,7 @@
     <!-- Quick Links Bar -->
     <div class="uk-container uk-container-large s-wp uk-background-secondary uk-light">
       <ClientOnly>
-        <div class="uk-grid-collapse uk-child-width-1-3 uk-child-width-1-5@l uk-text-center uk-margin-small-top uk-margin-small-bottom iconnav" uk-grid>
+        <div class="quick-links-grid uk-text-center uk-margin-small-top uk-margin-small-bottom iconnav">
           <div>
             <NuxtLink to="/service" class="uk-link-reset uk-width-1-1">
               <div class="uk-padding-small">
@@ -918,7 +918,7 @@ const currentFilterQuery = computed(() => {
 
 <style lang="scss" scoped>
 .s-wp {
-  padding: 10px 0 0;
+  padding: 10px 16px 0;
 }
 
 @media (min-width: 960px) {
@@ -927,6 +927,24 @@ const currentFilterQuery = computed(() => {
     border-radius: 20px;
     position: relative;
     z-index: 2;
+  }
+}
+
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+@media (min-width: 960px) {
+  .quick-links-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-links-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1026,7 +1044,6 @@ const currentFilterQuery = computed(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(0, 30, 80, 0.2);
 }
 </style>
-
 
 
 

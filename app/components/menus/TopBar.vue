@@ -107,8 +107,10 @@ const totalReviews = computed(() => reviewsStore.totalReviews);
 
 // Whether the header "Google Reviews" link is shown — controlled from
 // admin settings (Settings → Header Reviews). Hidden by default.
-const { data: headerSettings } = await useFetch('/api/header-settings', {
+const { data: headerSettings } = useFetch('/api/header-settings', {
   key: 'header-settings',
+  server: false,
+  lazy: true,
   default: () => ({ success: true, settings: { reviewsEnabled: false } }),
 });
 const reviewsLinkEnabled = computed(
@@ -126,7 +128,5 @@ onMounted(async () => {
   }
 });
 </script>
-
-
 
 

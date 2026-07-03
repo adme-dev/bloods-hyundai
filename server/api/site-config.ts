@@ -54,12 +54,20 @@ function loadLocalFallback(): SiteConfig | null {
   }
 }
 
+function namesMatchExpectedSite(configName: string | undefined, expectedName: string | undefined): boolean {
+  if (!configName || !expectedName) return true;
+
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalize(configName) === normalize(expectedName);
+}
+
 export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig();
+  const expectedSiteName = config.public.siteName || 'Blood Hyundai';
 
   // Default config for when CDN is not available
   const defaultConfig: SiteConfig = {
-    name: config.public.siteName || 'Sale Hyundai',
+    name: expectedSiteName,
     promotional: [],
     scripts: { google: { analytics: [], gtm: '' } },
   };
@@ -70,7 +78,7 @@ export default defineCachedEventHandler(async (event) => {
     // Try local fallback first
     const localConfig = loadLocalFallback();
     return {
-      config: localConfig || defaultConfig,
+      config: localConfig && namesMatchExpectedSite(localConfig.name, expectedSiteName) ? localConfig : defaultConfig,
       _cached: false,
       _timestamp: Date.now(),
     };
@@ -99,7 +107,7 @@ export default defineCachedEventHandler(async (event) => {
 
     // Try local fallback for development
     const localConfig = loadLocalFallback();
-    if (localConfig) {
+    if (localConfig && namesMatchExpectedSite(localConfig.name, expectedSiteName)) {
       console.log('[Site Config] Using local fallback config');
       return {
         config: localConfig,
@@ -107,6 +115,12 @@ export default defineCachedEventHandler(async (event) => {
         _timestamp: Date.now(),
         _source: 'local-fallback',
       };
+    }
+
+    if (localConfig) {
+      console.warn(
+        `[Site Config] Ignoring local fallback for ${localConfig.name}; expected ${expectedSiteName}`
+      );
     }
 
     console.error('[Site Config] No fallback available, using defaults');

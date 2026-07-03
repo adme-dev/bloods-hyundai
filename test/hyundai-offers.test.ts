@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { extractHeroBanner } from '../server/utils/hyundaiOffers.ts';
+import { extractHeroBanner, extractHeroBanners } from '../server/utils/hyundaiOffers.ts';
 
 describe('extractHeroBanner', () => {
   it('uses the current desktop offers preload before older fallback banners', () => {
@@ -15,5 +15,17 @@ describe('extractHeroBanner', () => {
       extractHeroBanner(html),
       'https://www.hyundai.com/content/dam/hyundai/au/en/offers-images/2026/q3-104529-GameOn-1920x720-desktop.jpg'
     );
+  });
+
+  it('extracts the current mobile offers preload separately', () => {
+    const html = `
+      <link rel="preload" as="image" href="/content/dam/hyundai/au/en/offers-images/2026/q3-104529-GameOn-767x975-mobile.jpg" media="(max-width: 767px)" fetchpriority="high"/>
+      <link rel="preload" as="image" href="/content/dam/hyundai/au/en/offers-images/2026/q3-104529-GameOn-1920x720-desktop.jpg" media="(min-width: 768px)" fetchpriority="high"/>
+    `;
+
+    assert.deepEqual(extractHeroBanners(html), {
+      desktop: 'https://www.hyundai.com/content/dam/hyundai/au/en/offers-images/2026/q3-104529-GameOn-1920x720-desktop.jpg',
+      mobile: 'https://www.hyundai.com/content/dam/hyundai/au/en/offers-images/2026/q3-104529-GameOn-767x975-mobile.jpg',
+    });
   });
 });

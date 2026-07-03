@@ -308,7 +308,7 @@
               </swiper>
 
               <template #fallback>
-                <div class="text-center py-8">
+                <div class="mobile-models-fallback">
                   <div uk-spinner></div>
                 </div>
               </template>
@@ -346,6 +346,7 @@ import 'swiper/css/pagination';
 
 const modelsStore = useModelsStore();
 const activeCategory = ref('');
+const hasMounted = ref(false);
 const showCategoryDropdown = ref(false);
 const categoryDropdownRef = ref<HTMLElement | null>(null);
 const swiperInstance = ref<any>(null);
@@ -386,16 +387,25 @@ const sanitizeCaption = (caption: string): string => {
     .trim();
 };
 
-// Set initial active category
+const syncInitialCategory = () => {
+  const [firstCategory] = modelsStore.uniqueCategories;
+  if (firstCategory && !activeCategory.value) {
+    activeCategory.value = firstCategory;
+  }
+};
+
+onMounted(() => {
+  hasMounted.value = true;
+  syncInitialCategory();
+});
+
 watch(
   () => modelsStore.uniqueCategories,
-  categories => {
-    if (categories.length > 0 && !activeCategory.value) {
-      // Default to first category
-      activeCategory.value = categories[0];
+  () => {
+    if (hasMounted.value) {
+      syncInitialCategory();
     }
-  },
-  { immediate: true }
+  }
 );
 
 // Filter models by active category
@@ -446,6 +456,14 @@ onClickOutside(categoryDropdownRef, () => {
 /* Mobile swiper styles */
 .mobile-models-swiper {
   padding-bottom: 50px;
+}
+
+.mobile-models-fallback {
+  min-height: 470px;
+  padding-bottom: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 :deep(.swiper-pagination) {

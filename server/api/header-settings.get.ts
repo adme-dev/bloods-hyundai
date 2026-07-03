@@ -9,7 +9,7 @@ import { dealers } from '../database/schema';
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const dealerSlug = config.public.dealerSlug || 'bloods-hyundai';
+  const dealerSlug = config.public.dealerSlug || 'blood-hyundai';
 
   try {
     const [dealer] = await db

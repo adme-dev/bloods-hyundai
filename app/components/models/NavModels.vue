@@ -11,7 +11,7 @@
         <!-- Mobile filter - hidden on lg screens (1024px+) -->
         <div class="block lg:hidden">
           <div @click="showMobileFilter = !showMobileFilter" class="uk-padding uk-padding-remove-bottom uk-link uk-text-bold">
-            <UkIcon icon="settings" :ratio="1.2" class="uk-padding-small uk-margin-small-right" />
+            <Settings class="uk-padding-small uk-margin-small-right inline-block" :size="22" stroke-width="2" />
             Filter
           </div>
 
@@ -121,15 +121,13 @@
                     class="uk-text-muted"
                     @click="closeModel"
                   >
-                    <NuxtImg
+                    <img
                       :src="vehicle.image"
                       :alt="vehicle.name"
                       class="vehicle-thumbnail"
                       width="550"
                       height="300"
                       loading="lazy"
-                      format="webp"
-                      quality="80"
                     />
                   </NuxtLink>
                 </div>
@@ -222,7 +220,10 @@
 </template>
 
 <script setup lang="ts">
+import { Settings } from 'lucide-vue-next';
+
 const { $uikit } = useNuxtApp();
+const eventBus = useEventBus();
 
 // State
 const selectedCategory = ref('All');
@@ -268,16 +269,9 @@ const selectCategory = (category: string, index: number) => {
 };
 
 const closeModel = () => {
+  eventBus.emit('models-menu:close');
+
   if (import.meta.client) {
-    const dropdown = document.getElementById('vehicle-nav-dropdown');
-    
-    if (dropdown) {
-      // Match the exact classes and styles used by PrimaryNav.vue's hideModelsMenu
-      dropdown.classList.add('hidden', 'opacity-0', '-translate-y-2.5');
-      dropdown.classList.remove('opacity-100', 'translate-y-0');
-      dropdown.style.display = 'none';
-    }
-    
     // Also handle offcanvas if open (for mobile)
     const modelsModal = document.getElementById('offcanvas-models');
     if ($uikit && modelsModal) {
@@ -407,18 +401,20 @@ const capitalizeFirstLetter = (str: string) => {
   position: relative;
   aspect-ratio: 550 / 300;
   display: flex;
+  width: 100%;
+  max-width: 100%;
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
+  overflow: hidden;
 }
 
 /* Vehicle thumbnail - fit within container */
 .vehicle-thumbnail {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Scrollable content area */
@@ -436,10 +432,6 @@ const capitalizeFirstLetter = (str: string) => {
   border-top: 1px solid #e5e5e5;
 }
 </style>
-
-
-
-
 
 
 

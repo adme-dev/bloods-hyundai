@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { useAllVariants } from '~/composables/useAllVariants';
+import { useModelSummaries } from '~/composables/useModelSummaries';
 
 /**
  * Models Store
@@ -7,11 +7,11 @@ import { useAllVariants } from '~/composables/useAllVariants';
  * that adapts Hyundai API data to match component expectations
  */
 export const useModelsStore = defineStore('models', () => {
-  const { variants, pending, error, refresh, vehicleCategories, groupedByCategory } = useAllVariants();
+  const { models, pending, error, refresh } = useModelSummaries();
 
   // Transform Hyundai API models to match component expectations
   const allModels = computed(() => {
-    return (variants.value || []).map((model: any) => ({
+    return (models.value || []).map((model: any) => ({
       ...model,
       // Adapt fields for component compatibility
       'title': {
@@ -87,7 +87,6 @@ export const useModelsStore = defineStore('models', () => {
     refresh,
   };
 });
-
 
 
 

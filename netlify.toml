@@ -2,8 +2,8 @@
 
 [build]
   command = "npm run build"
-   publish = "dist"
-  # No publish directory needed - Netlify preset handles this automatically
+  # Nuxt 4 SSR output with the Netlify preset
+  publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -58,7 +58,6 @@
     "https://www.hyundai.com/.*",
     "https://carsales.pxcrush.net/.*"
   ]
-
 
 
 

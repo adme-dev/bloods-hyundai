@@ -1,40 +1,8 @@
 <template>
-  <!-- CLS prevention: min-height reserves space before content loads -->
-  <div v-if="homeSlides.length" class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden" style="min-height: 300px;">
-    <!-- SSR placeholder - shows first slide while JS loads -->
-    <div v-if="!isMounted && homeSlides.length" class="hero-carousel hero-carousel--ssr">
-      <div class="hero-viewport">
-        <div class="hero-container hero-container--ssr">
-          <div class="hero-slide">
-            <div class="slide-panel is-active">
-              <div v-if="homeSlides[0].desktop || homeSlides[0].mobile" class="slide-media">
-                <picture class="slide-image-wrapper">
-                  <source
-                    v-if="homeSlides[0].mobile"
-                    media="(max-width: 768px)"
-                    :srcset="homeSlides[0].mobile"
-                  />
-                  <img
-                    :src="homeSlides[0].desktop || homeSlides[0].mobile"
-                    :alt="strippedHeadingContent(homeSlides[0].heading_content) || siteName"
-                    class="slide-image"
-                    width="1600"
-                    height="600"
-                    loading="eager"
-                    fetchpriority="high"
-                  />
-                </picture>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Embla Carousel - client only -->
-    <div v-else class="hero-carousel">
+  <div v-if="homeSlides.length" class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden">
+    <div class="hero-carousel">
       <div class="hero-viewport" ref="emblaRef">
-        <div class="hero-container">
+        <div class="hero-container" :class="{ 'hero-container--single': homeSlides.length === 1 }">
           <div
             v-for="(slide, index) in homeSlides"
             :key="index"
@@ -119,22 +87,66 @@
 <script setup lang="ts">
 import EmblaCarousel from 'embla-carousel';
 import Autoplay from 'embla-carousel-autoplay';
-import { isDateInRange } from '~/utils/date';
+import { resolveHomeSlides, shouldFetchOffersHero, type OffersHeroImage } from '~/utils/frontSlides';
 
 const mainStore = useMainStore();
-const isMounted = ref(false);
+const config = useRuntimeConfig();
+const props = defineProps<{
+  slides?: unknown;
+}>();
+const route = useRoute();
+
 const selectedIndex = ref(0);
 const emblaRef = ref<HTMLElement | null>(null);
 let emblaApi: any = null;
 
 // Site name for fallback
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const siteName = computed(() => mainStore.site?.name || config.public.siteName || 'Blood Hyundai');
+const configuredSlideSource = computed(() => props.slides || mainStore.site?.promotional || []);
+const offersHeroData = ref<OffersHeroImage | null>(null);
+const shouldRefreshOffersHero = computed(() => route.query.refresh === 'true');
+const shouldLoadOffersHero = computed(() =>
+  shouldFetchOffersHero(configuredSlideSource.value, siteName.value)
+);
 
-// Filter slides by date range before rendering so expired campaigns do not
-// server-render briefly and then disappear into an empty hydrated carousel.
+const offersHeroRequest = computed(() => {
+  if (!shouldLoadOffersHero.value) {
+    return null;
+  }
+
+  const refresh = shouldRefreshOffersHero.value;
+  return {
+    key: refresh ? 'hyundai-offers-home-hero-refresh' : 'hyundai-offers-home-hero',
+    query: refresh ? { refresh: 'true' } : {},
+  };
+});
+
+if (offersHeroRequest.value) {
+  const { data, error } = useFetch<OffersHeroImage>('/api/hyundai-offers/hero-banner', {
+    key: offersHeroRequest.value.key,
+    query: offersHeroRequest.value.query,
+    server: true,
+    default: () => null,
+  });
+
+  watch(data, (value) => {
+    offersHeroData.value = value || null;
+  }, { immediate: true });
+
+  watch(error, (value) => {
+    if (value) {
+      console.warn('Offers hero banner fetch failed:', value.message || value);
+    }
+  }, { immediate: true });
+}
+
+// Resolve active config slides first, then use a fresh offers hero fallback for
+// Blood Hyundai if the DriveAgent config currently has no in-date hero slide.
 const homeSlides = computed(() => {
-  const slides = mainStore.site?.promotional?.[0]?.slides || [];
-  return slides.filter((slide: any) => isDateInRange(slide.start, slide.end));
+  return resolveHomeSlides(configuredSlideSource.value, {
+    siteName: siteName.value,
+    offersHero: offersHeroData.value,
+  });
 });
 
 // Navigation methods
@@ -181,27 +193,40 @@ const handleSlideClick = (event: Event, slide: any, index: number) => {
   }
 };
 
+const initEmbla = () => {
+  if (emblaApi || !emblaRef.value || homeSlides.value.length === 0) return;
+
+  emblaApi = EmblaCarousel(
+    emblaRef.value,
+    {
+      loop: true,
+      align: 'center',
+      containScroll: false,
+      slidesToScroll: 1,
+    },
+    [Autoplay({ delay: 3500, stopOnInteraction: false })]
+  );
+
+  emblaApi.on('select', onSelect);
+  emblaApi.on('reInit', onSelect);
+  onSelect();
+};
+
 // Initialize Embla on mount (client-side only)
 onMounted(() => {
-  isMounted.value = true;
+  nextTick(() => {
+    initEmbla();
+  });
+});
+
+watch(() => homeSlides.value.length, () => {
+  if (selectedIndex.value >= homeSlides.value.length) {
+    selectedIndex.value = 0;
+  }
 
   nextTick(() => {
-    if (emblaRef.value && homeSlides.value.length > 0) {
-      emblaApi = EmblaCarousel(
-        emblaRef.value,
-        {
-          loop: true,
-          align: 'center',
-          containScroll: false,
-          slidesToScroll: 1,
-        },
-        [Autoplay({ delay: 3500, stopOnInteraction: false })]
-      );
-
-      emblaApi.on('select', onSelect);
-      emblaApi.on('reInit', onSelect);
-      onSelect();
-    }
+    initEmbla();
+    emblaApi?.reInit();
   });
 });
 
@@ -221,7 +246,7 @@ onUnmounted(() => {
   margin: 0;
   font-family: 'Hyundai Sans Head', 'Hyundai Sans', sans-serif;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .hero-slider p {
@@ -237,14 +262,14 @@ onUnmounted(() => {
 <style scoped>
 .hero-slider {
   padding: 10px 0;
+  min-height: calc((83.33vw - 16px) * 0.375 + 20px);
 }
 
 .hero-carousel {
   position: relative;
 }
 
-/* SSR placeholder - center single slide */
-.hero-carousel--ssr .hero-container--ssr {
+.hero-container--single {
   justify-content: center;
 }
 
@@ -265,12 +290,20 @@ onUnmounted(() => {
 }
 
 @media (max-width: 960px) {
+  .hero-slider {
+    min-height: calc((87vw - 16px) * 0.375 + 20px);
+  }
+
   .hero-slide {
     flex: 0 0 87%;
   }
 }
 
 @media (max-width: 640px) {
+  .hero-slider {
+    min-height: calc((92vw - 16px) * 1.3333 + 20px);
+  }
+
   .hero-slide {
     flex: 0 0 92%;
   }
@@ -338,7 +371,7 @@ onUnmounted(() => {
 
 .slide-heading {
   font-size: 1.85rem;
-  letter-spacing: -0.0525rem;
+  letter-spacing: 0;
   line-height: 2.2rem;
   margin: 0;
   font-weight: 500;
@@ -346,7 +379,7 @@ onUnmounted(() => {
 
 .slide-subheading {
   font-size: 1.85rem;
-  letter-spacing: -0.0525rem;
+  letter-spacing: 0;
   line-height: 2.2rem;
   margin-top: 0.5rem;
 }

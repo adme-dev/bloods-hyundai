@@ -1,17 +1,19 @@
 /**
  * Conditional UIkit Plugin
  * 
- * Loads UIkit CSS and JS only on vehicle-related pages.
- * For other pages, only UnoCSS/Tailwind utilities are available.
+ * UIkit CSS is bundled globally for existing uk-* classes. The JS/runtime and
+ * icon bundle are delayed so non-vehicle routes do not pay for them up front.
  */
+import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
 
 export default defineNuxtPlugin(() => {
-  if (!process.client) return;
+  if (!import.meta.client) return;
 
   const route = useRoute();
+  let loadPromise: Promise<any> | null = null;
 
   // Define which routes need UIkit (vehicle-related pages)
-  const vehicleRoutes = [
+  const uikitRoutes = [
     '/vehicle/',
     '/vehicle-for-sale/',
     '/variant/',
@@ -25,74 +27,85 @@ export default defineNuxtPlugin(() => {
     '/test-drive',
   ];
 
-  // Check if current route needs UIkit
-  const needsUIkit = vehicleRoutes.some(routePath => route.path.startsWith(routePath));
+  const needsUIkit = (path: string) => uikitRoutes.some(routePath => path.startsWith(routePath));
 
-  if (!needsUIkit) {
-    return; // Don't load UIkit on non-vehicle pages
-  }
-
-  // Load UIkit CSS dynamically
-  const loadUIkitCSS = () => {
-    if (document.querySelector('link[href*="uikit"]')) {
-      return; // Already loaded
-    }
-
-    // Load UIkit CSS via link tag
-    // Note: In production, you could optimize this by copying UIkit CSS to public folder
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://cdn.jsdelivr.net/npm/uikit@3.25.1/dist/css/uikit.min.css';
-    document.head.appendChild(link);
-  };
-
-  // Load UIkit JS dynamically
-  const loadUIkitJS = (): Promise<any> => {
+  const loadScript = (src: string, runtimeName: string): Promise<void> => {
     return new Promise((resolve) => {
-      if ((window as any).UIkit) {
-        resolve((window as any).UIkit);
+      if (document.querySelector(`script[data-uikit-runtime="${runtimeName}"]`)) {
+        resolve();
         return;
       }
 
-      // Load UIkit JS from CDN
-      // Note: In production, you could optimize this by bundling UIkit JS
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/uikit@3.25.1/dist/js/uikit.min.js';
-      script.onload = () => {
-        resolve((window as any).UIkit);
-      };
+      script.src = src;
+      script.async = true;
+      script.dataset.uikitRuntime = runtimeName;
+      script.onload = () => resolve();
       script.onerror = () => {
-        console.error('Failed to load UIkit');
-        resolve(null);
+        console.error(`Failed to load ${src}`);
+        resolve();
       };
       document.head.appendChild(script);
     });
   };
 
-  // Load UIkit immediately
-  loadUIkitCSS();
-  loadUIkitJS();
+  const loadUIkitJS = () => {
+    if ((window as any).UIkit?.icon) {
+      return Promise.resolve((window as any).UIkit);
+    }
 
-  // Watch for route changes and load/unload UIkit
+    if (!loadPromise) {
+      loadPromise = loadScript(
+        'https://cdn.jsdelivr.net/npm/uikit@3.25.1/dist/js/uikit.min.js',
+        'uikit-core'
+      )
+        .then(() => loadScript(
+          'https://cdn.jsdelivr.net/npm/uikit@3.25.1/dist/js/uikit-icons.min.js',
+          'uikit-icons'
+        ))
+        .then(() => (window as any).UIkit || null);
+    }
+
+    return loadPromise;
+  };
+
+  const scheduleUIkit = (path: string) => {
+    if (needsUIkit(path)) {
+      runWhenIdleOrInteraction(loadUIkitJS, { timeout: 2500 });
+      return;
+    }
+
+    runWhenIdleOrInteraction(loadUIkitJS, { timeout: 7000 });
+  };
+
+  onMounted(() => {
+    scheduleUIkit(route.path);
+  });
+
   watch(() => route.path, (newPath) => {
-    const needs = vehicleRoutes.some(routePath => newPath.startsWith(routePath));
-    
-    if (needs) {
-      loadUIkitCSS();
+    if (needsUIkit(newPath)) {
       loadUIkitJS();
-    } else {
-      // Optionally remove UIkit CSS when leaving vehicle pages
-      // (keeping JS loaded is fine, it won't interfere)
-      const uikitLink = document.querySelector('link[href*="uikit"]');
-      if (uikitLink) {
-        // Keep CSS loaded for smoother transitions
-        // uikitLink.remove();
-      }
     }
   });
+
+  const uikitProxy = new Proxy({}, {
+    get(_target, property) {
+      return (...args: any[]) => {
+        const uikit = (window as any).UIkit;
+        const method = uikit?.[property as keyof typeof uikit];
+        if (typeof method === 'function') {
+          return method.apply(uikit, args);
+        }
+      }
+    },
+  });
+
+  return {
+    provide: {
+      uikit: uikitProxy,
+    },
+  };
 });
-
-
 
 
 

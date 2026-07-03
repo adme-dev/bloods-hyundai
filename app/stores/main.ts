@@ -49,7 +49,7 @@ export const useMainStore = defineStore('main', () => {
   const viewedPages = ref<{ name: string }[]>([]);
 
   // Getters
-  const siteName = computed(() => site.value?.name || 'Sale Hyundai');
+  const siteName = computed(() => site.value?.name || 'Blood Hyundai');
   const isLoading = computed(() => loading.value);
 
   // Actions
@@ -67,7 +67,7 @@ export const useMainStore = defineStore('main', () => {
 
     // Default config
     const defaultConfig: SiteConfig = {
-      name: config.public.siteName || 'Sale Hyundai',
+      name: config.public.siteName || 'Blood Hyundai',
       promotional: [],
       scripts: { google: { analytics: [], gtm: '' } },
     };
@@ -101,12 +101,12 @@ export const useMainStore = defineStore('main', () => {
 
   const fetchModels = async () => {
     try {
-      // Fetch models from Hyundai API via our server route
-      const response = await $fetch<any>('/api/all-variants');
+      // Fetch slim model summaries for global menus/search.
+      const response = await $fetch<any>('/api/model-summaries');
       
-      if (response.success && response.variants) {
-        models.value = response.variants;
-        return response.variants;
+      if (response.success && (response.models || response.variants)) {
+        models.value = response.models || response.variants;
+        return models.value;
       }
       
       models.value = [];
