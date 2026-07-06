@@ -19,6 +19,8 @@
                     v-if="slide.mobile"
                     media="(max-width: 768px)"
                     :srcset="slide.mobile"
+                    width="900"
+                    height="1200"
                   />
                   <img
                     :src="slide.desktop || slide.mobile"
@@ -28,6 +30,7 @@
                     height="600"
                     :loading="index === 0 ? 'eager' : 'lazy'"
                     :fetchpriority="index === 0 ? 'high' : 'auto'"
+                    :decoding="index === 0 ? 'sync' : 'async'"
                   />
                 </picture>
               </div>
@@ -148,6 +151,41 @@ const homeSlides = computed(() => {
     offersHero: offersHeroData.value,
   });
 });
+
+const firstSlidePreloadLinks = computed(() => {
+  const firstSlide = homeSlides.value[0];
+  if (!firstSlide || firstSlide.video) return [];
+
+  const mobileImage = firstSlide.mobile || firstSlide.tablet;
+  const desktopImage = firstSlide.desktop || mobileImage;
+  const links: Record<string, string>[] = [];
+
+  if (mobileImage && mobileImage !== desktopImage) {
+    links.push({
+      rel: 'preload',
+      as: 'image',
+      href: mobileImage,
+      media: '(max-width: 768px)',
+      fetchpriority: 'high',
+    });
+  }
+
+  if (desktopImage) {
+    links.push({
+      rel: 'preload',
+      as: 'image',
+      href: desktopImage,
+      ...(mobileImage && mobileImage !== desktopImage ? { media: '(min-width: 769px)' } : {}),
+      fetchpriority: 'high',
+    });
+  }
+
+  return links;
+});
+
+useHead(() => ({
+  link: firstSlidePreloadLinks.value,
+}));
 
 // Navigation methods
 const scrollTo = (index: number) => {

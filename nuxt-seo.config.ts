@@ -1,6 +1,6 @@
 export default defineNuxtConfig({
   robots: {
-    disallow: ['/admin', '/api', '/secure-vehicle'],
+    disallow: ['/admin', '/portal', '/secure-vehicle', '/favorites', '/payment-success'],
     allow: '/',
   },
   
@@ -21,7 +21,6 @@ export default defineNuxtConfig({
     },
   },
 });
-
 
 
 

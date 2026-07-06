@@ -14,9 +14,15 @@
 /*.html
   Cache-Control: no-cache, no-store, must-revalidate
 
-# No cache for root
+# Root index - short CDN cache, browser revalidates
 /
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
+  CDN-Cache-Control: public, max-age=300, stale-while-revalidate=3600
+
+# LLM discovery file
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600, must-revalidate
 
 # Nuxt build manifest - MUST not be cached to detect new deployments
 /_nuxt/builds/latest.json

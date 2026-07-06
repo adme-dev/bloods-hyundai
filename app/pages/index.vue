@@ -7,7 +7,7 @@
     <h1 class="sr-only">{{ siteName }} - New and Used Hyundai Vehicles</h1>
 
     <!-- Hero/Slider Section -->
-    <LazyFrontSlider v-if="site?.promotional" :slides="site.promotional" />
+    <FrontSlider v-if="site?.promotional" :slides="site.promotional" />
 
     <!-- Promotional Thumbs -->
     <LazyFrontSliderThumbs />
@@ -41,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
+
 // Get site config from store
 const mainStore = useMainStore();
 const site = computed(() => mainStore.site);
@@ -49,8 +51,9 @@ const siteName = computed(() => site.value?.name || config.public.siteName || 'B
 
 // Use SEO meta composable
 useSiteMeta({
-  title: 'Home',
-  description: () => `Welcome to ${siteName.value} - your trusted Hyundai dealer. Browse new and used Hyundai vehicles, special offers, and book a service.`,
+  title: 'Hyundai Dealer Geelong',
+  description: () => `${siteName.value} is your Hyundai dealer in Geelong. Browse new, demo and used Hyundai vehicles, current offers, test drives, finance enquiries and service booking.`,
+  keywords: () => `${siteName.value}, Hyundai dealer Geelong, new Hyundai, used Hyundai, Hyundai service Geelong, Hyundai special offers`,
 });
 
 // Vehicles store for enquiry modal
@@ -64,7 +67,7 @@ const closeEnquiryModal = () => {
 // Fetch homepage CMS content (client-side)
 const pageContent = ref<string | null>(null);
 
-onMounted(async () => {
+const loadPageContent = async () => {
   try {
     const data = await $fetch<any>('/api/page/home');
     if (data?.content?.rendered) {
@@ -74,6 +77,10 @@ onMounted(async () => {
     // Homepage content is optional
     console.log('No homepage CMS content found');
   }
+};
+
+onMounted(() => {
+  runWhenIdleOrInteraction(loadPageContent, { delay: 8000 });
 });
 </script>
 
@@ -99,9 +106,5 @@ onMounted(async () => {
   border-width: 0;
 }
 </style>
-
-
-
-
 
 

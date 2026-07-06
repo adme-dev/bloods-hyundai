@@ -5,10 +5,11 @@
  */
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
+import { normalizeSiteUrl, shouldExcludeFromSitemap } from '~~/shared/seo';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const baseUrl = config.public.apiUrl || 'https://sale-hyundai.com.au';
+  const baseUrl = normalizeSiteUrl(config.public.siteUrl || config.public.apiUrl);
 
   try {
     // Fetch data for sitemap
@@ -83,9 +84,11 @@ export default defineEventHandler(async (event) => {
       }
     });
 
+    const publicLinks = links.filter((link) => !shouldExcludeFromSitemap(link.url));
+
     // Generate sitemap XML
     const stream = new SitemapStream({ hostname: baseUrl });
-    const xml = await streamToPromise(Readable.from(links).pipe(stream)).then((data) => data.toString());
+    const xml = await streamToPromise(Readable.from(publicLinks).pipe(stream)).then((data) => data.toString());
 
     setResponseHeaders(event, {
       'Content-Type': 'application/xml',
@@ -109,7 +112,6 @@ function slugify(str: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 }
-
 
 
 

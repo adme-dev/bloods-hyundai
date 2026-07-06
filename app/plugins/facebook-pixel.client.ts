@@ -112,7 +112,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   // after first paint or first user interaction.
   if (import.meta.client) {
     queueInitialPageView();
-    runWhenIdleOrInteraction(loadPixelScript);
+    runWhenIdleOrInteraction(loadPixelScript, { delay: 60000 });
   }
 
   // Track page views on route change

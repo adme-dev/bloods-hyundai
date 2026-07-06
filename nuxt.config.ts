@@ -1,5 +1,18 @@
 const googleTagId = process.env.NUXT_PUBLIC_GTAG_ID || process.env.NUXT_PUBLIC_GOOGLE_TAG_ID || ''
 const googleTagManagerId = process.env.NUXT_PUBLIC_GTM_ID || ''
+const privateSitemapExcludes = [
+  '/admin',
+  '/admin/**',
+  '/api',
+  '/api/**',
+  '/portal',
+  '/portal/**',
+  '/secure-vehicle',
+  '/secure-vehicle/**',
+  '/favorites',
+  '/payment-success',
+  '/compare-vehicles-for-sale',
+]
 const devConnectSources = process.env.NODE_ENV === 'production'
   ? ''
   : ' ws://localhost:* ws://127.0.0.1:*'
@@ -85,6 +98,20 @@ export default defineNuxtConfig({
   sitemap: {
     // Disable runtime generation to reduce server bundle size
     experimentalWarmUp: false,
+    exclude: privateSitemapExcludes,
+  },
+
+  robots: {
+    disallow: [
+      '/admin',
+      '/admin/**',
+      '/portal',
+      '/portal/**',
+      '/secure-vehicle',
+      '/secure-vehicle/**',
+      '/favorites',
+      '/payment-success',
+    ],
   },
 
   // Disable OG Image generation (causing compatibility issues with getter functions in useSeoMeta)

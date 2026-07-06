@@ -6,10 +6,11 @@
  */
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
 
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   if (!import.meta.client) return;
 
   const route = useRoute();
+  const router = useRouter();
   let loadPromise: Promise<any> | null = null;
 
   // Define which routes need UIkit (vehicle-related pages)
@@ -71,19 +72,19 @@ export default defineNuxtPlugin(() => {
 
   const scheduleUIkit = (path: string) => {
     if (needsUIkit(path)) {
-      runWhenIdleOrInteraction(loadUIkitJS, { timeout: 2500 });
+      runWhenIdleOrInteraction(loadUIkitJS, { delay: 5000 });
       return;
     }
 
-    runWhenIdleOrInteraction(loadUIkitJS, { timeout: 7000 });
+    runWhenIdleOrInteraction(loadUIkitJS, { delay: 60000 });
   };
 
-  onMounted(() => {
+  nuxtApp.hook('app:mounted', () => {
     scheduleUIkit(route.path);
   });
 
-  watch(() => route.path, (newPath) => {
-    if (needsUIkit(newPath)) {
+  router.afterEach((to) => {
+    if (needsUIkit(to.path)) {
       loadUIkitJS();
     }
   });
@@ -106,10 +107,6 @@ export default defineNuxtPlugin(() => {
     },
   };
 });
-
-
-
-
 
 
 

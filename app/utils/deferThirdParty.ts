@@ -1,5 +1,7 @@
 interface DeferThirdPartyOptions {
   timeout?: number;
+  delay?: number;
+  events?: string[];
 }
 
 export function runWhenIdleOrInteraction(
@@ -9,7 +11,8 @@ export function runWhenIdleOrInteraction(
   if (!import.meta.client) return;
 
   const timeout = options.timeout ?? 3500;
-  const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+  const delay = options.delay ?? 0;
+  const events = options.events ?? ['pointerdown', 'keydown', 'touchstart'];
   let hasRun = false;
 
   const run = () => {
@@ -31,13 +34,22 @@ export function runWhenIdleOrInteraction(
   });
 
   const scheduleIdle = () => {
-    const requestIdleCallback = (window as any).requestIdleCallback;
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(run, { timeout });
+    const schedule = () => {
+      const requestIdleCallback = (window as any).requestIdleCallback;
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run, { timeout });
+        return;
+      }
+
+      window.setTimeout(run, timeout);
+    };
+
+    if (delay > 0) {
+      window.setTimeout(schedule, delay);
       return;
     }
 
-    window.setTimeout(run, timeout);
+    schedule();
   };
 
   if (document.readyState === 'complete') {

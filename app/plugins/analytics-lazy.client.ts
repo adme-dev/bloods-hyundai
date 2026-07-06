@@ -43,5 +43,5 @@ export default defineNuxtPlugin(() => {
     loadGoogleTagManager();
   };
 
-  runWhenIdleOrInteraction(loadAnalytics);
+  runWhenIdleOrInteraction(loadAnalytics, { delay: 60000 });
 });

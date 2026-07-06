@@ -34,7 +34,7 @@ const loadGlobalModelSummaries = async () => {
 // inflate the initial HTML payload on routes that do not need model data.
 onMounted(() => {
   mainStore.setLoading(false);
-  runWhenIdleOrInteraction(loadGlobalModelSummaries, { timeout: 7000 });
+  runWhenIdleOrInteraction(loadGlobalModelSummaries, { delay: 7000 });
 });
 
 // Global link handler for SPA navigation
@@ -110,7 +110,6 @@ if (siteConfigData.value?.config) {
 <style lang="scss">
 // UIkit and custom styles are imported via nuxt.config.ts css array
 </style>
-
 
 
 
