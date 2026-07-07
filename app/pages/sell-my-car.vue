@@ -550,13 +550,30 @@ const { data: page } = await useAsyncData(
   }
 )
 
+const pageHeroImages = computed(() =>
+  extractPageHeroImages(page.value?.content?.rendered || '')
+)
+
+const heroImageDesktop = computed(() =>
+  pageHeroImages.value.desktop ||
+  page.value?.featuredImage?.source_url ||
+  page.value?.featuredImage?.url ||
+  page.value?.yoast_head_json?.og_image?.[0]?.url ||
+  '/images/placeholder-car.svg'
+)
+
+const heroImageMobile = computed(() =>
+  pageHeroImages.value.mobile ||
+  heroImageDesktop.value
+)
+
 // SEO - use the same pattern as [slug].vue
 useSeoMeta({
   title: () => page.value?.yoast_head_json?.title || page.value?.title?.rendered || 'Sell Your Car',
   description: () => page.value?.yoast_head_json?.description || `Sell your car to ${siteName.value}. Upload your vehicle details and photos to request a competitive valuation from our used car team.`,
   ogTitle: () => page.value?.yoast_head_json?.og_title || page.value?.title?.rendered || 'Sell Your Car',
   ogDescription: () => page.value?.yoast_head_json?.og_description || `Sell your car to ${siteName.value}. Request a quick used car valuation online.`,
-  ogImage: () => page.value?.yoast_head_json?.og_image?.[0]?.url,
+  ogImage: () => heroImageDesktop.value,
 })
 
 // Stepper configuration
@@ -574,14 +591,52 @@ const benefits = [
   { icon: Users, title: 'Expert Team', description: 'Years of experience' },
 ]
 
-const heroImage = computed(() =>
-  page.value?.featuredImage?.source_url ||
-  page.value?.featuredImage?.url ||
-  page.value?.yoast_head_json?.og_image?.[0]?.url ||
-  '/images/placeholder-car.svg'
-)
-const heroImageDesktop = computed(() => heroImage.value)
-const heroImageMobile = computed(() => heroImage.value)
+function extractPageHeroImages(html: string): { desktop?: string; mobile?: string } {
+  const imageTags = html.match(/<img\b[^>]*>/gi) || []
+  const images = imageTags
+    .map((tag) => ({
+      src: decodeHtmlAttribute(
+        getHtmlAttribute(tag, 'data-src') ||
+        getHtmlAttribute(tag, 'src') ||
+        getHtmlAttribute(tag, 'data-lazy-src')
+      ),
+      className: getHtmlAttribute(tag, 'class') || '',
+      width: Number(getHtmlAttribute(tag, 'width') || 0),
+      height: Number(getHtmlAttribute(tag, 'height') || 0),
+    }))
+    .filter((image) => Boolean(image.src))
+
+  const mobile = images.find((image) =>
+    /uk-hidden@s|mobile|767|975/i.test(`${image.className} ${image.src}`)
+  )?.src
+
+  const desktop = images.find((image) =>
+    /uk-visible@s|desktop|1920|720/i.test(`${image.className} ${image.src}`)
+  )?.src || images
+    .slice()
+    .sort((a, b) => (b.width * b.height) - (a.width * a.height))[0]
+    ?.src
+
+  return {
+    desktop,
+    mobile,
+  }
+}
+
+function getHtmlAttribute(tag: string, attribute: string): string | undefined {
+  const pattern = new RegExp(`${attribute}=(["'])(.*?)\\1`, 'i')
+  return tag.match(pattern)?.[2]
+}
+
+function decodeHtmlAttribute(value?: string): string | undefined {
+  if (!value) return undefined
+
+  return value
+    .replace(/&#038;/g, '&')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+}
 
 const processSteps = [
   { icon: FileText, title: 'Submit the basics', description: 'Tell us the make, model, kilometres and registration details.' },
