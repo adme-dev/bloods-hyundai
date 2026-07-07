@@ -13,11 +13,32 @@
 
 <script setup lang="ts">
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
+import hyundaiSansHeadMediumUrl from '~/assets/fonts/HyundaiSansHead-Medium.woff2?url';
+import hyundaiSansTextRegularUrl from '~/assets/fonts/HyundaiSansText-Regular.woff2?url';
 
 // Stores are auto-imported from /stores directory
 // Initialize stores and fetch initial data
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
+
+useHead({
+  link: [
+    {
+      rel: 'preload',
+      as: 'font',
+      type: 'font/woff2',
+      href: hyundaiSansTextRegularUrl,
+      crossorigin: '',
+    },
+    {
+      rel: 'preload',
+      as: 'font',
+      type: 'font/woff2',
+      href: hyundaiSansHeadMediumUrl,
+      crossorigin: '',
+    },
+  ],
+});
 
 const loadGlobalModelSummaries = async () => {
   if (mainStore.models.length) return;
@@ -111,5 +132,4 @@ if (siteConfigData.value?.config) {
 <style lang="scss">
 // UIkit and custom styles are imported via nuxt.config.ts css array
 </style>
-
 
