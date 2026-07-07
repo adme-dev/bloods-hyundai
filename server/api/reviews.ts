@@ -5,7 +5,7 @@
  */
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey } from '../utils/tenant';
 import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 
 const REVIEWS_CACHE_MAX_AGE = 60 * 10; // 10 minutes
@@ -39,8 +39,8 @@ function localReviewsFallbackMatchesDealer(localData: any, dealerSlug: string): 
     return dealerSlug === 'sale-hyundai';
   }
 
-  if (name.includes('blood hyundai')) {
-    return dealerSlug === 'blood-hyundai';
+  if (/blood'?s?\s+hyundai/.test(name)) {
+    return resolveDealerSlugAliases(dealerSlug).some((alias) => alias === 'blood-hyundai' || alias === 'bloods-hyundai');
   }
 
   return true;
@@ -165,6 +165,5 @@ export default defineCachedEventHandler(async (event): Promise<ProcessedReviewsR
   name: 'reviews',
   getKey: (event) => resolveTenantCacheKey(event, 'google-reviews'),
 });
-
 
 

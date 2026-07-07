@@ -34,8 +34,19 @@ const BLOOD_SELLER_CONFIG: HomepageSellerConfig = {
 
 const DEFAULT_DEALER_SLUG = 'hyundai-dealer';
 
+function isBloodDealerSlug(dealerSlug: string): boolean {
+  return dealerSlug === 'blood-hyundai' || dealerSlug === 'bloods-hyundai';
+}
+
 function envPrefixForDealer(dealerSlug: string): string {
   return dealerSlug.toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+}
+
+function envPrefixesForDealer(dealerSlug: string): string[] {
+  return Array.from(new Set([
+    envPrefixForDealer(dealerSlug),
+    ...(isBloodDealerSlug(dealerSlug) ? ['BLOOD_HYUNDAI', 'BLOODS_HYUNDAI'] : []),
+  ]));
 }
 
 function parseCsv(value: string | undefined): string[] {
@@ -61,13 +72,14 @@ function parseFeedSources(value: string | undefined): InventoryFeedSource[] {
 }
 
 export function getInventoryFeedSources(dealerSlug: string): InventoryFeedSource[] {
-  const prefix = envPrefixForDealer(dealerSlug);
-  const tenantSources = parseFeedSources(process.env[`${prefix}_CARSALES_FEED_URLS`]);
-  if (tenantSources.length > 0) {
-    return tenantSources;
+  for (const prefix of envPrefixesForDealer(dealerSlug)) {
+    const tenantSources = parseFeedSources(process.env[`${prefix}_CARSALES_FEED_URLS`]);
+    if (tenantSources.length > 0) {
+      return tenantSources;
+    }
   }
 
-  if (dealerSlug === 'blood-hyundai') {
+  if (isBloodDealerSlug(dealerSlug)) {
     return BLOOD_FEED_SOURCES;
   }
 
@@ -79,18 +91,19 @@ export function getInventoryFeedSources(dealerSlug: string): InventoryFeedSource
 }
 
 export function getHomepageSellerConfig(dealerSlug: string): HomepageSellerConfig {
-  const prefix = envPrefixForDealer(dealerSlug);
-  const tenantConfig = {
-    primary: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_PRIMARY_SELLER_IDS`]),
-    group: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_GROUP_SELLER_IDS`]),
-    secondary: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_SECONDARY_SELLER_IDS`]),
-  };
+  for (const prefix of envPrefixesForDealer(dealerSlug)) {
+    const tenantConfig = {
+      primary: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_PRIMARY_SELLER_IDS`]),
+      group: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_GROUP_SELLER_IDS`]),
+      secondary: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_SECONDARY_SELLER_IDS`]),
+    };
 
-  if (tenantConfig.primary.length || tenantConfig.group.length || tenantConfig.secondary.length) {
-    return tenantConfig;
+    if (tenantConfig.primary.length || tenantConfig.group.length || tenantConfig.secondary.length) {
+      return tenantConfig;
+    }
   }
 
-  if (dealerSlug === 'blood-hyundai') {
+  if (isBloodDealerSlug(dealerSlug)) {
     return BLOOD_SELLER_CONFIG;
   }
 

@@ -15,7 +15,7 @@ import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { getRequestURL } from 'h3';
-import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSiteUrl, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
 import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 
 interface SiteConfig {
@@ -77,8 +77,8 @@ function localFallbackMatchesDealer(localConfig: SiteConfig | null, dealerSlug: 
     return dealerSlug === 'sale-hyundai';
   }
 
-  if (name.includes('blood hyundai')) {
-    return dealerSlug === 'blood-hyundai';
+  if (/blood'?s?\s+hyundai/.test(name)) {
+    return resolveDealerSlugAliases(dealerSlug).some((slug) => slug === 'blood-hyundai' || slug === 'bloods-hyundai');
   }
 
   return true;
@@ -126,7 +126,7 @@ function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigi
 export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const requestUrl = getRequestURL(event);
-  const requestOrigin = requestUrl.origin || config.public.siteUrl || '';
+  const requestOrigin = resolveDealerSiteUrl(event, config.public.siteUrl || requestUrl.origin || '');
   const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
   const dealerSlug = resolveDealerSlug(event, fallbackSlug);
   const hostTenant = resolveTenantFromHostname(requestUrl.hostname, fallbackSlug);

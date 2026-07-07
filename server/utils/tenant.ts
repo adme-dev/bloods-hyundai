@@ -1,9 +1,10 @@
-import { getRequestURL, type H3Event } from 'h3';
+import { getHeader, getRequestURL, type H3Event } from 'h3';
 
 export interface TenantConfig {
   slug: string;
   name: string;
   siteUrl?: string;
+  aliases?: string[];
 }
 
 export const DEFAULT_DEALER_SLUG = 'hyundai-dealer';
@@ -14,9 +15,10 @@ const DEFAULT_TENANT: TenantConfig = {
 };
 
 const BLOOD_TENANT: TenantConfig = {
-  slug: 'blood-hyundai',
-  name: 'Blood Hyundai',
+  slug: 'bloods-hyundai',
+  name: 'Bloods Hyundai',
   siteUrl: 'https://bloodhyundai.com.au',
+  aliases: ['blood-hyundai'],
 };
 
 const SALE_TENANT: TenantConfig = {
@@ -34,6 +36,11 @@ const TENANT_HOSTS: Record<string, TenantConfig> = {
   'www.salehyundai.com.au': SALE_TENANT,
 };
 
+function tenantMatchesSlug(tenant: TenantConfig, slug: string | null | undefined): boolean {
+  const normalizedSlug = normalizeHostname(slug);
+  return tenant.slug === normalizedSlug || Boolean(tenant.aliases?.includes(normalizedSlug));
+}
+
 export function normalizeHostname(hostname: string | null | undefined): string {
   if (!hostname) return '';
 
@@ -46,7 +53,8 @@ export function normalizeHostname(hostname: string | null | undefined): string {
 }
 
 export function getRequestHostname(event: H3Event): string {
-  return normalizeHostname(getRequestURL(event).hostname);
+  const forwardedHost = getHeader(event, 'x-forwarded-host') || getHeader(event, 'host');
+  return normalizeHostname(forwardedHost || getRequestURL(event).hostname);
 }
 
 export function resolveTenantFromHostname(
@@ -58,7 +66,7 @@ export function resolveTenantFromHostname(
     return TENANT_HOSTS[normalized];
   }
 
-  const matchedTenant = TENANTS.find((tenant) => tenant.slug === fallbackSlug);
+  const matchedTenant = TENANTS.find((tenant) => tenantMatchesSlug(tenant, fallbackSlug));
   if (matchedTenant) {
     return matchedTenant;
   }
@@ -92,11 +100,24 @@ export function resolveDealerSiteUrl(
   }
 
   const requestUrl = getRequestURL(event);
-  if (requestUrl.origin && requestUrl.origin !== 'null') {
+  if (
+    requestUrl.origin &&
+    requestUrl.origin !== 'null' &&
+    !requestUrl.origin.includes('localhost')
+  ) {
     return requestUrl.origin;
   }
 
   return fallbackUrl;
+}
+
+export function resolveDealerSlugAliases(dealerSlug: string): string[] {
+  const tenant = TENANTS.find((candidate) => tenantMatchesSlug(candidate, dealerSlug));
+  if (!tenant) {
+    return [dealerSlug];
+  }
+
+  return Array.from(new Set([tenant.slug, ...(tenant.aliases || [])]));
 }
 
 export function resolveTenantCacheKey(

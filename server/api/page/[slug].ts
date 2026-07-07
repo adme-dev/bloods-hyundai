@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey } from '../../utils/tenant';
 import { buildTenantCdnUrls } from '../../utils/tenant-cdn';
 
 // Try to load local fallback page data for development
@@ -14,7 +14,10 @@ function loadLocalPageFallback(slug: string, dealerSlug: string): any | null {
         return null;
       }
 
-      if (data.toLowerCase().includes('blood hyundai') && dealerSlug !== 'blood-hyundai') {
+      if (
+        /blood'?s?\s+hyundai/.test(data.toLowerCase()) &&
+        !resolveDealerSlugAliases(dealerSlug).some((alias) => alias === 'blood-hyundai' || alias === 'bloods-hyundai')
+      ) {
         return null;
       }
 
@@ -117,6 +120,5 @@ export default defineCachedEventHandler(async (event) => {
   getKey: (event) => resolveTenantCacheKey(event, `page:${getRouterParam(event, 'slug') || 'unknown'}`),
   shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
-
 
 

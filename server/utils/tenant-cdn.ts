@@ -1,13 +1,18 @@
+import { resolveDealerSlugAliases } from './tenant';
+
 export function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
   const trimmed = cdnUrl.replace(/\/+$/, '');
   const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
-  const tenantBase = tenantMatch
-    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
-    : `${trimmed}/files/${dealerSlug}`;
-  const allowLegacyPath = !tenantMatch || tenantMatch[1] === dealerSlug;
+  const aliases = resolveDealerSlugAliases(dealerSlug);
+  const allowLegacyPath = !tenantMatch || aliases.includes(tenantMatch[1]);
 
   return Array.from(new Set([
-    `${tenantBase}/${path}`,
+    ...aliases.map((slug) => {
+      const tenantBase = tenantMatch
+        ? trimmed.replace(/\/files\/[^/]+$/, `/files/${slug}`)
+        : `${trimmed}/files/${slug}`;
+      return `${tenantBase}/${path}`;
+    }),
     ...(allowLegacyPath ? [`${trimmed}/${path}`] : []),
   ]));
 }
