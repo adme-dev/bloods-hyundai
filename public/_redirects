@@ -7,3 +7,4 @@
 
 # Legacy URL redirects (add as needed)
 # /old-path /new-path 301
+/favicon.ico /favicon.svg 301

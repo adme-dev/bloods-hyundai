@@ -348,7 +348,9 @@ export default defineNuxtConfig({
         lang: 'en-AU',
       },
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'shortcut icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/favicon.svg' },
         // Preconnect to external resources for faster loading
         { rel: 'preconnect', href: 'https://hyundaioem.b-cdn.net' },
         { rel: 'preconnect', href: 'https://driveagent.b-cdn.net' },
