@@ -18,12 +18,12 @@
                   <source
                     v-if="slide.mobile"
                     media="(max-width: 768px)"
-                    :srcset="slide.mobile"
+                    :srcset="optimizedSlideImage(slide.mobile, 900, 1200)"
                     width="900"
                     height="1200"
                   />
                   <img
-                    :src="slide.desktop || slide.mobile"
+                    :src="optimizedSlideImage(slide.desktop || slide.mobile, 1600, 600)"
                     :alt="strippedHeadingContent(slide.heading_content) || siteName"
                     class="slide-image"
                     width="1600"
@@ -98,6 +98,7 @@ const props = defineProps<{
   slides?: unknown;
 }>();
 const route = useRoute();
+const image = useImage();
 
 const selectedIndex = ref(0);
 const emblaRef = ref<HTMLElement | null>(null);
@@ -152,29 +153,46 @@ const homeSlides = computed(() => {
   });
 });
 
+const optimizedSlideImage = (src: string | undefined, width: number, height: number) => {
+  if (!src) return '';
+  return image(src, {
+    width,
+    height,
+    fit: 'cover',
+    format: 'webp',
+    quality: 78,
+  });
+};
+
 const firstSlidePreloadLinks = computed(() => {
   const firstSlide = homeSlides.value[0];
   if (!firstSlide || firstSlide.video) return [];
 
   const mobileImage = firstSlide.mobile || firstSlide.tablet;
   const desktopImage = firstSlide.desktop || mobileImage;
+  const optimizedMobileImage = mobileImage
+    ? optimizedSlideImage(mobileImage, 900, 1200)
+    : null;
+  const optimizedDesktopImage = desktopImage
+    ? optimizedSlideImage(desktopImage, 1600, 600)
+    : null;
   const links: Record<string, string>[] = [];
 
-  if (mobileImage && mobileImage !== desktopImage) {
+  if (optimizedMobileImage && mobileImage !== desktopImage) {
     links.push({
       rel: 'preload',
       as: 'image',
-      href: mobileImage,
+      href: optimizedMobileImage,
       media: '(max-width: 768px)',
       fetchpriority: 'high',
     });
   }
 
-  if (desktopImage) {
+  if (optimizedDesktopImage) {
     links.push({
       rel: 'preload',
       as: 'image',
-      href: desktopImage,
+      href: optimizedDesktopImage,
       ...(mobileImage && mobileImage !== desktopImage ? { media: '(min-width: 769px)' } : {}),
       fetchpriority: 'high',
     });

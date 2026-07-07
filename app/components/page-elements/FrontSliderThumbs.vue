@@ -32,11 +32,14 @@
                 class="thumb-card"
               >
                 <div class="thumb-image-wrapper">
-                  <img
+                  <NuxtImg
                     :src="thumb.image"
                     :alt="thumb.button_text || siteName"
-                    width="640"
-                    height="360"
+                    width="480"
+                    height="270"
+                    fit="cover"
+                    format="webp"
+                    quality="72"
                     class="thumb-image"
                     loading="lazy"
                     decoding="async"
