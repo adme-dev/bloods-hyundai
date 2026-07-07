@@ -7,7 +7,8 @@
  * - Automatic cache invalidation
  * - Stale-while-revalidate for better performance
  */
-import { resolveTenantCacheKey } from '../utils/tenant';
+import { getInventoryFeedSources, type InventoryFeedSource } from '../utils/inventory-config';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
 
 // Helper functions
 const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
@@ -87,22 +88,29 @@ function createFiltersFromVehicles(vehicles: any[]) {
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
-async function buildFeedSource() {
-  // Supabase data URLs
-  const urls = [
-    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-hyundai/data.json',
-    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-motor-group/data.json',
-    'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/geelong-mazda/data.json'
-  ];
+async function buildFeedSource(dealerSlug: string) {
+  const sources = getInventoryFeedSources(dealerSlug);
+
+  if (sources.length === 0) {
+    console.warn(`[Carsales Feed] No inventory feed configured for dealer: ${dealerSlug}`);
+    return {
+      vehiclesData: [],
+      filters: [],
+      _cached: false,
+      _timestamp: Date.now(),
+      _empty: true,
+      _missingFeedConfig: true,
+    };
+  }
 
   const PER_URL_DEADLINE_MS = 6000;
 
-  const fetchOne = async (url: string, index: number): Promise<any[]> => {
+  const fetchOne = async (source: InventoryFeedSource, index: number): Promise<any[]> => {
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), PER_URL_DEADLINE_MS);
     const startedAt = Date.now();
     try {
-      const rawResponse = await $fetch<string>(url, {
+      const rawResponse = await $fetch<string>(source.url, {
         responseType: 'text',
         signal: controller.signal,
         retry: 0,
@@ -117,15 +125,15 @@ async function buildFeedSource() {
       }
 
       if (!Array.isArray(data)) {
-        console.error(`[Carsales Feed] URL ${index} (${url}): Response is not an array, type: ${typeof data}`);
+        console.error(`[Carsales Feed] URL ${index} (${source.url}): Response is not an array, type: ${typeof data}`);
         return [];
       }
 
-      console.log(`[Carsales Feed] URL ${index} (${url}): Success in ${Date.now() - startedAt}ms, ${data.length} vehicles`);
+      console.log(`[Carsales Feed] URL ${index} (${source.url}): Success in ${Date.now() - startedAt}ms, ${data.length} vehicles`);
       return data;
     } catch (error: any) {
       const mode = controller.signal.aborted ? 'abort/timeout' : 'reject';
-      console.error(`[Carsales Feed] URL ${index} (${url}): ${mode} after ${Date.now() - startedAt}ms -`, error?.message);
+      console.error(`[Carsales Feed] URL ${index} (${source.url}): ${mode} after ${Date.now() - startedAt}ms -`, error?.message);
       return [];
     } finally {
       clearTimeout(abortTimer);
@@ -133,26 +141,27 @@ async function buildFeedSource() {
   };
 
   try {
-    console.log('[Carsales Feed] Fetching from URLs:', urls);
+    console.log('[Carsales Feed] Fetching sources for dealer:', dealerSlug, sources.map((source) => source.role));
 
-    const settled = await Promise.allSettled(urls.map((url, index) => fetchOne(url, index)));
-    const responses = settled.map((r) => (r.status === 'fulfilled' ? r.value : []));
-    const successfulBuckets = responses.filter((r) => r.length > 0).length;
+    const settled = await Promise.allSettled(sources.map((source, index) => fetchOne(source, index)));
+    const responses = settled.map((r, index) => ({
+      source: sources[index],
+      data: r.status === 'fulfilled' ? r.value : [],
+    }));
+    const successfulBuckets = responses.filter((response) => response.data.length > 0).length;
 
-    console.log('[Carsales Feed] Received responses:', responses.map(r => Array.isArray(r) ? r.length : 'not array'));
+    console.log('[Carsales Feed] Received responses:', responses.map(response => response.data.length));
 
     const uniqueIds = new Set();
     const vehicles: any[] = [];
 
-    responses.forEach((data, urlIndex) => {
+    responses.forEach(({ data, source }, sourceIndex) => {
       if (!Array.isArray(data)) {
         console.log('[Carsales Feed] Response is not an array:', typeof data);
         return;
       }
       
-      // Determine if this is the "new-cars" bucket (index 1) or "used" bucket (index 0)
-      const isNewCarsBucket = urlIndex === 1;
-      console.log(`[Carsales Feed] Processing bucket ${urlIndex} (${isNewCarsBucket ? 'new-cars' : 'used'}): ${data.length} vehicles`);
+      console.log(`[Carsales Feed] Processing source ${sourceIndex} (${source.role}): ${data.length} vehicles`);
       
       for (const vehicle of data) {
         // Use identifier as the unique ID (not vehicle.id)
@@ -176,13 +185,13 @@ async function buildFeedSource() {
 
         let shouldIncludeVehicle = false;
 
-        // Group inventory bucket (index 1): include ALL (new car inventory)
-        // Primary Hyundai bucket (index 0): include ALL Hyundai (dealer's full inventory)
-        // Secondary brand buckets: include only USED (trade-ins)
-        if (isNewCarsBucket) {
+        // Group inventory: include ALL.
+        // Primary inventory: include Hyundai only.
+        // Secondary brand inventory: include only USED trade-ins.
+        if (source.role === 'group') {
           // Group inventory - include all
           shouldIncludeVehicle = true;
-        } else if (urlIndex === 0) {
+        } else if (source.role === 'primary') {
           // Primary Hyundai inventory
           shouldIncludeVehicle = isHyundai;
         } else {
@@ -196,7 +205,7 @@ async function buildFeedSource() {
             title: vehicle.title,
             isHyundai,
             condition: conditionValues,
-            isNewCarsBucket,
+            sourceRole: source.role,
             shouldIncludeVehicle,
             isDemo,
             isNew,
@@ -246,7 +255,7 @@ async function buildFeedSource() {
       filters,
       _cached: false,
       _timestamp: Date.now(),
-      _partial: successfulBuckets < urls.length,
+      _partial: successfulBuckets < sources.length,
       _empty: vehicles.length === 0,
     };
   } catch (error: any) {
@@ -262,8 +271,8 @@ async function buildFeedSource() {
   }
 }
 
-const buildFeed = defineCachedFunction(async (tenantKey: string) => {
-  return await buildFeedSource();
+const buildFeed = defineCachedFunction(async (tenantKey: string, dealerSlug: string) => {
+  return await buildFeedSource(dealerSlug);
 }, {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
@@ -276,7 +285,10 @@ const buildFeed = defineCachedFunction(async (tenantKey: string) => {
 });
 
 export default defineEventHandler(async (event) => {
-  const tenantKey = resolveTenantCacheKey(event, 'carsales-feed-data');
+  const config = useRuntimeConfig();
+  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
+  const tenantKey = resolveTenantCacheKey(event, 'carsales-feed-data', fallbackSlug);
   const query = getQuery(event);
 
   if (query.refresh === 'true') {
@@ -288,6 +300,5 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return await buildFeed(tenantKey);
+  return await buildFeed(tenantKey, dealerSlug);
 });
-

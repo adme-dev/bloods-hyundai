@@ -1,4 +1,5 @@
 import { H3Event } from 'h3';
+import { getTenantForwardHeaders } from '../../utils/tenant-headers';
 
 /**
  * GET /api/vehicle-detail/[id]
@@ -20,9 +21,7 @@ export default defineEventHandler(async (event: H3Event) => {
     console.log(`[Vehicle Detail API] Fetching vehicle ${vehicleId} from carsales feed`);
 
     const feedResponse = await $fetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: getTenantForwardHeaders(event),
     });
     
     if (!feedResponse || !feedResponse.vehiclesData) {
@@ -107,4 +106,3 @@ export default defineEventHandler(async (event: H3Event) => {
     });
   }
 });
-

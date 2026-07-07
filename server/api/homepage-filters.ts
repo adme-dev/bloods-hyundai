@@ -8,15 +8,12 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-
-// Blood Motor Group seller IDs (matches carsales-feed.ts JSON sources)
-const SELLER_IDS = {
-  BLOOD_HYUNDAI: '49b41e33-6e72-b64d-43a2-7897e61c1bf0',
-  BLOOD_MOTOR_GROUP: '646680a2-406b-2430-bde8-761a48e4a2ed', // "new-cars" bucket - include all
-  GEELONG_MAZDA: '41bba4aa-6460-dbd6-30f7-7f31dfa5ef61',
-};
-
-const ALL_SELLER_IDS = Object.values(SELLER_IDS);
+import {
+  getAllSellerIds,
+  getHomepageSellerConfig,
+  type HomepageSellerConfig,
+} from '../utils/inventory-config';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
 
 /**
  * Extract condition values from database field
@@ -46,14 +43,14 @@ function getConditionValues(condition: any): string[] {
  * - Primary Hyundai inventory: include ALL Hyundai
  * - Secondary brand inventory: include only USED trade-ins
  */
-function shouldIncludeVehicle(vehicle: VehicleRow): boolean {
+function shouldIncludeVehicle(vehicle: VehicleRow, sellerConfig: HomepageSellerConfig): boolean {
   // Group inventory - include all new car inventory
-  if (vehicle.seller_id === SELLER_IDS.BLOOD_MOTOR_GROUP) {
+  if (sellerConfig.group.includes(vehicle.seller_id)) {
     return true;
   }
 
   // Primary Hyundai inventory
-  if (vehicle.seller_id === SELLER_IDS.BLOOD_HYUNDAI) {
+  if (sellerConfig.primary.includes(vehicle.seller_id)) {
     const isHyundai = vehicle.make?.toLowerCase() === 'hyundai';
     return isHyundai;
   }
@@ -111,6 +108,25 @@ export default defineCachedEventHandler(async (event) => {
   }
 
   try {
+    const config = useRuntimeConfig();
+    const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+    const dealerSlug = resolveDealerSlug(event, fallbackSlug);
+    const sellerConfig = getHomepageSellerConfig(dealerSlug);
+    const sellerIds = getAllSellerIds(sellerConfig);
+
+    if (sellerIds.length === 0) {
+      console.warn(`[homepage-filters] No seller IDs configured for dealer: ${dealerSlug}`);
+      return {
+        filters: [],
+        makes: [],
+        vehicles: [],
+        totalCount: 0,
+        _cached: false,
+        _timestamp: Date.now(),
+        _missingSellerConfig: true,
+      };
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Query only the fields needed for filters (not photos, descriptions, etc.)
@@ -118,7 +134,7 @@ export default defineCachedEventHandler(async (event) => {
     const { data: rawVehicles, error } = await supabase
       .from('vehicles')
       .select('seller_id, condition, make, model, body_style, dap_price, egc_price, transmission, drive, fuel_type, seats, odometer_reading')
-      .in('seller_id', ALL_SELLER_IDS)
+      .in('seller_id', sellerIds)
       .neq('sale_status', 'WITHDRAWN');
 
     if (error) {
@@ -131,7 +147,7 @@ export default defineCachedEventHandler(async (event) => {
     }
 
     // Apply business logic filter (matches carsales-feed.ts)
-    const vehicles = (rawVehicles as VehicleRow[]).filter(shouldIncludeVehicle);
+    const vehicles = (rawVehicles as VehicleRow[]).filter((vehicle) => shouldIncludeVehicle(vehicle, sellerConfig));
 
     // Aggregate filter data
     const conditions = new Map<string, number>();
@@ -364,5 +380,5 @@ export default defineCachedEventHandler(async (event) => {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'homepage-filters',
-  getKey: () => 'homepage-filters-v2'
+  getKey: (event) => resolveTenantCacheKey(event, 'homepage-filters-v3')
 });

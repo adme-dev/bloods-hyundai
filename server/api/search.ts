@@ -4,6 +4,8 @@
  * Uses cached data from /api/carsales-feed (server-side, no HTTP call)
  */
 
+import { getTenantForwardHeaders } from '../utils/tenant-headers';
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
@@ -11,9 +13,7 @@ export default defineEventHandler(async (event) => {
     // Use internal $fetch which leverages Nitro's route caching
     // This doesn't make an HTTP call - it calls the handler directly
     const feedResponse = await $fetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
-      headers: {
-        'Accept': 'application/json',
-      },
+      headers: getTenantForwardHeaders(event),
     });
 
     if (!feedResponse) {
@@ -371,7 +371,6 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
-
 
 
 
