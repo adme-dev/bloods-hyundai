@@ -1,5 +1,5 @@
 <template>
-  <section class="homepage-models-section py-16 bg-[#f6f3f2]">
+  <section class="homepage-models-section bg-[#f6f3f2]">
     <div class="mx-auto container">
       <!-- Section Header -->
       <div class="text-center mb-12">
@@ -437,6 +437,21 @@ onClickOutside(categoryDropdownRef, () => {
 </script>
 
 <style scoped>
+.homepage-models-section {
+  margin-top: clamp(32px, 5vw, 64px);
+  padding-top: clamp(64px, 7vw, 96px);
+  padding-bottom: clamp(72px, 8vw, 112px);
+  overflow: hidden;
+}
+
+.homepage-models-section .container {
+  width: min(100% - 32px, 1400px);
+}
+
+.section-heading {
+  line-height: 1.1;
+}
+
 /* Line clamp utility for description text */
 .line-clamp-3 {
   display: -webkit-box;
@@ -485,8 +500,13 @@ onClickOutside(categoryDropdownRef, () => {
 /* Mobile scroller specific styles */
 @media (max-width: 1023px) {
   .homepage-models-section .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    width: min(100% - 24px, 720px);
+  }
+
+  .homepage-models-section {
+    margin-top: 28px;
+    padding-top: 56px;
+    padding-bottom: 80px;
   }
 }
 </style>
