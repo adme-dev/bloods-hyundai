@@ -14,12 +14,12 @@
           </div>
 
           <div>
-            <a href="#location" class="quick-action-link uk-link-reset uk-width-1-1">
+            <NuxtLink to="/car-sales?make=hyundai" class="quick-action-link uk-link-reset uk-width-1-1">
               <div class="quick-action-inner">
                 <i class="icon-find-a-dealer quick-action-icon"></i>
                 <div class="icontxt">Find a Hyundai</div>
               </div>
-            </a>
+            </NuxtLink>
           </div>
 
           <div>

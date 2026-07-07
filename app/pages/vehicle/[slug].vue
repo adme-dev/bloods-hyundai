@@ -340,8 +340,30 @@ const vehicleSearchModel = computed(() => {
   return parts[0];
 });
 
-// Base model name for the calculator API (same as vehicleSearchModel)
-const vehicleBaseModel = computed(() => vehicleSearchModel.value);
+// Base model name for the calculator API.
+// IONIQ slugs need to stay specific; Hyundai's calculator has no generic "ioniq" model.
+const vehicleBaseModel = computed(() => {
+  const slugValue = slug.value?.toLowerCase() || '';
+
+  const calculatorModelOverrides: Record<string, string> = {
+    'ioniq-6-n': 'ioniq-6',
+  };
+
+  if (calculatorModelOverrides[slugValue]) {
+    return calculatorModelOverrides[slugValue];
+  }
+
+  const specificIoniqModels = ['ioniq-5-n', 'ioniq-5', 'ioniq-6', 'ioniq-9'];
+  const matchedIoniqModel = specificIoniqModels.find((model) =>
+    slugValue === model || slugValue.startsWith(`${model}-`)
+  );
+
+  if (matchedIoniqModel) {
+    return matchedIoniqModel;
+  }
+
+  return vehicleSearchModel.value;
+});
 
 // Detect powertrain type from slug for filtering variants
 // e.g., 'kona-electric' -> 'Electric', 'kona-hybrid' -> 'Hybrid', 'kona' -> null
@@ -752,7 +774,6 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
 
 
 

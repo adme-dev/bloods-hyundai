@@ -43,6 +43,38 @@ const calculatorRouteResolutions: Record<string, CalculatorRouteResolution> = {
     preferredPowertrain: 'Hybrid',
     preferredVariantGroupName: 'i30 Sedan Hybrid',
   },
+  'ioniq5': {
+    apiModelName: 'ioniq-5',
+  },
+  'ioniq-5': {
+    apiModelName: 'ioniq-5',
+  },
+  'ioniq5-n': {
+    apiModelName: 'ioniq-5-n',
+    fallbackModelNames: ['ioniq-5'],
+  },
+  'ioniq-5-n': {
+    apiModelName: 'ioniq-5-n',
+    fallbackModelNames: ['ioniq-5'],
+  },
+  'ioniq6': {
+    apiModelName: 'ioniq-6',
+  },
+  'ioniq-6': {
+    apiModelName: 'ioniq-6',
+  },
+  'ioniq6-n': {
+    apiModelName: 'ioniq-6',
+  },
+  'ioniq-6-n': {
+    apiModelName: 'ioniq-6',
+  },
+  'ioniq9': {
+    apiModelName: 'ioniq-9',
+  },
+  'ioniq-9': {
+    apiModelName: 'ioniq-9',
+  },
 };
 
 const normalizeModelSlug = (modelname: string) => modelname.trim().toLowerCase();
