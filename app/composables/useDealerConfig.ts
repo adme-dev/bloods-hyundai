@@ -5,11 +5,13 @@
  * - Data is fetched on the server and hydrated to the client
  * - No network request is visible in browser DevTools
  * - 10-minute server-side cache for performance
- * - Shared cache key across all pages for deduplication
+ * - Host-scoped cache key across all pages for deduplication
  *
  * Usage:
  * const { config, pending } = await useDealerConfig()
  */
+
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 
 interface SiteConfig {
   name: string;
@@ -32,12 +34,13 @@ interface SiteConfigResponse {
   _timestamp?: number;
 }
 
-// Shared cache key - ensures all pages share the same cached data
+// Shared base cache key - host suffix prevents cross-tenant payload reuse.
 const CACHE_KEY = 'site-config-data';
 
 export const useDealerConfig = async () => {
+  const cacheKey = getRuntimeTenantCacheKey(CACHE_KEY);
   const { data, status, refresh } = await useFetch<SiteConfigResponse>('/api/site-config', {
-    key: CACHE_KEY,
+    key: cacheKey,
     dedupe: 'defer',
     // Return cached data on client - prevents network request
     getCachedData: (key, nuxtApp) => {

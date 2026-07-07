@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 
 // Stores are auto-imported from /stores directory
 // Initialize stores and fetch initial data
@@ -88,12 +89,13 @@ if (process.client) {
 }
 
 // Fetch site config during SSR - hidden from browser network tab
-// Uses shared cache key 'site-config-data' with 10-min server cache
+// Uses host-scoped cache key with 10-min server cache
 const route = useRoute();
 const shouldRefreshSiteConfig = computed(() => route.query.refresh === 'true');
+const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data');
 
 const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
-  key: computed(() => shouldRefreshSiteConfig.value ? 'site-config-data-refresh' : 'site-config-data'),
+  key: computed(() => shouldRefreshSiteConfig.value ? `${siteConfigCacheKey}:refresh` : siteConfigCacheKey),
   query: computed(() => shouldRefreshSiteConfig.value ? { refresh: 'true' } : {}),
   dedupe: 'defer',
   getCachedData: (key, nuxtApp) => {

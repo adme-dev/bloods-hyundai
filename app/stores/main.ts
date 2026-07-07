@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia';
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 
 /**
  * Main store - replaces root Vuex state
  * Handles: site config, loading state, models, meta
  *
  * Site config is hydrated from SSR payload - no client-side fetch needed
- * Uses shared cache key 'site-config-data' with pages
+ * Uses host-scoped cache key 'site-config-data:<host>' with pages
  */
 
 const SITE_CONFIG_CACHE_KEY = 'site-config-data';
@@ -79,7 +80,8 @@ export const useMainStore = defineStore('main', () => {
     try {
       // Try to get data from Nuxt payload (SSR hydrated data)
       const nuxtApp = useNuxtApp();
-      const cachedData = nuxtApp.payload?.data?.[SITE_CONFIG_CACHE_KEY] || nuxtApp.static?.data?.[SITE_CONFIG_CACHE_KEY];
+      const tenantCacheKey = getRuntimeTenantCacheKey(SITE_CONFIG_CACHE_KEY);
+      const cachedData = nuxtApp.payload?.data?.[tenantCacheKey] || nuxtApp.static?.data?.[tenantCacheKey];
 
       if (cachedData?.config) {
         site.value = cachedData.config;
