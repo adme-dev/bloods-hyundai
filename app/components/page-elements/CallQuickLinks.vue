@@ -44,42 +44,43 @@ const showQuickActions = computed(() => {
 <style scoped>
 .mobile-quick-links {
   position: fixed;
-  bottom: 20px;
-  right: 116px;
-  left: 16px;
-  z-index: 900;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  width: auto;
+  right: 25vw;
+  bottom: 0;
+  left: 0;
+  z-index: 940;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 75vw;
+  height: calc(64px + env(safe-area-inset-bottom));
   max-width: none;
+  background: #002c5f;
+  box-shadow: 0 -8px 24px rgba(0, 30, 80, 0.22);
 }
 
 .quick-link-button {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1 1 0;
-  gap: 6px;
-  min-height: 46px;
+  gap: 4px;
+  height: 100%;
   min-width: 0;
-  padding: 10px 9px;
-  background: var(--color-primary);
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+  background: #002c5f;
   color: #fff !important;
   text-decoration: none;
-  border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0;
+  box-shadow: none;
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1;
   white-space: nowrap;
   transition: all 0.2s;
 
   &:hover {
-    background: var(--color-primary-dark);
+    background: var(--color-primary);
     color: white;
-    transform: translateY(-1px);
   }
 }
 
@@ -93,53 +94,26 @@ const showQuickActions = computed(() => {
 }
 
 .quick-link-button--call {
-  flex: 1.1 1 0;
+  border-right: 0;
 }
 
 .quick-link-icon {
-  width: 20px;
-  height: 20px;
+  width: 21px;
+  height: 21px;
   flex: 0 0 auto;
 }
 
-@media (max-width: 520px) {
-  .mobile-quick-links {
-    right: 106px;
-    left: 12px;
-    gap: 5px;
-  }
-
-  .quick-link-button {
-    min-height: 46px;
-    padding-inline: 7px;
-    font-size: 0.72rem;
-  }
-
-  .quick-link-icon {
-    width: 18px;
-    height: 18px;
-  }
-}
-
 @media (max-width: 359px) {
-  .mobile-quick-links {
-    right: 96px;
-    gap: 4px;
-  }
-
   .quick-link-button {
-    min-height: 44px;
-    padding-inline: 4px;
-    font-size: 0.64rem;
+    font-size: 0.66rem;
   }
 
   .quick-link-icon {
-    width: 16px;
-    height: 16px;
+    width: 19px;
+    height: 19px;
   }
 }
 </style>
-
 
 
 

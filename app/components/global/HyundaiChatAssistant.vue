@@ -1310,22 +1310,45 @@ onUnmounted(() => {
 
 @media (max-width: 959px) {
   .hyundai-chat {
-    right: 16px;
-    bottom: 20px;
+    right: 0;
+    bottom: 0;
+    width: 25vw;
+    height: calc(64px + env(safe-area-inset-bottom));
   }
 
   .chat-launcher {
-    min-height: 46px;
-    padding: 0 12px;
-    gap: 7px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0;
+    box-shadow: 0 -8px 24px rgba(0, 30, 80, 0.22);
+    font-size: 0.72rem;
+  }
+
+  .chat-launcher:hover,
+  .chat-launcher:focus-visible {
+    transform: none;
+    box-shadow: 0 -8px 24px rgba(0, 30, 80, 0.22);
+  }
+
+  .chat-launcher svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .launcher-label {
+    font-size: 0.72rem;
   }
 }
 
 @media (max-width: 520px) {
   .hyundai-chat {
-    right: 12px;
     left: auto;
-    bottom: 20px;
   }
 
   .chat-launcher {
@@ -1340,18 +1363,16 @@ onUnmounted(() => {
 
 @media (max-width: 359px) {
   .chat-launcher {
-    min-height: 44px;
-    padding: 0 9px;
-    gap: 5px;
+    font-size: 0.66rem;
   }
 
   .chat-launcher svg {
-    width: 20px;
-    height: 20px;
+    width: 19px;
+    height: 19px;
   }
 
   .launcher-label {
-    font-size: 12px;
+    font-size: 0.66rem;
   }
 }
 
@@ -1359,6 +1380,8 @@ onUnmounted(() => {
   .hyundai-chat.is-open {
     inset: auto 0 0 0;
     bottom: 0;
+    width: auto;
+    height: auto;
   }
 
   .chat-panel {
