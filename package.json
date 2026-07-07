@@ -26,6 +26,7 @@
     "@sendgrid/mail": "^8.1.6",
     "@stripe/stripe-js": "^4.9.0",
     "@supabase/supabase-js": "^2.88.0",
+    "@unhead/addons": "^2.1.15",
     "@vuelidate/core": "^2.0.3",
     "@vuelidate/validators": "^2.0.4",
     "@vueuse/nuxt": "^14.1.0",
@@ -54,7 +55,9 @@
     "stripe": "^17.3.1",
     "swiper": "^12.0.3",
     "uikit": "^3.25.1",
+    "unhead": "^2.1.15",
     "vue": "^3.5.12",
+    "vue-router": "^5.1.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -87,6 +90,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.6.3",
     "unocss": "^66.5.10",
+    "vite": "^7.3.6",
     "vue-tsc": "^2.1.10"
   }
 }

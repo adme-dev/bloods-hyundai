@@ -6,6 +6,7 @@
     <ClientOnly>
       <ToastContainer />
       <AutoPopup />
+      <LazyHyundaiChatAssistant />
     </ClientOnly>
   </div>
 </template>
@@ -110,6 +111,5 @@ if (siteConfigData.value?.config) {
 <style lang="scss">
 // UIkit and custom styles are imported via nuxt.config.ts css array
 </style>
-
 
 
