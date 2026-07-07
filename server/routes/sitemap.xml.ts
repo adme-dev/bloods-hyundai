@@ -6,15 +6,16 @@
 import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import { normalizeSiteUrl, shouldExcludeFromSitemap } from '~~/shared/seo';
+import { resolveDealerSiteUrl } from '../utils/tenant';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const baseUrl = normalizeSiteUrl(config.public.siteUrl || config.public.apiUrl);
+  const baseUrl = normalizeSiteUrl(resolveDealerSiteUrl(event, config.public.siteUrl || config.public.apiUrl));
 
   try {
     // Fetch data for sitemap
     const [navigationJson, modelsJson, variants, carsalesData] = await Promise.all([
-      $fetch(`${config.public.cdnUrl}/config/config.json`).catch(() => ({ pages: {} })) as Promise<any>,
+      $fetch('/api/site-config', { baseURL: baseUrl }).catch(() => ({ config: { pages: {} } })) as Promise<any>,
       $fetch('https://hyundaioem.b-cdn.net/data/models.json').catch(() => []) as Promise<any[]>,
       $fetch('https://hyundaioem.b-cdn.net/data/variants.json').catch(() => []) as Promise<any[]>,
       $fetch(`/api/carsales-feed`, { baseURL: baseUrl }).catch(() => ({ vehiclesData: [] })) as Promise<any>,
@@ -29,8 +30,9 @@ export default defineEventHandler(async (event) => {
     links.push({ url: '/car-sales', changefreq: 'daily', priority: 0.9 });
 
     // Page links from navigation
-    if (navigationJson.pages) {
-      Object.keys(navigationJson.pages).forEach((page) => {
+    const siteConfig = navigationJson?.config || navigationJson || {};
+    if (siteConfig.pages) {
+      Object.keys(siteConfig.pages).forEach((page) => {
         links.push({
           url: `/${page}`,
           changefreq: 'daily',
@@ -112,7 +114,6 @@ function slugify(str: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 }
-
 
 
 

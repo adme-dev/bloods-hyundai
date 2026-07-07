@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
+import { resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
 
 /**
  * Public API endpoint to get header settings.
@@ -21,7 +22,7 @@ export default defineCachedEventHandler(async (event) => {
   });
 
   const config = useRuntimeConfig();
-  const dealerSlug = config.public.dealerSlug || 'blood-hyundai';
+  const dealerSlug = resolveDealerSlug(event, config.public.dealerSlug || 'blood-hyundai');
 
   try {
     const [dealer] = await db
@@ -53,6 +54,6 @@ export default defineCachedEventHandler(async (event) => {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'header-settings',
-  getKey: () => 'header-settings-v1',
+  getKey: (event) => resolveTenantCacheKey(event, 'header-settings-v1'),
   shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });

@@ -1,3 +1,5 @@
+import { resolveDealerSiteUrl } from '../utils/tenant';
+
 /**
  * GET /robots.txt
  * Generates robots.txt
@@ -5,7 +7,7 @@
  */
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig();
-  const siteUrl = config.public.apiUrl || 'https://sale-hyundai.com.au';
+  const siteUrl = resolveDealerSiteUrl(event, config.public.siteUrl || config.public.apiUrl || 'https://bloodhyundai.com.au');
 
   const robotsContent = `User-agent: *
 Allow: /
@@ -20,8 +22,6 @@ Sitemap: ${siteUrl}/sitemap.xml
 
   return robotsContent;
 });
-
-
 
 
 

@@ -1,10 +1,12 @@
 import { db } from '../../utils/db';
 import { serviceSlots, serviceBlockedDates, serviceAppointments, dealers } from '../../database/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { resolveDealerSlug } from '../../utils/tenant';
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
-  const dealerSlug = (query.dealer as string) || 'sale-hyundai';
+  const config = useRuntimeConfig();
+  const dealerSlug = (query.dealer as string) || resolveDealerSlug(event, config.public.dealerSlug || 'blood-hyundai');
   const dateFrom = query.dateFrom as string;
   const dateTo = query.dateTo as string;
 

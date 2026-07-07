@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { resolveDealerSlug } from '../../../utils/tenant';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -25,7 +26,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Get dealer
-  const slug = dealerSlug || 'sale-hyundai';
+  const runtimeConfig = useRuntimeConfig();
+  const slug = dealerSlug || resolveDealerSlug(event, runtimeConfig.public.dealerSlug || 'blood-hyundai');
   const [dealer] = await db
     .select()
     .from(dealers)

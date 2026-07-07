@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
+import { resolveDealerSlug } from '../utils/tenant';
 
 type VehicleCondition = 'new' | 'used' | 'demo';
 const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
@@ -12,7 +13,7 @@ const DEFAULT_CONDITIONS: VehicleCondition[] = ['new', 'used', 'demo'];
  */
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const dealerSlug = config.public.dealerSlug || 'blood-hyundai';
+  const dealerSlug = resolveDealerSlug(event, config.public.dealerSlug || 'blood-hyundai');
 
   const fallback = {
     success: true as const,

@@ -7,6 +7,7 @@
  * - Automatic cache invalidation
  * - Stale-while-revalidate for better performance
  */
+import { resolveTenantCacheKey } from '../utils/tenant';
 
 // Helper functions
 const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
@@ -86,7 +87,7 @@ function createFiltersFromVehicles(vehicles: any[]) {
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
-const buildFeed = defineCachedFunction(async () => {
+async function buildFeedSource() {
   // Supabase data URLs
   const urls = [
     'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-hyundai/data.json',
@@ -259,11 +260,15 @@ const buildFeed = defineCachedFunction(async () => {
       _error: error?.message || 'unknown',
     };
   }
+}
+
+const buildFeed = defineCachedFunction(async (tenantKey: string) => {
+  return await buildFeedSource();
 }, {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'carsales-feed',
-  getKey: () => 'carsales-feed-data',
+  getKey: (tenantKey) => tenantKey,
   // Reject empty/error entries — a failed cold render must not poison subsequent requests.
   validate: (entry: any) => {
     return !entry?.value?._empty;
@@ -271,23 +276,19 @@ const buildFeed = defineCachedFunction(async () => {
 });
 
 export default defineEventHandler(async (event) => {
+  const tenantKey = resolveTenantCacheKey(event, 'carsales-feed-data');
   const query = getQuery(event);
+
   if (query.refresh === 'true') {
-    // Admin cache-bust: drop the cached entry so the next call repopulates from source.
     try {
       const storage = useStorage('cache');
-      await storage.removeItem('nitro:functions:carsales-feed:carsales-feed-data.json');
+      await storage.removeItem(`nitro:functions:carsales-feed:${tenantKey}.json`);
     } catch (err: any) {
       console.warn('[Carsales Feed] cache bust failed:', err?.message);
     }
   }
-  return await buildFeed();
+
+  return await buildFeed(tenantKey);
 });
-
-
-
-
-
-
 
 

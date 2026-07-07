@@ -13,6 +13,8 @@ const SITE_CONFIG_CACHE_KEY = 'site-config-data';
 interface SiteConfig {
   name: string;
   promotional: any[];
+  websiteUrl?: string;
+  siteUrl?: string;
   scripts: {
     google: {
       analytics: string[];
@@ -69,6 +71,8 @@ export const useMainStore = defineStore('main', () => {
     const defaultConfig: SiteConfig = {
       name: config.public.siteName || 'Blood Hyundai',
       promotional: [],
+      websiteUrl: config.public.siteUrl || '',
+      siteUrl: config.public.siteUrl || '',
       scripts: { google: { analytics: [], gtm: '' } },
     };
 

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
+import { resolveDealerSlug } from '../utils/tenant';
 
 /**
  * Public API endpoint to get service booking settings
@@ -10,8 +11,8 @@ import { dealers } from '../database/schema';
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
 
-  // Get dealer slug from config or default
-  const dealerSlug = config.public.dealerSlug || process.env.DEALER_SLUG || 'blood-hyundai';
+  // Get dealer slug from the current host, falling back to config/env defaults
+  const dealerSlug = resolveDealerSlug(event, config.public.dealerSlug || process.env.DEALER_SLUG || 'blood-hyundai');
 
   try {
     const [dealer] = await db

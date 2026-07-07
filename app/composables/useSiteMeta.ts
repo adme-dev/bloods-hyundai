@@ -29,7 +29,7 @@ export const useSiteMeta = (options: SiteMetaOptions = {}) => {
   
   // Use site config from store, fallback to runtime config
   const siteName = computed(() => mainStore.site?.name || config.public.siteName || 'Dealership');
-  const siteUrl = computed(() => config.public.siteUrl || '');
+  const siteUrl = computed(() => mainStore.site?.siteUrl || mainStore.site?.websiteUrl || config.public.siteUrl || '');
 
   // Resolve title (supports reactive getters)
   const resolvedTitle = computed(() => resolveValue(options.title) || '');
@@ -72,7 +72,7 @@ export const useSiteMeta = (options: SiteMetaOptions = {}) => {
     ogTitle: fullTitle,
     ogDescription: resolvedDescription,
     ogSiteName: siteName,
-    ogType: options.type || 'website',
+    ogType: (options.type || 'website') as any,
     ogUrl: canonicalUrl,
     ogImage: resolvedImage,
     ogLocale: 'en_AU',
@@ -106,8 +106,6 @@ export const useSiteMeta = (options: SiteMetaOptions = {}) => {
     resolvedImage,
   };
 };
-
-
 
 
 
