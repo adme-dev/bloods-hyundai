@@ -108,6 +108,11 @@ onMounted(() => {
 }
 
 .homepage-models-slot {
+  display: block;
+  margin-top: clamp(36px, 5vw, 72px);
+  margin-bottom: clamp(40px, 5vw, 72px);
+  padding-top: clamp(24px, 3vw, 48px);
+  background: #f6f3f2;
   min-height: 900px;
 }
 
