@@ -1,24 +1,27 @@
 <template>
-  <!-- Fixed call button (mobile only) - hidden on pages with their own mobile CTA -->
-  <div v-if="showCallButton" class="call-quick-link uk-hidden@m">
-    <a :href="`tel:${phone}`" class="call-button">
-      <span uk-icon="icon: receiver; ratio: 1.2"></span>
-      <span class="call-text">Call Now</span>
-    </a>
+  <!-- Fixed mobile quick actions - hidden on pages with their own mobile CTA -->
+  <div v-if="showQuickActions" class="mobile-quick-links uk-hidden@m">
+    <NuxtLink to="/car-sales" class="quick-link-button" aria-label="Search inventory">
+      <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.1-5.15a6.25 6.25 0 11-12.5 0 6.25 6.25 0 0112.5 0z" />
+      </svg>
+      <span>Inventory</span>
+    </NuxtLink>
+    <NuxtLink to="/service-booking" class="quick-link-button quick-link-button--service" aria-label="Book a service">
+      <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      <span>Service</span>
+    </NuxtLink>
   </div>
 </template>
 
 <script setup lang="ts">
 const route = useRoute();
-const mainStore = useMainStore();
-
-const phone = computed(() => {
-  const sitePhone = mainStore.site?.phone;
-  return sitePhone ? sitePhone.replace(/\s/g, '') : '';
-});
 
 // Hide on pages that have their own mobile CTA bar
-const showCallButton = computed(() => {
+const showQuickActions = computed(() => {
   const routeName = route.name as string;
   // Hide on vehicle-for-sale pages (they have their own enquire button)
   if (routeName?.startsWith('vehicle-for-sale')) return false;
@@ -29,44 +32,54 @@ const showCallButton = computed(() => {
 </script>
 
 <style scoped>
-.call-quick-link {
+.mobile-quick-links {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 50%;
   z-index: 900;
-}
-
-.call-button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
+  width: calc(100vw - 32px);
+  max-width: 360px;
+  transform: translateX(-50%);
+}
+
+.quick-link-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 14px;
   background: var(--color-primary);
   color: white;
   text-decoration: none;
-  border-radius: 50px;
+  border-radius: 999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   font-weight: 600;
   font-size: 0.875rem;
+  line-height: 1;
   transition: all 0.2s;
-  
+
   &:hover {
     background: var(--color-primary-dark);
-    transform: scale(1.05);
+    color: white;
+    transform: translateY(-1px);
   }
 }
 
-.call-text {
-  display: none;
+.quick-link-button--service {
+  background: #002c5f;
 }
 
-@media (min-width: 400px) {
-  .call-text {
-    display: inline;
-  }
+.quick-link-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
 }
 </style>
-
 
 
 
