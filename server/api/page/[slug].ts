@@ -4,13 +4,15 @@ import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '.
 
 function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
   const trimmed = cdnUrl.replace(/\/+$/, '');
-  const tenantBase = /\/files\/[^/]+$/.test(trimmed)
+  const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
+  const tenantBase = tenantMatch
     ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
     : `${trimmed}/files/${dealerSlug}`;
+  const allowLegacyPath = !tenantMatch || tenantMatch[1] === dealerSlug;
 
   return Array.from(new Set([
     `${tenantBase}/${path}`,
-    `${trimmed}/${path}`,
+    ...(allowLegacyPath ? [`${trimmed}/${path}`] : []),
   ]));
 }
 
@@ -128,7 +130,6 @@ export default defineCachedEventHandler(async (event) => {
   getKey: (event) => resolveTenantCacheKey(event, `page:${getRouterParam(event, 'slug') || 'unknown'}`),
   shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
-
 
 
 

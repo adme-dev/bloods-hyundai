@@ -34,13 +34,15 @@ function shuffleArray<T>(array: T[]): T[] {
 // Try to load local fallback reviews data for development
 function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
   const trimmed = cdnUrl.replace(/\/+$/, '');
-  const tenantBase = /\/files\/[^/]+$/.test(trimmed)
+  const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
+  const tenantBase = tenantMatch
     ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
     : `${trimmed}/files/${dealerSlug}`;
+  const allowLegacyPath = !tenantMatch || tenantMatch[1] === dealerSlug;
 
   return Array.from(new Set([
     `${tenantBase}/${path}`,
-    `${trimmed}/${path}`,
+    ...(allowLegacyPath ? [`${trimmed}/${path}`] : []),
   ]));
 }
 
@@ -176,7 +178,6 @@ export default defineCachedEventHandler(async (event): Promise<ProcessedReviewsR
   name: 'reviews',
   getKey: (event) => resolveTenantCacheKey(event, 'google-reviews'),
 });
-
 
 
 
