@@ -242,7 +242,7 @@ function isRenderableThumb(thumb: unknown): thumb is FrontThumb {
 }
 
 function isBloodHyundai(siteName?: string | null): boolean {
-  return /blood\s+hyundai/i.test(siteName || '');
+  return /blood'?s?\s+hyundai/i.test(siteName || '');
 }
 
 function isRenderableSlide(slide: unknown): slide is FrontSlide {

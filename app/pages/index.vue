@@ -7,7 +7,7 @@
     <h1 class="sr-only">{{ siteName }} - New and Used Hyundai Vehicles</h1>
 
     <!-- Hero/Slider Section -->
-    <FrontSlider v-if="site?.promotional" :slides="site.promotional" />
+    <FrontSlider />
 
     <!-- Quick Links & Search -->
     <LazyFrontSearch />
@@ -60,7 +60,7 @@ const { siteName, dealerLocation } = useSiteIdentity();
 
 // Use SEO meta composable
 useSiteMeta({
-  title: () => `${siteName.value} Hyundai Dealer`,
+  title: () => 'Hyundai Dealer Geelong',
   description: () => `${siteName.value} is your Hyundai dealer in ${dealerLocation.value}. Browse new, demo and used Hyundai vehicles, current offers, test drives, finance enquiries and service booking.`,
   keywords: () => `${siteName.value}, Hyundai dealer ${dealerLocation.value}, new Hyundai, used Hyundai, Hyundai service, Hyundai special offers`,
 });

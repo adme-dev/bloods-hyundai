@@ -16,7 +16,7 @@ const DEFAULT_TENANT: TenantConfig = {
 
 const BLOOD_TENANT: TenantConfig = {
   slug: 'bloods-hyundai',
-  name: 'Bloods Hyundai',
+  name: 'Blood Hyundai',
   siteUrl: 'https://bloodhyundai.com.au',
   aliases: ['blood-hyundai'],
 };

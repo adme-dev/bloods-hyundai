@@ -123,6 +123,17 @@ function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigi
   };
 }
 
+function normalizeDealerDisplayName(siteConfig: SiteConfig, dealerSlug: string): SiteConfig {
+  if (!['blood-hyundai', 'bloods-hyundai'].includes(dealerSlug)) {
+    return siteConfig;
+  }
+
+  return {
+    ...siteConfig,
+    name: 'Blood Hyundai',
+  };
+}
+
 export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const requestUrl = getRequestURL(event);
@@ -178,7 +189,7 @@ export default defineCachedEventHandler(async (event) => {
         };
 
     return {
-      config: mergedConfig,
+      config: normalizeDealerDisplayName(mergedConfig, dealerSlug),
       _cached: false,
       _timestamp: Date.now(),
     };
@@ -189,15 +200,17 @@ export default defineCachedEventHandler(async (event) => {
       ? localConfig
       : null;
 
+    const fallbackConfig = matchingLocalConfig
+      ? {
+          ...matchingLocalConfig,
+          websiteUrl: matchingLocalConfig.websiteUrl || requestOrigin || hostTenant.siteUrl || '',
+          siteUrl: matchingLocalConfig.siteUrl || requestOrigin || hostTenant.siteUrl || '',
+          dealerSlug,
+        }
+      : defaultConfig;
+
     return {
-      config: matchingLocalConfig
-        ? {
-            ...matchingLocalConfig,
-            websiteUrl: matchingLocalConfig.websiteUrl || requestOrigin || hostTenant.siteUrl || '',
-            siteUrl: matchingLocalConfig.siteUrl || requestOrigin || hostTenant.siteUrl || '',
-            dealerSlug,
-          }
-        : defaultConfig,
+      config: normalizeDealerDisplayName(fallbackConfig, dealerSlug),
       _cached: false,
       _timestamp: Date.now(),
     };

@@ -32,7 +32,7 @@ export const useSiteMeta = (options: SiteMetaOptions = {}) => {
   const fullTitle = computed(() => {
     const title = resolvedTitle.value;
     if (title) {
-      return `${title} - ${siteName.value}`;
+      return title;
     }
     return siteName.value;
   });
@@ -101,7 +101,6 @@ export const useSiteMeta = (options: SiteMetaOptions = {}) => {
     resolvedImage,
   };
 };
-
 
 
 
