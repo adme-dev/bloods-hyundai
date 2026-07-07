@@ -151,10 +151,10 @@
       <div class="uk-padding uk-text-meta-xs uk-background-muted">
         *All prices listed are driveway price including on road costs such as registration and CTP
         insurance unless specified as ECG (ex government charges) or POA (price on application).
-        Sale Hyundai may change pricing at any time (this includes where there are government
+        {{ siteName }} may change pricing at any time (this includes where there are government
         changes in regulation and/or legislation). There may be a delay to any pricing updates
         displaying correctly on our materials. Always obtain confirmation on updated pricing from
-        Sale Hyundai. All prices are subject to change at the discretion of Sale Hyundai.
+        {{ siteName }}. All prices are subject to change at the discretion of {{ siteName }}.
       </div>
     </div>
   </div>
@@ -215,13 +215,10 @@ interface OffersData {
   body?: string;
 }
 
-// Get site config for dynamic SEO
 const mainStore = useMainStore();
-const config = useRuntimeConfig();
 const route = useRoute();
 const router = useRouter();
-const siteName = computed(() => mainStore.site?.name || config.public.siteName || 'Dealership');
-const siteUrl = computed(() => config.public.siteUrl || '');
+const { siteName, siteUrl } = useSiteIdentity();
 const categoryNavRef = ref<HTMLElement | null>(null);
 const modelsSectionRef = ref<HTMLElement | null>(null);
 const shouldScrollToModels = ref(false);

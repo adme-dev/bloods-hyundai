@@ -120,6 +120,7 @@
 
 <script setup lang="ts">
 const route = useRoute();
+const { siteName } = useSiteIdentity();
 
 // Parse URL params
 const slug = computed(() => {
@@ -187,9 +188,9 @@ const seoHeading = computed(() => {
 
 const seoContent = computed(() => {
   if (make.value === 'hyundai') {
-    return `<p>Browse our selection of quality ${condition.value || ''} Hyundai ${model.value || 'vehicles'} at Sale Hyundai. As your local Hyundai dealer, we offer competitive prices and expert service on all our vehicles.</p>`;
+    return `<p>Browse our selection of quality ${condition.value || ''} Hyundai ${model.value || 'vehicles'} at ${siteName.value}. As your local Hyundai dealer, we offer competitive prices and expert service on all our vehicles.</p>`;
   }
-  return `<p>Find your perfect ${condition.value || ''} ${make.value || ''} ${model.value || 'car'} at Sale Hyundai. We stock a wide range of quality vehicles with competitive pricing and flexible finance options.</p>`;
+  return `<p>Find your perfect ${condition.value || ''} ${make.value || ''} ${model.value || 'car'} at ${siteName.value}. We stock a wide range of quality vehicles with competitive pricing and flexible finance options.</p>`;
 });
 
 const relatedLinks = computed(() => {
@@ -270,7 +271,7 @@ const titleCase = (str: string) => {
 // SEO
 useSiteMeta({
   title: pageTitle,
-  description: () => `Browse ${totalCount.value} ${condition.value || ''} ${make.value || ''} ${model.value || ''} cars for sale at Sale Hyundai. Competitive prices and finance available.`,
+  description: () => `Browse ${totalCount.value} ${condition.value || ''} ${make.value || ''} ${model.value || ''} cars for sale at ${siteName.value}. Competitive prices and finance available.`,
 });
 </script>
 
@@ -313,7 +314,6 @@ useSiteMeta({
   line-height: 1.3;
 }
 </style>
-
 
 
 

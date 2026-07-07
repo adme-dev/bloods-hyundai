@@ -213,7 +213,7 @@
                     class="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                   >
                   <label for="consent" class="text-sm text-slate-600">
-                    I agree to be contacted by Sale Hyundai regarding this accessories enquiry and related offers.
+                    I agree to be contacted by {{ siteName }} regarding this accessories enquiry and related offers.
                     <span class="text-red-500">*</span>
                   </label>
                 </div>
@@ -272,6 +272,7 @@ const emit = defineEmits<{
 }>();
 
 const accessoriesStore = useAccessoriesStore();
+const { siteName } = useSiteIdentity();
 const { trackAccessoriesEnquiry } = useAnalytics();
 const { getUtmParams } = useUtmParams();
 

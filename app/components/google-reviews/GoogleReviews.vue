@@ -237,7 +237,7 @@ const props = withDefaults(defineProps<{
 });
 
 // Site config data
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const showroomAddress = computed(() => mainStore.site?.showroom_address || '');
 const phone = computed(() => mainStore.site?.phone || '');
 const phoneFormatted = computed(() => phone.value.replace(/[^0-9]/g, ''));

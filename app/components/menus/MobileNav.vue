@@ -87,7 +87,7 @@ const expandedItems = ref<string[]>([]);
 const mobileNavRef = ref<HTMLElement | null>(null);
 
 // Site config
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const logo = computed(() => mainStore.site?.logo || '/assets/logos/logo-black-sm.svg');
 const phone = computed(() => mainStore.site?.phone || '');
 
@@ -351,7 +351,6 @@ onMounted(() => {
   max-height: 500px;
 }
 </style>
-
 
 
 

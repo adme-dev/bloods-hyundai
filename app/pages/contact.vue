@@ -119,11 +119,12 @@ import ServiceForm from '~/components/page-elements/ServiceForm.vue';
 
 // Store
 const mainStore = useMainStore();
+const { siteName } = useSiteIdentity();
 
 // SEO composables must be registered before any top-level await in setup.
 useSiteMeta({
   title: 'Contact Us',
-  description: 'Contact Blood Hyundai for sales, service, parts, and finance enquiries.',
+  description: () => `Contact ${siteName.value} for sales, service, parts, and finance enquiries.`,
 });
 
 // Fetch WordPress page content
@@ -155,7 +156,6 @@ const pageContent = computed(() => {
   return null
 })
 
-const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
 const lmct = computed(() => mainStore.site?.lmct || '6106');
 const departments = computed(() => mainStore.site?.departments || {});
 

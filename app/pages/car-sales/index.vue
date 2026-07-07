@@ -737,6 +737,7 @@ import { useDebounceFn } from '@vueuse/core';
 const route = useRoute();
 const router = useRouter();
 const vehiclesStore = useVehiclesStore();
+const { siteName, siteUrl } = useSiteIdentity();
 
 // SSR-only data fetching - hidden from browser network tab, 10-min server cache.
 // `default` + explicit error handling means a failed/slow API never crashes SSR —
@@ -987,7 +988,7 @@ const seoDescription = computed(() => {
     parts.push(formatFilterLabel(filters.body[0]).toLowerCase());
   }
   
-  parts.push('cars for sale at Sale Hyundai, Victoria.');
+  parts.push(`cars for sale at ${siteName.value}.`);
   
   // Add price range if set
   if (filters.priceMax) {
@@ -1001,7 +1002,7 @@ const seoDescription = computed(() => {
 
 // Dynamic canonical URL - use clean URL format for filtered pages
 const canonicalUrl = computed(() => {
-  const baseUrl = 'https://www.salehyundai.com.au';
+  const baseUrl = siteUrl.value || '';
   
   // If we have exactly one make selected, use clean URL format
   if (filters.make.length === 1 && filters.make[0]) {
@@ -1025,9 +1026,9 @@ const canonicalUrl = computed(() => {
 
 // Apply dynamic SEO meta tags
 useSeoMeta({
-  title: () => `${pageTitle.value} | Sale Hyundai`,
+  title: () => `${pageTitle.value} | ${siteName.value}`,
   description: seoDescription,
-  ogTitle: () => `${pageTitle.value} | Sale Hyundai`,
+  ogTitle: () => `${pageTitle.value} | ${siteName.value}`,
   ogDescription: seoDescription,
   ogUrl: canonicalUrl,
 });
@@ -2309,5 +2310,3 @@ watch(
   }
 }
 </style>
-
-

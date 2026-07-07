@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between h-16">
           <div class="flex items-center gap-4">
             <NuxtLink to="/">
-              <img src="/assets/logos/logo-black-sm.svg" alt="Sale Hyundai" class="h-8" width="80" height="32" />
+              <img src="/assets/logos/logo-black-sm.svg" :alt="siteName" class="h-8" width="80" height="32" />
             </NuxtLink>
             <span class="text-lg font-semibold text-gray-900">Customer Portal</span>
           </div>
@@ -194,8 +194,8 @@
                 </div>
                 <div>
                   <div class="text-sm text-gray-500">Email</div>
-                  <a href="mailto:service@salehyundai.com.au" class="font-medium text-primary hover:underline">
-                    service@salehyundai.com.au
+                  <a :href="`mailto:${serviceEmail}`" class="font-medium text-primary hover:underline">
+                    {{ serviceEmail }}
                   </a>
                 </div>
               </div>
@@ -233,8 +233,10 @@ const customer = ref<any>(null)
 
 // Site config for contact info
 const mainStore = useMainStore()
+const { siteName } = useSiteIdentity()
 const servicePhone = computed(() => mainStore.site?.departments?.service?.phone || mainStore.site?.phone || '')
 const servicePhoneFormatted = computed(() => servicePhone.value.replace(/[^0-9+]/g, ''))
+const serviceEmail = computed(() => mainStore.site?.departments?.service?.email || mainStore.site?.email || '')
 
 // Check authentication
 const { data: authData, error: authError } = await useFetch('/api/customer/auth/me', {

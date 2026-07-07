@@ -56,7 +56,7 @@
 <script setup lang="ts">
 const mainStore = useMainStore();
 
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const description = computed(() => mainStore.site?.description || '');
 const lmct = computed(() => mainStore.site?.lmct || '');
 const departments = computed(() => mainStore.site?.departments || {});
@@ -191,7 +191,6 @@ const DepartmentInfo = defineComponent({
   margin-top: 0;
 }
 </style>
-
 
 
 

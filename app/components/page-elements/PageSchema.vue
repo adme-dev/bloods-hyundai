@@ -7,10 +7,10 @@ import { buildBreadcrumbSchema, buildDealerSchema, normalizeSiteUrl } from '~~/s
 
 const route = useRoute();
 const mainStore = useMainStore();
-const config = useRuntimeConfig();
+const { siteUrl: resolvedSiteUrl } = useSiteIdentity();
 
 // Site info
-const siteUrl = computed(() => normalizeSiteUrl(config.public.siteUrl || config.public.apiUrl));
+const siteUrl = computed(() => normalizeSiteUrl(resolvedSiteUrl.value));
 
 // Build schema.org JSON-LD
 const organizationSchema = computed(() => buildDealerSchema({
@@ -37,7 +37,6 @@ useHead(() => ({
   ],
 }));
 </script>
-
 
 
 

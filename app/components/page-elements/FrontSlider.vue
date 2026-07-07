@@ -93,7 +93,6 @@ import Autoplay from 'embla-carousel-autoplay';
 import { resolveHomeSlides, shouldFetchOffersHero, type OffersHeroImage } from '~/utils/frontSlides';
 
 const mainStore = useMainStore();
-const config = useRuntimeConfig();
 const props = defineProps<{
   slides?: unknown;
 }>();
@@ -104,8 +103,7 @@ const selectedIndex = ref(0);
 const emblaRef = ref<HTMLElement | null>(null);
 let emblaApi: any = null;
 
-// Site name for fallback
-const siteName = computed(() => mainStore.site?.name || config.public.siteName || 'Blood Hyundai');
+const { siteName } = useSiteIdentity();
 const configuredSlideSource = computed(() => props.slides || mainStore.site?.promotional || []);
 const offersHeroData = ref<OffersHeroImage | null>(null);
 const shouldRefreshOffersHero = computed(() => route.query.refresh === 'true');
@@ -144,8 +142,8 @@ if (offersHeroRequest.value) {
   }, { immediate: true });
 }
 
-// Resolve active config slides first, then use a fresh offers hero fallback for
-// Blood Hyundai if the DriveAgent config currently has no in-date hero slide.
+// Resolve active config slides first, then use a fresh offers hero fallback if
+// the DriveAgent config currently has no in-date hero slide.
 const homeSlides = computed(() => {
   return resolveHomeSlides(configuredSlideSource.value, {
     siteName: siteName.value,

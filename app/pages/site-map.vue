@@ -112,10 +112,12 @@
 </template>
 
 <script setup lang="ts">
+const { siteName } = useSiteIdentity();
+
 // SEO
 useSiteMeta({
   title: 'Site Map',
-  description: 'Navigate the Sale Hyundai website with our complete site map.',
+  description: () => `Navigate the ${siteName.value} website with our complete site map.`,
 });
 
 // Get models from store
@@ -150,7 +152,6 @@ watch(modelSummaries, (models) => {
   }
 }
 </style>
-
 
 
 

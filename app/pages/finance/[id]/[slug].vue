@@ -433,6 +433,7 @@ import { Button } from '~/components/ui/button'
 
 const route = useRoute();
 const mainStore = useMainStore();
+const { siteName } = useSiteIdentity();
 
 const vehicleId = computed(() => route.params.id as string);
 
@@ -781,7 +782,7 @@ const submitForm = async () => {
 
 // SEO
 useSeoMeta({
-  title: () => `Finance ${headline.value} | Sale Hyundai`,
+  title: () => `Finance ${headline.value} | ${siteName.value}`,
   description: () => `Calculate finance repayments and apply for pre-approval on this ${headline.value}. ${priceDisplay.value} drive away.`,
 });
 </script>

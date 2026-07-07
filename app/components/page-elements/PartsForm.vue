@@ -200,7 +200,7 @@ const mainStore = useMainStore();
 const { trackPartsEnquiry } = useAnalytics();
 const { getUtmParams } = useUtmParams();
 
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const partsPhone = computed(() => mainStore.site?.departments?.parts?.phone || '');
 
 // Form state
@@ -289,7 +289,6 @@ const submitForm = async () => {
   }
 }
 </style>
-
 
 
 

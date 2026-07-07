@@ -88,7 +88,7 @@
 const mainStore = useMainStore();
 
 // Site config - use showroom_address from config (not 'address')
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const logo = computed(() => mainStore.site?.footer_logo || mainStore.site?.logo || '/images/logo-white.png');
 const address = computed(() => mainStore.site?.showroom_address || '');
 const phone = computed(() => mainStore.site?.phone || '');
@@ -194,7 +194,6 @@ const currentYear = new Date().getFullYear();
   }
 }
 </style>
-
 
 
 

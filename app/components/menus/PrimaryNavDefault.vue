@@ -63,7 +63,7 @@ const mainStore = useMainStore();
 const eventBus = useEventBus();
 
 // Site config
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const logo = computed(() => mainStore.site?.logo || '/assets/logos/logo-black.svg');
 
 // Navigation items
@@ -129,7 +129,6 @@ const toggleMobileNav = () => {
   font-weight: 600;
 }
 </style>
-
 
 
 

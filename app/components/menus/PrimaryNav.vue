@@ -295,7 +295,7 @@ const eventBus = useEventBus();
 const route = useRoute();
 
 // Computed values from store
-const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
+const { siteName } = useSiteIdentity();
 const address = computed(() => mainStore.site?.showroom_address || '');
 const mapDirections = computed(() => mainStore.site?.map_directions || '#');
 const loading = computed(() => mainStore.loading);

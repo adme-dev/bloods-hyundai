@@ -18,7 +18,7 @@
       </svg>
       <span>Service</span>
     </NuxtLink>
-    <a :href="`tel:${phone}`" class="quick-link-button quick-link-button--call" aria-label="Call Blood Hyundai">
+    <a :href="`tel:${phone}`" class="quick-link-button quick-link-button--call" :aria-label="`Call ${siteName}`">
       <span uk-icon="icon: receiver; ratio: 1.2" aria-hidden="true"></span>
       <span>Call</span>
     </a>
@@ -29,6 +29,7 @@
 const route = useRoute();
 const mainStore = useMainStore();
 const isActionBarVisible = useMobileActionBarVisibility();
+const { siteName } = useSiteIdentity();
 
 const phone = computed(() => {
   const sitePhone = mainStore.site?.phone;
@@ -127,6 +128,5 @@ const showQuickActions = computed(() => {
   }
 }
 </style>
-
 
 

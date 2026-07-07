@@ -137,10 +137,12 @@
 </template>
 
 <script setup lang="ts">
+const { siteName } = useSiteIdentity();
+
 // SEO
 useSiteMeta({
   title: 'Book a Test Drive',
-  description: 'Book a test drive for your favorite Hyundai model at Sale Hyundai. Experience the latest Hyundai vehicles firsthand.',
+  description: () => `Book a test drive for your favorite Hyundai model at ${siteName.value}. Experience the latest Hyundai vehicles firsthand.`,
 });
 
 // State
@@ -640,7 +642,6 @@ onUnmounted(() => {
   }
 }
 </style>
-
 
 
 

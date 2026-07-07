@@ -237,7 +237,7 @@ const quickActions: QuickAction[] = [
   { id: 'search', label: 'Help me choose', prompt: 'Help me choose a Hyundai model', icon: IconSearch },
 ];
 
-const dealerName = computed(() => mainStore.site?.name || 'Blood Hyundai');
+const { siteName: dealerName } = useSiteIdentity();
 const sitePhone = computed(() => mainStore.site?.phone || '(03) 5144 2133');
 const cleanPhone = computed(() => sitePhone.value.replace(/[^\d+]/g, ''));
 const showroomAddress = computed(() => mainStore.site?.showroom_address || mainStore.site?.departments?.sales?.address || '36/38 Foster St, Sale VIC 3850');

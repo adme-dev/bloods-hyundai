@@ -135,10 +135,12 @@
 </template>
 
 <script setup lang="ts">
+const { siteName } = useSiteIdentity();
+
 // SEO
 useSiteMeta({
   title: 'Build & Price',
-  description: 'Configure and price your perfect Hyundai vehicle. Explore all models, compare variants, and get an instant quote at Sale Hyundai.',
+  description: () => `Configure and price your perfect Hyundai vehicle. Explore all models, compare variants, and get an instant quote at ${siteName.value}.`,
 });
 
 // State
@@ -626,4 +628,3 @@ const priceDisclaimers = computed(() => {
   }
 }
 </style>
-

@@ -117,16 +117,15 @@ const formContainerClass = computed(() => {
 });
 
 // SEO - use computed values for compatibility with nuxt-og-image
-const siteName = config.public.siteName || 'Sale Hyundai';
-const siteUrl = config.public.siteUrl || 'https://salehyundai.com.au';
-const defaultOgImage = `${siteUrl}/og-image.jpg`;
+const { siteName, siteUrl, dealerLocation } = useSiteIdentity();
+const defaultOgImage = computed(() => `${siteUrl.value}/og-image.jpg`);
 
 const seoTitle = computed(() => page.value?.yoast_head_json?.title || page.value?.title?.rendered || page.value?.title || slug.value);
-const seoDescription = computed(() => page.value?.yoast_head_json?.description || page.value?.excerpt?.rendered || `${siteName} - Your trusted Hyundai dealer in Sale, Victoria.`);
+const seoDescription = computed(() => page.value?.yoast_head_json?.description || page.value?.excerpt?.rendered || `${siteName.value} - Your trusted Hyundai dealer in ${dealerLocation.value}.`);
 const seoOgTitle = computed(() => page.value?.yoast_head_json?.og_title || page.value?.title?.rendered || page.value?.title || '');
 const seoOgDescription = computed(() => page.value?.yoast_head_json?.og_description || page.value?.excerpt?.rendered || seoDescription.value);
-const seoOgImage = computed(() => page.value?.yoast_head_json?.og_image?.[0]?.url || defaultOgImage);
-const canonicalUrl = computed(() => `${siteUrl}/${slug.value}`);
+const seoOgImage = computed(() => page.value?.yoast_head_json?.og_image?.[0]?.url || defaultOgImage.value);
+const canonicalUrl = computed(() => `${siteUrl.value}/${slug.value}`);
 
 useSeoMeta({
   title: seoTitle,
@@ -160,7 +159,6 @@ useHead({
   }
 }
 </style>
-
 
 
 

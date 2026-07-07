@@ -23,14 +23,9 @@ const resolveValue = <T>(value: T | (() => T) | undefined): T | undefined => {
 };
 
 export const useSiteMeta = (options: SiteMetaOptions = {}) => {
-  const config = useRuntimeConfig();
   const route = useRoute();
-  const mainStore = useMainStore();
+  const { siteName, siteUrl } = useSiteIdentity();
   
-  // Use site config from store, fallback to runtime config
-  const siteName = computed(() => mainStore.site?.name || config.public.siteName || 'Dealership');
-  const siteUrl = computed(() => mainStore.site?.siteUrl || mainStore.site?.websiteUrl || config.public.siteUrl || '');
-
   // Resolve title (supports reactive getters)
   const resolvedTitle = computed(() => resolveValue(options.title) || '');
   
@@ -106,7 +101,6 @@ export const useSiteMeta = (options: SiteMetaOptions = {}) => {
     resolvedImage,
   };
 };
-
 
 
 

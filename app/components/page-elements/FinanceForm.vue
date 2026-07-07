@@ -320,7 +320,7 @@ const mainStore = useMainStore();
 const { trackFinanceEnquiry } = useAnalytics();
 const { getUtmParams } = useUtmParams();
 
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 
 // Calculator state
 const retail = ref(39485);
@@ -532,7 +532,6 @@ const submitForm = async () => {
   }
 }
 </style>
-
 
 
 

@@ -61,7 +61,7 @@
 const reviewsStore = useReviewsStore();
 const mainStore = useMainStore();
 
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 
 const reviewData = computed(() => {
   return reviewsStore.rating > 0;
@@ -126,7 +126,6 @@ const reviewUrl = computed(() => {
   color: #fff;
 }
 </style>
-
 
 
 

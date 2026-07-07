@@ -589,13 +589,10 @@ import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { DatePicker } from '~/components/ui/date-picker'
 import { Stepper, StepperItem, StepperSeparator, StepperTitle, StepperDescription, StepperTrigger } from '~/components/ui/stepper'
 
-// Runtime config
-const config = useRuntimeConfig()
 const { trackServiceBooking } = useAnalytics()
 const { getUtmParams } = useUtmParams()
 
-// Site name from runtime config or fallback
-const siteName = computed(() => config.public.siteName || 'Blood Hyundai')
+const { siteName } = useSiteIdentity()
 
 // Service booking settings type
 interface ServiceBookingSettings {
@@ -861,6 +858,4 @@ declare global {
   }
 }
 </script>
-
-
 

@@ -149,10 +149,12 @@
 </template>
 
 <script setup lang="ts">
+const { siteName } = useSiteIdentity();
+
 // SEO
 useSiteMeta({
   title: 'Saved Vehicles',
-  description: 'View and compare your saved vehicles at Sale Hyundai. Save up to 3 vehicles to compare side by side.',
+  description: () => `View and compare your saved vehicles at ${siteName.value}. Save up to 3 vehicles to compare side by side.`,
 });
 
 const vehiclesStore = useVehiclesStore();
@@ -282,7 +284,6 @@ const closeEnquiryModal = () => {
   background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);
 }
 </style>
-
 
 
 

@@ -9,7 +9,7 @@
           <div class="max-w-3xl">
             <p class="text-sm font-semibold uppercase tracking-wide text-sky-600">Sell my car</p>
             <h1 class="mt-3 text-4xl font-bold tracking-tight text-[#001E50] sm:text-5xl">
-              Sell your car to Blood Hyundai.
+              Sell your car to {{ siteName }}.
             </h1>
             <p class="mt-5 text-lg leading-8 text-slate-600">
               Share your vehicle details and photos, and our used car team will review it quickly with a clear next step.
@@ -36,7 +36,7 @@
               <source media="(max-width: 639px)" :srcset="heroImageMobile">
               <img
                 :src="heroImageDesktop"
-                alt="Blood Hyundai vehicle valuation"
+                :alt="`${siteName} vehicle valuation`"
                 class="absolute inset-0 h-full w-full object-cover"
                 width="1400"
                 height="525"
@@ -45,7 +45,7 @@
               >
             </picture>
             <div class="absolute inset-x-0 bottom-0 bg-[#001E50]/90 p-5 text-white">
-              <p class="text-xs font-semibold uppercase tracking-wide text-sky-200">Blood Hyundai appraisal team</p>
+              <p class="text-xs font-semibold uppercase tracking-wide text-sky-200">{{ siteName }} appraisal team</p>
               <figcaption class="mt-1 text-lg font-semibold">Fast, fair valuation with a local team.</figcaption>
             </div>
           </figure>
@@ -489,7 +489,7 @@
     <div class="py-12 sm:py-16 bg-white">
       <div class="mx-auto max-w-7xl px-6 lg:px-8">
         <h2 class="text-2xl font-bold tracking-tight text-gray-900 text-center mb-10">
-          Why Sell to Blood Hyundai?
+          Why Sell to {{ siteName }}?
         </h2>
         
         <div class="grid grid-cols-2 gap-6 lg:grid-cols-4">
@@ -525,6 +525,7 @@ import { useAnalytics } from '~/composables/useAnalytics'
 
 // Runtime config
 const config = useRuntimeConfig()
+const { siteName } = useSiteIdentity();
 
 // Analytics
 const { trackSellMyCar } = useAnalytics()
@@ -568,9 +569,9 @@ const { data: page } = await useAsyncData(
 // SEO - use the same pattern as [slug].vue
 useSeoMeta({
   title: () => page.value?.yoast_head_json?.title || page.value?.title?.rendered || 'Sell Your Car',
-  description: () => page.value?.yoast_head_json?.description || 'Sell your car to Blood Hyundai. Upload your vehicle details and photos to request a competitive valuation from our used car team.',
+  description: () => page.value?.yoast_head_json?.description || `Sell your car to ${siteName.value}. Upload your vehicle details and photos to request a competitive valuation from our used car team.`,
   ogTitle: () => page.value?.yoast_head_json?.og_title || page.value?.title?.rendered || 'Sell Your Car',
-  ogDescription: () => page.value?.yoast_head_json?.og_description || 'Sell your car to Blood Hyundai. Request a quick used car valuation online.',
+  ogDescription: () => page.value?.yoast_head_json?.og_description || `Sell your car to ${siteName.value}. Request a quick used car valuation online.`,
   ogImage: () => page.value?.yoast_head_json?.og_image?.[0]?.url,
 })
 
@@ -771,5 +772,4 @@ declare global {
   }
 }
 </script>
-
 

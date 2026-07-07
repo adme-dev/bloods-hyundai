@@ -6,7 +6,7 @@
         <NuxtLink to="/" class="inline-block">
           <img
             src="/assets/logos/logo-black-sm.svg"
-            alt="Sale Hyundai"
+            :alt="siteName"
             class="h-12 mx-auto"
             width="120"
             height="48"
@@ -186,6 +186,7 @@ definePageMeta({
 })
 
 const activeTab = ref('login')
+const { siteName } = useSiteIdentity()
 const isLoading = ref(false)
 const error = ref('')
 

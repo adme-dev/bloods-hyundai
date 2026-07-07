@@ -344,7 +344,7 @@ const shouldFetchReviews = ref(false);
 let reviewsObserver: IntersectionObserver | null = null;
 
 // Computed values from store
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const showroomAddress = computed(() => mainStore.site?.showroom_address || '');
 const phone = computed(() => mainStore.site?.phone || '');
 const phoneFormatted = computed(() => phone.value.replace(/[^0-9]/g, ''));
@@ -640,6 +640,5 @@ onBeforeUnmount(() => {
   color: rgba(255, 255, 255, 0.3);
 }
 </style>
-
 
 

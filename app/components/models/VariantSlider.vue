@@ -202,7 +202,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const config = useRuntimeConfig();
 
 // State
 const loading = ref(true);
@@ -212,8 +211,7 @@ const variants = ref<Variant[]>([]);
 const checkedPowertrain = ref<string[]>([]);
 const showAllFeatures = ref<Record<number, boolean>>({});
 
-// Site name from config or default
-const siteName = computed(() => config.public.siteName || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 
 // Apply powertrainFilter prop to pre-filter variant groups when set
 const baseFilteredVariantGroups = computed(() => {
@@ -657,4 +655,3 @@ $bg-light: #f8f9fa;
   color: #999;
 }
 </style>
-

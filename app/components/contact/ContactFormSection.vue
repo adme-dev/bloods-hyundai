@@ -41,7 +41,7 @@ interface Props {
 defineProps<Props>();
 
 const mainStore = useMainStore();
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 </script>
 
 <style scoped>

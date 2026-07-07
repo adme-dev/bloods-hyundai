@@ -20,10 +20,12 @@
 </template>
 
 <script setup lang="ts">
+const { siteName } = useSiteIdentity();
+
 // SEO meta
 useSiteMeta({
   title: 'Hyundai Models',
-  description: 'Browse the complete range of Hyundai vehicles including Electric, Hybrid, SUVs, Performance, and more. Find your perfect Hyundai at Sale Hyundai.',
+  description: () => `Browse the complete range of Hyundai vehicles including Electric, Hybrid, SUVs, Performance, and more. Find your perfect Hyundai at ${siteName.value}.`,
 });
 
 // Define page meta for breadcrumbs

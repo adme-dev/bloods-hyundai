@@ -144,6 +144,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
+const { siteName } = useSiteIdentity();
 
 // Fetch variant
 const { data: variant, pending } = await useFetch('/api/variant-details', {
@@ -155,7 +156,7 @@ const { data: variant, pending } = await useFetch('/api/variant-details', {
 // SEO
 useSiteMeta({
   title: () => `Enquire - ${variant.value?.name || 'Vehicle'}`,
-  description: () => `Get a quote for the ${variant.value?.name || 'vehicle'} at Sale Hyundai.`,
+  description: () => `Get a quote for the ${variant.value?.name || 'vehicle'} at ${siteName.value}.`,
 });
 
 // Form
@@ -218,7 +219,6 @@ const handleSubmit = async () => {
   }
 };
 </script>
-
 
 
 

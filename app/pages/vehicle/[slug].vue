@@ -381,9 +381,11 @@ const vehiclePowertrainFilter = computed(() => {
 });
 
 // SEO
+const { siteName } = useSiteIdentity();
+
 useSiteMeta({
   title: () => vehicle.value?.model || 'Vehicle',
-  description: () => vehicle.value?.description || `Explore the ${vehicle.value?.model || 'vehicle'} at Sale Hyundai.`,
+  description: () => vehicle.value?.description || `Explore the ${vehicle.value?.model || 'vehicle'} at ${siteName.value}.`,
   image: () => heroSlide.value?.desktop || '',
 });
 
@@ -774,7 +776,6 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
 
 
 

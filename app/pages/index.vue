@@ -56,17 +56,13 @@
 <script setup lang="ts">
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
 
-// Get site config from store
-const mainStore = useMainStore();
-const site = computed(() => mainStore.site);
-const config = useRuntimeConfig();
-const siteName = computed(() => site.value?.name || config.public.siteName || 'Blood Hyundai');
+const { siteName, dealerLocation } = useSiteIdentity();
 
 // Use SEO meta composable
 useSiteMeta({
-  title: 'Hyundai Dealer Geelong',
-  description: () => `${siteName.value} is your Hyundai dealer in Geelong. Browse new, demo and used Hyundai vehicles, current offers, test drives, finance enquiries and service booking.`,
-  keywords: () => `${siteName.value}, Hyundai dealer Geelong, new Hyundai, used Hyundai, Hyundai service Geelong, Hyundai special offers`,
+  title: () => `${siteName.value} Hyundai Dealer`,
+  description: () => `${siteName.value} is your Hyundai dealer in ${dealerLocation.value}. Browse new, demo and used Hyundai vehicles, current offers, test drives, finance enquiries and service booking.`,
+  keywords: () => `${siteName.value}, Hyundai dealer ${dealerLocation.value}, new Hyundai, used Hyundai, Hyundai service, Hyundai special offers`,
 });
 
 // Vehicles store for enquiry modal

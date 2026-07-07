@@ -220,9 +220,11 @@ const handleSubmit = async () => {
 };
 
 // SEO
+const { siteName } = useSiteIdentity();
+
 useSiteMeta({
   title: () => `Enquire - ${vehicleTitle.value}`,
-  description: () => `Enquire about the ${vehicleTitle.value} at Sale Hyundai.`,
+  description: () => `Enquire about the ${vehicleTitle.value} at ${siteName.value}.`,
 });
 </script>
 
@@ -231,7 +233,6 @@ useSiteMeta({
   min-height: 80vh;
 }
 </style>
-
 
 
 

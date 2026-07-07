@@ -480,19 +480,17 @@
 import type { Accessory, AccessoryPack, HyundaiModel } from '~/stores/accessories';
 
 const accessoriesStore = useAccessoriesStore();
-
-// Enhanced SEO
-const config = useRuntimeConfig();
+const { siteName, siteUrl } = useSiteIdentity();
 
 useSeoMeta({
-  title: 'Hyundai Genuine Accessories | Sale Hyundai Victoria',
-  description: 'Shop Hyundai Genuine Accessories for your vehicle at Sale Hyundai. Explore interior, exterior, cargo, roof racks, alloy wheels and protection accessories. All backed by a 5-year warranty. Expert fitting available.',
-  ogTitle: 'Hyundai Genuine Accessories | Sale Hyundai',
+  title: () => `Hyundai Genuine Accessories | ${siteName.value}`,
+  description: () => `Shop Hyundai Genuine Accessories for your vehicle at ${siteName.value}. Explore interior, exterior, cargo, roof racks, alloy wheels and protection accessories. All backed by a 5-year warranty. Expert fitting available.`,
+  ogTitle: () => `Hyundai Genuine Accessories | ${siteName.value}`,
   ogDescription: 'Shop Hyundai Genuine Accessories - roof racks, tow bars, alloy wheels, interior accessories & more. 5-year warranty. Expert fitting.',
   ogImage: 'https://www.hyundai.com/content/dam/hyundai/au/en/owning/accessories/Hyunda_Accessories_KONA_NLine_RoofRack_800x600.jpg',
   ogType: 'website',
   twitterCard: 'summary_large_image',
-  twitterTitle: 'Hyundai Genuine Accessories | Sale Hyundai',
+  twitterTitle: () => `Hyundai Genuine Accessories | ${siteName.value}`,
   twitterDescription: 'Shop Hyundai Genuine Accessories. 5-year warranty on all accessories.',
 });
 
@@ -500,7 +498,7 @@ useHead({
   link: [
     {
       rel: 'canonical',
-      href: `${config.public.siteUrl}/accessories`,
+      href: () => `${siteUrl.value}/accessories`,
     },
   ],
 });
@@ -515,7 +513,7 @@ useSchemaOrg([
       '@type': 'ListItem',
       'position': index + 1,
       'name': `${model.name} Accessories`,
-      'url': `${config.public.siteUrl}/accessories/${model.slug}`,
+      'url': `${siteUrl.value}/accessories/${model.slug}`,
     })),
   },
 ]);
@@ -1403,4 +1401,3 @@ onMounted(async () => {
   }
 }
 </style>
-

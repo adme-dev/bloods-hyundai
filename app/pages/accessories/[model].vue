@@ -314,7 +314,7 @@ import { Car, Zap, CarFront, Truck, Gauge, Bus, Leaf } from 'lucide-vue-next';
 
 const route = useRoute();
 const accessoriesStore = useAccessoriesStore();
-const config = useRuntimeConfig();
+const { siteName, siteUrl } = useSiteIdentity();
 
 // Get model from route - match by slugified title
 const modelSlug = computed(() => route.params.model as string);
@@ -325,14 +325,14 @@ const modelData = computed(() => {
 
 // Enhanced SEO
 useSeoMeta({
-  title: () => `${modelData.value?.name || 'Hyundai'} Accessories | Genuine Parts | Sale Hyundai`,
-  description: () => `Shop genuine Hyundai ${modelData.value?.name || ''} accessories at Sale Hyundai Victoria. Interior, exterior, cargo, roof racks, tow bars & protection accessories. 5-year warranty. Expert fitting available.`,
-  ogTitle: () => `${modelData.value?.name || 'Hyundai'} Accessories | Sale Hyundai`,
+  title: () => `${modelData.value?.name || 'Hyundai'} Accessories | Genuine Parts | ${siteName.value}`,
+  description: () => `Shop genuine Hyundai ${modelData.value?.name || ''} accessories at ${siteName.value}. Interior, exterior, cargo, roof racks, tow bars & protection accessories. 5-year warranty. Expert fitting available.`,
+  ogTitle: () => `${modelData.value?.name || 'Hyundai'} Accessories | ${siteName.value}`,
   ogDescription: () => `Genuine ${modelData.value?.name || 'Hyundai'} accessories - roof racks, tow bars, alloy wheels & more. 5-year warranty.`,
   ogImage: () => modelData.value?.image || 'https://www.hyundai.com/content/dam/hyundai/au/en/owning/accessories/Hyunda_Accessories_KONA_NLine_RoofRack_800x600.jpg',
   ogType: 'website',
   twitterCard: 'summary_large_image',
-  twitterTitle: () => `${modelData.value?.name || 'Hyundai'} Accessories | Sale Hyundai`,
+  twitterTitle: () => `${modelData.value?.name || 'Hyundai'} Accessories | ${siteName.value}`,
   twitterDescription: () => `Shop genuine ${modelData.value?.name || 'Hyundai'} accessories. 5-year warranty.`,
 });
 
@@ -340,7 +340,7 @@ useHead({
   link: [
     {
       rel: 'canonical',
-      href: () => `${config.public.siteUrl}/accessories/${modelSlug.value}`,
+      href: () => `${siteUrl.value}/accessories/${modelSlug.value}`,
     },
   ],
 });
@@ -361,7 +361,7 @@ useSchemaOrg([
       'availability': 'https://schema.org/InStock',
       'seller': {
         '@type': 'AutoDealer',
-        'name': 'Sale Hyundai',
+        'name': () => siteName.value,
         'address': {
           '@type': 'PostalAddress',
           'addressLocality': 'Sale',
@@ -502,4 +502,3 @@ watch(modelSlug, () => {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 </style>
-

@@ -224,7 +224,7 @@ const savedVehicleCount = computed(() => {
 });
 
 // Computed values from store
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const showroomAddress = computed(() => mainStore.site?.showroom_address || '');
 const serviceAddress = computed(() => mainStore.site?.service_address || mainStore.site?.showroom_address || '');
 const phoneSales = computed(() => mainStore.site?.phone || '');
@@ -320,7 +320,6 @@ const isLinkExternal = (url: string) => {
   color: #fff;
 }
 </style>
-
 
 
 

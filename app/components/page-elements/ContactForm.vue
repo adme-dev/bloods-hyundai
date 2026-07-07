@@ -250,7 +250,7 @@ const isSending = ref(false);
 const isSent = ref(false);
 
 // Computed
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
+const { siteName } = useSiteIdentity();
 const hasErrors = computed(() => errors.value.length > 0);
 
 const formattedPhoneNumber = computed(() => {
@@ -393,7 +393,6 @@ const submitForm = async () => {
   border: 1px solid #ff002f;
 }
 </style>
-
 
 
 

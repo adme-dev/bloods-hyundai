@@ -472,7 +472,7 @@
 const route = useRoute();
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
-const config = useRuntimeConfig();
+const { siteName, siteUrl } = useSiteIdentity();
 const { toast } = useToast();
 
 // Saved vehicles (comparison/favorites) using localStorage
@@ -866,7 +866,7 @@ const seoTitle = computed(() => {
   if (conditionLabel.value) {
     parts.push(conditionLabel.value);
   }
-  parts.push('| Sale Hyundai');
+  parts.push(`| ${siteName.value}`);
   return parts.join(' ');
 });
 
@@ -880,12 +880,12 @@ const seoDescription = computed(() => {
   if (kmsDisplay.value) parts.push(`with ${kmsDisplay.value}`);
   if (transmissionDisplay.value) parts.push(transmissionDisplay.value);
   if (fuelDisplay.value) parts.push(fuelDisplay.value);
-  parts.push('at Sale Hyundai, Victoria. View photos, specs & book a test drive today.');
+  parts.push(`at ${siteName.value}. View photos, specs & book a test drive today.`);
   return parts.filter(Boolean).join(' ');
 });
 
 // Use Nuxt SEO's useSeoMeta for better SEO
-const canonicalUrl = computed(() => `${config.public.siteUrl}${route.fullPath}`);
+const canonicalUrl = computed(() => `${siteUrl.value}${route.fullPath}`);
 
 useSeoMeta({
   title: seoTitle,
@@ -894,13 +894,12 @@ useSeoMeta({
   ogDescription: seoDescription,
   ogImage: () => allImages.value[0] || '',
   ogUrl: canonicalUrl,
-  ogSiteName: 'Sale Hyundai',
+  ogSiteName: siteName,
   ogLocale: 'en_AU',
   twitterCard: 'summary_large_image',
   twitterTitle: seoTitle,
   twitterDescription: seoDescription,
   twitterImage: () => allImages.value[0] || '',
-  twitterSite: '@salehyundai',
   robots: {
     index: true,
     follow: true,
@@ -962,11 +961,11 @@ useSchemaOrg([
       availability: 'https://schema.org/InStock',
       seller: {
         '@type': 'AutoDealer',
-        name: mainStore.site?.name || 'Sale Hyundai',
+        name: siteName.value,
         address: {
           '@type': 'PostalAddress',
           streetAddress: vehicle.value?.address?.line1 || mainStore.site?.showroom_address?.split(',')[0] || '',
-          addressLocality: vehicle.value?.address?.suburb || 'Sale',
+          addressLocality: vehicle.value?.address?.suburb || mainStore.site?.suburb || '',
           addressRegion: vehicle.value?.address?.state || 'Victoria',
           postalCode: vehicle.value?.address?.postcode || '3850',
           addressCountry: 'AU',
@@ -997,17 +996,17 @@ useSchemaOrg([
   defineBreadcrumb({
     itemListElement: () => {
       const items = [
-        { name: 'Home', item: config.public.siteUrl },
-        { name: 'Cars for Sale', item: `${config.public.siteUrl}/car-sales` },
+        { name: 'Home', item: siteUrl.value },
+        { name: 'Cars for Sale', item: `${siteUrl.value}/car-sales` },
       ];
       
       // Add filter breadcrumbs
       breadcrumbItems.value.forEach(crumb => {
-        items.push({ name: crumb.label, item: `${config.public.siteUrl}${crumb.url}` });
+        items.push({ name: crumb.label, item: `${siteUrl.value}${crumb.url}` });
       });
       
       // Add current vehicle page
-      items.push({ name: headline.value, item: `${config.public.siteUrl}${route.fullPath}` });
+      items.push({ name: headline.value, item: `${siteUrl.value}${route.fullPath}` });
       
       return items;
     },
@@ -1051,11 +1050,11 @@ useHead(() => {
       availability: 'https://schema.org/InStock',
       seller: {
         '@type': 'AutoDealer',
-        name: mainStore.site?.name || 'Sale Hyundai',
+        name: siteName.value,
         address: {
           '@type': 'PostalAddress',
           streetAddress: vehicle.value?.address?.line1 || mainStore.site?.showroom_address?.split(',')[0] || '',
-          addressLocality: vehicle.value?.address?.suburb || 'Sale',
+          addressLocality: vehicle.value?.address?.suburb || mainStore.site?.suburb || '',
           addressRegion: vehicle.value?.address?.state || 'Victoria',
           postalCode: vehicle.value?.address?.postcode || '3850',
           addressCountry: 'AU',
@@ -1324,4 +1323,3 @@ const closeTestDrive = () => {
   }
 }
 </style>
-

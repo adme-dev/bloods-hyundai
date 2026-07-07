@@ -83,7 +83,7 @@ import { getConfiguredFrontThumbs } from '~/utils/frontSlides';
 const mainStore = useMainStore();
 
 // Site name for fallback alt text
-const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
+const { siteName } = useSiteIdentity();
 
 // Filter thumbs by date range
 const homeThumbs = computed(() => {

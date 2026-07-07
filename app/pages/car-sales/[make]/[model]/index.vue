@@ -10,19 +10,19 @@
 const route = useRoute();
 const make = route.params.make as string;
 const model = route.params.model as string;
+const { siteName } = useSiteIdentity();
 
 const capitalizeFirst = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 // SEO metadata for this clean URL (important for search engines)
 useSeoMeta({
-  title: `${capitalizeFirst(make)} ${capitalizeFirst(model)} Cars for Sale | Sale Hyundai`,
-  description: `Browse ${capitalizeFirst(make)} ${capitalizeFirst(model)} cars for sale at Sale Hyundai, Victoria. Quality new, demo and used vehicles.`,
+  title: () => `${capitalizeFirst(make)} ${capitalizeFirst(model)} Cars for Sale | ${siteName.value}`,
+  description: () => `Browse ${capitalizeFirst(make)} ${capitalizeFirst(model)} cars for sale at ${siteName.value}. Quality new, demo and used vehicles.`,
 });
 
 // Redirect to main car-sales page with make and model filters applied
 await navigateTo(`/car-sales?make=${encodeURIComponent(make.toLowerCase())}&model=${encodeURIComponent(model.toLowerCase())}`, { replace: true });
 </script>
-
 
 
 
