@@ -16,6 +16,7 @@ import { dealers } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { getRequestURL } from 'h3';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
+import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 
 interface SiteConfig {
   name: string;
@@ -47,20 +48,6 @@ interface DealerRow {
 
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
-
-function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
-  const trimmed = cdnUrl.replace(/\/+$/, '');
-  const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
-  const tenantBase = tenantMatch
-    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
-    : `${trimmed}/files/${dealerSlug}`;
-  const allowLegacyPath = !tenantMatch || tenantMatch[1] === dealerSlug;
-
-  return Array.from(new Set([
-    `${tenantBase}/${path}`,
-    ...(allowLegacyPath ? [`${trimmed}/${path}`] : []),
-  ]));
-}
 
 function loadLocalFallback(): SiteConfig | null {
   try {

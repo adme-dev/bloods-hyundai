@@ -6,6 +6,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
+import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 
 const REVIEWS_CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const REVIEWS_CACHE_STALE_MAX_AGE = 60 * 30; // 30 minutes
@@ -32,20 +33,6 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Try to load local fallback reviews data for development
-function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
-  const trimmed = cdnUrl.replace(/\/+$/, '');
-  const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
-  const tenantBase = tenantMatch
-    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
-    : `${trimmed}/files/${dealerSlug}`;
-  const allowLegacyPath = !tenantMatch || tenantMatch[1] === dealerSlug;
-
-  return Array.from(new Set([
-    `${tenantBase}/${path}`,
-    ...(allowLegacyPath ? [`${trimmed}/${path}`] : []),
-  ]));
-}
-
 function localReviewsFallbackMatchesDealer(localData: any, dealerSlug: string): boolean {
   const name = String(localData?.result?.name || '').toLowerCase();
   if (name.includes('sale hyundai')) {
@@ -178,7 +165,6 @@ export default defineCachedEventHandler(async (event): Promise<ProcessedReviewsR
   name: 'reviews',
   getKey: (event) => resolveTenantCacheKey(event, 'google-reviews'),
 });
-
 
 
 

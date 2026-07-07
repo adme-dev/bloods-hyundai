@@ -123,15 +123,8 @@ export const useMainStore = defineStore('main', () => {
   };
 
   const fetchBrand = async () => {
-    const config = useRuntimeConfig();
-    
-    // Skip if CDN URL not configured
-    if (!config.public.cdnUrl) {
-      return null;
-    }
-    
     try {
-      const data = await $fetch(`${config.public.cdnUrl}/brand/brand.json`);
+      const data = await $fetch('/api/brand');
       brand.value = data;
       return data;
     } catch (error) {

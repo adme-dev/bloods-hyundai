@@ -1,20 +1,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../../utils/tenant';
-
-function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
-  const trimmed = cdnUrl.replace(/\/+$/, '');
-  const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
-  const tenantBase = tenantMatch
-    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
-    : `${trimmed}/files/${dealerSlug}`;
-  const allowLegacyPath = !tenantMatch || tenantMatch[1] === dealerSlug;
-
-  return Array.from(new Set([
-    `${tenantBase}/${path}`,
-    ...(allowLegacyPath ? [`${trimmed}/${path}`] : []),
-  ]));
-}
+import { buildTenantCdnUrls } from '../../utils/tenant-cdn';
 
 // Try to load local fallback page data for development
 function loadLocalPageFallback(slug: string, dealerSlug: string): any | null {
@@ -130,7 +117,6 @@ export default defineCachedEventHandler(async (event) => {
   getKey: (event) => resolveTenantCacheKey(event, `page:${getRouterParam(event, 'slug') || 'unknown'}`),
   shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
-
 
 
 
