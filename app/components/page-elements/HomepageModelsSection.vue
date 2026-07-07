@@ -405,7 +405,7 @@ onClickOutside(categoryDropdownRef, () => {
   margin-top: clamp(32px, 5vw, 64px);
   padding-top: clamp(64px, 7vw, 96px);
   padding-bottom: clamp(72px, 8vw, 112px);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .homepage-models-section .container {
