@@ -1,6 +1,9 @@
 <template>
   <Teleport to="body">
-    <div class="hyundai-chat" :class="{ 'is-open': isOpen }">
+    <div
+      class="hyundai-chat"
+      :class="{ 'is-open': isOpen, 'is-hidden': !isOpen && !isActionBarVisible }"
+    >
       <Transition name="chat-panel">
         <section
           v-if="isOpen"
@@ -231,6 +234,7 @@ const showroomAddress = computed(() => mainStore.site?.showroom_address || mainS
 const directionsUrl = computed(() => mainStore.site?.map_directions || mainStore.site?.departments?.sales?.map_directions || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(showroomAddress.value)}`);
 
 const isVehiclePage = computed(() => String(route.name || '').startsWith('vehicle-for-sale'));
+const isActionBarVisible = useMobileActionBarVisibility();
 
 const openChat = async () => {
   isOpen.value = true;
@@ -1314,6 +1318,14 @@ onUnmounted(() => {
     bottom: 0;
     width: 25vw;
     height: calc(64px + env(safe-area-inset-bottom));
+    transform: translateY(0);
+    transition: transform 220ms ease;
+    will-change: transform;
+  }
+
+  .hyundai-chat.is-hidden {
+    pointer-events: none;
+    transform: translateY(100%);
   }
 
   .chat-launcher {

@@ -1,6 +1,10 @@
 <template>
   <!-- Fixed mobile quick actions - hidden on pages with their own mobile CTA -->
-  <div v-if="showQuickActions" class="mobile-quick-links uk-hidden@m">
+  <div
+    v-if="showQuickActions"
+    class="mobile-quick-links uk-hidden@m"
+    :class="{ 'is-hidden': !isActionBarVisible }"
+  >
     <NuxtLink to="/car-sales" class="quick-link-button quick-link-button--secondary" aria-label="Search inventory">
       <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.1-5.15a6.25 6.25 0 11-12.5 0 6.25 6.25 0 0112.5 0z" />
@@ -24,6 +28,7 @@
 <script setup lang="ts">
 const route = useRoute();
 const mainStore = useMainStore();
+const isActionBarVisible = useMobileActionBarVisibility();
 
 const phone = computed(() => {
   const sitePhone = mainStore.site?.phone;
@@ -55,6 +60,14 @@ const showQuickActions = computed(() => {
   max-width: none;
   background: #002c5f;
   box-shadow: 0 -8px 24px rgba(0, 30, 80, 0.22);
+  transform: translateY(0);
+  transition: transform 220ms ease;
+  will-change: transform;
+}
+
+.mobile-quick-links.is-hidden {
+  pointer-events: none;
+  transform: translateY(100%);
 }
 
 .quick-link-button {
@@ -114,7 +127,6 @@ const showQuickActions = computed(() => {
   }
 }
 </style>
-
 
 
 
