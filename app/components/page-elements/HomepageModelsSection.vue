@@ -36,7 +36,7 @@
         <!-- Desktop Layout -->
         <div class="hidden lg:flex lg:flex-row gap-12">
           <!-- Left Sidebar: Categories -->
-          <div class="lg:w-80 lg:max-w-[400px] flex flex-col flex-shrink-0">
+          <div class="models-category-sidebar lg:w-80 lg:max-w-[400px] flex flex-col flex-shrink-0">
             <h3 class="text-sm font-semibold text-gray-500 tracking-wider mb-6">
               CATEGORIES
             </h3>
@@ -458,6 +458,15 @@ onClickOutside(categoryDropdownRef, () => {
 .mobile-model-card {
   min-height: 100%;
   scroll-snap-align: start;
+}
+
+@media (min-width: 1024px) {
+  .models-category-sidebar {
+    position: sticky;
+    top: 112px;
+    align-self: flex-start;
+    max-height: calc(100vh - 136px);
+  }
 }
 
 /* Mobile scroller specific styles */
