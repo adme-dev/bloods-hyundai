@@ -131,6 +131,7 @@
         v-if="!isOpen"
         type="button"
         class="chat-launcher"
+        :class="{ 'is-nudging': isNudging }"
         aria-label="Open Hyundai assistant"
         @click="openChat"
       >
@@ -206,6 +207,9 @@ const CHAT_LEAD_CONTEXT_KEY = 'hyundai-chat-lead-context-v1';
 const MAX_PERSISTED_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 500;
 const MAX_LABEL_LENGTH = 80;
+const CHAT_NUDGE_MIN_DELAY_MS = 14000;
+const CHAT_NUDGE_MAX_DELAY_MS = 22000;
+const CHAT_NUDGE_DURATION_MS = 900;
 
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
@@ -213,6 +217,7 @@ const route = useRoute();
 
 const isOpen = ref(false);
 const isTyping = ref(false);
+const isNudging = ref(false);
 const draft = ref('');
 const messages = ref<ChatMessage[]>([]);
 const messagesEl = ref<HTMLElement | null>(null);
@@ -220,6 +225,8 @@ const inputEl = ref<HTMLInputElement | null>(null);
 let messageCounter = 0;
 let previousBodyOverflow: string | null = null;
 let mobileViewportQuery: MediaQueryList | null = null;
+let chatNudgeTimer: number | null = null;
+let chatNudgeResetTimer: number | null = null;
 
 const quickActions: QuickAction[] = [
   { id: 'stock', label: 'Browse stock', prompt: 'What Hyundai vehicles are in stock?', icon: IconCar },
@@ -241,6 +248,7 @@ const isActionBarVisible = useMobileActionBarVisibility();
 const hasSavedConversation = computed(() => !isOpen.value && messages.value.length > 0);
 
 const openChat = async () => {
+  stopChatNudge();
   isOpen.value = true;
   trackChatEvent('chat_opened');
   await nextTick();
@@ -848,6 +856,46 @@ const isMobileChatViewport = () => {
   return window.matchMedia('(max-width: 640px)').matches;
 };
 
+const shouldRunChatNudge = () => {
+  if (!import.meta.client || isOpen.value || !isActionBarVisible.value) return false;
+  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+};
+
+const clearChatNudgeTimers = () => {
+  if (chatNudgeTimer !== null) {
+    window.clearTimeout(chatNudgeTimer);
+    chatNudgeTimer = null;
+  }
+
+  if (chatNudgeResetTimer !== null) {
+    window.clearTimeout(chatNudgeResetTimer);
+    chatNudgeResetTimer = null;
+  }
+};
+
+const stopChatNudge = () => {
+  clearChatNudgeTimers();
+  isNudging.value = false;
+};
+
+const scheduleChatNudge = () => {
+  clearChatNudgeTimers();
+  isNudging.value = false;
+
+  if (!shouldRunChatNudge()) return;
+
+  const delay = CHAT_NUDGE_MIN_DELAY_MS + Math.random() * (CHAT_NUDGE_MAX_DELAY_MS - CHAT_NUDGE_MIN_DELAY_MS);
+  chatNudgeTimer = window.setTimeout(() => {
+    if (!shouldRunChatNudge()) return;
+
+    isNudging.value = true;
+    chatNudgeResetTimer = window.setTimeout(() => {
+      isNudging.value = false;
+      scheduleChatNudge();
+    }, CHAT_NUDGE_DURATION_MS);
+  }, delay);
+};
+
 const syncBodyScrollLock = () => {
   if (!import.meta.client) return;
 
@@ -870,7 +918,10 @@ const unlockBodyScroll = () => {
 
 watch(isOpen, () => {
   nextTick(syncBodyScrollLock);
+  scheduleChatNudge();
 });
+
+watch(isActionBarVisible, scheduleChatNudge);
 
 watch(messages, persistChatSession, { deep: true });
 
@@ -878,9 +929,11 @@ onMounted(() => {
   restoreChatSession();
   mobileViewportQuery = window.matchMedia('(max-width: 640px)');
   mobileViewportQuery.addEventListener('change', syncBodyScrollLock);
+  scheduleChatNudge();
 });
 
 onUnmounted(() => {
+  stopChatNudge();
   unlockBodyScroll();
   mobileViewportQuery?.removeEventListener('change', syncBodyScrollLock);
   mobileViewportQuery = null;
@@ -919,6 +972,14 @@ onUnmounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 16px 38px rgba(0, 30, 80, 0.34);
   outline: none;
+}
+
+.chat-launcher.is-nudging {
+  animation: chatLauncherNudge 880ms ease-in-out;
+}
+
+.chat-launcher.is-nudging svg {
+  animation: chatLauncherIconNudge 760ms ease-in-out;
 }
 
 .launcher-label {
@@ -1324,6 +1385,51 @@ onUnmounted(() => {
   50% {
     transform: translateY(-3px);
     opacity: 1;
+  }
+}
+
+@keyframes chatLauncherNudge {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-2px) rotate(-1.8deg);
+  }
+  30% {
+    transform: translateX(2px) rotate(1.8deg);
+  }
+  45% {
+    transform: translateX(-1px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(1px) rotate(1deg);
+  }
+  75% {
+    transform: translateX(0) rotate(0deg) scale(1.03);
+  }
+}
+
+@keyframes chatLauncherIconNudge {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.08) rotate(-5deg);
+  }
+  50% {
+    transform: scale(0.96) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.04) rotate(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-launcher.is-nudging,
+  .chat-launcher.is-nudging svg {
+    animation: none;
   }
 }
 
