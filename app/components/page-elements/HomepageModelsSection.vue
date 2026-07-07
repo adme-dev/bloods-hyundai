@@ -335,7 +335,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useModelsStore } from '~/stores/models';
 import { onClickOutside } from '@vueuse/core';
 import { Swiper, SwiperSlide } from 'swiper/vue';
@@ -346,7 +346,6 @@ import 'swiper/css/pagination';
 
 const modelsStore = useModelsStore();
 const activeCategory = ref('');
-const hasMounted = ref(false);
 const showCategoryDropdown = ref(false);
 const categoryDropdownRef = ref<HTMLElement | null>(null);
 const swiperInstance = ref<any>(null);
@@ -394,18 +393,12 @@ const syncInitialCategory = () => {
   }
 };
 
-onMounted(() => {
-  hasMounted.value = true;
-  syncInitialCategory();
-});
-
 watch(
   () => modelsStore.uniqueCategories,
   () => {
-    if (hasMounted.value) {
-      syncInitialCategory();
-    }
-  }
+    syncInitialCategory();
+  },
+  { immediate: true }
 );
 
 // Filter models by active category

@@ -92,8 +92,14 @@ interface VehicleRow {
   odometer_reading: number | null;
 }
 
-export default defineCachedEventHandler(async () => {
-  const config = useRuntimeConfig();
+const CACHE_MAX_AGE = 60 * 10;
+const CACHE_STALE_MAX_AGE = 60 * 30;
+
+export default defineCachedEventHandler(async (event) => {
+  setResponseHeaders(event, {
+    'Cache-Control': 'public, max-age=600, stale-while-revalidate=1800',
+    'Content-Type': 'application/json',
+  });
 
   // Use environment variables for Supabase credentials
   const supabaseUrl = process.env.SUPABASE_URL || 'https://tsheefvkecaervnrxvdf.supabase.co';
@@ -143,8 +149,7 @@ export default defineCachedEventHandler(async () => {
 
     for (const v of vehicles) {
       // Condition counts
-      if (v.condition) {
-        const cond = v.condition.toLowerCase();
+      for (const cond of getConditionValues(v.condition)) {
         conditions.set(cond, (conditions.get(cond) || 0) + 1);
       }
 
@@ -356,8 +361,8 @@ export default defineCachedEventHandler(async () => {
     return { error: 'Failed to fetch filters', filters: [] };
   }
 }, {
-  maxAge: 60 * 10, // 10 minutes cache
-  staleMaxAge: 60 * 30, // Serve stale for 30 minutes
+  maxAge: CACHE_MAX_AGE,
+  staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'homepage-filters',
-  getKey: () => 'homepage-filters-v1'
+  getKey: () => 'homepage-filters-v2'
 });

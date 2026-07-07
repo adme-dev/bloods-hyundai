@@ -57,7 +57,19 @@ interface DetailedCpcResponse {
   priceEnabled?: boolean;
 }
 
-export default defineEventHandler(async (event) => {
+const CACHE_MAX_AGE = 60 * 30;
+const CACHE_STALE_MAX_AGE = 60 * 60;
+
+export default defineCachedEventHandler(async (event) => {
+  const refreshRequested = getQuery(event).refresh === 'true';
+
+  setResponseHeaders(event, {
+    'Cache-Control': refreshRequested
+      ? 'no-store, max-age=0'
+      : 'public, max-age=1800, stale-while-revalidate=3600',
+    'Content-Type': 'application/json',
+  });
+
   try {
     // Fetch from primary sources in parallel
     const [cpcData, modelsAdditionalData, comingSoonResponse] = await Promise.all([
@@ -486,5 +498,10 @@ export default defineEventHandler(async (event) => {
       groupedByCategory: {},
     };
   }
+}, {
+  maxAge: CACHE_MAX_AGE,
+  staleMaxAge: CACHE_STALE_MAX_AGE,
+  name: 'all-variants',
+  getKey: () => 'all-variants-v1',
+  shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
-

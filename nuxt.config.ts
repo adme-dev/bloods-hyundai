@@ -331,6 +331,7 @@ export default defineNuxtConfig({
     '/api/popup-settings':           { swr: 300 },
     '/api/site-config':              { swr: 600 },
     '/api/homepage-filters':         { swr: 600 },
+    '/api/all-variants':             { swr: 1800 },
     '/api/model-summaries':          { swr: 1800 },
     '/api/hyundai-offers/hero-banner': { swr: 900 },
     '/api/carsales-feed':            { swr: 600 },

@@ -23,7 +23,14 @@
     </section>
 
     <!-- Homepage Models Section -->
-    <LazyHomepageModelsSection />
+    <LoadWhenVisible
+      class="homepage-models-slot"
+      min-height="900px"
+      root-margin="600px 0px"
+      :idle-delay="9000"
+    >
+      <LazyHomepageModelsSection />
+    </LoadWhenVisible>
 
     <!-- Featured Accessories -->
     <LoadWhenVisible min-height="520px" root-margin="700px 0px">
@@ -97,6 +104,16 @@ onMounted(() => {
     &:first-of-type {
       padding-top: 0;
     }
+  }
+}
+
+.homepage-models-slot {
+  min-height: 900px;
+}
+
+@media (min-width: 1024px) {
+  .homepage-models-slot {
+    min-height: 780px;
   }
 }
 
