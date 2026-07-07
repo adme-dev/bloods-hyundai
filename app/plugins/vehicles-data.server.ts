@@ -7,6 +7,9 @@
  * - This reduces homepage SSR payload by 99%
  */
 
+import { useRequestHeaders } from '#app';
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
+
 const CACHE_KEY = 'carsales-feed-data';
 
 // Routes that need full vehicle data preloaded
@@ -21,8 +24,10 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   // Only run on server
   if (!import.meta.server) return;
 
+  const tenantCacheKey = getRuntimeTenantCacheKey(CACHE_KEY);
+
   // Skip if data already exists in payload
-  if (nuxtApp.payload?.data?.[CACHE_KEY]) return;
+  if (nuxtApp.payload?.data?.[tenantCacheKey]) return;
 
   // Check if current route needs full vehicle data
   const route = nuxtApp.ssrContext?.url || '';
@@ -35,11 +40,17 @@ export default defineNuxtPlugin(async (nuxtApp) => {
 
   try {
     // Fetch vehicle data server-side
-    const response = await $fetch<{ vehiclesData: any[]; filters: any }>('/api/carsales-feed');
+    const headers = useRequestHeaders(['host', 'x-forwarded-host', 'x-forwarded-proto']);
+    const response = await $fetch<{ vehiclesData: any[]; filters: any }>('/api/carsales-feed', {
+      headers: {
+        ...headers,
+        Accept: 'application/json',
+      },
+    });
 
     // Store in Nuxt payload for client hydration
     nuxtApp.payload.data = nuxtApp.payload.data || {};
-    nuxtApp.payload.data[CACHE_KEY] = {
+    nuxtApp.payload.data[tenantCacheKey] = {
       vehiclesData: response.vehiclesData || [],
       filters: response.filters || [],
     };

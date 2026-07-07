@@ -149,6 +149,8 @@
 </template>
 
 <script setup lang="ts">
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
+
 const { siteName } = useSiteIdentity();
 
 // SEO
@@ -158,6 +160,7 @@ useSiteMeta({
 });
 
 const vehiclesStore = useVehiclesStore();
+const carsalesFeedCacheKey = getRuntimeTenantCacheKey('carsales-feed-data');
 
 // Use the same localStorage key as ModernVehicleCard
 const comparisonIds = useLocalStorage<any>('comparisonVehicles', []);
@@ -174,7 +177,7 @@ const normalizeComparisonIds = (raw: any): (string | number)[] => {
 
 // SSR-only data fetching - hidden from browser network tab, 10-min server cache
 const { data: carsalesFeedData, status } = await useFetch<{ vehiclesData: any[] }>('/api/carsales-feed', {
-  key: 'carsales-feed-data',
+  key: carsalesFeedCacheKey,
   dedupe: 'defer',
   // Return cached data on client - prevents network request
   getCachedData: (key, nuxtApp) => {
@@ -284,7 +287,6 @@ const closeEnquiryModal = () => {
   background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);
 }
 </style>
-
 
 
 

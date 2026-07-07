@@ -469,11 +469,14 @@
 </template>
 
 <script setup lang="ts">
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
+
 const route = useRoute();
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
 const { siteName, siteUrl } = useSiteIdentity();
 const { toast } = useToast();
+const carsalesFeedCacheKey = getRuntimeTenantCacheKey('carsales-feed-data');
 
 // Saved vehicles (comparison/favorites) using localStorage
 const comparisonIds = useLocalStorage<any>('comparisonVehicles', []);
@@ -501,7 +504,7 @@ const { data: apiResponse, status } = await useFetch<any>(vehicleDetailUrl, {
 
 // Fetch all vehicles for related vehicles section (uses shared SSR cache)
 const { data: allVehiclesResponse } = await useFetch<{ vehiclesData: any[] }>('/api/carsales-feed', {
-  key: 'carsales-feed-data',
+  key: carsalesFeedCacheKey,
   dedupe: 'defer',
   // Return cached data on client - prevents network request
   getCachedData: (key, nuxtApp) => {

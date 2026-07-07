@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
 import { findIndex } from 'lodash-es';
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 
 /**
  * Vehicles store - handles car sales data
  * Replaces: Vuex root state (vehicles, filters) + searchData module
  *
  * Data is hydrated from SSR payload - no client-side fetch needed
- * Uses shared cache key 'carsales-feed-data' with pages
+ * Uses host-scoped cache key 'carsales-feed-data:<host>' with pages
  */
 
 const CACHE_KEY = 'carsales-feed-data';
@@ -163,7 +164,8 @@ export const useVehiclesStore = defineStore('vehicles', () => {
     try {
       // Try to get data from Nuxt payload first (populated by vehicles-data.server.ts plugin)
       const nuxtApp = useNuxtApp();
-      const cachedData = nuxtApp.payload?.data?.[CACHE_KEY] || nuxtApp.static?.data?.[CACHE_KEY];
+      const tenantCacheKey = getRuntimeTenantCacheKey(CACHE_KEY);
+      const cachedData = nuxtApp.payload?.data?.[tenantCacheKey] || nuxtApp.static?.data?.[tenantCacheKey];
 
       if (cachedData) {
         vehicles.value = cachedData.vehiclesData || [];
@@ -183,7 +185,7 @@ export const useVehiclesStore = defineStore('vehicles', () => {
 
           // Cache in payload for subsequent navigation
           nuxtApp.payload.data = nuxtApp.payload.data || {};
-          nuxtApp.payload.data[CACHE_KEY] = {
+          nuxtApp.payload.data[tenantCacheKey] = {
             vehiclesData: response.vehiclesData || [],
             filters: response.filters || [],
           };

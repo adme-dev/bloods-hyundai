@@ -731,6 +731,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core';
+import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 // Note: useLocalStorage is auto-imported from ~/composables/useLocalStorage.ts
 // which properly defers localStorage read until after hydration
 
@@ -738,12 +739,13 @@ const route = useRoute();
 const router = useRouter();
 const vehiclesStore = useVehiclesStore();
 const { siteName, siteUrl } = useSiteIdentity();
+const carsalesFeedCacheKey = getRuntimeTenantCacheKey('carsales-feed-data');
 
 // SSR-only data fetching - hidden from browser network tab, 10-min server cache.
 // `default` + explicit error handling means a failed/slow API never crashes SSR —
 // the page renders 200 with an empty listing instead of bubbling up as a 500.
 const { data: carsalesFeedData, error: carsalesFeedError } = await useFetch<{ vehiclesData: any[]; filters: any[] }>('/api/carsales-feed', {
-  key: 'carsales-feed-data',
+  key: carsalesFeedCacheKey,
   dedupe: 'defer',
   default: () => ({ vehiclesData: [], filters: [] }),
   getCachedData: (key, nuxtApp) => {
