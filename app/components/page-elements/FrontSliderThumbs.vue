@@ -87,8 +87,7 @@ const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
 // Filter thumbs by date range
 const homeThumbs = computed(() => {
   return getConfiguredFrontThumbs(mainStore.site?.promotional)
-    .filter((thumb: any) => isDateInRange(thumb.start, thumb.end))
-    .filter((_, index) => index !== 1);
+    .filter((thumb: any) => isDateInRange(thumb.start, thumb.end));
 });
 
 // Embla Carousel setup
@@ -217,7 +216,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   border-radius: 8px;
   transition: transform 0.4s ease;
 }
@@ -226,7 +225,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   border-radius: 8px;
 }
 

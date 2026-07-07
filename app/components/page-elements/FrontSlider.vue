@@ -378,7 +378,7 @@ onUnmounted(() => {
   position: relative;
   height: min(37.5vw, 560px);
   min-height: min(37.5vw, 560px);
-  background-color: #f4f6f8;
+  background-color: #fff;
 }
 
 .slide-image-wrapper {
@@ -391,7 +391,8 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: fill;
+  object-position: center center;
 }
 
 /* Mobile: Use portrait-friendly aspect ratio for mobile images */
@@ -402,7 +403,8 @@ onUnmounted(() => {
   }
 
   .slide-image {
-    object-fit: contain;
+    object-fit: fill;
+    object-position: center center;
   }
 }
 

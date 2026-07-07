@@ -1,82 +1,43 @@
 <template>
   <div class="front-search">
     <!-- Quick Links Bar -->
-    <div class="uk-container uk-container-large s-wp uk-background-secondary uk-light">
+    <div class="s-wp uk-background-secondary uk-light">
       <ClientOnly>
-        <div class="quick-links-grid uk-text-center uk-margin-small-top uk-margin-small-bottom iconnav">
+        <div class="quick-links-grid uk-text-center iconnav">
           <div>
-            <NuxtLink to="/service" class="uk-link-reset uk-width-1-1">
-              <div class="uk-padding-small">
-                <i class="icon-book-a-service icon-xl"></i>
-                <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Servicing available</div>
-                <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
-                  Book a Service
-                </button>
+            <NuxtLink to="/build-and-price" class="quick-action-link uk-link-reset uk-width-1-1">
+              <div class="quick-action-inner">
+                <i class="icon-compare-cars quick-action-icon"></i>
+                <div class="icontxt">Build &amp; Price</div>
               </div>
             </NuxtLink>
           </div>
 
           <div>
-            <NuxtLink to="/test-drive" class="uk-link-reset uk-width-1-1">
-              <div class="uk-padding-small">
-                <i class="icon-steering-wheel icon-xl"></i>
-                <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Test Drive a Hyundai</div>
-                <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
-                  Book a Test Drive
-                </button>
-              </div>
-            </NuxtLink>
-          </div>
-
-          <div>
-            <NuxtLink to="/special-offers" class="uk-link-reset uk-width-1-1">
-              <div class="uk-padding-small">
-                <i class="icon-compare-cars icon-xl"></i>
-                <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Current Offers</div>
-                <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
-                  View Offers
-                </button>
-              </div>
-            </NuxtLink>
-          </div>
-
-          <div>
-            <NuxtLink to="/contact" class="uk-link-reset uk-width-1-1">
-              <div class="uk-padding-small">
-                <i class="icon-email icon-xl"></i>
-                <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Make an Enquiry</div>
-                <button class="uk-button uk-button-text uk-width-auto uk-visible@s">
-                  More Info
-                </button>
-              </div>
-            </NuxtLink>
-          </div>
-
-          <div>
-            <a href="#location" class="uk-link-reset uk-width-1-1">
-              <div class="uk-padding-small">
-                <i class="icon-map-marker icon-xl"></i>
-                <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Location</div>
-                <div class="uk-text-small icontxtsm uk-visible@s">
-                  {{ address }}
-                </div>
+            <a href="#location" class="quick-action-link uk-link-reset uk-width-1-1">
+              <div class="quick-action-inner">
+                <i class="icon-find-a-dealer quick-action-icon"></i>
+                <div class="icontxt">Find a Dealer</div>
               </div>
             </a>
           </div>
 
-          <div class="uk-hidden@l">
-            <a 
-              class="uk-link-reset uk-width-1-1" 
-              :href="`tel:${phone?.replace(/[^0-9+]/g, '')}`"
-            >
-              <div class="uk-padding-small">
-                <i class="icon-phone icon-xl"></i>
-                <div class="icontxt uk-text-bold uk-h5 uk-margin-small">Call Us</div>
-                <div class="uk-text-small icontxtsm uk-visible@s">
-                  {{ siteName }}
-                </div>
+          <div>
+            <NuxtLink to="/test-drive" class="quick-action-link uk-link-reset uk-width-1-1">
+              <div class="quick-action-inner">
+                <i class="icon-steering-wheel quick-action-icon"></i>
+                <div class="icontxt">Test Drive</div>
               </div>
-            </a>
+            </NuxtLink>
+          </div>
+
+          <div>
+            <NuxtLink to="/service" class="quick-action-link uk-link-reset uk-width-1-1">
+              <div class="quick-action-inner">
+                <i class="icon-book-a-service quick-action-icon"></i>
+                <div class="icontxt">Quote &amp; Book a Service</div>
+              </div>
+            </NuxtLink>
           </div>
         </div>
         <template #fallback>
@@ -572,17 +533,12 @@ import { useCustomizedSearchStore, type CustomizedSearchFilters } from '~/stores
 import { useRouter, useRoute } from 'vue-router';
 import ResponsiveFilterDialog from '~/components/filters/ResponsiveFilterDialog.vue';
 
-const mainStore = useMainStore();
 const customizedSearchStore = useCustomizedSearchStore();
 
 // Use lightweight homepage filters (~6KB) instead of full vehicle data (~700KB)
 const homepageFilters = useHomepageFilters();
 const router = useRouter();
 const route = useRoute();
-
-const siteName = computed(() => mainStore.site?.name || 'Sale Hyundai');
-const address = computed(() => mainStore.site?.showroom_address || '');
-const phone = computed(() => mainStore.site?.departments?.sales?.phone || mainStore.site?.phone || '');
 
 const isInitializing = ref(true);
 const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -918,54 +874,94 @@ const currentFilterQuery = computed(() => {
 
 <style lang="scss" scoped>
 .s-wp {
-  padding: 10px 16px 0;
-}
-
-@media (min-width: 960px) {
-  .s-wp {
-    margin-top: 20px;
-    border-radius: 20px;
-    position: relative;
-    z-index: 2;
-  }
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  background-color: #003b78;
+  position: relative;
+  z-index: 2;
 }
 
 .quick-links-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
 }
 
 @media (min-width: 960px) {
   .quick-links-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 480px) {
-  .quick-links-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.quick-action-link {
+  display: block;
+  min-height: 104px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.quick-action-inner {
+  min-height: 104px;
+  padding: 18px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.quick-links-grid > div:last-child .quick-action-inner {
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.quick-action-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.icontxt {
+  margin: 0;
+  color: #fff;
+  font-family: 'Hyundai Sans Head', 'Hyundai Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .iconnav {
   > div {
-    transition: opacity 0.2s;
+    transition: background-color 0.2s ease;
 
     &:hover {
-      opacity: 0.8;
+      background-color: rgba(255, 255, 255, 0.08);
     }
   }
 }
 
 @media (max-width: 960px) {
-  .icontxt {
-    font-size: 0.7rem;
-    line-height: 1.4;
+  .quick-action-link,
+  .quick-action-inner {
+    min-height: 88px;
   }
-  
-  .uk-text-meta.icontxtsm {
-    font-size: 0.575rem;
+
+  .quick-action-inner {
+    padding: 14px 12px;
+  }
+
+  .quick-action-icon {
+    font-size: 1.75rem;
+  }
+
+  .icontxt {
+    font-size: 0.75rem;
   }
 }
 
@@ -1044,8 +1040,4 @@ const currentFilterQuery = computed(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(0, 30, 80, 0.2);
 }
 </style>
-
-
-
-
 
