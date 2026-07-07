@@ -1315,8 +1315,8 @@ onUnmounted(() => {
   }
 
   .chat-launcher {
-    min-height: 48px;
-    padding: 0 14px;
+    min-height: 46px;
+    padding: 0 12px;
     gap: 7px;
   }
 }
@@ -1341,7 +1341,7 @@ onUnmounted(() => {
 @media (max-width: 359px) {
   .chat-launcher {
     min-height: 44px;
-    padding: 0 10px;
+    padding: 0 9px;
     gap: 5px;
   }
 

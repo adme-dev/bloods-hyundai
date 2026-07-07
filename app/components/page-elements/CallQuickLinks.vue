@@ -5,7 +5,7 @@
       <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.1-5.15a6.25 6.25 0 11-12.5 0 6.25 6.25 0 0112.5 0z" />
       </svg>
-      <span>Inventory</span>
+      <span>Stock</span>
     </NuxtLink>
     <NuxtLink to="/service-booking" class="quick-link-button quick-link-button--secondary" aria-label="Book a service">
       <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -16,7 +16,7 @@
     </NuxtLink>
     <a :href="`tel:${phone}`" class="quick-link-button quick-link-button--call" aria-label="Call Blood Hyundai">
       <span uk-icon="icon: receiver; ratio: 1.2" aria-hidden="true"></span>
-      <span>Call Now</span>
+      <span>Call</span>
     </a>
   </div>
 </template>
@@ -45,7 +45,7 @@ const showQuickActions = computed(() => {
 .mobile-quick-links {
   position: fixed;
   bottom: 20px;
-  right: 132px;
+  right: 116px;
   left: 16px;
   z-index: 900;
   display: flex;
@@ -62,17 +62,18 @@ const showQuickActions = computed(() => {
   justify-content: center;
   flex: 1 1 0;
   gap: 6px;
-  min-height: 48px;
+  min-height: 46px;
   min-width: 0;
-  padding: 12px 10px;
+  padding: 10px 9px;
   background: var(--color-primary);
   color: #fff !important;
   text-decoration: none;
   border-radius: 999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   line-height: 1;
+  white-space: nowrap;
   transition: all 0.2s;
 
   &:hover {
@@ -103,14 +104,15 @@ const showQuickActions = computed(() => {
 
 @media (max-width: 520px) {
   .mobile-quick-links {
-    right: 116px;
+    right: 106px;
     left: 12px;
+    gap: 5px;
   }
 
   .quick-link-button {
-    min-height: 48px;
-    padding-inline: 8px;
-    font-size: 0.75rem;
+    min-height: 46px;
+    padding-inline: 7px;
+    font-size: 0.72rem;
   }
 
   .quick-link-icon {
@@ -121,14 +123,14 @@ const showQuickActions = computed(() => {
 
 @media (max-width: 359px) {
   .mobile-quick-links {
-    right: 104px;
+    right: 96px;
     gap: 4px;
   }
 
   .quick-link-button {
     min-height: 44px;
-    padding-inline: 5px;
-    font-size: 0.68rem;
+    padding-inline: 4px;
+    font-size: 0.64rem;
   }
 
   .quick-link-icon {
@@ -137,7 +139,6 @@ const showQuickActions = computed(() => {
   }
 }
 </style>
-
 
 
 
