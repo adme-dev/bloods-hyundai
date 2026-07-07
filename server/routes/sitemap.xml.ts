@@ -7,18 +7,21 @@ import { SitemapStream, streamToPromise } from 'sitemap';
 import { Readable } from 'stream';
 import { normalizeSiteUrl, shouldExcludeFromSitemap } from '~~/shared/seo';
 import { resolveDealerSiteUrl } from '../utils/tenant';
+import { getTenantForwardHeaders } from '../utils/tenant-headers';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const baseUrl = normalizeSiteUrl(resolveDealerSiteUrl(event, config.public.siteUrl || config.public.apiUrl));
 
   try {
+    const tenantHeaders = getTenantForwardHeaders(event);
+
     // Fetch data for sitemap
     const [navigationJson, modelsJson, variants, carsalesData] = await Promise.all([
-      $fetch('/api/site-config', { baseURL: baseUrl }).catch(() => ({ config: { pages: {} } })) as Promise<any>,
+      $fetch('/api/site-config', { headers: tenantHeaders }).catch(() => ({ config: { pages: {} } })) as Promise<any>,
       $fetch('https://hyundaioem.b-cdn.net/data/models.json').catch(() => []) as Promise<any[]>,
       $fetch('https://hyundaioem.b-cdn.net/data/variants.json').catch(() => []) as Promise<any[]>,
-      $fetch(`/api/carsales-feed`, { baseURL: baseUrl }).catch(() => ({ vehiclesData: [] })) as Promise<any>,
+      $fetch('/api/carsales-feed', { headers: tenantHeaders }).catch(() => ({ vehiclesData: [] })) as Promise<any>,
     ]);
 
     const links: Array<{ url: string; changefreq: string; priority: number; img?: Array<{ url: string }> }> = [];
@@ -114,7 +117,6 @@ function slugify(str: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 }
-
 
 
 
