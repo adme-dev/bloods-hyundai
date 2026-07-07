@@ -1,5 +1,5 @@
 <template>
-  <div v-if="homeSlides.length" class="hero-slider uk-margin-small-top uk-position-relative uk-overflow-hidden">
+  <div v-if="homeSlides.length" class="hero-slider uk-position-relative uk-overflow-hidden">
     <div class="hero-carousel">
       <div class="hero-viewport" ref="emblaRef">
         <div class="hero-container" :class="{ 'hero-container--single': homeSlides.length === 1 }">
