@@ -19,6 +19,7 @@ export default defineCachedEventHandler(async (event) => {
       ? 'no-store, max-age=0'
       : 'public, max-age=600, stale-while-revalidate=1800',
     'Content-Type': 'application/json',
+    Vary: 'Host',
   });
 
   const config = useRuntimeConfig();
