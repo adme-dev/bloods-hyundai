@@ -39,6 +39,8 @@
                     height="360"
                     class="thumb-image"
                     loading="lazy"
+                    decoding="async"
+                    fetchpriority="low"
                   />
                   <div class="thumb-overlay">
                     <div v-if="thumb.content" class="thumb-content">

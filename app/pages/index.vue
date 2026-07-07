@@ -26,17 +26,24 @@
     <LazyHomepageModelsSection />
 
     <!-- Featured Accessories -->
-    <LazyFeaturedAccessories />
+    <LoadWhenVisible min-height="520px" root-margin="700px 0px">
+      <LazyFeaturedAccessories />
+    </LoadWhenVisible>
 
     <!-- Stock Special Offers -->
-    <LazySpecialOffersVehicles class="overflow-hidden"/>
+    <LoadWhenVisible min-height="680px" root-margin="700px 0px">
+      <LazySpecialOffersVehicles class="overflow-hidden"/>
+    </LoadWhenVisible>
 
     <!-- Vehicle Enquiry Modal (for stock specials cards) -->
-    <LazyVehicleEnquiryModal
-      :is-open="vehiclesStore.vehicleEnquiryPopUp.show"
-      :vehicle="vehiclesStore.vehicleEnquiryPopUp.item"
-      @close="closeEnquiryModal"
-    />
+    <ClientOnly>
+      <LazyVehicleEnquiryModal
+        v-if="vehiclesStore.vehicleEnquiryPopUp.show"
+        :is-open="vehiclesStore.vehicleEnquiryPopUp.show"
+        :vehicle="vehiclesStore.vehicleEnquiryPopUp.item"
+        @close="closeEnquiryModal"
+      />
+    </ClientOnly>
   </div>
 </template>
 
@@ -106,5 +113,3 @@ onMounted(() => {
   border-width: 0;
 }
 </style>
-
-
