@@ -158,7 +158,7 @@ const optimizedSlideImage = (src: string | undefined, width: number, height: num
   return image(src, {
     width,
     height,
-    fit: 'cover',
+    fit: 'contain',
     format: 'webp',
     quality: 78,
   });
@@ -386,25 +386,31 @@ onUnmounted(() => {
 
 .slide-media {
   position: relative;
+  aspect-ratio: 8 / 3;
+  background-color: #f4f6f8;
 }
 
 .slide-image-wrapper {
   display: block;
   width: 100%;
+  height: 100%;
 }
 
 .slide-image {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   object-fit: contain;
 }
 
 /* Mobile: Use portrait-friendly aspect ratio for mobile images */
 @media (max-width: 768px) {
-  .slide-image {
+  .slide-media {
     aspect-ratio: 3 / 4;
-    object-fit: cover;
+  }
+
+  .slide-image {
+    object-fit: contain;
   }
 }
 
@@ -422,6 +428,13 @@ onUnmounted(() => {
   width: 400px;
   text-align: left;
   z-index: 1;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.slide-panel:not(.is-active) .slide-content {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .slide-heading {

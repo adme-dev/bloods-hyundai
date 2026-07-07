@@ -37,7 +37,7 @@
                     :alt="thumb.button_text || siteName"
                     width="480"
                     height="270"
-                    fit="cover"
+                    fit="contain"
                     format="webp"
                     quality="72"
                     class="thumb-image"
@@ -211,20 +211,23 @@ onUnmounted(() => {
   overflow: hidden;
   background-color: #f3f4f6;
   border-radius: 8px;
+  aspect-ratio: 16 / 9;
 }
 
 .thumb-image {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+  object-fit: contain;
   border-radius: 8px;
   transition: transform 0.4s ease;
 }
 
 .thumb-image-wrapper :deep(img) {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+  object-fit: contain;
   border-radius: 8px;
 }
 

@@ -35,9 +35,8 @@ const contentSecurityPolicy = [
 // https://nuxt.com/docs/api/configuration/nuxt-config
 const isNetlifyImageProvider =
   process.env.NUXT_IMAGE_PROVIDER === 'netlify' ||
-  (process.env.NITRO_PRESET === 'netlify' &&
-    process.env.NETLIFY === 'true' &&
-    process.env.NODE_ENV === 'production');
+  (process.env.NETLIFY === 'true' && process.env.NODE_ENV === 'production') ||
+  (process.env.NITRO_PRESET === 'netlify' && process.env.NODE_ENV === 'production');
 
 const enableNetlifyNuxt =
   process.env.NETLIFY === 'true' ||
