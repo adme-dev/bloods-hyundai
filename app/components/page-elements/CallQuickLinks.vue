@@ -1,24 +1,34 @@
 <template>
   <!-- Fixed mobile quick actions - hidden on pages with their own mobile CTA -->
   <div v-if="showQuickActions" class="mobile-quick-links uk-hidden@m">
-    <NuxtLink to="/car-sales" class="quick-link-button" aria-label="Search inventory">
+    <NuxtLink to="/car-sales" class="quick-link-button quick-link-button--secondary" aria-label="Search inventory">
       <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.1-5.15a6.25 6.25 0 11-12.5 0 6.25 6.25 0 0112.5 0z" />
       </svg>
       <span>Inventory</span>
     </NuxtLink>
-    <NuxtLink to="/service-booking" class="quick-link-button quick-link-button--service" aria-label="Book a service">
+    <NuxtLink to="/service-booking" class="quick-link-button quick-link-button--secondary" aria-label="Book a service">
       <svg class="quick-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
       <span>Service</span>
     </NuxtLink>
+    <a :href="`tel:${phone}`" class="quick-link-button quick-link-button--call" aria-label="Call Blood Hyundai">
+      <span uk-icon="icon: receiver; ratio: 1.2" aria-hidden="true"></span>
+      <span>Call Now</span>
+    </a>
   </div>
 </template>
 
 <script setup lang="ts">
 const route = useRoute();
+const mainStore = useMainStore();
+
+const phone = computed(() => {
+  const sitePhone = mainStore.site?.phone;
+  return sitePhone ? sitePhone.replace(/\s/g, '') : '';
+});
 
 // Hide on pages that have their own mobile CTA bar
 const showQuickActions = computed(() => {
@@ -35,14 +45,15 @@ const showQuickActions = computed(() => {
 .mobile-quick-links {
   position: fixed;
   bottom: 20px;
-  left: 50%;
+  right: 132px;
+  left: 16px;
   z-index: 900;
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: calc(100vw - 32px);
-  max-width: 360px;
-  transform: translateX(-50%);
+  justify-content: flex-end;
+  gap: 6px;
+  width: auto;
+  max-width: none;
 }
 
 .quick-link-button {
@@ -50,11 +61,12 @@ const showQuickActions = computed(() => {
   align-items: center;
   justify-content: center;
   flex: 1 1 0;
-  gap: 8px;
+  gap: 6px;
   min-height: 48px;
-  padding: 12px 14px;
+  min-width: 0;
+  padding: 12px 10px;
   background: var(--color-primary);
-  color: white;
+  color: #fff !important;
   text-decoration: none;
   border-radius: 999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -70,8 +82,17 @@ const showQuickActions = computed(() => {
   }
 }
 
-.quick-link-button--service {
+.quick-link-button span,
+.quick-link-button svg {
+  color: inherit !important;
+}
+
+.quick-link-button--secondary {
   background: #002c5f;
+}
+
+.quick-link-button--call {
+  flex: 1.1 1 0;
 }
 
 .quick-link-icon {
@@ -79,9 +100,43 @@ const showQuickActions = computed(() => {
   height: 20px;
   flex: 0 0 auto;
 }
+
+@media (max-width: 520px) {
+  .mobile-quick-links {
+    right: 116px;
+    left: 12px;
+  }
+
+  .quick-link-button {
+    min-height: 48px;
+    padding-inline: 8px;
+    font-size: 0.75rem;
+  }
+
+  .quick-link-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 359px) {
+  .mobile-quick-links {
+    right: 104px;
+    gap: 4px;
+  }
+
+  .quick-link-button {
+    min-height: 44px;
+    padding-inline: 5px;
+    font-size: 0.68rem;
+  }
+
+  .quick-link-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
 </style>
-
-
 
 
 

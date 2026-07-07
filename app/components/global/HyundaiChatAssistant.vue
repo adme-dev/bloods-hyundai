@@ -1308,20 +1308,50 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 959px) {
   .hyundai-chat {
-    right: 12px;
-    left: 12px;
-    bottom: 84px;
+    right: 16px;
+    bottom: 20px;
   }
 
   .chat-launcher {
-    margin-left: auto;
+    min-height: 48px;
+    padding: 0 14px;
+    gap: 7px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hyundai-chat {
+    right: 12px;
+    left: auto;
+    bottom: 20px;
+  }
+
+  .chat-launcher {
+    margin-left: 0;
   }
 
   .chat-panel {
     width: 100%;
     max-height: calc(100vh - 116px);
+  }
+}
+
+@media (max-width: 359px) {
+  .chat-launcher {
+    min-height: 44px;
+    padding: 0 10px;
+    gap: 5px;
+  }
+
+  .chat-launcher svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .launcher-label {
+    font-size: 12px;
   }
 }
 
