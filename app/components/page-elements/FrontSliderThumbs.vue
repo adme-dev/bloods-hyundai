@@ -150,7 +150,7 @@ onUnmounted(() => {
 
 <style scoped>
 .front-thumbs {
-  padding-top: 0;
+  padding-top: 40px;
   padding-bottom: 40px;
 }
 
@@ -209,23 +209,22 @@ onUnmounted(() => {
   overflow: hidden;
   background-color: #f3f4f6;
   border-radius: 8px;
-  aspect-ratio: 16 / 9;
 }
 
 .thumb-image {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 8px;
   transition: transform 0.4s ease;
 }
 
 .thumb-image-wrapper :deep(img) {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 8px;
 }
 

@@ -9,11 +9,11 @@
     <!-- Hero/Slider Section -->
     <FrontSlider v-if="site?.promotional" :slides="site.promotional" />
 
-    <!-- Promotional Thumbs -->
-    <LazyFrontSliderThumbs />
-
     <!-- Quick Links & Search -->
     <LazyFrontSearch />
+
+    <!-- Promotional Thumbs -->
+    <LazyFrontSliderThumbs />
 
     <!-- CMS Content -->
     <section v-if="pageContent" class="uk-section">

@@ -12,6 +12,13 @@ interface FilterOption {
   count: number;
 }
 
+interface FilterVehicle {
+  condition: string;
+  make: string;
+  model: string;
+  perweek: number;
+}
+
 interface FilterData {
   name: string;
   displayName: string;
@@ -22,6 +29,7 @@ interface FilterData {
 interface HomepageFiltersResponse {
   filters: FilterData[];
   makes: FilterOption[];
+  vehicles?: FilterVehicle[];
   totalCount: number;
   priceRange: { min: number; max: number };
   perweekRange: { min: number; max: number };
@@ -31,6 +39,7 @@ interface HomepageFiltersResponse {
 export function useHomepageFilters() {
   const filters = ref<FilterData[]>([]);
   const makes = ref<FilterOption[]>([]);
+  const vehicles = ref<FilterVehicle[]>([]);
   const totalCount = ref(0);
   const perweekRange = ref({ min: 0, max: 1000 });
   const priceRange = ref({ min: 0, max: 100000 });
@@ -94,10 +103,37 @@ export function useHomepageFilters() {
     selectedModels: string[],
     budgetRange?: { min: number; max: number }
   ): number => {
-    // For now, return total count
-    // Full faceted filtering would require the vehicles array
-    // But for initial display, total count is fine
-    return totalCount.value;
+    if (vehicles.value.length === 0) {
+      if (selectedModels.length > 0) {
+        const selected = new Set(selectedModels.map((model) => model.toLowerCase()));
+        return modelOptions.value
+          .filter((model) => selected.has(model.value.toLowerCase()))
+          .reduce((sum, model) => sum + (model.count || 0), 0);
+      }
+
+      if (selectedMakes.length > 0) {
+        const selected = new Set(selectedMakes.map((make) => make.toLowerCase()));
+        return makes.value
+          .filter((make) => selected.has(make.value.toLowerCase()) || selected.has(make.displayValue.toLowerCase()))
+          .reduce((sum, make) => sum + (make.count || 0), 0);
+      }
+
+      return totalCount.value;
+    }
+
+    const conditionSet = new Set(selectedConditions.map((condition) => condition.toLowerCase()));
+    const makeSet = new Set(selectedMakes.map((make) => make.toLowerCase()));
+    const modelSet = new Set(selectedModels.map((model) => model.toLowerCase()));
+
+    return vehicles.value.filter((vehicle) => {
+      if (conditionSet.size > 0 && !conditionSet.has(vehicle.condition.toLowerCase())) return false;
+      if (makeSet.size > 0 && !makeSet.has(vehicle.make.toLowerCase())) return false;
+      if (modelSet.size > 0 && !modelSet.has(vehicle.model.toLowerCase())) return false;
+      if (budgetRange && vehicle.perweek > 0) {
+        if (vehicle.perweek < budgetRange.min || vehicle.perweek > budgetRange.max) return false;
+      }
+      return true;
+    }).length;
   };
 
   async function fetchFilters() {
@@ -116,6 +152,7 @@ export function useHomepageFilters() {
 
       filters.value = response.filters || [];
       makes.value = response.makes || [];
+      vehicles.value = response.vehicles || [];
       totalCount.value = response.totalCount || 0;
       perweekRange.value = response.perweekRange || { min: 0, max: 1000 };
       priceRange.value = response.priceRange || { min: 0, max: 100000 };
@@ -132,6 +169,7 @@ export function useHomepageFilters() {
     // State
     filters,
     makes,
+    vehicles,
     totalCount,
     perweekRange,
     priceRange,

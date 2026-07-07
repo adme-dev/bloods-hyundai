@@ -316,7 +316,6 @@ onUnmounted(() => {
 <style scoped>
 .hero-slider {
   padding: 0;
-  min-height: min(37.5vw, 560px);
 }
 
 .hero-carousel {
@@ -343,18 +342,6 @@ onUnmounted(() => {
   padding: 0;
 }
 
-@media (max-width: 960px) {
-  .hero-slider {
-    min-height: min(37.5vw, 560px);
-  }
-}
-
-@media (max-width: 640px) {
-  .hero-slider {
-    min-height: 133.333vw;
-  }
-}
-
 .slide-panel {
   border-radius: 0;
   overflow: hidden;
@@ -376,34 +363,25 @@ onUnmounted(() => {
 
 .slide-media {
   position: relative;
-  height: min(37.5vw, 560px);
-  min-height: min(37.5vw, 560px);
   background-color: #fff;
 }
 
 .slide-image-wrapper {
   display: block;
   width: 100%;
-  height: 100%;
 }
 
 .slide-image {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: fill;
+  object-fit: contain;
   object-position: center center;
 }
 
-/* Mobile: Use portrait-friendly aspect ratio for mobile images */
 @media (max-width: 768px) {
-  .slide-media {
-    height: 133.333vw;
-    min-height: 133.333vw;
-  }
-
   .slide-image {
-    object-fit: fill;
+    object-fit: contain;
     object-position: center center;
   }
 }

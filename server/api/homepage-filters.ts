@@ -324,9 +324,20 @@ export default defineCachedEventHandler(async () => {
       count
     }));
 
+    const compactVehicles = vehicles.map((v) => {
+      const price = parseInt(v.dap_price || v.egc_price || '0') || 0;
+      return {
+        condition: getConditionValues(v.condition)[0] || '',
+        make: v.make || '',
+        model: v.model || '',
+        perweek: calculateWeeklyPayment(price)
+      };
+    });
+
     return {
       filters,
       makes: makesData,
+      vehicles: compactVehicles,
       totalCount: vehicles.length,
       priceRange: {
         min: minPrice === Number.MAX_SAFE_INTEGER ? 0 : minPrice,

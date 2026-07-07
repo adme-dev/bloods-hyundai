@@ -277,7 +277,7 @@
             <NuxtLink
               :to="{ path: '/car-sales', query: currentFilterQuery }"
               class="text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
-              style="background-color: #001E50;"
+              style="background-color: #001E50; color: #fff;"
               @click="closeDialog('budget')"
             >
               Show {{ filteredVehicleCount }} cars
@@ -367,7 +367,7 @@
             <NuxtLink
               :to="{ path: '/car-sales', query: currentFilterQuery }"
               class="text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
-              style="background-color: #001E50;"
+              style="background-color: #001E50; color: #fff;"
               @click="closeDialog('condition')"
             >
               Show {{ filteredVehicleCount }} cars
@@ -514,7 +514,7 @@
             <NuxtLink
               :to="{ path: '/car-sales', query: currentFilterQuery }"
               class="text-white rounded-lg flex items-center justify-center px-8 py-4 h-14 text-lg font-semibold transition-colors shadow-sm hover:shadow-md"
-              style="background-color: #001E50;"
+              style="background-color: #001E50; color: #fff;"
               @click="closeDialog('model')"
             >
               Show {{ filteredVehicleCount }} cars
@@ -591,7 +591,15 @@ const modelSearchQuery = ref('');
 // Use data from lightweight endpoint
 const filteredMakes = computed(() => homepageFilters.makes.value);
 const filteredModels = computed(() => homepageFilters.modelOptions.value);
-const filteredVehicleCount = computed(() => homepageFilters.totalCount.value);
+const filteredVehicleCount = computed(() => {
+  const filters = customizedSearchStore.filters;
+  return homepageFilters.getFilteredCount(
+    filters.condition || [],
+    filters.make || [],
+    filters.model || [],
+    filters.perweek
+  );
+});
 
 const groupedModelsForDialog = computed(() => {
   const grouped = homepageFilters.groupedModels.value;
@@ -1040,4 +1048,3 @@ const currentFilterQuery = computed(() => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 4px rgba(0, 30, 80, 0.2);
 }
 </style>
-
