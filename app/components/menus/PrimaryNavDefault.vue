@@ -69,7 +69,9 @@ const logo = computed(() => mainStore.site?.logo || '/assets/logos/logo-black.sv
 // Navigation items
 const mainNav = computed(() => {
   const site = mainStore.site;
-  if (!site?.navigation) {
+  const configuredItems = site?.navigation?.main || site?.sitelinks?.mainnav;
+
+  if (!configuredItems) {
     return [
       { title: 'New Cars', url: '/build-and-price' },
       { title: 'Used Cars', url: '/car-sales' },
@@ -80,7 +82,8 @@ const mainNav = computed(() => {
       { title: 'Contact', url: '/contact' },
     ];
   }
-  return site.navigation.main || [];
+
+  return configuredItems || [];
 });
 
 // Check if route is active
@@ -129,7 +132,6 @@ const toggleMobileNav = () => {
   font-weight: 600;
 }
 </style>
-
 
 
 

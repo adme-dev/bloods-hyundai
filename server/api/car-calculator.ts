@@ -5,6 +5,18 @@ type CalculatorRouteResolution = {
   fallbackModelNames?: string[];
 };
 
+const knownModelImages: Record<string, string> = {
+  'ioniq 6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
+  '2023 ioniq 6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
+  'ioniq-6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
+  'ioniq 5': 'https://www.hyundai.com/content/dam/hyundai/au/en/awards-page/2026/ioniq-5/IONIQ5_Front34_640x331-CarsGuide.png',
+  'ioniq-5': 'https://www.hyundai.com/content/dam/hyundai/au/en/awards-page/2026/ioniq-5/IONIQ5_Front34_640x331-CarsGuide.png',
+  'ioniq 5 n': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ5N_Front_Performance_Blue_640x331.png',
+  'ioniq-5-n': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ5N_Front_Performance_Blue_640x331.png',
+  'ioniq 9': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/ioniq-9-2025/3-4-images-colors/side-profile/models/IONIQ9-Models_Front34_640x331.png',
+  'ioniq-9': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/ioniq-9-2025/3-4-images-colors/side-profile/models/IONIQ9-Models_Front34_640x331.png',
+};
+
 const calculatorRouteResolutions: Record<string, CalculatorRouteResolution> = {
   'kona-hybrid': {
     apiModelName: 'kona',
@@ -79,6 +91,22 @@ const calculatorRouteResolutions: Record<string, CalculatorRouteResolution> = {
 
 const normalizeModelSlug = (modelname: string) => modelname.trim().toLowerCase();
 
+const normalizeHyundaiAssetUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  return url.startsWith('http') ? url : `https://www.hyundai.com${url}`;
+};
+
+const getKnownModelImage = (...names: Array<string | null | undefined>): string | null => {
+  for (const name of names) {
+    if (!name) continue;
+    const normalized = normalizeModelSlug(name).replace(/\s+/g, '-');
+    const spaced = normalizeModelSlug(name).replace(/-/g, ' ');
+    const image = knownModelImages[normalized] || knownModelImages[spaced];
+    if (image) return image;
+  }
+  return null;
+};
+
 const getCalculatorRouteResolution = (modelname: string): CalculatorRouteResolution => {
   const slug = normalizeModelSlug(modelname);
   const explicitResolution = calculatorRouteResolutions[slug];
@@ -111,6 +139,8 @@ const hasCalculatorInventory = (modelData: any) => {
   );
 };
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   
@@ -138,16 +168,35 @@ export default defineEventHandler(async (event) => {
 
       console.log('[Calculator API] Fetching:', apiUrl);
 
-      return $fetch<any>(apiUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        },
-        timeout: 20000,
-      }).catch((err: any) => {
-        console.error('[Calculator API] Error fetching carpricecalculator:', err.message);
-        throw err;
-      });
+      let lastError: any;
+
+      for (let attempt = 1; attempt <= 2; attempt += 1) {
+        try {
+          return await $fetch<any>(apiUrl, {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            },
+            timeout: 20000,
+          });
+        } catch (err: any) {
+          lastError = err;
+          const statusCode = err?.statusCode || err?.response?.status;
+          if (statusCode === 404 || attempt === 2) {
+            break;
+          }
+
+          console.warn('[Calculator API] carpricecalculator fetch failed, retrying:', {
+            model: apiModelName,
+            attempt,
+            message: err?.message,
+          });
+          await delay(750);
+        }
+      }
+
+      console.error('[Calculator API] Error fetching carpricecalculator:', lastError?.message);
+      throw lastError;
     };
 
     // Also fetch modeladditional API to get priceDisclaimer
@@ -237,6 +286,10 @@ export default defineEventHandler(async (event) => {
         message: `No calculator variants found for model: ${modelname}. Please check the model name is correct.`,
       });
     }
+
+    const modelFallbackImage =
+      normalizeHyundaiAssetUrl(matchingModel?.desktopImageUrl || matchingModel?.mobileImageUrl) ||
+      getKnownModelImage(modelData.model, resolvedModelName, modelname);
     
     console.log('[Calculator API] Model data received:', {
       model: modelData.model,
@@ -267,7 +320,7 @@ export default defineEventHandler(async (event) => {
       return {
         id: group.id,
         name: group.name,
-        image: group.image ? `https://www.hyundai.com${group.image}` : null,
+        image: normalizeHyundaiAssetUrl(group.image) || modelFallbackImage,
         lowestPrice: group.lowestVariantPrice,
         priceEnabled: group.priceEnabled,
         powertrain: powertrain,
@@ -276,7 +329,7 @@ export default defineEventHandler(async (event) => {
         smartSenseIsOptional: group.smartSenseIsOptional,
         smartSenseDescription: group.smartSenseDescription,
         smartSenseDisclaimer: group.smartSenseDisclaimer,
-        smartSenseImage: group.smartSenseImage ? `https://www.hyundai.com${group.smartSenseImage}` : null,
+        smartSenseImage: normalizeHyundaiAssetUrl(group.smartSenseImage),
         features: group.features || [],
         optionPacks: (group.optionPacks || []).map((pack: any) => ({
           id: pack.id,
@@ -284,7 +337,7 @@ export default defineEventHandler(async (event) => {
           name: pack.name,
           title: pack.title,
           description: pack.description || pack.modalContent,
-          modalImage: pack.modalImage ? `https://www.hyundai.com${pack.modalImage}` : null,
+          modalImage: normalizeHyundaiAssetUrl(pack.modalImage),
           features: pack.features || [],
           price: pack.price || 0,
           isIntegratedOptionPack: pack.isIntegratedOptionPack,
@@ -346,8 +399,8 @@ export default defineEventHandler(async (event) => {
         name: colour.name,
         code: colour.code,
         price: colour.price,
-        image: colour.image ? `https://www.hyundai.com${colour.image}` : null,
-        swatch: colour.swatch ? `https://www.hyundai.com${colour.swatch}` : null,
+        image: normalizeHyundaiAssetUrl(colour.image),
+        swatch: normalizeHyundaiAssetUrl(colour.swatch),
         isDefault: colour.isDefault,
         soldOut: colour.soldOut,
         trims: (colour.trims || []).map((trim: any) => ({
@@ -355,7 +408,7 @@ export default defineEventHandler(async (event) => {
           name: trim.name,
           code: trim.code,
           price: trim.price,
-          swatch: trim.swatch ? `https://www.hyundai.com${trim.swatch}` : null,
+          swatch: normalizeHyundaiAssetUrl(trim.swatch),
           isDefault: trim.isDefault,
         })),
       })),
@@ -393,9 +446,7 @@ export default defineEventHandler(async (event) => {
           if (variant.colours && variant.colours.length > 0) {
             const firstColour = variant.colours[0];
             if (firstColour.image) {
-              groupImage = firstColour.image.startsWith('http') 
-                ? firstColour.image 
-                : `https://www.hyundai.com${firstColour.image}`;
+              groupImage = normalizeHyundaiAssetUrl(firstColour.image);
             }
           }
           
@@ -431,9 +482,7 @@ export default defineEventHandler(async (event) => {
           if (!existingGroup.image && variant.colours && variant.colours.length > 0) {
             const firstColour = variant.colours[0];
             if (firstColour.image) {
-              existingGroup.image = firstColour.image.startsWith('http') 
-                ? firstColour.image 
-                : `https://www.hyundai.com${firstColour.image}`;
+              existingGroup.image = normalizeHyundaiAssetUrl(firstColour.image);
             }
           }
         }
@@ -468,12 +517,14 @@ export default defineEventHandler(async (event) => {
           if (firstVariant.colours && firstVariant.colours.length > 0) {
             const firstColour = firstVariant.colours[0];
             if (firstColour.image) {
-              group.image = firstColour.image.startsWith('http') 
-                ? firstColour.image 
-                : `https://www.hyundai.com${firstColour.image}`;
+              group.image = normalizeHyundaiAssetUrl(firstColour.image);
             }
           }
         }
+      }
+
+      if (!group.image && modelFallbackImage) {
+        group.image = modelFallbackImage;
       }
     });
     
@@ -554,6 +605,7 @@ export default defineEventHandler(async (event) => {
       powertrains: powertrains,
       engines: engines,
       categories: categories,
+      modelImage: modelFallbackImage,
       variantGroups: variantGroups,
       variants: variants,
       disclaimers: allDisclaimers,

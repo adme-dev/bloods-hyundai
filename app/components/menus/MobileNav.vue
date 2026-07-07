@@ -94,7 +94,9 @@ const phone = computed(() => mainStore.site?.phone || '');
 // Navigation items
 const navItems = computed(() => {
   const site = mainStore.site;
-  if (!site?.navigation) {
+  const configuredItems = site?.navigation?.main || site?.sitelinks?.mainnav;
+
+  if (!configuredItems) {
     return [
       { title: 'New Cars', url: '/build-and-price', children: [] },
       { title: 'Used Cars', url: '/car-sales', children: [] },
@@ -105,7 +107,8 @@ const navItems = computed(() => {
       { title: 'Contact', url: '/contact', children: [] },
     ];
   }
-  return site.navigation.main || [];
+
+  return configuredItems || [];
 });
 
 // Check if route is active
@@ -351,7 +354,6 @@ onMounted(() => {
   max-height: 500px;
 }
 </style>
-
 
 
 

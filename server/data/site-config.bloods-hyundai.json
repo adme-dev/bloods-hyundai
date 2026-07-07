@@ -1,0 +1,113 @@
+{
+  "name": "Blood Hyundai",
+  "description": "Hyundai dealer in Geelong, Victoria.",
+  "logo": "https://driveagent.b-cdn.net/files/blood-hyundai/media/2025/02/image-2.png",
+  "footer_logo": "https://driveagent.b-cdn.net/files/blood-hyundai/media/2025/02/image-2.png",
+  "lmct": "",
+  "showroom_address": "Cnr Fyans Street & LaTrobe Terrace, Geelong VIC 3220",
+  "address": "Cnr Fyans Street & LaTrobe Terrace, Geelong VIC 3220",
+  "suburb": "Geelong",
+  "state": "VIC",
+  "postcode": "3220",
+  "map_directions": "https://www.google.com/maps/search/?api=1&query=Blood%20Hyundai%20Geelong%20Cnr%20Fyans%20Street%20%26%20LaTrobe%20Terrace%20Geelong%20VIC%203220",
+  "phone": "(03) 5221 7233",
+  "service_phone": "(03) 5221 0751",
+  "sales_phone": "(03) 5221 7233",
+  "service_booking_url": "/service-booking",
+  "websiteUrl": "https://bloodhyundai.com.au",
+  "siteUrl": "https://bloodhyundai.com.au",
+  "dealerSlug": "bloods-hyundai",
+  "promotional": [],
+  "scripts": {
+    "google": {
+      "analytics": [],
+      "gtm": ""
+    }
+  },
+  "navigation": {
+    "main": [
+      {
+        "name": "Our stock",
+        "url": "/car-sales",
+        "submenu": {
+          "rendered": "<div class=\"uk-container uk-container-large\"><div class=\"uk-grid uk-flex uk-flex-middle\"><div class=\"uk-width-1-1 uk-width-1-3@l\"><div class=\"icontag uk-text-bold\"><a href=\"/car-sales?condition=new\" class=\"uk-grid-collapse uk-padding-xsmall uk-flex uk-flex-middle uk-link-reset icon-link-text\"><div class=\"uk-width-expand\"><h5 class=\"icon-text-color uk-margin-remove\">New</h5></div></a></div><div class=\"icontag uk-text-bold\"><a href=\"/car-sales?condition=demo\" class=\"uk-grid-collapse uk-padding-xsmall uk-flex uk-flex-middle uk-link-reset icon-link-text\"><div class=\"uk-width-expand\"><h5 class=\"icon-text-color uk-margin-remove\">Demo</h5></div></a></div><div class=\"icontag uk-text-bold\"><a href=\"/car-sales?condition=used\" class=\"uk-grid-collapse uk-padding-xsmall uk-flex uk-flex-middle uk-link-reset icon-link-text\"><div class=\"uk-width-expand\"><h5 class=\"icon-text-color uk-margin-remove\">Used</h5></div></a></div><div class=\"icontag uk-text-bold\"><a href=\"/car-sales?stock_special=stock-special\" class=\"uk-grid-collapse uk-padding-xsmall uk-flex uk-flex-middle uk-link-reset icon-link-text\"><div class=\"uk-width-expand\"><h5 class=\"icon-text-color uk-margin-remove\">Stock specials</h5></div></a></div><div class=\"icontag uk-text-bold\"><a href=\"/car-sales\" class=\"uk-grid-collapse uk-padding-xsmall uk-flex uk-flex-middle uk-link-reset icon-link-text\"><div class=\"uk-width-expand\"><h5 class=\"icon-text-color uk-margin-remove\">Search</h5></div></a></div><div class=\"icontag uk-text-bold\"><a href=\"/sell-my-car\" class=\"uk-grid-collapse uk-padding-xsmall uk-flex uk-flex-middle uk-link-reset icon-link-text\"><div class=\"uk-width-expand\"><h5 class=\"icon-text-color uk-margin-remove\">Sell your car</h5></div></a></div></div><div class=\"uk-width-1-1 uk-width-2-3@l\"><h3 class=\"uk-margin-remove\">Search our stock.</h3><p class=\"uk-text-muted uk-margin-small-top\">Browse new, demonstrator and used Hyundai vehicles at Blood Hyundai.</p></div></div></div>"
+        }
+      },
+      {
+        "name": "Latest Offers",
+        "url": "/special-offers"
+      },
+      {
+        "name": "Finance",
+        "url": "/finance"
+      },
+      {
+        "name": "Fleet",
+        "url": "/fleet"
+      },
+      {
+        "name": "Sell my car",
+        "url": "/sell-my-car"
+      }
+    ]
+  },
+  "sitelinks": {
+    "mainnav": [
+      {
+        "name": "Our stock",
+        "url": "/car-sales"
+      },
+      {
+        "name": "Latest Offers",
+        "url": "/special-offers"
+      },
+      {
+        "name": "Finance",
+        "url": "/finance"
+      },
+      {
+        "name": "Fleet",
+        "url": "/fleet"
+      },
+      {
+        "name": "Sell my car",
+        "url": "/sell-my-car"
+      }
+    ],
+    "footer": [
+      {
+        "title": "New vehicles",
+        "url": "/models"
+      },
+      {
+        "title": "Used vehicles",
+        "url": "/car-sales?condition=used"
+      },
+      {
+        "title": "Book a service",
+        "url": "/service-booking"
+      },
+      {
+        "title": "Contact",
+        "url": "/contact"
+      }
+    ]
+  },
+  "departments": {
+    "sales": {
+      "phone": "(03) 5221 7233",
+      "address": "Cnr Fyans Street & LaTrobe Terrace, Geelong VIC 3220",
+      "map_directions": "https://www.google.com/maps/search/?api=1&query=Blood%20Hyundai%20Geelong%20Cnr%20Fyans%20Street%20%26%20LaTrobe%20Terrace%20Geelong%20VIC%203220"
+    },
+    "service": {
+      "phone": "(03) 5221 0751",
+      "address": "Cnr Fyans Street & LaTrobe Terrace, Geelong VIC 3220",
+      "map_directions": "https://www.google.com/maps/search/?api=1&query=Blood%20Hyundai%20Geelong%20Cnr%20Fyans%20Street%20%26%20LaTrobe%20Terrace%20Geelong%20VIC%203220"
+    },
+    "parts": {
+      "phone": "(03) 5221 0751",
+      "address": "Cnr Fyans Street & LaTrobe Terrace, Geelong VIC 3220",
+      "map_directions": "https://www.google.com/maps/search/?api=1&query=Blood%20Hyundai%20Geelong%20Cnr%20Fyans%20Street%20%26%20LaTrobe%20Terrace%20Geelong%20VIC%203220"
+    }
+  }
+}

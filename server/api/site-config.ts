@@ -49,9 +49,16 @@ interface DealerRow {
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
-function loadLocalFallback(): SiteConfig | null {
+function loadLocalFallback(dealerSlug?: string): SiteConfig | null {
   try {
+    const dealerSpecificPaths = dealerSlug
+      ? resolveDealerSlugAliases(dealerSlug).flatMap((slug) => [
+          join(process.cwd(), `server/data/site-config.${slug}.json`),
+          join(process.cwd(), `.nuxt/dev/server/data/site-config.${slug}.json`),
+        ])
+      : [];
     const possiblePaths = [
+      ...dealerSpecificPaths,
       join(process.cwd(), 'server/data/site-config.json'),
       join(process.cwd(), '.nuxt/dev/server/data/site-config.json'),
     ];
@@ -123,15 +130,34 @@ function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigi
   };
 }
 
-function normalizeDealerDisplayName(siteConfig: SiteConfig, dealerSlug: string): SiteConfig {
-  if (!['blood-hyundai', 'bloods-hyundai'].includes(dealerSlug)) {
-    return siteConfig;
+function normalizeSiteConfig(siteConfig: SiteConfig, dealerSlug: string): SiteConfig {
+  const normalizedConfig: SiteConfig = { ...siteConfig };
+  const navigationMain = Array.isArray(normalizedConfig.navigation?.main)
+    ? normalizedConfig.navigation.main
+    : null;
+  const sitelinksMainNav = Array.isArray(normalizedConfig.sitelinks?.mainnav)
+    ? normalizedConfig.sitelinks.mainnav
+    : null;
+
+  if (!navigationMain && sitelinksMainNav) {
+    normalizedConfig.navigation = {
+      ...(normalizedConfig.navigation || {}),
+      main: sitelinksMainNav,
+    };
   }
 
-  return {
-    ...siteConfig,
-    name: 'Blood Hyundai',
-  };
+  if (!sitelinksMainNav && navigationMain) {
+    normalizedConfig.sitelinks = {
+      ...(normalizedConfig.sitelinks || {}),
+      mainnav: navigationMain,
+    };
+  }
+
+  if (['blood-hyundai', 'bloods-hyundai'].includes(dealerSlug)) {
+    normalizedConfig.name = 'Blood Hyundai';
+  }
+
+  return normalizedConfig;
 }
 
 export default defineCachedEventHandler(async (event) => {
@@ -166,7 +192,7 @@ export default defineCachedEventHandler(async (event) => {
       .where(eq(dealers.slug, dealerSlug))
       .limit(1);
 
-    const localConfig = loadLocalFallback();
+    const localConfig = loadLocalFallback(dealerSlug);
     const matchingLocalConfig = localFallbackMatchesDealer(localConfig, dealerSlug)
       ? localConfig
       : null;
@@ -189,13 +215,13 @@ export default defineCachedEventHandler(async (event) => {
         };
 
     return {
-      config: normalizeDealerDisplayName(mergedConfig, dealerSlug),
+      config: normalizeSiteConfig(mergedConfig, dealerSlug),
       _cached: false,
       _timestamp: Date.now(),
     };
   } catch (error: any) {
     console.warn('[Site Config] Falling back to defaults:', error?.message);
-    const localConfig = loadLocalFallback();
+    const localConfig = loadLocalFallback(dealerSlug);
     const matchingLocalConfig = localFallbackMatchesDealer(localConfig, dealerSlug)
       ? localConfig
       : null;
@@ -210,7 +236,7 @@ export default defineCachedEventHandler(async (event) => {
       : defaultConfig;
 
     return {
-      config: normalizeDealerDisplayName(fallbackConfig, dealerSlug),
+      config: normalizeSiteConfig(fallbackConfig, dealerSlug),
       _cached: false,
       _timestamp: Date.now(),
     };

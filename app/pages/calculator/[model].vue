@@ -758,11 +758,24 @@ const route = useRoute();
 const nuxtApp = useNuxtApp();
 const modelSlug = computed(() => route.params.model as string || '');
 
+const formatModelSlugForDisplay = (value: string) => value
+  .split('-')
+  .filter(Boolean)
+  .map((word) => {
+    if (/^ioniq$/i.test(word)) return 'IONIQ';
+    if (/^ev$/i.test(word)) return 'EV';
+    if (/^n$/i.test(word)) return 'N';
+    if (/^i\d+$/i.test(word)) return word.toLowerCase();
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  })
+  .join(' ');
+
 // Update SEO when model changes
 watch(modelSlug, (model) => {
+  const displayModel = model ? formatModelSlugForDisplay(model) : '';
   useSiteMeta({
-    title: model ? `Build & Price ${model}` : 'Build & Price',
-    description: model ? `Configure and price your ${model} with Hyundai. Select variants, colours, options and accessories.` : 'Configure and price your Hyundai vehicle.',
+    title: displayModel ? `Build & Price ${displayModel}` : 'Build & Price',
+    description: displayModel ? `Configure and price your ${displayModel} with Hyundai. Select variants, colours, options and accessories.` : 'Configure and price your Hyundai vehicle.',
   });
 }, { immediate: true });
 
@@ -3915,6 +3928,5 @@ $bg-white: #fff;
   }
 }
 </style>
-
 
 
