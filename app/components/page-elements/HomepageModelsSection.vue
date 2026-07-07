@@ -160,7 +160,7 @@
           </div>
         </div>
 
-        <!-- Mobile Layout with Swiper -->
+        <!-- Mobile Layout -->
         <div class="lg:hidden">
           <!-- Mobile Category Selector -->
           <div class="mb-6">
@@ -212,107 +212,85 @@
             </div>
           </div>
 
-          <!-- Mobile Models Swiper -->
-          <div v-if="filteredModels.length > 0" class="relative">
-            <ClientOnly>
-              <swiper
-                :modules="modules"
-                :slides-per-view="1"
-                :space-between="20"
-                :pagination="{ clickable: true }"
-                :navigation="true"
-                class="mobile-models-swiper"
-                @swiper="onSwiper"
-              >
-                <swiper-slide
-                  v-for="model in filteredModels"
-                  :key="model.id"
-                  class="h-auto"
+          <!-- Mobile Models Scroller -->
+          <div v-if="filteredModels.length > 0" class="mobile-models-scroller" aria-label="Hyundai models">
+            <article
+              v-for="model in filteredModels"
+              :key="model.id"
+              class="mobile-model-card bg-white rounded-xl overflow-hidden border border-gray-200 group"
+            >
+              <!-- Image Section -->
+              <div class="model-image-frame relative w-full overflow-hidden">
+                <NuxtImg
+                  :src="model.model_image"
+                  :alt="model.title.rendered"
+                  width="550"
+                  height="300"
+                  loading="lazy"
+                  class="model-card-image transition-transform duration-500 group-hover:scale-105"
+                  format="webp"
+                  quality="80"
+                />
+                <!-- Badge -->
+                <div
+                  class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
                 >
-                  <div
-                    class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#00aad2]/30 hover:shadow-lg transition-all duration-300 group"
-                  >
-                    <!-- Image Section -->
-                    <div class="model-image-frame relative w-full overflow-hidden">
-                      <NuxtImg
-                        :src="model.model_image"
-                        :alt="model.title.rendered"
-                        width="550"
-                        height="300"
-                        loading="lazy"
-                        class="model-card-image transition-transform duration-500 group-hover:scale-105"
-                        format="webp"
-                        quality="80"
-                      />
-                      <!-- Badge -->
-                      <div
-                        class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
-                      >
-                        <span class="w-2 h-2 bg-[#00aad2] rounded-full mr-2" />
-                        <span>{{ model.vehiclecat || model.title.rendered }}</span>
-                      </div>
-                    </div>
-
-                    <!-- Content Section -->
-                    <div class="p-5">
-                      <div class="flex flex-col h-full">
-                        <div class="flex-1">
-                          <h3
-                            class="card-title mb-2 group-hover:text-[#00aad2] transition-colors"
-                          >
-                            {{ model.title.rendered }}
-                          </h3>
-                          <p
-                            v-if="model.caption"
-                            class="text-sm text-gray-600 line-clamp-3 mb-4"
-                          >
-                            {{ sanitizeCaption(model.caption) }}
-                          </p>
-                        </div>
-                        <!-- Action Links - Mobile Version -->
-                        <div
-                          class="flex justify-between items-center pt-4 border-t border-gray-200 mt-auto"
-                        >
-                          <NuxtLink
-                            :to="`/vehicle/${model.slug}`"
-                            class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
-                          >
-                            <span>Explore</span>
-                            <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                          </NuxtLink>
-
-                          <NuxtLink
-                            v-if="!model.isComingSoon"
-                            :to="`/calculator/${getCalculatorSlug(model.slug)}`"
-                            class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
-                          >
-                            <span>Range / Build</span>
-                            <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                          </NuxtLink>
-
-                          <span
-                            v-if="model.isComingSoon"
-                            class="text-sm font-medium text-gray-500"
-                          >
-                            Register Interest
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </swiper-slide>
-              </swiper>
-
-              <template #fallback>
-                <div class="mobile-models-fallback">
-                  <div uk-spinner></div>
+                  <span class="w-2 h-2 bg-[#00aad2] rounded-full mr-2" />
+                  <span>{{ model.vehiclecat || model.title.rendered }}</span>
                 </div>
-              </template>
-            </ClientOnly>
+              </div>
+
+              <!-- Content Section -->
+              <div class="p-5">
+                <div class="flex flex-col h-full">
+                  <div class="flex-1">
+                    <h3
+                      class="card-title mb-2 group-hover:text-[#00aad2] transition-colors"
+                    >
+                      {{ model.title.rendered }}
+                    </h3>
+                    <p
+                      v-if="model.caption"
+                      class="text-sm text-gray-600 line-clamp-3 mb-4"
+                    >
+                      {{ sanitizeCaption(model.caption) }}
+                    </p>
+                  </div>
+                  <!-- Action Links - Mobile Version -->
+                  <div
+                    class="flex justify-between items-center pt-4 border-t border-gray-200 mt-auto"
+                  >
+                    <NuxtLink
+                      :to="`/vehicle/${model.slug}`"
+                      class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
+                    >
+                      <span>Explore</span>
+                      <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </NuxtLink>
+
+                    <NuxtLink
+                      v-if="!model.isComingSoon"
+                      :to="`/calculator/${getCalculatorSlug(model.slug)}`"
+                      class="flex items-center text-sm font-medium text-[#00aad2] hover:text-[#001E50] transition-colors group/link"
+                    >
+                      <span>Range / Build</span>
+                      <svg class="h-4 w-4 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </NuxtLink>
+
+                    <span
+                      v-if="model.isComingSoon"
+                      class="text-sm font-medium text-gray-500"
+                    >
+                      Register Interest
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </article>
           </div>
 
           <!-- Mobile Empty State -->
@@ -338,20 +316,11 @@
 import { ref, computed, watch } from 'vue';
 import { useModelsStore } from '~/stores/models';
 import { onClickOutside } from '@vueuse/core';
-import { Swiper, SwiperSlide } from 'swiper/vue';
-import { Navigation, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
 
 const modelsStore = useModelsStore();
 const activeCategory = ref('');
 const showCategoryDropdown = ref(false);
 const categoryDropdownRef = ref<HTMLElement | null>(null);
-const swiperInstance = ref<any>(null);
-
-// Swiper modules
-const modules = [Navigation, Pagination];
 
 // Dynamic section content based on available data
 const {
@@ -413,11 +382,6 @@ const selectCategory = (category: string) => {
   showCategoryDropdown.value = false;
 };
 
-// Handle Swiper initialization
-const onSwiper = (swiper: any) => {
-  swiperInstance.value = swiper;
-};
-
 // Retry loading function
 const retryLoad = async () => {
   try {
@@ -473,40 +437,27 @@ onClickOutside(categoryDropdownRef, () => {
   overflow: hidden;
 }
 
-/* Mobile swiper styles */
-.mobile-models-swiper {
-  padding-bottom: 50px;
+/* Mobile native scroller: avoids loading carousel JavaScript below the fold. */
+.mobile-models-scroller {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(280px, 86%);
+  gap: 20px;
+  margin-inline: -12px;
+  padding: 0 12px 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 }
 
-.mobile-models-fallback {
-  min-height: 470px;
-  padding-bottom: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.mobile-models-scroller::-webkit-scrollbar {
+  display: none;
 }
 
-:deep(.swiper-pagination) {
-  position: relative;
-  margin-top: 20px;
-}
-
-:deep(.swiper-pagination-bullet) {
-  width: 12px;
-  height: 12px;
-  background-color: rgba(37, 99, 235, 0.3);
-  opacity: 1;
-  transition: all 0.3s ease;
-}
-
-:deep(.swiper-pagination-bullet-active) {
-  background-color: #2563eb;
-  transform: scale(1.2);
-}
-
-:deep(.swiper-button-next),
-:deep(.swiper-button-prev) {
-  color: #2563eb;
+.mobile-model-card {
+  min-height: 100%;
+  scroll-snap-align: start;
 }
 
 /* Mobile scroller specific styles */

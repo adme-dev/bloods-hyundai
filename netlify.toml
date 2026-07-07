@@ -42,6 +42,12 @@
     Cache-Control = "public, max-age=3600, must-revalidate"
 
 [[headers]]
+  for = "/favicon.svg"
+  [headers.values]
+    Content-Type = "image/svg+xml; charset=utf-8"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
   for = "/"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
@@ -71,7 +77,6 @@
     "https://www.hyundai.com/.*",
     "https://carsales.pxcrush.net/.*"
   ]
-
 
 
 
