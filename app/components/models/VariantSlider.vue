@@ -17,7 +17,7 @@
       <div class="uk-width-1-1 uk-text-center">
         <div class="uk-h2 uk-margin-remove uk-margin-large-top">
           <span class="uk-text-bold">{{ modelTitle }} </span>
-          <span class="uk-text-light">Trims</span>
+          <span class="uk-text-light">&nbsp;Trims</span>
         </div>
         <div class="uk-width-1-1">Discover / Enquire: {{ modelTitle }} range below.</div>
       </div>
@@ -73,8 +73,8 @@
               <!-- Variant Image -->
               <div class="variant-image-container">
                 <NuxtImg
-                  v-if="item.image"
-                  :src="item.image"
+                  v-if="getVariantImage(item)"
+                  :src="getVariantImage(item)"
                   :alt="item.name"
                   class="variant-image"
                   loading="lazy"
@@ -199,6 +199,7 @@ interface Props {
   model: string;
   modelTitle?: string;
   powertrainFilter?: string | null; // Optional: 'Electric', 'Hybrid', or null for all
+  fallbackImage?: string;
 }
 
 const props = defineProps<Props>();
@@ -242,6 +243,8 @@ const filteredVariants = computed(() => {
 
 const itemsCount = computed(() => filteredVariants.value.length);
 const totalCount = computed(() => baseFilteredVariantGroups.value.length);
+
+const getVariantImage = (item: any) => item?.image || props.fallbackImage || '';
 
 // Get offers for a specific variant group by matching variants
 const getVariantGroupOffers = (variantGroupName: string): Offer[] => {

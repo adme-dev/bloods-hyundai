@@ -4,9 +4,8 @@
  * DATA STRATEGY:
  * 1. modeladditional API - Gets all models with metadata (images, URLs, displayPowertrain)
  * 2. carpricecalculator/models API - Gets category structure and pricing summary
- * 3. For models with displayPowertrain=true, fetch detailed carpricecalculator?modelname={name}
- *    to get variant groups (e.g., i30 N Line, i30 N Line Premium)
- * 4. Coming Soon vehicles from RYI pages
+ * 3. Coming Soon vehicles from RYI pages
+ * 4. Local known model metadata fills OEM omissions without extra waterfalls
  */
 
 interface CpcCategory {
@@ -37,28 +36,8 @@ interface CpcResponse {
   models: CpcModel[];
 }
 
-interface VariantGroup {
-  id: string;
-  name: string;
-  image: string;
-  imageAltText?: string;
-  lowestVariantPrice?: string;
-  priceEnabled?: boolean;
-  features?: any[];
-}
-
-interface DetailedCpcResponse {
-  model: string;
-  modelId: string;
-  displayPowertrain?: boolean;
-  powertrains?: string[];
-  categories?: { name: string; isPrimary?: boolean }[];
-  variantGroups?: VariantGroup[];
-  priceEnabled?: boolean;
-}
-
-const CACHE_MAX_AGE = 60 * 30;
-const CACHE_STALE_MAX_AGE = 60 * 60;
+const CACHE_MAX_AGE = 60 * 60 * 6;
+const CACHE_STALE_MAX_AGE = 60 * 60 * 24;
 
 export default defineCachedEventHandler(async (event) => {
   const refreshRequested = getQuery(event).refresh === 'true';
@@ -66,7 +45,7 @@ export default defineCachedEventHandler(async (event) => {
   setResponseHeaders(event, {
     'Cache-Control': refreshRequested
       ? 'no-store, max-age=0'
-      : 'public, max-age=1800, stale-while-revalidate=3600',
+      : `public, max-age=${CACHE_MAX_AGE}, stale-while-revalidate=${CACHE_STALE_MAX_AGE}`,
     'Content-Type': 'application/json',
   });
 
@@ -105,55 +84,16 @@ export default defineCachedEventHandler(async (event) => {
       cpcCategories.set(cat.categoryId, cat);
     });
 
-    // Build modeladditional lookup for extra details and identify models needing detailed fetch
+    // Build modeladditional lookup for extra details.
     const modelAdditionalByName = new Map<string, any>();
-    const modelsNeedingDetailedFetch: string[] = []; // Models with displayPowertrain=true
     
     if (modelsAdditionalData && Array.isArray(modelsAdditionalData)) {
       modelsAdditionalData.forEach((m: any) => {
         const name = m.model?.model;
         if (name) {
           modelAdditionalByName.set(name.toLowerCase(), m);
-          // Models with displayPowertrain=true have variant groups (like i30 N Line)
-          // These models often have hideInListing=true for the parent but we need their variants
-          // Exclude EVs that don't have combustion variants, and STARIA (commercial vehicle)
-          if (m.displayPowertrain && 
-              m.priceEnabled !== false &&
-              !['IONIQ', 'INSTER', 'STARIA'].some(e => name.toUpperCase().includes(e))) {
-            modelsNeedingDetailedFetch.push(name);
-          }
         }
       });
-    }
-
-    // Fetch detailed variant groups for models with displayPowertrain=true
-    // This gives us i30 N Line, KONA variants, TUCSON variants, etc.
-    const detailedVariantGroups = new Map<string, VariantGroup[]>();
-    const detailedModelCategories = new Map<string, string>();
-    
-    if (modelsNeedingDetailedFetch.length > 0) {
-      const detailedFetches = modelsNeedingDetailedFetch.map(async (modelName) => {
-        try {
-          const response = await $fetch<DetailedCpcResponse[]>(
-            `https://www.hyundai.com/content/api/au/hyundai/v3/carpricecalculator?postcode=2000&modelname=${encodeURIComponent(modelName)}&displaypowertrain=true`,
-            { timeout: 15000 }
-          );
-          // Response is an array (different powertrain responses), take first one with variantGroups
-          const data = Array.isArray(response) ? response[0] : response;
-          if (data?.variantGroups && data.variantGroups.length > 0) {
-            detailedVariantGroups.set(modelName.toLowerCase(), data.variantGroups);
-            // Get category from the detailed response
-            const category = data.categories?.find(c => c.isPrimary)?.name || data.categories?.[0]?.name;
-            if (category) {
-              detailedModelCategories.set(modelName.toLowerCase(), category);
-            }
-          }
-        } catch (err: any) {
-          console.warn(`[API] Failed to fetch detailed CPC for ${modelName}:`, err.message);
-        }
-      });
-      
-      await Promise.all(detailedFetches);
     }
 
     // Known images for models that may be missing from CPC

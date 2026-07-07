@@ -38,7 +38,7 @@
       </div>
 
       <!-- Hero Section -->
-      <div id="top" v-if="vehicle.header?.slides" class="uk-position-relative uk-background-secondary">
+      <div id="top" v-if="heroSlide.desktop" class="uk-position-relative uk-background-secondary">
         <div class="uk-width-1-1 uk-overflow-hidden uk-inline">
           <!-- Bottom Info Strip -->
           <div class="uk-position-bottom uk-position-z-index uk-light">
@@ -50,8 +50,8 @@
                 </div>
 
                 <!-- Spec Strip -->
-                <div 
-                  v-for="(item, index) in heroSlide.bottom_strip" 
+                <div
+                  v-for="(item, index) in heroSlide.bottom_strip || []"
                   :key="index" 
                   class="uk-width-auto spec-strip"
                 >
@@ -224,6 +224,7 @@
           :model="vehicleBaseModel"
           :model-title="formattedModelName"
           :powertrain-filter="vehiclePowertrainFilter"
+          :fallback-image="vehicleFallbackImage"
         />
       </div>
 
@@ -290,6 +291,7 @@ const { data: apiResponse, pending, error } = await useFetch(() => `/api/vehicle
 
 // Extract vehicle from response
 const vehicle = computed(() => apiResponse.value?.vehicle || null);
+const { siteName } = useSiteIdentity();
 
 // Check if this is scraped/placeholder data (not from CDN)
 const isScrapedData = computed(() => {
@@ -299,7 +301,38 @@ const isScrapedData = computed(() => {
 });
 
 // Hero slide data
-const heroSlide = computed(() => vehicle.value?.header?.slides?.[0] || {});
+const contentHeroImages = computed(() => extractVehicleContentImages(vehicle.value?.content?.rendered || ''));
+
+const vehicleFallbackImage = computed(() =>
+  contentHeroImages.value.trim ||
+  contentHeroImages.value.desktop ||
+  vehicle.value?.images?.[0] ||
+  ''
+);
+
+const heroSlide = computed(() => {
+  const existingSlide = vehicle.value?.header?.slides?.[0];
+  if (existingSlide?.desktop) {
+    return existingSlide;
+  }
+
+  const fallbackDesktop = contentHeroImages.value.desktop || vehicle.value?.images?.[0] || '';
+  if (!fallbackDesktop) {
+    return {};
+  }
+
+  const title = vehicle.value?.title?.rendered || vehicle.value?.title || formattedVehicleTitle(slug.value);
+  const tagline = vehicle.value?.tagline || vehicle.value?.description || `Explore the ${title} at ${siteName.value}.`;
+
+  return {
+    desktop: fallbackDesktop,
+    mobile: contentHeroImages.value.mobile || fallbackDesktop,
+    heading: title,
+    sub_heading: tagline,
+    bottom_strip: [],
+    button: vehicle.value?.form ? 'Register Your Interest' : 'Calculate Repayments',
+  };
+});
 
 // Formatted model name for display (uses header heading or formats the slug)
 const formattedModelName = computed(() => {
@@ -317,6 +350,66 @@ const formattedModelName = computed(() => {
     .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 });
+
+function extractVehicleContentImages(html: string): { desktop?: string; mobile?: string; trim?: string } {
+  const imageTags = html.match(/<img\b[^>]*>/gi) || [];
+  const images = imageTags
+    .map((tag) => ({
+      src: decodeHtmlAttribute(
+        getHtmlAttribute(tag, 'data-src') ||
+        getHtmlAttribute(tag, 'src') ||
+        getHtmlAttribute(tag, 'data-lazy-src')
+      ),
+      width: Number(getHtmlAttribute(tag, 'width') || 0),
+      height: Number(getHtmlAttribute(tag, 'height') || 0),
+    }))
+    .filter((image) => Boolean(image.src));
+
+  const trim = images.find((image) =>
+    /landing|front|side|model|640x331|front34/i.test(image.src || '')
+  )?.src;
+
+  const desktop = images.find((image) =>
+    /hero|hotspot-bg|driving-front|background|bg|1920|desktop/i.test(image.src || '')
+  )?.src || images.find((image) =>
+    /landing/i.test(image.src || '')
+  )?.src || images
+    .slice()
+    .sort((a, b) => (b.width * b.height) - (a.width * a.height))[0]
+    ?.src;
+
+  const mobile = images.find((image) =>
+    /mobile|767|975/i.test(image.src || '')
+  )?.src;
+
+  return {
+    desktop,
+    mobile,
+    trim: trim || desktop,
+  };
+}
+
+function getHtmlAttribute(tag: string, attribute: string): string | undefined {
+  const pattern = new RegExp(`${attribute}=(["'])(.*?)\\1`, 'i');
+  return tag.match(pattern)?.[2];
+}
+
+function decodeHtmlAttribute(value?: string): string | undefined {
+  if (!value) return undefined;
+
+  return value
+    .replace(/&#038;/g, '&')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+}
+
+function formattedVehicleTitle(value: string) {
+  return value
+    .split('-')
+    .map((word) => word.toUpperCase() === 'N' ? 'N' : word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 // Extract base model name for API calls and related vehicles search
 // Converts slugs like 'kona-electric' to 'kona', 'i30-sedan-n' to 'i30', etc.
@@ -381,11 +474,9 @@ const vehiclePowertrainFilter = computed(() => {
 });
 
 // SEO
-const { siteName } = useSiteIdentity();
-
 useSiteMeta({
-  title: () => vehicle.value?.model || 'Vehicle',
-  description: () => vehicle.value?.description || `Explore the ${vehicle.value?.model || 'vehicle'} at ${siteName.value}.`,
+  title: () => formattedModelName.value || 'Vehicle',
+  description: () => vehicle.value?.description || `Explore the ${formattedModelName.value || 'vehicle'} at ${siteName.value}.`,
   image: () => heroSlide.value?.desktop || '',
 });
 
@@ -776,6 +867,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
-
-

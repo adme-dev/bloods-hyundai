@@ -53,7 +53,17 @@ export function toModelSummaries(rawData: any): ModelSummariesResponse {
     return emptyModelSummaries();
   }
 
-  const models = rawData.variants.map(toModelSummary);
+  const seenModelKeys = new Set<string>();
+  const models = rawData.variants
+    .map(toModelSummary)
+    .filter((model) => {
+      const key = model.slug || model.name.toLowerCase();
+      if (!key || seenModelKeys.has(key)) {
+        return false;
+      }
+      seenModelKeys.add(key);
+      return true;
+    });
   const vehicleCategories = Array.isArray(rawData.vehicleCategories) && rawData.vehicleCategories.length
     ? rawData.vehicleCategories
     : getSortedCategories(models);

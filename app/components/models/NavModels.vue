@@ -230,8 +230,9 @@ const selectedCategory = ref('All');
 const itemToShow = ref<number | null>(null);
 const showMobileFilter = ref(false);
 
-// Use shared composable to avoid duplicate fetches
-const { groupedByCategory, vehicleCategories, pending } = useAllVariants();
+// Use the lightweight summaries payload for the navigation menu. Full variant
+// details are only needed on calculator/test-drive pages.
+const { groupedByCategory, vehicleCategories, pending } = useModelSummaries();
 
 // Computed
 const groupedVehicles = computed(() => {
@@ -432,7 +433,6 @@ const capitalizeFirstLetter = (str: string) => {
   border-top: 1px solid #e5e5e5;
 }
 </style>
-
 
 
 
