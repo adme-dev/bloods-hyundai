@@ -147,8 +147,9 @@ const props = withDefaults(defineProps<Props>(), {
 const modules = [Navigation, Pagination];
 
 // Fetch vehicles with SSR support using useAsyncData
+const specialOffersVehiclesKey = getRuntimeTenantCacheKey('special-offers-vehicles');
 const { data: vehiclesData, status, error } = await useAsyncData(
-  'special-offers-vehicles',
+  specialOffersVehiclesKey,
   async () => {
     const response = await $fetch<{ vehiclesData: any[] }>('/api/carsales-feed');
     if (response?.vehiclesData) {

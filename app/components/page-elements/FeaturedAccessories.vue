@@ -196,8 +196,9 @@ const props = withDefaults(defineProps<Props>(), {
 const modules = [Navigation, Pagination];
 
 // Fetch featured accessories with SSR support using useAsyncData
+const featuredAccessoriesKey = getRuntimeTenantCacheKey(`featured-accessories:${props.limit}`);
 const { data: accessoriesData, status, error } = await useAsyncData(
-  'featured-accessories',
+  featuredAccessoriesKey,
   () => $fetch<{ success: boolean; accessories: FeaturedAccessory[]; error?: string }>('/api/featured-accessories', {
     params: { limit: props.limit },
   }),

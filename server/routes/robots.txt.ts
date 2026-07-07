@@ -18,11 +18,11 @@ Sitemap: ${siteUrl}/sitemap.xml
   setResponseHeaders(event, {
     'Content-Type': 'text/plain',
     'Cache-Control': 'public, max-age=3600',
+    Vary: 'Host',
   });
 
   return robotsContent;
 });
-
 
 
 
