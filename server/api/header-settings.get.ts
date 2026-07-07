@@ -7,7 +7,19 @@ import { dealers } from '../database/schema';
  * Used by the site header (TopBar) to determine whether to show the
  * "Google Reviews" link. Defaults to disabled.
  */
-export default defineEventHandler(async (event) => {
+const CACHE_MAX_AGE = 60 * 10;
+const CACHE_STALE_MAX_AGE = 60 * 30;
+
+export default defineCachedEventHandler(async (event) => {
+  const refreshRequested = getQuery(event).refresh === 'true';
+
+  setResponseHeaders(event, {
+    'Cache-Control': refreshRequested
+      ? 'no-store, max-age=0'
+      : 'public, max-age=600, stale-while-revalidate=1800',
+    'Content-Type': 'application/json',
+  });
+
   const config = useRuntimeConfig();
   const dealerSlug = config.public.dealerSlug || 'blood-hyundai';
 
@@ -37,4 +49,10 @@ export default defineEventHandler(async (event) => {
       },
     };
   }
+}, {
+  maxAge: CACHE_MAX_AGE,
+  staleMaxAge: CACHE_STALE_MAX_AGE,
+  name: 'header-settings',
+  getKey: () => 'header-settings-v1',
+  shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });

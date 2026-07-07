@@ -329,6 +329,7 @@ export default defineNuxtConfig({
     '/api/finance-widget-settings':  { swr: 300 },
     '/api/service-booking-settings': { swr: 300 },
     '/api/popup-settings':           { swr: 300 },
+    '/api/header-settings':          { swr: 600 },
     '/api/site-config':              { swr: 600 },
     '/api/homepage-filters':         { swr: 600 },
     '/api/all-variants':             { swr: 1800 },
