@@ -141,35 +141,38 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   z-index: 1000;
-  background-color: #001E50;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid #d8dee8;
+  box-shadow: 0 10px 28px rgba(0, 30, 80, 0.12);
+  backdrop-filter: saturate(180%) blur(14px);
 }
 
 .sticky-bar-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1.25rem;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0.75rem 1.5rem;
+  padding: 0.625rem 1.5rem;
 }
 
 /* Vehicle Info Section */
 .sticky-bar-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
+  gap: 0.875rem;
+  min-width: 0;
+  flex: 1 1 320px;
 }
 
 .sticky-bar-image {
-  width: 80px;
-  height: 50px;
-  border-radius: 6px;
+  width: 76px;
+  height: 48px;
+  border-radius: 4px;
   overflow: hidden;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: #eef2f7;
+  border: 1px solid #d8dee8;
   flex-shrink: 0;
 }
 
@@ -192,23 +195,24 @@ onUnmounted(() => {
 }
 
 .sticky-bar-title {
-  color: #fff;
+  color: #001E50;
   font-size: 0.9375rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.3;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 280px;
+  max-width: min(34vw, 420px);
 }
 
 /* Pricing Section */
 .sticky-bar-pricing {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.125rem;
   flex-shrink: 0;
+  padding: 0 0.5rem;
 }
 
 .sticky-bar-price-group {
@@ -219,16 +223,16 @@ onUnmounted(() => {
 
 .sticky-bar-price-label {
   font-size: 0.625rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  font-weight: 700;
+  color: #637083;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .sticky-bar-price {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #fff;
+  color: #001E50;
   line-height: 1.2;
 }
 
@@ -239,29 +243,30 @@ onUnmounted(() => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #000;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 600;
+  background-color: #eef4fb;
+  color: #001E50;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  border: 1px solid #d8e6f6;
   flex-shrink: 0;
 }
 
 .sticky-bar-weekly {
   font-size: 1.375rem;
   font-weight: 700;
-  color: #fff;
+  color: #001E50;
   line-height: 1.2;
 }
 
 .sticky-bar-weekly sup {
   font-size: 0.625rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: #637083;
 }
 
 .sticky-bar-weekly-label {
   font-size: 0.625rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  color: #637083;
 }
 
 /* Actions Section */
@@ -276,12 +281,13 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 42px;
   padding: 0.625rem 1.25rem;
   font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 9999px;
+  font-weight: 700;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   white-space: nowrap;
   text-decoration: none;
 }
@@ -289,23 +295,23 @@ onUnmounted(() => {
 .sticky-bar-btn--secondary {
   background-color: #fff;
   color: #001E50;
-  border: 1px solid #fff;
+  border: 1px solid #b7c1cf;
 }
 
 .sticky-bar-btn--secondary:hover {
-  background-color: #f1f5f9;
-  border-color: #f1f5f9;
+  background-color: #eef4fb;
+  border-color: #7b8a9d;
 }
 
 .sticky-bar-btn--primary {
-  background-color: #e63312;
+  background-color: #002C5F;
   color: #fff;
-  border: 1px solid #e63312;
+  border: 1px solid #002C5F;
 }
 
 .sticky-bar-btn--primary:hover {
-  background-color: #cc2d10;
-  border-color: #cc2d10;
+  background-color: #001E50;
+  border-color: #001E50;
 }
 
 /* Slide transition */
@@ -335,7 +341,7 @@ onUnmounted(() => {
   }
   
   .sticky-bar-title {
-    max-width: 180px;
+    max-width: 220px;
     font-size: 0.8125rem;
   }
   
