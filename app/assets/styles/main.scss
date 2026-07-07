@@ -100,7 +100,7 @@
 
 @font-face {
   font-family: 'Hyundai Sans Head';
-  src: url('~/assets/fonts/HyundaiSansHead-Medium.woff2') format('woff2');
+  src: url('/fonts/HyundaiSansHead-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -117,7 +117,7 @@
 // Hyundai Sans Text - for body text
 @font-face {
   font-family: 'Hyundai Sans Text';
-  src: url('~/assets/fonts/HyundaiSansText-Regular.woff2') format('woff2');
+  src: url('/fonts/HyundaiSansText-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -166,7 +166,7 @@
 // Alias 'Hyundai Sans' to 'Hyundai Sans Text' for backwards compatibility
 @font-face {
   font-family: 'Hyundai Sans';
-  src: url('~/assets/fonts/HyundaiSansText-Regular.woff2') format('woff2');
+  src: url('/fonts/HyundaiSansText-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -946,7 +946,6 @@ a[style*="backgroundImage"],
     }
   }
 }
-
 
 
 

@@ -351,6 +351,8 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'shortcut icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'apple-touch-icon', href: '/favicon.svg' },
+        { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/HyundaiSansText-Regular.woff2', crossorigin: '' },
+        { rel: 'preload', as: 'font', type: 'font/woff2', href: '/fonts/HyundaiSansHead-Medium.woff2', crossorigin: '' },
         // Preconnect to external resources for faster loading
         { rel: 'preconnect', href: 'https://hyundaioem.b-cdn.net' },
         { rel: 'preconnect', href: 'https://driveagent.b-cdn.net' },
