@@ -65,7 +65,14 @@
                   @pointerenter="keepModelsMenuOpen"
                   @pointerleave="handleModelsPointerLeave"
                 >
-                  <LazyNavModels />
+                  <ClientOnly>
+                    <LazyNavModels v-if="shouldRenderModelsMenu" />
+                  </ClientOnly>
+                  <div
+                    v-if="!shouldRenderModelsMenu"
+                    class="nav-models-placeholder"
+                    aria-hidden="true"
+                  ></div>
                 </div>
               </li>
 
@@ -378,6 +385,7 @@ let itemShowTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Models menu state
 const modelsMenuOpen = ref(false);
+const shouldRenderModelsMenu = ref(false);
 let hideTimeout: ReturnType<typeof setTimeout> | null = null;
 let showTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -486,6 +494,8 @@ const openSearch = () => {
 };
 
 const showModelsMenu = () => {
+  shouldRenderModelsMenu.value = true;
+
   if (hideTimeout) {
     clearTimeout(hideTimeout);
     hideTimeout = null;
@@ -599,6 +609,11 @@ onUnmounted(() => {
 .nav-dropdown {
   top: var(--dropdown-top, 64px);
   max-height: var(--dropdown-max-height, calc(100vh - 64px));
+}
+
+.nav-models-placeholder {
+  min-height: min(520px, var(--dropdown-max-height, calc(100vh - 64px)));
+  background: #fff;
 }
 
 /* Smooth scrollbar styling for dropdown */
