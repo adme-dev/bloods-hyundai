@@ -26,8 +26,7 @@
     <LoadWhenVisible
       class="homepage-models-slot"
       min-height="900px"
-      root-margin="600px 0px"
-      :idle-delay="9000"
+      root-margin="120px 0px"
     >
       <LazyHomepageModelsSection />
     </LoadWhenVisible>

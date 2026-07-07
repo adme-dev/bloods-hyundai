@@ -1,8 +1,8 @@
 <template>
-  <section class="special-offers-vehicles py-16 bg-slate-50 overflow-hidden relative z-0">
+  <section class="special-offers-vehicles bg-slate-50 overflow-hidden relative z-0">
     <div class="mx-auto container px-4">
       <!-- Section Header -->
-      <div class="text-center mb-10">
+      <div class="special-offers-header text-center">
         <h2 class="section-heading mb-4">
           Stock Specials
         </h2>
@@ -181,6 +181,13 @@ const displayedVehicles = computed(() => {
 <style scoped>
 .special-offers-vehicles {
   isolation: isolate; /* Create new stacking context */
+  padding-top: clamp(72px, 8vw, 112px);
+  padding-bottom: clamp(72px, 8vw, 112px);
+}
+
+.special-offers-header {
+  margin-bottom: clamp(36px, 4vw, 48px);
+  padding-top: 8px;
 }
 
 .special-offers-swiper {
@@ -217,6 +224,13 @@ const displayedVehicles = computed(() => {
 :deep(.swiper-button-disabled) {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (max-width: 639px) {
+  .special-offers-vehicles {
+    padding-top: 64px;
+    padding-bottom: 80px;
+  }
 }
 
 /* Container needs relative positioning for absolute arrows */

@@ -36,6 +36,7 @@
                     :src="thumb.image"
                     :alt="thumb.button_text || siteName"
                     width="480"
+                    height="480"
                     format="webp"
                     quality="72"
                     class="thumb-image"
@@ -207,13 +208,14 @@ onUnmounted(() => {
 .thumb-image-wrapper {
   position: relative;
   overflow: hidden;
+  aspect-ratio: 1 / 1;
   background-color: #f3f4f6;
   border-radius: 8px;
 }
 
 .thumb-image {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   object-fit: contain;
   border-radius: 8px;
@@ -222,7 +224,7 @@ onUnmounted(() => {
 
 .thumb-image-wrapper :deep(img) {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   object-fit: contain;
   border-radius: 8px;

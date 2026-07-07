@@ -83,7 +83,7 @@
                 class="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-[#00aad2]/30 flex flex-col"
               >
                 <!-- Image Area -->
-                <div class="relative overflow-hidden">
+                <div class="model-image-frame relative overflow-hidden">
                   <!-- Badge -->
                   <div
                     class="absolute top-4 left-4 flex items-center bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium shadow-sm z-10"
@@ -102,7 +102,7 @@
                       width="550"
                       height="300"
                       loading="lazy"
-                      class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
+                      class="model-card-image transition-transform duration-500 group-hover:scale-105"
                       format="webp"
                       quality="80"
                     />
@@ -233,14 +233,14 @@
                     class="bg-white rounded-xl overflow-hidden border border-gray-200 hover:border-[#00aad2]/30 hover:shadow-lg transition-all duration-300 group"
                   >
                     <!-- Image Section -->
-                    <div class="relative w-full overflow-hidden">
+                    <div class="model-image-frame relative w-full overflow-hidden">
                       <NuxtImg
                         :src="model.model_image"
                         :alt="model.title.rendered"
                         width="550"
                         height="300"
                         loading="lazy"
-                        class="w-full h-auto transition-transform duration-500 group-hover:scale-105"
+                        class="model-card-image transition-transform duration-500 group-hover:scale-105"
                         format="webp"
                         quality="80"
                       />
@@ -450,6 +450,18 @@ onClickOutside(categoryDropdownRef, () => {
 
 .section-heading {
   line-height: 1.1;
+}
+
+.model-image-frame {
+  aspect-ratio: 11 / 6;
+  background: #fff;
+}
+
+.model-card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Line clamp utility for description text */
