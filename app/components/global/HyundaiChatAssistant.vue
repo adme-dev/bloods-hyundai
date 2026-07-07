@@ -136,6 +136,9 @@
       >
         <IconMessageCircle :size="24" stroke-width="2.3" />
         <span class="launcher-label">Chat</span>
+        <span v-if="hasSavedConversation" class="conversation-badge" aria-label="Conversation saved">
+          Saved
+        </span>
       </button>
     </div>
   </Teleport>
@@ -235,6 +238,7 @@ const directionsUrl = computed(() => mainStore.site?.map_directions || mainStore
 
 const isVehiclePage = computed(() => String(route.name || '').startsWith('vehicle-for-sale'));
 const isActionBarVisible = useMobileActionBarVisibility();
+const hasSavedConversation = computed(() => !isOpen.value && messages.value.length > 0);
 
 const openChat = async () => {
   isOpen.value = true;
@@ -490,6 +494,9 @@ const handleAction = (action: ChatAction) => {
 
 const handleVehicleCardClick = (vehicle: ChatVehicleSummary) => {
   trackChatEvent('chat_vehicle_card_clicked', vehicle.stockId);
+  if (isMobileChatViewport()) {
+    closeChat();
+  }
 };
 
 const ensureVehiclesLoaded = async () => {
@@ -890,6 +897,7 @@ onUnmounted(() => {
 }
 
 .chat-launcher {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -916,6 +924,23 @@ onUnmounted(() => {
 .launcher-label {
   font-size: 14px;
   line-height: 1;
+}
+
+.conversation-badge {
+  position: absolute;
+  top: -7px;
+  right: 8px;
+  min-width: 34px;
+  padding: 2px 6px;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  background: #00aad2;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(0, 30, 80, 0.18);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  pointer-events: none;
 }
 
 .chat-panel {
@@ -1355,6 +1380,14 @@ onUnmounted(() => {
 
   .launcher-label {
     font-size: 0.72rem;
+  }
+
+  .conversation-badge {
+    top: 5px;
+    right: 5px;
+    min-width: 31px;
+    padding: 1px 5px;
+    font-size: 9px;
   }
 }
 
