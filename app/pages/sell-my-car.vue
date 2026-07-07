@@ -541,27 +541,11 @@ const dealerApiKey = computed(() => {
 const { data: page } = await useAsyncData(
   'page-sell-my-car',
   async () => {
-    if (!config.public.cdnUrl) {
-      // Fallback to API if CDN not configured
-      try {
-        const response = await $fetch<any>('/api/page/sell-my-car')
-        return response?.page || response
-      } catch {
-        return null
-      }
-    }
-
     try {
-      const response = await $fetch<any[]>(`${config.public.cdnUrl}/pages/sell-my-car.json`)
-      return response?.[0] || null
+      const response = await $fetch<any>('/api/page/sell-my-car')
+      return response?.page || response
     } catch {
-      // Fallback to API
-      try {
-        const response = await $fetch<any>('/api/page/sell-my-car')
-        return response?.page || response
-      } catch {
-        return null
-      }
+      return null
     }
   }
 )
@@ -590,8 +574,14 @@ const benefits = [
   { icon: Users, title: 'Expert Team', description: 'Years of experience' },
 ]
 
-const heroImageDesktop = 'https://driveAgentMedia.b-cdn.net/files/blood-hyundai/media/2023/08/AfterSales_iCare_1920x720_V2@2x.jpg?width=1400&auto_optimize=medium'
-const heroImageMobile = 'https://driveAgentMedia.b-cdn.net/files/blood-hyundai/media/2023/08/AfterSales_iCare_767x975_V2@2x.jpg?width=566&auto_optimize=medium'
+const heroImage = computed(() =>
+  page.value?.featuredImage?.source_url ||
+  page.value?.featuredImage?.url ||
+  page.value?.yoast_head_json?.og_image?.[0]?.url ||
+  '/images/placeholder-car.svg'
+)
+const heroImageDesktop = computed(() => heroImage.value)
+const heroImageMobile = computed(() => heroImage.value)
 
 const processSteps = [
   { icon: FileText, title: 'Submit the basics', description: 'Tell us the make, model, kilometres and registration details.' },
@@ -772,4 +762,3 @@ declare global {
   }
 }
 </script>
-

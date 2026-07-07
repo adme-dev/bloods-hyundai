@@ -5,6 +5,7 @@
  */
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
 
 const REVIEWS_CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const REVIEWS_CACHE_STALE_MAX_AGE = 60 * 30; // 30 minutes
@@ -31,13 +32,43 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Try to load local fallback reviews data for development
-function loadLocalReviewsFallback(): any | null {
+function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
+  const trimmed = cdnUrl.replace(/\/+$/, '');
+  const tenantBase = /\/files\/[^/]+$/.test(trimmed)
+    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
+    : `${trimmed}/files/${dealerSlug}`;
+
+  return Array.from(new Set([
+    `${tenantBase}/${path}`,
+    `${trimmed}/${path}`,
+  ]));
+}
+
+function localReviewsFallbackMatchesDealer(localData: any, dealerSlug: string): boolean {
+  const name = String(localData?.result?.name || '').toLowerCase();
+  if (name.includes('sale hyundai')) {
+    return dealerSlug === 'sale-hyundai';
+  }
+
+  if (name.includes('blood hyundai')) {
+    return dealerSlug === 'blood-hyundai';
+  }
+
+  return true;
+}
+
+function loadLocalReviewsFallback(dealerSlug: string): any | null {
   try {
     const fallbackPath = join(process.cwd(), 'server/data/reviews/hours.json');
     if (existsSync(fallbackPath)) {
       const data = readFileSync(fallbackPath, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (!localReviewsFallbackMatchesDealer(parsed, dealerSlug)) {
+        return null;
+      }
+
       console.log('[Reviews API] Loaded local fallback');
-      return JSON.parse(data);
+      return parsed;
     }
     return null;
   } catch (error: any) {
@@ -100,28 +131,32 @@ function processReviewsResponse(response: any): ProcessedReviewsResponse {
   };
 }
 
-export default defineCachedEventHandler(async (): Promise<ProcessedReviewsResponse> => {
+export default defineCachedEventHandler(async (event): Promise<ProcessedReviewsResponse> => {
   const config = useRuntimeConfig();
+  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
 
   // CDN URL for reviews (set via NUXT_PUBLIC_CDN_URL env var)
   const cdnUrl = config.public.cdnUrl;
 
   // Try CDN first
   if (cdnUrl) {
-    try {
-      // Fetch reviews from CDN (pre-cached from Google Places API)
-      const response = await $fetch<any>(`${cdnUrl}/reviews/hours.json`, {
-        timeout: 5000, // 5 second timeout for faster fallback
-      });
+    for (const url of buildTenantCdnUrls(cdnUrl, dealerSlug, 'reviews/hours.json')) {
+      try {
+        // Fetch reviews from CDN (pre-cached from Google Places API)
+        const response = await $fetch<any>(url, {
+          timeout: 5000, // 5 second timeout for faster fallback
+        });
 
-      return processReviewsResponse(response);
-    } catch (error: any) {
-      console.warn('[Reviews API] CDN fetch failed, trying fallback:', error.message);
+        return processReviewsResponse(response);
+      } catch (error: any) {
+        console.warn('[Reviews API] CDN fetch failed, trying fallback:', error.message);
+      }
     }
   }
 
   // Try local fallback for development
-  const localData = loadLocalReviewsFallback();
+  const localData = loadLocalReviewsFallback(dealerSlug);
   if (localData) {
     return {
       ...processReviewsResponse(localData),
@@ -139,9 +174,8 @@ export default defineCachedEventHandler(async (): Promise<ProcessedReviewsRespon
   maxAge: REVIEWS_CACHE_MAX_AGE,
   staleMaxAge: REVIEWS_CACHE_STALE_MAX_AGE,
   name: 'reviews',
-  getKey: () => 'google-reviews',
+  getKey: (event) => resolveTenantCacheKey(event, 'google-reviews'),
 });
-
 
 
 

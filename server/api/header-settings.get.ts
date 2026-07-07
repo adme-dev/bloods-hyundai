@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
-import { resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
 
 /**
  * Public API endpoint to get header settings.
@@ -22,7 +22,8 @@ export default defineCachedEventHandler(async (event) => {
   });
 
   const config = useRuntimeConfig();
-  const dealerSlug = resolveDealerSlug(event, config.public.dealerSlug || 'blood-hyundai');
+  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
 
   try {
     const [dealer] = await db

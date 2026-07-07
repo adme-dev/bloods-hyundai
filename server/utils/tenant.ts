@@ -6,6 +6,13 @@ export interface TenantConfig {
   siteUrl?: string;
 }
 
+export const DEFAULT_DEALER_SLUG = 'hyundai-dealer';
+
+const DEFAULT_TENANT: TenantConfig = {
+  slug: DEFAULT_DEALER_SLUG,
+  name: 'Hyundai Dealer',
+};
+
 const BLOOD_TENANT: TenantConfig = {
   slug: 'blood-hyundai',
   name: 'Blood Hyundai',
@@ -18,7 +25,7 @@ const SALE_TENANT: TenantConfig = {
   siteUrl: 'https://salehyundai.com.au',
 };
 
-const TENANTS: TenantConfig[] = [BLOOD_TENANT, SALE_TENANT];
+const TENANTS: TenantConfig[] = [BLOOD_TENANT, SALE_TENANT, DEFAULT_TENANT];
 
 const TENANT_HOSTS: Record<string, TenantConfig> = {
   'bloodhyundai.com.au': BLOOD_TENANT,
@@ -44,14 +51,22 @@ export function getRequestHostname(event: H3Event): string {
 
 export function resolveTenantFromHostname(
   hostname: string | null | undefined,
-  fallbackSlug = 'blood-hyundai'
+  fallbackSlug = DEFAULT_DEALER_SLUG
 ): TenantConfig {
   const normalized = normalizeHostname(hostname);
   if (normalized && TENANT_HOSTS[normalized]) {
     return TENANT_HOSTS[normalized];
   }
 
-  return TENANTS.find((tenant) => tenant.slug === fallbackSlug) || BLOOD_TENANT;
+  const matchedTenant = TENANTS.find((tenant) => tenant.slug === fallbackSlug);
+  if (matchedTenant) {
+    return matchedTenant;
+  }
+
+  return {
+    ...DEFAULT_TENANT,
+    slug: fallbackSlug || DEFAULT_DEALER_SLUG,
+  };
 }
 
 export function isKnownTenantHostname(hostname: string | null | undefined): boolean {
@@ -60,7 +75,7 @@ export function isKnownTenantHostname(hostname: string | null | undefined): bool
 
 export function resolveDealerSlug(
   event: H3Event,
-  fallbackSlug = 'blood-hyundai'
+  fallbackSlug = DEFAULT_DEALER_SLUG
 ): string {
   return resolveTenantFromHostname(getRequestHostname(event), fallbackSlug).slug;
 }
@@ -87,7 +102,7 @@ export function resolveDealerSiteUrl(
 export function resolveTenantCacheKey(
   event: H3Event,
   baseKey: string,
-  fallbackSlug = 'blood-hyundai'
+  fallbackSlug = DEFAULT_DEALER_SLUG
 ): string {
   const tenant = resolveTenantFromHostname(getRequestHostname(event), fallbackSlug);
   const hostname = getRequestHostname(event) || tenant.slug;

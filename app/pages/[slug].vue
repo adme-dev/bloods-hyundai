@@ -67,7 +67,6 @@ const ComponentMapping: Record<string, any> = {
 };
 
 const route = useRoute();
-const config = useRuntimeConfig();
 
 const slug = computed(() => route.params.slug as string);
 
@@ -75,27 +74,11 @@ const slug = computed(() => route.params.slug as string);
 const { data: page, pending, error } = await useAsyncData(
   `page-${slug.value}`,
   async () => {
-    if (!config.public.cdnUrl) {
-      // Fallback to API if CDN not configured
-      try {
-        const response = await $fetch<any>(`/api/page/${slug.value}`);
-        return response?.page || response;
-      } catch {
-        return null;
-      }
-    }
-
     try {
-      const response = await $fetch<any[]>(`${config.public.cdnUrl}/pages/${slug.value}.json`);
-      return response?.[0] || null;
+      const response = await $fetch<any>(`/api/page/${slug.value}`);
+      return response?.page || response;
     } catch {
-      // Fallback to API
-      try {
-        const response = await $fetch<any>(`/api/page/${slug.value}`);
-        return response?.page || response;
-      } catch {
-        return null;
-      }
+      return null;
     }
   },
   {
@@ -159,8 +142,6 @@ useHead({
   }
 }
 </style>
-
-
 
 
 

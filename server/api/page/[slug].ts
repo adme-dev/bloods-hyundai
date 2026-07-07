@@ -1,13 +1,34 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../../utils/tenant';
+
+function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
+  const trimmed = cdnUrl.replace(/\/+$/, '');
+  const tenantBase = /\/files\/[^/]+$/.test(trimmed)
+    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
+    : `${trimmed}/files/${dealerSlug}`;
+
+  return Array.from(new Set([
+    `${tenantBase}/${path}`,
+    `${trimmed}/${path}`,
+  ]));
+}
 
 // Try to load local fallback page data for development
-function loadLocalPageFallback(slug: string): any | null {
+function loadLocalPageFallback(slug: string, dealerSlug: string): any | null {
   try {
     const fallbackPath = join(process.cwd(), `server/data/pages/${slug}.json`);
     if (existsSync(fallbackPath)) {
       const data = readFileSync(fallbackPath, 'utf-8');
       const pageData = JSON.parse(data);
+      if (data.toLowerCase().includes('sale hyundai') && dealerSlug !== 'sale-hyundai') {
+        return null;
+      }
+
+      if (data.toLowerCase().includes('blood hyundai') && dealerSlug !== 'blood-hyundai') {
+        return null;
+      }
+
       console.log('[Page API] Loaded local fallback for:', slug);
       return pageData;
     }
@@ -32,31 +53,35 @@ export default defineCachedEventHandler(async (event) => {
     });
   }
 
+  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
+
   // Try fetching from CDN first (WordPress exported JSON)
   if (config.public.cdnUrl) {
-    try {
-      const cdnUrl = `${config.public.cdnUrl}/pages/${slug}.json`;
-      const response = await $fetch<any[]>(cdnUrl, {
-        headers: {
-          'Accept': 'application/json',
-        },
-        timeout: 5000, // 5 second timeout for faster fallback
-      });
+    for (const cdnUrl of buildTenantCdnUrls(config.public.cdnUrl, dealerSlug, `pages/${slug}.json`)) {
+      try {
+        const response = await $fetch<any[]>(cdnUrl, {
+          headers: {
+            'Accept': 'application/json',
+          },
+          timeout: 5000, // 5 second timeout for faster fallback
+        });
 
-      // CDN returns array, get first item
-      if (response && Array.isArray(response) && response.length > 0) {
-        return {
-          success: true,
-          page: response[0],
-        };
+        // CDN returns array, get first item
+        if (response && Array.isArray(response) && response.length > 0) {
+          return {
+            success: true,
+            page: response[0],
+          };
+        }
+      } catch (cdnError: any) {
+        console.log('[Page API] CDN fetch failed, trying fallbacks:', cdnError.message);
       }
-    } catch (cdnError: any) {
-      console.log('[Page API] CDN fetch failed, trying fallbacks:', cdnError.message);
     }
   }
 
   // Try local fallback for development
-  const localPage = loadLocalPageFallback(slug);
+  const localPage = loadLocalPageFallback(slug, dealerSlug);
   if (localPage) {
     // Local fallback could be array or object
     const pageData = Array.isArray(localPage) && localPage.length > 0 ? localPage[0] : localPage;
@@ -100,11 +125,9 @@ export default defineCachedEventHandler(async (event) => {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'page-content',
-  getKey: (event) => `page:${getRouterParam(event, 'slug') || 'unknown'}`,
+  getKey: (event) => resolveTenantCacheKey(event, `page:${getRouterParam(event, 'slug') || 'unknown'}`),
   shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
-
-
 
 
 

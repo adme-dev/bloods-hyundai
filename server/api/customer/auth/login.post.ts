@@ -3,7 +3,7 @@ import { customers, dealers } from '../../../database/schema';
 import { eq, and } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { resolveDealerSlug } from '../../../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug } from '../../../utils/tenant';
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);
@@ -18,7 +18,8 @@ export default defineEventHandler(async (event) => {
 
   // Get dealer by slug (defaults to the current host's tenant)
   const runtimeConfig = useRuntimeConfig();
-  const slug = dealerSlug || resolveDealerSlug(event, runtimeConfig.public.dealerSlug || 'blood-hyundai');
+  const fallbackSlug = runtimeConfig.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+  const slug = dealerSlug || resolveDealerSlug(event, fallbackSlug);
   const [dealer] = await db
     .select()
     .from(dealers)

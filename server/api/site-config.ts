@@ -15,7 +15,7 @@ import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { getRequestURL } from 'h3';
-import { resolveDealerSlug, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
 
 interface SiteConfig {
   name: string;
@@ -48,6 +48,18 @@ interface DealerRow {
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
+function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: string): string[] {
+  const trimmed = cdnUrl.replace(/\/+$/, '');
+  const tenantBase = /\/files\/[^/]+$/.test(trimmed)
+    ? trimmed.replace(/\/files\/[^/]+$/, `/files/${dealerSlug}`)
+    : `${trimmed}/files/${dealerSlug}`;
+
+  return Array.from(new Set([
+    `${tenantBase}/${path}`,
+    `${trimmed}/${path}`,
+  ]));
+}
+
 function loadLocalFallback(): SiteConfig | null {
   try {
     const possiblePaths = [
@@ -68,11 +80,23 @@ function loadLocalFallback(): SiteConfig | null {
   }
 }
 
+function localFallbackMatchesDealer(localConfig: SiteConfig | null, dealerSlug: string): localConfig is SiteConfig {
+  if (!localConfig) return false;
+
+  const name = String(localConfig.name || '').toLowerCase();
+  if (name.includes('sale hyundai')) {
+    return dealerSlug === 'sale-hyundai';
+  }
+
+  if (name.includes('blood hyundai')) {
+    return dealerSlug === 'blood-hyundai';
+  }
+
+  return true;
+}
+
 async function fetchTenantConfig(cdnUrl: string, dealerSlug: string): Promise<SiteConfig | null> {
-  const candidateUrls = [
-    `${cdnUrl}/files/${dealerSlug}/config/config.json`,
-    `${cdnUrl}/config/config.json`,
-  ];
+  const candidateUrls = buildTenantCdnUrls(cdnUrl, dealerSlug, 'config/config.json');
 
   for (const url of candidateUrls) {
     try {
@@ -114,7 +138,7 @@ export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const requestUrl = getRequestURL(event);
   const requestOrigin = requestUrl.origin || config.public.siteUrl || '';
-  const fallbackSlug = config.public.dealerSlug || 'blood-hyundai';
+  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
   const dealerSlug = resolveDealerSlug(event, fallbackSlug);
   const hostTenant = resolveTenantFromHostname(requestUrl.hostname, fallbackSlug);
 
@@ -143,13 +167,16 @@ export default defineCachedEventHandler(async (event) => {
       .limit(1);
 
     const localConfig = loadLocalFallback();
+    const matchingLocalConfig = localFallbackMatchesDealer(localConfig, dealerSlug)
+      ? localConfig
+      : null;
     const remoteConfig = config.public.cdnUrl
       ? await fetchTenantConfig(config.public.cdnUrl, dealerSlug)
       : null;
 
     const chosenBaseConfig =
       remoteConfig ||
-      (localConfig && localConfig.name ? localConfig : null) ||
+      (matchingLocalConfig && matchingLocalConfig.name ? matchingLocalConfig : null) ||
       defaultConfig;
 
     const mergedConfig = dealer
@@ -169,13 +196,16 @@ export default defineCachedEventHandler(async (event) => {
   } catch (error: any) {
     console.warn('[Site Config] Falling back to defaults:', error?.message);
     const localConfig = loadLocalFallback();
+    const matchingLocalConfig = localFallbackMatchesDealer(localConfig, dealerSlug)
+      ? localConfig
+      : null;
 
     return {
-      config: localConfig
+      config: matchingLocalConfig
         ? {
-            ...localConfig,
-            websiteUrl: localConfig.websiteUrl || requestOrigin || hostTenant.siteUrl || '',
-            siteUrl: localConfig.siteUrl || requestOrigin || hostTenant.siteUrl || '',
+            ...matchingLocalConfig,
+            websiteUrl: matchingLocalConfig.websiteUrl || requestOrigin || hostTenant.siteUrl || '',
+            siteUrl: matchingLocalConfig.siteUrl || requestOrigin || hostTenant.siteUrl || '',
             dealerSlug,
           }
         : defaultConfig,
