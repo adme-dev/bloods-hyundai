@@ -148,7 +148,7 @@ const homeSlides = computed(() => {
   return resolveHomeSlides(configuredSlideSource.value, {
     siteName: siteName.value,
     offersHero: offersHeroData.value,
-  }).filter((_, index) => index !== 1);
+  });
 });
 
 const optimizedSlideImage = (src: string | undefined, width: number, _height: number) => {

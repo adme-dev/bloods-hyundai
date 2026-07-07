@@ -92,7 +92,7 @@ if (process.client) {
 // Uses host-scoped cache key with 10-min server cache
 const route = useRoute();
 const shouldRefreshSiteConfig = computed(() => route.query.refresh === 'true');
-const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data');
+const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data:v2');
 
 const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
   key: computed(() => shouldRefreshSiteConfig.value ? `${siteConfigCacheKey}:refresh` : siteConfigCacheKey),

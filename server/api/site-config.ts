@@ -245,7 +245,7 @@ export default defineCachedEventHandler(async (event) => {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
   name: 'site-config',
-  getKey: (event) => resolveTenantCacheKey(event, 'site-config-data'),
+  getKey: (event) => resolveTenantCacheKey(event, 'site-config-data:v2'),
   shouldBypassCache: (event) => {
     const query = getQuery(event);
     return query.refresh === 'true';
