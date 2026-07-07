@@ -330,6 +330,13 @@ export default defineNuxtConfig({
     '/api/finance-widget-settings':  { swr: 300 },
     '/api/service-booking-settings': { swr: 300 },
     '/api/popup-settings':           { swr: 300 },
+    '/api/site-config':              { swr: 600 },
+    '/api/homepage-filters':         { swr: 600 },
+    '/api/model-summaries':          { swr: 1800 },
+    '/api/hyundai-offers/hero-banner': { swr: 900 },
+    '/api/carsales-feed':            { swr: 600 },
+    '/api/featured-accessories':     { swr: 1800 },
+    '/api/page/**':                  { swr: 600 },
   },
 
   // App config

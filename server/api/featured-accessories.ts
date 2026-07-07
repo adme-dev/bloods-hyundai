@@ -13,6 +13,9 @@ const FEATURED_MODELS = [
   { name: 'Staria', groupId: 'E14E5076-A170-4F6C-86EF-AEF77027B46A' },
 ];
 
+const CACHE_MAX_AGE = 60 * 30;
+const CACHE_STALE_MAX_AGE = 60 * 60;
+
 // Helper to parse price
 const parsePrice = (value: any): number | null => {
   if (value === null || value === undefined || value === 'null' || value === '') return null;
@@ -30,7 +33,46 @@ const shuffleArray = <T>(array: T[]): T[] => {
   return shuffled;
 };
 
-export default defineEventHandler(async (event) => {
+async function fetchAccessoriesForModel(model: { name: string; groupId: string }) {
+  try {
+    const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/accessories?groupId=${model.groupId}`;
+
+    const data = await $fetch<any>(apiUrl, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      },
+      timeout: 5000,
+      retry: 0,
+    });
+
+    if (!data?.accessories) {
+      return [];
+    }
+
+    return data.accessories
+      .filter((acc: any) => {
+        const price = parsePrice(acc.rrpIncFitment) || parsePrice(acc.price);
+        return price !== null && price > 0 && acc.image;
+      })
+      .map((acc: any) => ({
+        id: acc.accessoryId || acc.id,
+        name: acc.partName || acc.name,
+        description: acc.description,
+        price: parsePrice(acc.rrpIncFitment) || parsePrice(acc.price) || 0,
+        category: acc.category,
+        image: acc.image ? (acc.image.startsWith('http') ? acc.image : `https://www.hyundai.com${acc.image}`) : null,
+        isPopular: acc.isFeature || false,
+        modelName: model.name,
+        modelSlug: model.name.toLowerCase().replace(/\s+/g, '-'),
+      }));
+  } catch (err: any) {
+    console.warn(`[Featured Accessories] Failed to fetch from ${model.name}:`, err?.message || err);
+    return [];
+  }
+}
+
+export default defineCachedEventHandler(async (event) => {
   const query = getQuery(event);
   const limit = parseInt(query.limit as string) || 8;
 
@@ -39,48 +81,7 @@ export default defineEventHandler(async (event) => {
     const shuffledModels = shuffleArray(FEATURED_MODELS);
     const selectedModels = shuffledModels.slice(0, 3);
 
-    const allAccessories: any[] = [];
-
-    // Fetch accessories from each selected model
-    for (const model of selectedModels) {
-      try {
-        const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/accessories?groupId=${model.groupId}`;
-
-        const data = await $fetch<any>(apiUrl, {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-          },
-          timeout: 10000,
-        });
-
-        if (data?.accessories) {
-          // Filter and transform accessories
-          const accessories = data.accessories
-            .filter((acc: any) => {
-              const price = parsePrice(acc.rrpIncFitment) || parsePrice(acc.price);
-              // Only include accessories with valid price and image
-              return price !== null && price > 0 && acc.image;
-            })
-            .map((acc: any) => ({
-              id: acc.accessoryId || acc.id,
-              name: acc.partName || acc.name,
-              description: acc.description,
-              price: parsePrice(acc.rrpIncFitment) || parsePrice(acc.price) || 0,
-              category: acc.category,
-              image: acc.image ? (acc.image.startsWith('http') ? acc.image : `https://www.hyundai.com${acc.image}`) : null,
-              isPopular: acc.isFeature || false,
-              modelName: model.name,
-              modelSlug: model.name.toLowerCase().replace(/\s+/g, '-'),
-            }));
-
-          allAccessories.push(...accessories);
-        }
-      } catch (err) {
-        console.warn(`[Featured Accessories] Failed to fetch from ${model.name}:`, err);
-        // Continue with other models
-      }
-    }
+    const allAccessories = (await Promise.all(selectedModels.map(fetchAccessoriesForModel))).flat();
 
     if (allAccessories.length === 0) {
       return {
@@ -121,4 +122,9 @@ export default defineEventHandler(async (event) => {
       accessories: [],
     };
   }
+}, {
+  maxAge: CACHE_MAX_AGE,
+  staleMaxAge: CACHE_STALE_MAX_AGE,
+  name: 'featured-accessories',
+  getKey: (event) => `featured-accessories:${parseInt(getQuery(event).limit as string) || 8}`,
 });

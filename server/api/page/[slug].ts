@@ -18,7 +18,10 @@ function loadLocalPageFallback(slug: string): any | null {
   }
 }
 
-export default defineEventHandler(async (event) => {
+const CACHE_MAX_AGE = 60 * 10;
+const CACHE_STALE_MAX_AGE = 60 * 30;
+
+export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const slug = getRouterParam(event, 'slug');
 
@@ -93,8 +96,13 @@ export default defineEventHandler(async (event) => {
       slug: slug,
     },
   };
+}, {
+  maxAge: CACHE_MAX_AGE,
+  staleMaxAge: CACHE_STALE_MAX_AGE,
+  name: 'page-content',
+  getKey: (event) => `page:${getRouterParam(event, 'slug') || 'unknown'}`,
+  shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
-
 
 
 

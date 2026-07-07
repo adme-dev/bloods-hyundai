@@ -48,7 +48,3 @@
   Cache-Control: public, max-age=0, must-revalidate
   Netlify-CDN-Cache-Control: public, max-age=300, stale-while-revalidate=3600
   CDN-Cache-Control: public, max-age=300, stale-while-revalidate=3600
-
-# API routes - no cache
-/api/*
-  Cache-Control: no-store
