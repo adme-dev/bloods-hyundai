@@ -1,29 +1,83 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50">
     <LazyPageSchema />
 
-    <!-- WordPress Page Content (if available) -->
-    <div v-if="pageContent">
-      <PostContent :content="pageContent" />
-    </div>
+    <!-- Hero Section -->
+    <section class="border-b border-slate-200 bg-white">
+      <div class="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-center">
+          <div class="max-w-3xl">
+            <p class="text-sm font-semibold uppercase tracking-wide text-sky-600">Sell my car</p>
+            <h1 class="mt-3 text-4xl font-bold tracking-tight text-[#001E50] sm:text-5xl">
+              Sell your car to Blood Hyundai.
+            </h1>
+            <p class="mt-5 text-lg leading-8 text-slate-600">
+              Share your vehicle details and photos, and our used car team will review it quickly with a clear next step.
+            </p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href="#valuation-form"
+                class="inline-flex min-h-12 items-center justify-center rounded px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-[#001842] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2"
+                style="background-color: #001E50;"
+              >
+                Start valuation
+              </a>
+              <NuxtLink
+                to="/car-sales"
+                class="inline-flex min-h-12 items-center justify-center rounded border border-slate-300 bg-white px-6 text-sm font-semibold text-[#001E50] transition hover:border-[#001E50] hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2"
+              >
+                Browse current stock
+              </NuxtLink>
+            </div>
+          </div>
 
-    <!-- Hero Section (fallback if no WP content) -->
-    <div v-else class="bg-gradient-to-br from-[#001E50] via-[#002c6a] to-[#003d8f] py-12 sm:py-16">
-      <div class="mx-auto max-w-7xl px-6 lg:px-8 text-center">
-        <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Sell Your Car
-        </h1>
-        <p class="mt-3 text-base text-blue-100 max-w-2xl mx-auto">
-          Get a fair price for your vehicle in 4 easy steps
-        </p>
+          <figure class="relative min-h-[320px] overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm sm:min-h-[380px] lg:min-h-[420px]">
+            <picture>
+              <source media="(max-width: 639px)" :srcset="heroImageMobile">
+              <img
+                :src="heroImageDesktop"
+                alt="Blood Hyundai vehicle valuation"
+                class="absolute inset-0 h-full w-full object-cover"
+                width="1400"
+                height="525"
+                loading="eager"
+                fetchpriority="high"
+              >
+            </picture>
+            <div class="absolute inset-x-0 bottom-0 bg-[#001E50]/90 p-5 text-white">
+              <p class="text-xs font-semibold uppercase tracking-wide text-sky-200">Blood Hyundai appraisal team</p>
+              <figcaption class="mt-1 text-lg font-semibold">Fast, fair valuation with a local team.</figcaption>
+            </div>
+          </figure>
+        </div>
+
+        <div class="mt-8 grid gap-4 border-t border-slate-200 pt-6 md:grid-cols-3">
+          <div v-for="item in processSteps" :key="item.title" class="flex gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-[#001E50] text-white">
+              <component :is="item.icon" class="h-5 w-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-slate-900">{{ item.title }}</h3>
+              <p class="mt-1 text-sm leading-6 text-slate-600">{{ item.description }}</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
 
     <!-- Stepper Form Section -->
-    <div class="py-8 sm:py-12 bg-gray-50">
+    <div id="valuation-form" class="py-8 sm:py-12">
       <div class="mx-auto max-w-4xl px-6 lg:px-8">
-        <Card class="shadow-xl">
+        <Card class="border-slate-200 shadow-sm">
           <CardHeader class="pb-6 pt-8">
+            <div class="mb-8">
+              <p class="text-sm font-semibold uppercase tracking-wide text-sky-600">Vehicle valuation request</p>
+              <h2 class="mt-2 text-2xl font-bold tracking-tight text-[#001E50]">Tell us about your car</h2>
+              <p class="mt-2 text-sm leading-6 text-slate-600">
+                The more accurate the details and photos, the faster our team can assess the vehicle.
+              </p>
+            </div>
+
             <!-- Horizontal Stepper -->
             <Stepper v-model="currentStep" class="flex w-full items-start gap-2">
               <StepperItem
@@ -88,7 +142,8 @@
             <form @submit.prevent="handleStepSubmit">
               <!-- Step 1: Personal Details -->
               <div v-show="currentStep === 1" class="space-y-4">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Personal Details</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">Personal Details</h3>
+                <p class="mb-4 text-sm text-slate-500">We will use these details only to contact you about this valuation request.</p>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
                     <Label for="firstName">First Name <span class="text-red-500">*</span></Label>
@@ -137,7 +192,8 @@
 
               <!-- Step 2: Vehicle Details -->
               <div v-show="currentStep === 2" class="space-y-4">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Vehicle Details</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">Vehicle Details</h3>
+                <p class="mb-4 text-sm text-slate-500">Registration, odometer and condition help us provide a realistic appraisal.</p>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
                     <Label for="year">Year <span class="text-red-500">*</span></Label>
@@ -273,7 +329,7 @@
               <div v-show="currentStep === 3" class="space-y-4">
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Vehicle Photos</h3>
                 <p class="text-sm text-gray-500 mb-4">
-                  Upload at least one photo. More photos = more accurate valuation. Include odometer if possible.
+                  Upload at least one photo. Exterior, interior, odometer and service book photos help us review it faster.
                 </p>
                 <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div v-for="(_, index) in 6" :key="index" class="space-y-2">
@@ -292,7 +348,8 @@
 
               <!-- Step 4: Additional Info -->
               <div v-show="currentStep === 4" class="space-y-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">Additional Information</h3>
+                <p class="mb-4 text-sm text-slate-500">Let us know about anything that could affect the vehicle value.</p>
                 
                 <!-- Toggles Section -->
                 <div class="space-y-4">
@@ -413,7 +470,7 @@
               <CheckCircle2 class="h-4 w-4" />
               <AlertTitle>Thank You!</AlertTitle>
               <AlertDescription>
-                Your submission has been received. We'll review your vehicle details and contact you within 24-48 hours with a valuation.
+                Your submission has been received. We will review your vehicle details and contact you within 24-48 hours with a valuation.
               </AlertDescription>
             </Alert>
 
@@ -432,7 +489,7 @@
     <div class="py-12 sm:py-16 bg-white">
       <div class="mx-auto max-w-7xl px-6 lg:px-8">
         <h2 class="text-2xl font-bold tracking-tight text-gray-900 text-center mb-10">
-          Why Sell to Sale Hyundai?
+          Why Sell to Blood Hyundai?
         </h2>
         
         <div class="grid grid-cols-2 gap-6 lg:grid-cols-4">
@@ -453,7 +510,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
-import { User, Car, Camera, FileText, Tag, Clock, FileCheck, Users, Check, ChevronLeft, ChevronRight, Loader2, CheckCircle2, XCircle, Circle, Dot } from 'lucide-vue-next'
+import { User, Car, Camera, FileText, Tag, Clock, FileCheck, Users, Check, ChevronLeft, ChevronRight, Loader2, CheckCircle2, XCircle } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -464,7 +521,6 @@ import { Switch } from '~/components/ui/switch'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { Stepper, StepperItem, StepperSeparator, StepperTitle, StepperDescription, StepperTrigger } from '~/components/ui/stepper'
 import ImageUpload from '~/components/form-elements/ImageUpload.vue'
-import PostContent from '~/components/content/PostContent.vue'
 import { useAnalytics } from '~/composables/useAnalytics'
 
 // Runtime config
@@ -509,28 +565,12 @@ const { data: page } = await useAsyncData(
   }
 )
 
-// Extract page content as a string (handles both {rendered: "..."} and plain string formats)
-const pageContent = computed(() => {
-  if (!page.value) return null
-  const content = page.value.content
-  if (!content) return null
-  // If content is an object with rendered property, use that
-  if (typeof content === 'object' && content.rendered) {
-    return content.rendered
-  }
-  // If content is already a string, use it directly
-  if (typeof content === 'string') {
-    return content
-  }
-  return null
-})
-
 // SEO - use the same pattern as [slug].vue
 useSeoMeta({
   title: () => page.value?.yoast_head_json?.title || page.value?.title?.rendered || 'Sell Your Car',
-  description: () => page.value?.yoast_head_json?.description || 'Sell your car to Sale Hyundai. Get a fair price with no hassle. Upload photos and vehicle details to receive a competitive valuation.',
+  description: () => page.value?.yoast_head_json?.description || 'Sell your car to Blood Hyundai. Upload your vehicle details and photos to request a competitive valuation from our used car team.',
   ogTitle: () => page.value?.yoast_head_json?.og_title || page.value?.title?.rendered || 'Sell Your Car',
-  ogDescription: () => page.value?.yoast_head_json?.og_description || 'Sell your car to Sale Hyundai. Get a fair price with no hassle.',
+  ogDescription: () => page.value?.yoast_head_json?.og_description || 'Sell your car to Blood Hyundai. Request a quick used car valuation online.',
   ogImage: () => page.value?.yoast_head_json?.og_image?.[0]?.url,
 })
 
@@ -547,6 +587,15 @@ const benefits = [
   { icon: Clock, title: 'Fast Process', description: '24-48 hour valuation' },
   { icon: FileCheck, title: 'No Hidden Fees', description: 'Transparent pricing' },
   { icon: Users, title: 'Expert Team', description: 'Years of experience' },
+]
+
+const heroImageDesktop = 'https://driveAgentMedia.b-cdn.net/files/blood-hyundai/media/2023/08/AfterSales_iCare_1920x720_V2@2x.jpg?width=1400&auto_optimize=medium'
+const heroImageMobile = 'https://driveAgentMedia.b-cdn.net/files/blood-hyundai/media/2023/08/AfterSales_iCare_767x975_V2@2x.jpg?width=566&auto_optimize=medium'
+
+const processSteps = [
+  { icon: FileText, title: 'Submit the basics', description: 'Tell us the make, model, kilometres and registration details.' },
+  { icon: Camera, title: 'Add clear photos', description: 'Upload exterior, interior and odometer images for a better appraisal.' },
+  { icon: Clock, title: 'We review it', description: 'Our used car team checks the details and gets back to you with the next step.' },
 ]
 
 // Generate years
@@ -658,82 +707,40 @@ const handleStepSubmit = async () => {
   submitError.value = ''
 
   try {
-    // If dealer API key is available, use new CRM endpoint
-    if (dealerApiKey.value) {
-      await $fetch('/api/sell-my-car', {
-        method: 'POST',
-        headers: {
-          'X-Dealer-Key': dealerApiKey.value,
-        },
-        body: {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          phone: form.phone,
-          year: form.year,
-          make: form.make,
-          model: form.model,
-          grade: form.grade,
-          vin: form.vin,
-          registration: form.registration,
-          odometer: form.odometer,
-          condition: form.condition,
-          tyreCondition: form.tyreCondition,
-          serviceHistory: form.serviceHistory,
-          oneOwner: form.oneOwner,
-          photos: form.photos.filter(Boolean),
-          hasHailDamage: form.hasHailDamage,
-          hailDamageDetails: form.hailDamageDetails,
-          hasFinance: form.hasFinance,
-          financeDetails: form.financeDetails,
-          hasKnownFaults: form.hasKnownFaults,
-          knownFaultsDetails: form.knownFaultsDetails,
-          accessories: form.accessories,
-          comments: form.comments,
-        },
-      })
-    } else {
-      // Fallback to legacy WordPress form endpoint
-      const payload = {
-        input_2: form.firstName,
-        input_3: form.lastName,
-        input_4: form.email,
-        input_5: form.phone,
-        input_6: form.year,
-        input_7: form.make,
-        input_8: form.model,
-        input_9: form.grade,
-        input_10: form.vin,
-        input_11: form.registration,
-        input_12: form.odometer,
-        input_16: form.condition,
-        input_17: form.tyreCondition,
-        input_18: form.serviceHistory,
-        input_19: form.oneOwner,
-        input_35: form.photos[0],
-        input_36: form.photos[1],
-        input_37: form.photos[2],
-        input_38: form.photos[3],
-        input_39: form.photos[4],
-        input_40: form.photos[5],
-        input_26: form.hasHailDamage ? 'Yes' : 'No',
-        input_26_details: form.hailDamageDetails,
-        input_29: form.hasFinance ? 'Yes' : 'No',
-        input_29_details: form.financeDetails,
-        input_31: form.hasKnownFaults ? 'Yes' : 'No',
-        input_31_details: form.knownFaultsDetails,
-        input_33: form.accessories,
-        input_34: form.comments,
-      }
-
-      await $fetch(`${config.public.apiUrl}/newform`, {
-        method: 'POST',
-        body: {
-          payload,
-          formId: 9,
-        },
-      })
-    }
+    await $fetch('/api/sell-my-car', {
+      method: 'POST',
+      headers: dealerApiKey.value
+        ? {
+            'X-Dealer-Key': dealerApiKey.value,
+          }
+        : undefined,
+      body: {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        year: form.year,
+        make: form.make,
+        model: form.model,
+        grade: form.grade,
+        vin: form.vin,
+        registration: form.registration,
+        odometer: form.odometer,
+        condition: form.condition,
+        tyreCondition: form.tyreCondition,
+        serviceHistory: form.serviceHistory,
+        oneOwner: form.oneOwner,
+        photos: form.photos.filter(Boolean),
+        hasHailDamage: form.hasHailDamage,
+        hailDamageDetails: form.hailDamageDetails,
+        hasFinance: form.hasFinance,
+        financeDetails: form.financeDetails,
+        hasKnownFaults: form.hasKnownFaults,
+        knownFaultsDetails: form.knownFaultsDetails,
+        accessories: form.accessories,
+        comments: form.comments,
+      },
+    })
 
     submitted.value = true
 
@@ -764,9 +771,5 @@ declare global {
   }
 }
 </script>
-
-
-
-
 
 

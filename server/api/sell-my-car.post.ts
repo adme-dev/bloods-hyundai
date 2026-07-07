@@ -55,27 +55,39 @@ interface SellMyCarSubmission {
 
 export default defineEventHandler(async (event) => {
   try {
-    // 1. Validate API key from header
-    const apiKey = getHeader(event, 'x-dealer-key');
+    // 1. Resolve dealer from header first, then server-side config.
+    const apiKey = getHeader(event, 'x-dealer-key') ||
+      process.env.DEALER_API_KEY ||
+      process.env.NUXT_PUBLIC_DEALER_API_KEY;
 
-    if (!apiKey) {
-      throw createError({
-        statusCode: 401,
-        message: 'Missing API key. Please provide X-Dealer-Key header.',
-      });
+    let dealer;
+
+    if (apiKey) {
+      const [foundDealer] = await db
+        .select()
+        .from(dealers)
+        .where(eq(dealers.apiKey, apiKey))
+        .limit(1);
+
+      dealer = foundDealer;
     }
 
-    // 2. Find dealer by API key
-    const [dealer] = await db
-      .select()
-      .from(dealers)
-      .where(eq(dealers.apiKey, apiKey))
-      .limit(1);
+    // Single-tenant fallback: keep public forms working even when the key is not exposed client-side.
+    if (!dealer) {
+      const [defaultDealer] = await db
+        .select()
+        .from(dealers)
+        .where(eq(dealers.isActive, true))
+        .limit(1);
+
+      dealer = defaultDealer;
+    }
 
     if (!dealer) {
+      console.error('[Sell My Car API] No active dealer found');
       throw createError({
-        statusCode: 401,
-        message: 'Invalid API key.',
+        statusCode: 500,
+        message: 'Dealer not configured. Please contact support.',
       });
     }
 
