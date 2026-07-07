@@ -150,15 +150,13 @@ const homeSlides = computed(() => {
   return resolveHomeSlides(configuredSlideSource.value, {
     siteName: siteName.value,
     offersHero: offersHeroData.value,
-  });
+  }).filter((_, index) => index !== 1);
 });
 
-const optimizedSlideImage = (src: string | undefined, width: number, height: number) => {
+const optimizedSlideImage = (src: string | undefined, width: number, _height: number) => {
   if (!src) return '';
   return image(src, {
     width,
-    height,
-    fit: 'contain',
     format: 'webp',
     quality: 78,
   });
@@ -317,8 +315,8 @@ onUnmounted(() => {
 
 <style scoped>
 .hero-slider {
-  padding: 10px 0;
-  min-height: calc((83.33vw - 16px) * 0.375 + 20px);
+  padding: 0;
+  min-height: min(37.5vw, 560px);
 }
 
 .hero-carousel {
@@ -340,53 +338,46 @@ onUnmounted(() => {
 }
 
 .hero-slide {
-  flex: 0 0 83.33%;
+  flex: 0 0 100%;
   min-width: 0;
-  padding: 0 8px;
+  padding: 0;
 }
 
 @media (max-width: 960px) {
   .hero-slider {
-    min-height: calc((87vw - 16px) * 0.375 + 20px);
-  }
-
-  .hero-slide {
-    flex: 0 0 87%;
+    min-height: min(37.5vw, 560px);
   }
 }
 
 @media (max-width: 640px) {
   .hero-slider {
-    min-height: calc((92vw - 16px) * 1.3333 + 20px);
-  }
-
-  .hero-slide {
-    flex: 0 0 92%;
+    min-height: 133.333vw;
   }
 }
 
 .slide-panel {
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   position: relative;
-  filter: brightness(0.7);
-  transition: all 0.3s ease;
+  filter: none;
+  transition: none;
   cursor: pointer;
 }
 
 .slide-panel.is-active {
-  filter: brightness(1);
-  box-shadow: 0 14px 25px rgba(0, 0, 0, 0.16);
+  filter: none;
+  box-shadow: none;
   cursor: default;
 }
 
 .slide-panel:hover {
-  transform: translateY(-5px);
+  transform: none;
 }
 
 .slide-media {
   position: relative;
-  aspect-ratio: 8 / 3;
+  height: min(37.5vw, 560px);
+  min-height: min(37.5vw, 560px);
   background-color: #f4f6f8;
 }
 
@@ -406,7 +397,8 @@ onUnmounted(() => {
 /* Mobile: Use portrait-friendly aspect ratio for mobile images */
 @media (max-width: 768px) {
   .slide-media {
-    aspect-ratio: 3 / 4;
+    height: 133.333vw;
+    min-height: 133.333vw;
   }
 
   .slide-image {
@@ -422,10 +414,13 @@ onUnmounted(() => {
 
 .slide-content {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  padding: 2rem 2rem 4rem 4rem;
-  width: 400px;
+  top: 50%;
+  left: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(1200px, calc(100vw - 294px));
+  min-width: 0;
+  padding: 0;
   text-align: left;
   z-index: 1;
   transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -438,32 +433,48 @@ onUnmounted(() => {
 }
 
 .slide-heading {
-  font-size: 1.85rem;
+  font-size: clamp(2.5rem, 3.88vw, 3.625rem);
   letter-spacing: 0;
-  line-height: 2.2rem;
+  line-height: 1.25;
   margin: 0;
   font-weight: 500;
+  max-width: 760px;
 }
 
 .slide-subheading {
-  font-size: 1.85rem;
+  font-size: clamp(1.125rem, 1.34vw, 1.25rem);
   letter-spacing: 0;
-  line-height: 2.2rem;
-  margin-top: 0.5rem;
+  line-height: 1;
+  margin-top: 10px;
+  font-weight: 500;
+  max-width: 760px;
 }
 
 .slide-cta {
-  margin-top: 1rem;
+  margin-top: 35px;
 }
 
 .slide-button {
   display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 9999px;
-  font-family: 'Hyundai Sans Text', 'Hyundai Sans', sans-serif;
-  font-weight: 600;
+  min-width: 180px;
+  height: 52px;
+  padding: 0 20px;
+  border-radius: 0;
+  color: #fff;
+  background: var(--color-primary, #002c5f);
+  font-family: 'Hyundai Sans Head', 'Hyundai Sans', sans-serif;
+  font-size: 16px;
+  line-height: 52px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-align: center;
   text-decoration: none;
   transition: all 0.3s ease;
+}
+
+.slide-button:hover {
+  color: #fff;
+  background: var(--color-primary-dark, #001e3c);
 }
 
 /* Pagination styling */
@@ -499,14 +510,46 @@ onUnmounted(() => {
 
 @media (max-width: 960px) {
   .slide-content {
-    padding: 1rem 1rem 2rem 2rem;
-    width: 70%;
+    width: min(720px, calc(100vw - 64px));
   }
 
-  .slide-heading,
+  .slide-heading {
+    font-size: clamp(2rem, 5vw, 3rem);
+  }
+
   .slide-subheading {
-    font-size: 1.25rem;
-    line-height: 1.6rem;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .slide-content {
+    top: 32px;
+    left: 24px;
+    right: 24px;
+    transform: none;
+    width: auto;
+  }
+
+  .slide-heading {
+    font-size: 2rem;
+    line-height: 1.15;
+  }
+
+  .slide-subheading {
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .slide-cta {
+    margin-top: 24px;
+  }
+
+  .slide-button {
+    min-width: 152px;
+    height: 48px;
+    font-size: 15px;
+    line-height: 48px;
   }
 }
 </style>

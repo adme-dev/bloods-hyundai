@@ -36,8 +36,6 @@
                     :src="thumb.image"
                     :alt="thumb.button_text || siteName"
                     width="480"
-                    height="270"
-                    fit="contain"
                     format="webp"
                     quality="72"
                     class="thumb-image"
@@ -89,7 +87,8 @@ const siteName = computed(() => mainStore.site?.name || 'Blood Hyundai');
 // Filter thumbs by date range
 const homeThumbs = computed(() => {
   return getConfiguredFrontThumbs(mainStore.site?.promotional)
-    .filter((thumb: any) => isDateInRange(thumb.start, thumb.end));
+    .filter((thumb: any) => isDateInRange(thumb.start, thumb.end))
+    .filter((_, index) => index !== 1);
 });
 
 // Embla Carousel setup
