@@ -14,7 +14,7 @@
             </SheetTrigger>
             <SheetContent side="left" class="w-64 p-0">
               <SheetHeader class="border-b px-6 py-4 text-left">
-                <SheetTitle class="text-lg font-semibold">Sale Hyundai Admin</SheetTitle>
+                <SheetTitle class="text-lg font-semibold">{{ siteName }} Admin</SheetTitle>
                 <SheetDescription>Navigate between admin tools.</SheetDescription>
               </SheetHeader>
               <nav class="space-y-1 px-4 py-4">
@@ -33,7 +33,7 @@
           </Sheet>
 
           <div class="flex items-center gap-2">
-            <Badge variant="outline" class="hidden sm:inline-flex">Sale Hyundai</Badge>
+            <Badge variant="outline" class="hidden sm:inline-flex">{{ siteName }}</Badge>
             <div>
               <p class="text-sm font-semibold leading-tight">Admin Console</p>
               <p class="text-xs text-muted-foreground">Operations &amp; enquiries</p>
@@ -136,6 +136,7 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 const route = useRoute();
+const { siteName } = useSiteIdentity();
 
 const navLinks = [
   { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
@@ -165,12 +166,12 @@ const isActive = (path: string) => {
 };
 
 const userInitials = computed(() => {
-  if (!userState.value) return 'SH';
+  if (!userState.value) return 'HD';
   const { firstName = '', lastName = '' } = userState.value;
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 });
 
-const userEmail = computed(() => userState.value?.email || 'admin@salehyundai.com');
+const userEmail = computed(() => userState.value?.email || 'admin@hyundai-dealer.com.au');
 
 const fetchUser = async () => {
   try {
@@ -194,7 +195,6 @@ const handleLogout = async () => {
   }
 };
 </script>
-
 
 
 

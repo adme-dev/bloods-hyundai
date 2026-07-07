@@ -221,7 +221,7 @@
               <Label>From Name <span class="text-destructive">*</span></Label>
               <Input 
                 v-model="newSender.fromName" 
-                placeholder="e.g., Sale Hyundai" 
+                :placeholder="`e.g., ${siteName}`"
                 required 
               />
             </div>
@@ -370,6 +370,8 @@ definePageMeta({
   middleware: 'auth',
 });
 
+const { siteName } = useSiteIdentity();
+
 // State
 const loadingSenders = ref(true);
 const loadingDomains = ref(true);
@@ -508,8 +510,6 @@ const resendVerification = async (senderId: number) => {
   }
 };
 </script>
-
-
 
 
 

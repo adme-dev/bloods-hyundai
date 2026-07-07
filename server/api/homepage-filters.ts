@@ -42,23 +42,23 @@ function getConditionValues(condition: any): string[] {
 
 /**
  * Business logic filter - matches carsales-feed.ts logic
- * - Blood Motor Group: include ALL (new car inventory)
- * - Blood Hyundai: include ALL Hyundai (dealer's full inventory)
- * - Geelong Mazda: include only USED (trade-ins at Blood Hyundai)
+ * - Group inventory: include ALL (new car inventory)
+ * - Primary Hyundai inventory: include ALL Hyundai
+ * - Secondary brand inventory: include only USED trade-ins
  */
 function shouldIncludeVehicle(vehicle: VehicleRow): boolean {
-  // Blood Motor Group - include all (new car inventory)
+  // Group inventory - include all new car inventory
   if (vehicle.seller_id === SELLER_IDS.BLOOD_MOTOR_GROUP) {
     return true;
   }
 
-  // Blood Hyundai - include all Hyundai (their main brand)
+  // Primary Hyundai inventory
   if (vehicle.seller_id === SELLER_IDS.BLOOD_HYUNDAI) {
     const isHyundai = vehicle.make?.toLowerCase() === 'hyundai';
     return isHyundai;
   }
 
-  // Geelong Mazda - include only used (trade-ins)
+  // Secondary brand inventory - include only used trade-ins
   const conditionValues = getConditionValues(vehicle.condition);
   const isUsed = conditionValues.some(v => v.includes('used'));
   return isUsed;

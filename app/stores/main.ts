@@ -51,7 +51,7 @@ export const useMainStore = defineStore('main', () => {
   const viewedPages = ref<{ name: string }[]>([]);
 
   // Getters
-  const siteName = computed(() => site.value?.name || 'Blood Hyundai');
+  const siteName = computed(() => site.value?.name || 'Hyundai Dealer');
   const isLoading = computed(() => loading.value);
 
   // Actions
@@ -69,7 +69,7 @@ export const useMainStore = defineStore('main', () => {
 
     // Default config
     const defaultConfig: SiteConfig = {
-      name: config.public.siteName || 'Blood Hyundai',
+      name: config.public.siteName || 'Hyundai Dealer',
       promotional: [],
       websiteUrl: config.public.siteUrl || '',
       siteUrl: config.public.siteUrl || '',

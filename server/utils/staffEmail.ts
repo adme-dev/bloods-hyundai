@@ -8,6 +8,8 @@ import { db } from './db';
 import { emailLogs } from '../database/schema';
 import crypto from 'crypto';
 
+const DEFAULT_FROM_EMAIL = 'noreply@hyundai-dealer.com.au';
+
 // Initialize SendGrid
 let sendGridInitialized = false;
 
@@ -74,7 +76,7 @@ export async function sendStaffInvitationEmail(
       const msg: sgMail.MailDataRequired = {
         to: data.recipientEmail,
         from: {
-          email: process.env.SENDGRID_FROM_EMAIL || 'noreply@salehyundai.com.au',
+          email: process.env.SENDGRID_FROM_EMAIL || DEFAULT_FROM_EMAIL,
           name: data.dealerName,
         },
         subject,
@@ -304,7 +306,7 @@ export async function sendWelcomeEmail(
       await sgMail.send({
         to: recipientEmail,
         from: {
-          email: process.env.SENDGRID_FROM_EMAIL || 'noreply@salehyundai.com.au',
+          email: process.env.SENDGRID_FROM_EMAIL || DEFAULT_FROM_EMAIL,
           name: dealerName,
         },
         subject,
@@ -328,7 +330,6 @@ export async function sendWelcomeEmail(
     return false;
   }
 }
-
 
 
 

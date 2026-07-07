@@ -7,7 +7,7 @@ import { resolveDealerSiteUrl } from '../utils/tenant';
  */
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig();
-  const siteUrl = resolveDealerSiteUrl(event, config.public.siteUrl || config.public.apiUrl || 'https://bloodhyundai.com.au');
+  const siteUrl = resolveDealerSiteUrl(event, config.public.siteUrl || config.public.apiUrl || 'http://localhost:3000');
 
   const robotsContent = `User-agent: *
 Allow: /
@@ -22,7 +22,6 @@ Sitemap: ${siteUrl}/sitemap.xml
 
   return robotsContent;
 });
-
 
 
 

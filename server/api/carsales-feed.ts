@@ -176,17 +176,17 @@ async function buildFeedSource() {
 
         let shouldIncludeVehicle = false;
 
-        // Blood Motor Group bucket (index 1): include ALL (new car inventory)
-        // Blood Hyundai bucket (index 0): include ALL Hyundai (dealer's full inventory)
-        // Geelong Mazda bucket (index 2): include only USED (trade-ins at Blood Hyundai)
+        // Group inventory bucket (index 1): include ALL (new car inventory)
+        // Primary Hyundai bucket (index 0): include ALL Hyundai (dealer's full inventory)
+        // Secondary brand buckets: include only USED (trade-ins)
         if (isNewCarsBucket) {
-          // Blood Motor Group - include all
+          // Group inventory - include all
           shouldIncludeVehicle = true;
         } else if (urlIndex === 0) {
-          // Blood Hyundai - include all Hyundai (their main brand inventory)
+          // Primary Hyundai inventory
           shouldIncludeVehicle = isHyundai;
         } else {
-          // Geelong Mazda (urlIndex === 2) - include only used (trade-ins)
+          // Secondary brand inventory - include only used trade-ins
           shouldIncludeVehicle = isUsed;
         }
 
@@ -290,5 +290,4 @@ export default defineEventHandler(async (event) => {
 
   return await buildFeed(tenantKey);
 });
-
 

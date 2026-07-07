@@ -76,9 +76,9 @@ export default defineNuxtConfig({
 
   // Nuxt SEO configuration
   site: {
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://bloodhyundai.com.au',
-    name: 'Blood Hyundai',
-    description: 'Blood Hyundai - Browse new and used Hyundai vehicles, book a test drive, and explore our latest offers.',
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    name: process.env.NUXT_PUBLIC_SITE_NAME || 'Hyundai Dealer',
+    description: 'Hyundai Dealer - Browse new and used Hyundai vehicles, book a test drive, and explore our latest offers.',
     defaultLocale: 'en-AU',
   },
 
@@ -87,9 +87,9 @@ export default defineNuxtConfig({
   schemaOrg: {
     identity: {
       type: 'Organization',
-      name: 'Blood Hyundai',
-      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://bloodhyundai.com.au',
-      logo: `${process.env.NUXT_PUBLIC_SITE_URL || 'https://bloodhyundai.com.au'}/logo.png`,
+      name: process.env.NUXT_PUBLIC_SITE_NAME || 'Hyundai Dealer',
+      url: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+      logo: `${process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/logo.png`,
     },
   },
 
@@ -140,9 +140,9 @@ export default defineNuxtConfig({
 
     // Public (exposed to client)
     public: {
-      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Blood Hyundai',
+      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Hyundai Dealer',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      dealerSlug: process.env.NUXT_PUBLIC_DEALER_SLUG || process.env.DEALER_SLUG || 'blood-hyundai',
+      dealerSlug: process.env.NUXT_PUBLIC_DEALER_SLUG || process.env.DEALER_SLUG || 'hyundai-dealer',
       apiUrl: process.env.NUXT_PUBLIC_API_URL || '',
       cdnUrl: process.env.NUXT_PUBLIC_CDN_URL || '',
       oemCdnUrl: process.env.NUXT_PUBLIC_OEM_CDN_URL || '',

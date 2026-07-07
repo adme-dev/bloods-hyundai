@@ -39,7 +39,7 @@ export default defineEventHandler(async (event) => {
       type: 'admin',
       isActive: true,
       sendTo: [dealer.email || 'admin@example.com'],
-      fromName: 'Sale Hyundai',
+      fromName: dealer.name || 'Hyundai Dealer',
       replyTo: dealer.email || 'enquiries@hyundai.com.au',
       subject: `New ${formatFormName(slug)} Enquiry - Web Site Lead`,
       bodyText: getDefaultAdminBody(slug),
@@ -51,10 +51,10 @@ export default defineEventHandler(async (event) => {
       name: 'Customer Notification',
       type: 'customer',
       isActive: true,
-      fromName: 'Sale Hyundai',
+      fromName: dealer.name || 'Hyundai Dealer',
       replyTo: dealer.email || 'enquiries@hyundai.com.au',
-      subject: `Thank you for your enquiry - Sale Hyundai`,
-      bodyText: getDefaultCustomerBody(slug),
+      subject: `Thank you for your enquiry - ${dealer.name || 'Hyundai Dealer'}`,
+      bodyText: getDefaultCustomerBody(slug, dealer.name || 'Hyundai Dealer'),
       hasConditions: false,
       conditions: [],
     },
@@ -117,10 +117,10 @@ Message:
 View in admin dashboard`;
 }
 
-function getDefaultCustomerBody(slug: string): string {
+function getDefaultCustomerBody(slug: string, dealerName = 'Hyundai Dealer'): string {
   return `Dear {first_name},
 
-Thank you for your ${formatFormName(slug).toLowerCase()} enquiry with Sale Hyundai.
+Thank you for your ${formatFormName(slug).toLowerCase()} enquiry with ${dealerName}.
 
 We have received your submission and a member of our team will be in touch within 24 hours.
 
@@ -129,9 +129,8 @@ Reference: {enquiry_id}
 If you have any urgent questions, please call us.
 
 Kind regards,
-Sale Hyundai Team`;
+${dealerName} Team`;
 }
-
 
 
 

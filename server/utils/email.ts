@@ -7,6 +7,9 @@ import sgMail from '@sendgrid/mail';
 import { db } from './db';
 import { emailLogs } from '../database/schema';
 
+const DEFAULT_DEALER_NAME = 'Hyundai Dealer';
+const DEFAULT_FROM_EMAIL = 'noreply@hyundai-dealer.com.au';
+
 export interface EmailOptions {
   to: string[];
   cc?: string[];
@@ -18,6 +21,23 @@ export interface EmailOptions {
     email: string;
     name: string;
   };
+}
+
+function getDealerName(dealer: any): string {
+  return dealer?.name || DEFAULT_DEALER_NAME;
+}
+
+function getDealerEmail(dealer: any): string {
+  return dealer?.email || process.env.SENDGRID_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+}
+
+function getDealerWebsiteUrl(dealer: any): string {
+  return dealer?.websiteUrl || dealer?.siteUrl || process.env.NUXT_PUBLIC_SITE_URL || '';
+}
+
+function getAdminEnquiryUrl(dealer: any, enquiryId: string): string {
+  const baseUrl = getDealerWebsiteUrl(dealer).replace(/\/$/, '');
+  return `${baseUrl}/admin/enquiries/${enquiryId}`;
 }
 
 // Initialize SendGrid
@@ -88,8 +108,8 @@ function replaceMergeTags(text: string, enquiry: any, dealer: any): string {
     '{message}': enquiry.message || '',
     '{submission_date}': new Date(enquiry.createdAt).toLocaleString('en-AU'),
     '{enquiry_id}': enquiry.id?.substring(0, 8) || '',
-    '{admin_link}': `${dealer.websiteUrl || 'https://salehyundai.com.au'}/admin/enquiries/${enquiry.id}`,
-    '{dealer_name}': dealer.name || '',
+    '{admin_link}': getAdminEnquiryUrl(dealer, enquiry.id),
+    '{dealer_name}': getDealerName(dealer),
     '{dealer_phone}': dealer.phone || '',
     '{dealer_email}': dealer.email || '',
     '{dealer_address}': dealer.address || '',
@@ -199,7 +219,7 @@ async function sendAdminNotification(
     ? replaceMergeTags(notification.bodyHtml, enquiry, dealer)
     : generateEnquiryEmailHTML(enquiry, dealer);
 
-  const fromEmail = notification.fromEmail || notification.replyTo || dealer.email || 'noreply@salehyundai.com.au';
+  const fromEmail = notification.fromEmail || notification.replyTo || getDealerEmail(dealer);
   
   const emailOptions: EmailOptions = {
     to: recipients,
@@ -210,7 +230,7 @@ async function sendAdminNotification(
     text: bodyText,
     from: {
       email: fromEmail,
-      name: notification.fromName || dealer.name || 'Sale Hyundai',
+      name: notification.fromName || getDealerName(dealer),
     },
   };
 
@@ -234,7 +254,7 @@ async function sendCustomerNotification(
     ? replaceMergeTags(notification.bodyHtml, enquiry, dealer)
     : generateCustomerConfirmationHTML(enquiry, dealer);
 
-  const fromEmail = notification.fromEmail || notification.replyTo || dealer.email || 'noreply@salehyundai.com.au';
+  const fromEmail = notification.fromEmail || notification.replyTo || getDealerEmail(dealer);
 
   const emailOptions: EmailOptions = {
     to: [enquiry.email],
@@ -243,7 +263,7 @@ async function sendCustomerNotification(
     text: bodyText,
     from: {
       email: fromEmail,
-      name: notification.fromName || dealer.name || 'Sale Hyundai',
+      name: notification.fromName || getDealerName(dealer),
     },
   };
 
@@ -256,7 +276,7 @@ async function sendCustomerNotification(
  */
 async function sendDefaultNotifications(enquiry: any, dealer: any): Promise<void> {
   // Send to staff
-  await sendEnquiryNotification(enquiry, dealer, [dealer.email || 'enquiries@salehyundai.com.au']);
+  await sendEnquiryNotification(enquiry, dealer, [dealer.email || 'enquiries@hyundai.com.au']);
   
   // Send to customer
   await sendCustomerConfirmation(enquiry, dealer);
@@ -287,8 +307,8 @@ export async function sendEnquiryNotification(
     html,
     text,
     from: {
-      email: dealer.email || 'noreply@salehyundai.com.au',
-      name: dealer.name || 'Sale Hyundai',
+      email: getDealerEmail(dealer),
+      name: getDealerName(dealer),
     },
   };
   
@@ -312,8 +332,8 @@ export async function sendCustomerConfirmation(
     html,
     text,
     from: {
-      email: dealer.email || 'noreply@salehyundai.com.au',
-      name: dealer.name || 'Sale Hyundai',
+      email: getDealerEmail(dealer),
+      name: getDealerName(dealer),
     },
   };
 
@@ -334,8 +354,8 @@ async function sendEmail(
   const isSendGridAvailable = initSendGrid();
   
   try {
-    const fromEmail = options.from?.email || 'noreply@salehyundai.com.au';
-    const fromName = options.from?.name || 'Sale Hyundai';
+    const fromEmail = options.from?.email || process.env.SENDGRID_FROM_EMAIL || DEFAULT_FROM_EMAIL;
+    const fromName = options.from?.name || DEFAULT_DEALER_NAME;
     
     console.log('📧 Sending email:');
     console.log('To:', options.to.join(', '));
@@ -1137,7 +1157,7 @@ function generateEnquiryEmailHTML(enquiry: any, dealer: any): string {
 
               <!-- CTA Button - Large and tappable (44x44px minimum) -->
               <div style="text-align: center; padding: 20px 0;">
-                <a href="${dealer.websiteUrl || 'https://salehyundai.com.au'}/admin/enquiries/${enquiry.id}"
+                <a href="${getAdminEnquiryUrl(dealer, enquiry.id)}"
                    style="display: inline-block; background: ${primaryColor}; color: white; padding: 16px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; min-height: 44px; line-height: 1.2;">
                   View in Dashboard
                 </a>
@@ -1182,7 +1202,7 @@ ${enquiry.testDrive ? 'Test Drive: ✓ Requested\n' : ''}
 ${enquiry.tradeInInfo ? 'Trade-In: ✓ Has vehicle to trade\n' : ''}
 ${enquiry.financeInterest ? 'Finance: ✓ Interested in finance\n' : ''}
 
-View in Dashboard: ${dealer.websiteUrl || 'https://salehyundai.com.au'}/admin/enquiries/${enquiry.id}
+View in Dashboard: ${getAdminEnquiryUrl(dealer, enquiry.id)}
 
 ---
 This is an automated notification from ${dealer.name} Enquiry Management System
@@ -1342,7 +1362,6 @@ ${dealer.phone || ''} | ${dealer.email || ''}
 ${dealer.websiteUrl || ''}
   `.trim();
 }
-
 
 
 

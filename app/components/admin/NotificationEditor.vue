@@ -92,7 +92,7 @@
           <div class="space-y-4">
             <div class="space-y-2">
               <Label>From Name</Label>
-              <Input v-model="form.fromName" placeholder="Sale Hyundai" />
+              <Input v-model="form.fromName" :placeholder="siteName" />
             </div>
 
             <div class="space-y-2">
@@ -302,6 +302,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits(['close', 'save']);
 
 const isEdit = computed(() => !!props.notification);
+const { siteName } = useSiteIdentity();
 const saving = ref(false);
 const bodyTab = ref('visual');
 const showMergeTags = ref(false);
@@ -314,7 +315,7 @@ const form = ref<Notification>({
   sendTo: props.notification?.sendTo || [''],
   cc: props.notification?.cc || '',
   bcc: props.notification?.bcc || '',
-  fromName: props.notification?.fromName || 'Sale Hyundai',
+  fromName: props.notification?.fromName || siteName.value,
   replyTo: props.notification?.replyTo || 'enquiries@hyundai.com.au',
   subject: props.notification?.subject || '',
   bodyText: props.notification?.bodyText || getDefaultBody(props.notification?.type || 'admin'),
@@ -359,7 +360,7 @@ View in admin dashboard: {admin_link}`;
   }
   return `Dear {first_name},
 
-Thank you for your enquiry with Sale Hyundai.
+Thank you for your enquiry with {dealer_name}.
 
 We have received your submission and a member of our team will be in touch within 24 hours.
 
@@ -368,7 +369,7 @@ Reference: {enquiry_id}
 If you have any urgent questions, please call us on 02 1234 5678.
 
 Kind regards,
-Sale Hyundai Team`;
+{dealer_name} Team`;
 }
 
 const handleSubmit = async () => {
@@ -386,8 +387,6 @@ const handleSubmit = async () => {
   }
 };
 </script>
-
-
 
 
 

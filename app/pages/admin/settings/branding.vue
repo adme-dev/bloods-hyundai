@@ -156,7 +156,7 @@
                 id="websiteUrl"
                 v-model="form.websiteUrl"
                 type="url"
-                placeholder="https://salehyundai.com.au"
+                placeholder="https://example-hyundai.com.au"
               />
               <p class="text-xs text-muted-foreground">
                 Your dealership website URL.
