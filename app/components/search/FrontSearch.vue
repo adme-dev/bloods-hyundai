@@ -236,31 +236,39 @@
                   class="absolute top-1/2 h-2 rounded-full transform -translate-y-1/2"
                   :style="{
                     backgroundColor: '#001E50',
-                    left: `${((weeklyBudget[0] - minWeeklyBudget) / (maxWeeklyBudget - minWeeklyBudget)) * 100}%`,
-                    width: `${((weeklyBudget[1] - weeklyBudget[0]) / (maxWeeklyBudget - minWeeklyBudget)) * 100}%`
+                    left: `${budgetMinPercent}%`,
+                    width: `${budgetMaxPercent - budgetMinPercent}%`
                   }"
                 ></div>
                 
                 <!-- Min slider -->
                 <input
-                  v-model.number="weeklyBudget[0]"
+                  :value="weeklyBudget[0]"
                   type="range"
                   :min="minWeeklyBudget"
-                  :max="weeklyBudget[1]"
+                  :max="maxWeeklyBudget"
                   :step="1"
-                  class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2 z-10"
-                  @input="updateBudgetFilter"
+                  aria-label="Minimum weekly budget"
+                  class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2"
+                  :class="activeBudgetThumb === 'min' ? 'z-30' : 'z-20'"
+                  @pointerdown="activeBudgetThumb = 'min'"
+                  @focus="activeBudgetThumb = 'min'"
+                  @input="handleBudgetInput('min', $event)"
                 />
                 
                 <!-- Max slider -->
                 <input
-                  v-model.number="weeklyBudget[1]"
+                  :value="weeklyBudget[1]"
                   type="range"
-                  :min="weeklyBudget[0]"
+                  :min="minWeeklyBudget"
                   :max="maxWeeklyBudget"
                   :step="1"
-                  class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2 z-20"
-                  @input="updateBudgetFilter"
+                  aria-label="Maximum weekly budget"
+                  class="absolute top-1/2 left-0 w-full h-2 bg-transparent appearance-none cursor-pointer slider-thumb transform -translate-y-1/2"
+                  :class="activeBudgetThumb === 'max' ? 'z-30' : 'z-20'"
+                  @pointerdown="activeBudgetThumb = 'max'"
+                  @focus="activeBudgetThumb = 'max'"
+                  @input="handleBudgetInput('max', $event)"
                 />
               </div>
             </div>
@@ -717,17 +725,61 @@ const formatPrice = (value: number) => {
 };
 
 const weeklyBudget = ref<[number, number]>([minWeeklyBudget.value, maxWeeklyBudget.value]);
+const activeBudgetThumb = ref<'min' | 'max'>('max');
+
+const clampWeeklyBudgetValue = (value: number) => {
+  const min = minWeeklyBudget.value;
+  const max = maxWeeklyBudget.value;
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.round(value)));
+};
+
+const normalizeWeeklyBudget = (value: [number, number]): [number, number] => {
+  const min = minWeeklyBudget.value;
+  const max = maxWeeklyBudget.value;
+  const nextMin = clampWeeklyBudgetValue(value[0]);
+  const nextMax = clampWeeklyBudgetValue(value[1]);
+
+  if (nextMin > nextMax) {
+    return activeBudgetThumb.value === 'min'
+      ? [nextMax, nextMax]
+      : [nextMin, nextMin];
+  }
+
+  return [
+    Math.max(min, Math.min(nextMin, nextMax)),
+    Math.min(max, Math.max(nextMin, nextMax)),
+  ];
+};
+
+const budgetRangeSpan = computed(() => Math.max(1, maxWeeklyBudget.value - minWeeklyBudget.value));
+const budgetMinPercent = computed(() =>
+  Math.max(0, Math.min(100, ((weeklyBudget.value[0] - minWeeklyBudget.value) / budgetRangeSpan.value) * 100))
+);
+const budgetMaxPercent = computed(() =>
+  Math.max(0, Math.min(100, ((weeklyBudget.value[1] - minWeeklyBudget.value) / budgetRangeSpan.value) * 100))
+);
 
 watch(
   () => customizedSearchStore.filters.perweek,
   (perweek) => {
     if (perweek) {
-      weeklyBudget.value = [perweek.min, perweek.max];
+      weeklyBudget.value = normalizeWeeklyBudget([perweek.min, perweek.max]);
     } else {
       weeklyBudget.value = [minWeeklyBudget.value, maxWeeklyBudget.value];
     }
   },
   { immediate: true }
+);
+
+watch(
+  () => [minWeeklyBudget.value, maxWeeklyBudget.value] as const,
+  () => {
+    const perweek = customizedSearchStore.filters.perweek;
+    weeklyBudget.value = perweek
+      ? normalizeWeeklyBudget([perweek.min, perweek.max])
+      : [minWeeklyBudget.value, maxWeeklyBudget.value];
+  }
 );
 
 const updateBudgetFilterDebounced = useDebounceFn((value: [number, number]) => {
@@ -742,7 +794,17 @@ const updateBudgetFilterDebounced = useDebounceFn((value: [number, number]) => {
 }, 150);
 
 const updateBudgetFilter = () => {
+  weeklyBudget.value = normalizeWeeklyBudget(weeklyBudget.value);
   updateBudgetFilterDebounced([weeklyBudget.value[0], weeklyBudget.value[1]]);
+};
+
+const handleBudgetInput = (thumb: 'min' | 'max', event: Event) => {
+  activeBudgetThumb.value = thumb;
+  const value = Number((event.target as HTMLInputElement).value);
+  weeklyBudget.value = thumb === 'min'
+    ? normalizeWeeklyBudget([value, weeklyBudget.value[1]])
+    : normalizeWeeklyBudget([weeklyBudget.value[0], value]);
+  updateBudgetFilter();
 };
 
 // Condition counts from lightweight homepage-filters endpoint
