@@ -1182,6 +1182,42 @@ const accessoriesTotalPrice = computed(() => {
   });
   return total;
 });
+
+const getPreferredPowertrain = (data: any) => {
+  if (!data?.powertrains?.length) return null;
+
+  const preferredPowertrain = data.preferredPowertrain;
+  if (!preferredPowertrain) {
+    return data.powertrains[0];
+  }
+
+  return data.powertrains.find((powertrain: string) =>
+    powertrain.toLowerCase() === preferredPowertrain.toLowerCase()
+  ) || data.powertrains[0];
+};
+
+const getPreferredVariantGroup = (data: any, groups: any[]) => {
+  if (!groups?.length) return null;
+
+  const preferredVariantGroupName = data?.preferredVariantGroupName;
+  if (!preferredVariantGroupName) {
+    return groups[0];
+  }
+
+  const preferredGroupName = preferredVariantGroupName.toLowerCase();
+  const exactMatch = groups.find((group: any) =>
+    (group.name || '').toLowerCase() === preferredGroupName
+  );
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  return groups.find((group: any) =>
+    (group.name || '').toLowerCase().includes(preferredGroupName)
+  ) || groups[0];
+};
+
 // Initialize calculator data when it's loaded
 watch(calculatorData, async (data) => {
   if (!data) return;
@@ -1203,8 +1239,9 @@ watch(calculatorData, async (data) => {
   }
   
   // Set default powertrain
-  if (data.powertrains?.length > 0) {
-    selectedPowertrain.value = data.powertrains[0];
+  const preferredPowertrain = getPreferredPowertrain(data);
+  if (preferredPowertrain) {
+    selectedPowertrain.value = preferredPowertrain;
     console.log('[CarCalculator] Powertrain selected:', selectedPowertrain.value);
   } else {
     console.warn('[CarCalculator] No powertrains found');
@@ -1213,8 +1250,9 @@ watch(calculatorData, async (data) => {
   // Select first variant group after a small delay to ensure computed is updated
   await nextTick();
   if (filteredVariantGroups.value.length > 0) {
-    selectVariantGroup(filteredVariantGroups.value[0]);
-    console.log('[CarCalculator] Variant group selected:', filteredVariantGroups.value[0].name);
+    const preferredVariantGroup = getPreferredVariantGroup(data, filteredVariantGroups.value);
+    selectVariantGroup(preferredVariantGroup);
+    console.log('[CarCalculator] Variant group selected:', preferredVariantGroup.name);
     
     // If no variants found for the group, try selecting the first variant directly
     await nextTick();
@@ -3877,8 +3915,6 @@ $bg-white: #fff;
   }
 }
 </style>
-
-
 
 
 

@@ -1,3 +1,84 @@
+type CalculatorRouteResolution = {
+  apiModelName: string;
+  preferredPowertrain?: string;
+  preferredVariantGroupName?: string;
+  fallbackModelNames?: string[];
+};
+
+const calculatorRouteResolutions: Record<string, CalculatorRouteResolution> = {
+  'kona-hybrid': {
+    apiModelName: 'kona',
+    preferredPowertrain: 'Hybrid',
+    preferredVariantGroupName: 'KONA Hybrid',
+  },
+  'tucson-hybrid': {
+    apiModelName: 'tucson',
+    preferredPowertrain: 'Hybrid',
+    preferredVariantGroupName: 'TUCSON Hybrid',
+  },
+  'santa-fe-hybrid': {
+    apiModelName: 'santa-fe',
+    preferredPowertrain: 'Hybrid',
+    preferredVariantGroupName: 'SANTA FE Hybrid',
+  },
+  'palisade-hybrid': {
+    apiModelName: 'palisade',
+    preferredPowertrain: 'Hybrid',
+    preferredVariantGroupName: 'PALISADE Elite (8-seat)',
+  },
+  'i30-n-line': {
+    apiModelName: 'i30',
+    preferredVariantGroupName: 'i30 Sedan N Line',
+  },
+  'i30-sedan': {
+    apiModelName: 'i30',
+    preferredVariantGroupName: 'i30 Sedan',
+  },
+  'i30-sedan-n-line': {
+    apiModelName: 'i30',
+    preferredVariantGroupName: 'i30 Sedan N Line',
+  },
+  'i30-sedan-hybrid': {
+    apiModelName: 'i30',
+    preferredPowertrain: 'Hybrid',
+    preferredVariantGroupName: 'i30 Sedan Hybrid',
+  },
+};
+
+const normalizeModelSlug = (modelname: string) => modelname.trim().toLowerCase();
+
+const getCalculatorRouteResolution = (modelname: string): CalculatorRouteResolution => {
+  const slug = normalizeModelSlug(modelname);
+  const explicitResolution = calculatorRouteResolutions[slug];
+
+  if (explicitResolution) {
+    return explicitResolution;
+  }
+
+  const fallbackModelNames = new Set<string>();
+
+  if (slug.endsWith('-hybrid')) {
+    fallbackModelNames.add(slug.replace(/-hybrid$/, ''));
+  }
+
+  if (slug.includes('-sedan')) {
+    fallbackModelNames.add(slug.split('-sedan')[0]);
+  }
+
+  return {
+    apiModelName: slug,
+    fallbackModelNames: Array.from(fallbackModelNames).filter((name) => name && name !== slug),
+  };
+};
+
+const hasCalculatorInventory = (modelData: any) => {
+  return Boolean(
+    modelData &&
+    ((Array.isArray(modelData.variantGroups) && modelData.variantGroups.length > 0) ||
+      (Array.isArray(modelData.variants) && modelData.variants.length > 0))
+  );
+};
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   
@@ -13,16 +94,19 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Fetch from Hyundai car price calculator API
-    const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/carpricecalculator?postcode=${postcode}&modelname=${modelname.toLowerCase()}&displaypowertrain=${displaypowertrain}`;
-    
-    // Also fetch modeladditional API to get priceDisclaimer
-    const modelAdditionalUrl = 'https://www.hyundai.com/content/api/au/hyundai/pcm1/v1/modeladditional';
-    
-    console.log('[Calculator API] Fetching:', apiUrl);
-    
-    const [response, modelAdditionalResponse] = await Promise.all([
-      $fetch<any>(apiUrl, {
+    const routeResolution = getCalculatorRouteResolution(modelname);
+    const calculatorModelCandidates = [
+      routeResolution.apiModelName,
+      ...(routeResolution.fallbackModelNames || []),
+    ].filter((candidate, index, candidates) => candidate && candidates.indexOf(candidate) === index);
+    let resolvedModelName = routeResolution.apiModelName;
+
+    const fetchCalculatorData = async (apiModelName: string) => {
+      const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/carpricecalculator?postcode=${postcode}&modelname=${apiModelName}&displaypowertrain=${displaypowertrain}`;
+
+      console.log('[Calculator API] Fetching:', apiUrl);
+
+      return $fetch<any>(apiUrl, {
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
@@ -31,7 +115,14 @@ export default defineEventHandler(async (event) => {
       }).catch((err: any) => {
         console.error('[Calculator API] Error fetching carpricecalculator:', err.message);
         throw err;
-      }),
+      });
+    };
+
+    // Also fetch modeladditional API to get priceDisclaimer
+    const modelAdditionalUrl = 'https://www.hyundai.com/content/api/au/hyundai/pcm1/v1/modeladditional';
+
+    const [initialResponse, modelAdditionalResponse] = await Promise.all([
+      fetchCalculatorData(calculatorModelCandidates[0]),
       $fetch<any>(modelAdditionalUrl, {
         headers: {
           'Accept': 'application/json',
@@ -43,17 +134,47 @@ export default defineEventHandler(async (event) => {
         return [];
       }),
     ]);
+
+    let response = initialResponse;
+    let data = Array.isArray(response) ? response : (response ? [response] : []);
+    let modelData = data[0];
+
+    if (!hasCalculatorInventory(modelData) && calculatorModelCandidates.length > 1) {
+      for (const fallbackModelName of calculatorModelCandidates.slice(1)) {
+        console.warn('[Calculator API] Empty calculator data for model, trying fallback:', {
+          requestedModel: modelname,
+          previousModel: resolvedModelName,
+          fallbackModel: fallbackModelName,
+        });
+
+        response = await fetchCalculatorData(fallbackModelName);
+        data = Array.isArray(response) ? response : (response ? [response] : []);
+        modelData = data[0];
+        resolvedModelName = fallbackModelName;
+
+        if (hasCalculatorInventory(modelData)) {
+          break;
+        }
+      }
+    }
     
     console.log('[Calculator API] Raw response type:', Array.isArray(response) ? 'array' : typeof response);
     console.log('[Calculator API] Response length:', Array.isArray(response) ? response.length : 'N/A');
-    
-    const data = Array.isArray(response) ? response : (response ? [response] : []);
     
     // Find the matching model in modeladditional for priceDisclaimer
     const modelAdditionalData = Array.isArray(modelAdditionalResponse) ? modelAdditionalResponse : [];
     const matchingModel = modelAdditionalData.find((m: any) => {
       const modelName = (m.model?.model || '').toLowerCase().replace(/^20\d{2}\s+/, '').replace(/\s+/g, '-');
-      return modelName.includes(modelname.toLowerCase()) || modelname.toLowerCase().includes(modelName);
+      const requestedModelName = normalizeModelSlug(modelname);
+      const canUseBroadRequestedMatch = requestedModelName.length >= 4;
+      const canUseBroadResolvedMatch = resolvedModelName.length >= 4;
+
+      return modelName.includes(requestedModelName) ||
+        (canUseBroadRequestedMatch && requestedModelName.includes(modelName)) ||
+        (canUseBroadResolvedMatch && (
+          modelName.includes(resolvedModelName) ||
+          resolvedModelName.includes(modelName)
+        ));
     });
     const priceDisclaimer = matchingModel?.priceDisclaimer || null;
 
@@ -66,13 +187,22 @@ export default defineEventHandler(async (event) => {
     }
 
     // The API returns an array with one item containing the model data
-    const modelData = data[0];
-    
     if (!modelData) {
       console.error('[Calculator API] modelData is null or undefined');
       throw createError({
         statusCode: 500,
         message: 'Invalid data structure returned from API',
+      });
+    }
+
+    if (!hasCalculatorInventory(modelData)) {
+      console.error('[Calculator API] No calculator inventory returned for model:', {
+        requestedModel: modelname,
+        resolvedModel: resolvedModelName,
+      });
+      throw createError({
+        statusCode: 404,
+        message: `No calculator variants found for model: ${modelname}. Please check the model name is correct.`,
       });
     }
     
@@ -378,6 +508,10 @@ export default defineEventHandler(async (event) => {
 
     const result = {
       success: true,
+      requestedModel: modelname,
+      resolvedModel: resolvedModelName,
+      preferredPowertrain: routeResolution.preferredPowertrain || null,
+      preferredVariantGroupName: routeResolution.preferredVariantGroupName || null,
       model: modelData.model,
       modelId: modelData.modelId,
       priceEnabled: modelData.priceEnabled,
@@ -413,8 +547,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-
-
-
-
