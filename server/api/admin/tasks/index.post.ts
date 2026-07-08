@@ -1,11 +1,15 @@
 import { db } from '../../../utils/db';
-import { customerTasks, customerActivities, customerRetentionProfiles } from '../../../database/schema';
+import { customerTasks, customerActivities, customerRetentionProfiles, customers, enquiries, users } from '../../../database/schema';
 import { eq, and } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
   const dealerId = event.context.dealerId;
   const userId = event.context.userId;
   const body = await readBody(event);
+
+  if (!dealerId) {
+    throw createError({ statusCode: 401, message: 'Unauthorized' });
+  }
 
   // Validate required fields
   if (!body.title || !body.dueDate) {
@@ -20,6 +24,29 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       message: 'Either customerId or enquiryId is required',
     });
+  }
+
+  // Tenancy guards: every linked record and the assignee must belong to this dealer.
+  if (body.customerId) {
+    const c = await db.query.customers.findFirst({
+      where: and(eq(customers.id, body.customerId), eq(customers.dealerId, dealerId)),
+      columns: { id: true },
+    });
+    if (!c) throw createError({ statusCode: 404, message: 'Customer not found' });
+  }
+  if (body.enquiryId) {
+    const e = await db.query.enquiries.findFirst({
+      where: and(eq(enquiries.id, body.enquiryId), eq(enquiries.dealerId, dealerId)),
+      columns: { id: true },
+    });
+    if (!e) throw createError({ statusCode: 404, message: 'Enquiry not found' });
+  }
+  if (body.assignedTo) {
+    const u = await db.query.users.findFirst({
+      where: and(eq(users.id, body.assignedTo), eq(users.dealerId, dealerId)),
+      columns: { id: true },
+    });
+    if (!u) throw createError({ statusCode: 400, message: 'Assignee is not a member of this dealer' });
   }
 
   // Create task
