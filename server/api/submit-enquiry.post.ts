@@ -3,6 +3,8 @@ import { dealers, enquiries, enquiryActivityLog } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { sendFormNotifications } from '../utils/email';
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
+import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
+import { sanitizeIpAddress } from '../utils/intakeValidation';
 
 /**
  * Internal Enquiry Submission Endpoint
@@ -222,7 +224,7 @@ export default defineEventHandler(async (event) => {
       .insert(enquiries)
       .values({
         dealerId: dealer.id,
-        type: body.type,
+        type: normalizeEnquiryType(body.type),
         source: body.source || referer || 'website',
         firstName: body.firstName,
         lastName: lastName,
@@ -244,7 +246,7 @@ export default defineEventHandler(async (event) => {
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
-        ipAddress: ipAddress || undefined,
+        ipAddress: sanitizeIpAddress(ipAddress) || undefined,
         userAgent: userAgent || undefined,
       })
       .returning();

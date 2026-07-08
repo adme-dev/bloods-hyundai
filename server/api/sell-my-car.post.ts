@@ -14,6 +14,7 @@ import { eq } from 'drizzle-orm';
 import { evaluateRoutingRules } from '../utils/routing';
 import { sendEnquiryNotification, sendCustomerConfirmation } from '../utils/email';
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
+import { sanitizeIpAddress } from '../utils/intakeValidation';
 
 interface SellMyCarSubmission {
   // Personal details
@@ -206,7 +207,7 @@ export default defineEventHandler(async (event) => {
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
-        ipAddress: ipAddress || undefined,
+        ipAddress: sanitizeIpAddress(ipAddress) || undefined,
         userAgent: userAgent || undefined,
       })
       .returning();
