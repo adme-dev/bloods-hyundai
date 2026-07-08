@@ -1,6 +1,7 @@
 import { db } from '../../../../utils/db';
 import { serviceAppointments, enquiries, customers, customerVehicles } from '../../../../database/schema';
 import { eq, and } from 'drizzle-orm';
+import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -142,10 +143,10 @@ export default defineEventHandler(async (event) => {
     await db
       .update(enquiries)
       .set({
-        status: 'in_progress',
+        status: ENQUIRY_STATUSES.APPOINTMENT_SET,
         updatedAt: new Date(),
       })
-      .where(eq(enquiries.id, enquiryId));
+      .where(and(eq(enquiries.id, enquiryId), eq(enquiries.dealerId, dealerId)));
   }
 
   return {

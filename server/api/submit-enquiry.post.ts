@@ -2,6 +2,7 @@ import { db } from '../utils/db';
 import { dealers, enquiries, enquiryActivityLog } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { sendFormNotifications } from '../utils/email';
+import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 
 /**
  * Internal Enquiry Submission Endpoint
@@ -238,7 +239,7 @@ export default defineEventHandler(async (event) => {
         accessoriesCart: body.accessoriesCart || undefined,
         testDrive: body.testDrive || false,
         financeInterest: body.financeInterest || false,
-        status: 'new',
+        status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
