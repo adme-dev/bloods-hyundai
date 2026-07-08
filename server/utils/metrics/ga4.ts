@@ -40,7 +40,12 @@ export function normalizeGa4Response(resp: unknown): NormalizedRow[] {
 function ga4Jwt(): JWT {
   const b64 = process.env.GA4_SERVICE_ACCOUNT_KEY;
   if (!b64) throw new Error('GA4_SERVICE_ACCOUNT_KEY not set');
-  const key = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+  let key: { client_email: string; private_key: string };
+  try {
+    key = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+  } catch {
+    throw new Error('GA4_SERVICE_ACCOUNT_KEY is not valid base64-encoded JSON');
+  }
   return new JWT({
     email: key.client_email,
     key: key.private_key,
