@@ -11,7 +11,7 @@ import {
 } from './tenant';
 import type { HyundaiTenant, TenantResolutionResult } from '../types/tenant';
 
-function isDbTenantResolverEnabled(): boolean {
+export function isDbTenantResolverEnabled(): boolean {
   return process.env.HYUNDAI_ENABLE_DB_TENANT_RESOLVER === 'true';
 }
 

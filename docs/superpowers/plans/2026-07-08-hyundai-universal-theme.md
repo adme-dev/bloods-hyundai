@@ -185,4 +185,8 @@ Loop exit criteria:
 - [x] Branch created: `feature/hyundai-universal-theme`
 - [x] Plan created
 - [x] Phase 0 inventory started
+- [x] Tenant contract/types added
+- [x] `dealer_domains` migration added but not applied
+- [x] DB tenant resolver added behind `HYUNDAI_ENABLE_DB_TENANT_RESOLVER`
+- [x] `/api/site-config` reads from tenant context while preserving fallback-map default behavior
 - [x] No production push/domain change performed

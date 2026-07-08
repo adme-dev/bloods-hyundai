@@ -15,7 +15,8 @@ import { dbHttp as db } from '../utils/db';
 import { dealers } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { getRequestURL } from 'h3';
-import { DEFAULT_DEALER_SLUG, resolveDealerSiteUrl, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveDealerSiteUrl, resolveDealerSlugAliases, resolveTenantCacheKey } from '../utils/tenant';
+import { resolveTenantContext } from '../utils/tenant-db';
 import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 
 interface SiteConfig {
@@ -163,10 +164,12 @@ function normalizeSiteConfig(siteConfig: SiteConfig, dealerSlug: string): SiteCo
 export default defineCachedEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const requestUrl = getRequestURL(event);
-  const requestOrigin = resolveDealerSiteUrl(event, config.public.siteUrl || requestUrl.origin || '');
   const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
-  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
-  const hostTenant = resolveTenantFromHostname(requestUrl.hostname, fallbackSlug);
+  const tenantContext = await resolveTenantContext(event, fallbackSlug);
+  const hostTenant = tenantContext.tenant;
+  const dealerSlug = hostTenant.slug;
+  const legacyRequestOrigin = resolveDealerSiteUrl(event, config.public.siteUrl || requestUrl.origin || '');
+  const requestOrigin = hostTenant.siteUrl || legacyRequestOrigin;
 
   const defaultConfig: SiteConfig = {
     name: hostTenant.name,
