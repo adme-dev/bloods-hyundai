@@ -87,6 +87,23 @@ export const dealers = pgTable('dealers', {
 }));
 
 // ============================================================================
+// DEALER DOMAINS (Hostnames mapped to tenant dealers)
+// ============================================================================
+
+export const dealerDomains = pgTable('dealer_domains', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  hostname: varchar('hostname', { length: 255 }).notNull(),
+  isPrimary: boolean('is_primary').default(false).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerIdx: index('idx_dealer_domains_dealer').on(table.dealerId),
+  hostnameIdx: uniqueIndex('idx_dealer_domains_hostname').on(table.hostname),
+}));
+
+// ============================================================================
 // USERS (Staff Accounts - Tenant-Scoped)
 // ============================================================================
 
@@ -303,10 +320,18 @@ export const dealersRelations = relations(dealers, ({ one, many }) => ({
     fields: [dealers.dealerGroupId],
     references: [dealerGroups.id],
   }),
+  domains: many(dealerDomains),
   users: many(users),
   enquiries: many(enquiries),
   activityLogs: many(enquiryActivityLog),
   emailLogs: many(emailLogs),
+}));
+
+export const dealerDomainsRelations = relations(dealerDomains, ({ one }) => ({
+  dealer: one(dealers, {
+    fields: [dealerDomains.dealerId],
+    references: [dealers.id],
+  }),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -740,6 +765,9 @@ export type NewDealerGroup = typeof dealerGroups.$inferInsert;
 export type Dealer = typeof dealers.$inferSelect;
 export type NewDealer = typeof dealers.$inferInsert;
 
+export type DealerDomain = typeof dealerDomains.$inferSelect;
+export type NewDealerDomain = typeof dealerDomains.$inferInsert;
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -1111,7 +1139,6 @@ export type NewCustomerActivity = typeof customerActivities.$inferInsert;
 
 export type RetentionCampaign = typeof retentionCampaigns.$inferSelect;
 export type NewRetentionCampaign = typeof retentionCampaigns.$inferInsert;
-
 
 
 

@@ -51,7 +51,7 @@ export async function withRlsTenantContext<T>(
   }
   return db.transaction(async (tx) => {
     await tx.execute(sql`SELECT set_config('app.current_dealer_id', ${dealerId}, true)`);
-    return callback(tx as typeof db);
+    return callback(tx as unknown as typeof db);
   });
 }
 
