@@ -159,6 +159,15 @@ Each dealer's platform IDs live in the `dealers.settings` JSON column, under
 `marketing.integrations`. Run this against the production database (see step 6 for how
 to connect), filling in the real IDs and the dealer's UUID:
 
+> ⚠️ **This SQL replaces the entire `integrations` object — it does not merge.**
+> If this dealer already has any platform IDs configured, you must include ALL of them
+> (existing + new) in the JSON below, every time you run it. To see what is currently
+> set, run:
+>
+> ```sql
+> SELECT settings->'marketing'->'integrations' FROM dealers WHERE id = '<dealer-uuid>';
+> ```
+
 ```sql
 UPDATE dealers SET settings = jsonb_set(settings, '{marketing,integrations}', '{
   "ga4PropertyId": "properties/XXXXXXXXX",
