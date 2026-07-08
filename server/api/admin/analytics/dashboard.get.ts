@@ -65,17 +65,29 @@ export default defineEventHandler(async (event) => {
   const [totalStats] = await db
     .select({
       total: sql<number>`count(*)`,
-      newCount: sql<number>`count(*) filter (where ${enquiries.status} = 'new')`,
-      inProgressCount: sql<number>`count(*) filter (where ${enquiries.status} = 'in_progress')`,
-      contactedCount: sql<number>`count(*) filter (where ${enquiries.status} = 'contacted')`,
-      closedCount: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
-      unassignedCount: sql<number>`count(*) filter (where ${enquiries.assignedTo} is null and ${enquiries.status} != 'closed')`,
+      // Per-canonical-status counts for the pipeline card.
+      newLead: sql<number>`count(*) filter (where ${enquiries.status} = 'new_lead')`,
+      qualified: sql<number>`count(*) filter (where ${enquiries.status} = 'qualified')`,
+      attemptedContact: sql<number>`count(*) filter (where ${enquiries.status} = 'attempted_contact')`,
+      appointmentSet: sql<number>`count(*) filter (where ${enquiries.status} = 'appointment_set')`,
+      showed: sql<number>`count(*) filter (where ${enquiries.status} = 'showed')`,
+      testDrive: sql<number>`count(*) filter (where ${enquiries.status} = 'test_drive')`,
+      negotiating: sql<number>`count(*) filter (where ${enquiries.status} = 'negotiating')`,
+      pendingFinance: sql<number>`count(*) filter (where ${enquiries.status} in ('pending_finance', 'pending_trade'))`,
+      depositTaken: sql<number>`count(*) filter (where ${enquiries.status} = 'deposit_taken')`,
+      sold: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
+      lost: sql<number>`count(*) filter (where ${enquiries.status} in ('lost', 'dead'))`,
+      unassignedCount: sql<number>`count(*) filter (where ${enquiries.assignedTo} is null and ${enquiries.status} not in ('sold', 'lost', 'dead'))`,
     })
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
       isNull(enquiries.archivedAt)
     ));
+
+  if (!totalStats) {
+    throw createError({ statusCode: 500, message: 'Failed to compute dashboard stats' });
+  }
 
   // Today's count
   const [todayStats] = await db
@@ -122,7 +134,7 @@ export default defineEventHandler(async (event) => {
     .select({
       type: enquiries.type,
       total: sql<number>`count(*)`,
-      newCount: sql<number>`count(*) filter (where ${enquiries.status} = 'new')`,
+      newCount: sql<number>`count(*) filter (where ${enquiries.status} = 'new_lead')`,
       thisWeek: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${weekStart})`,
       lastWeek: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${lastWeekStart} and ${enquiries.createdAt} < ${weekStart})`,
       avgResponseHours: sql<number>`
@@ -134,7 +146,7 @@ export default defineEventHandler(async (event) => {
       `,
       conversionRate: sql<number>`
         round(
-          count(*) filter (where ${enquiries.status} = 'closed')::numeric /
+          count(*) filter (where ${enquiries.status} = 'sold')::numeric /
           nullif(count(*), 0) * 100,
           1
         )
@@ -219,7 +231,7 @@ export default defineEventHandler(async (event) => {
       firstName: users.firstName,
       lastName: users.lastName,
       assigned: sql<number>`count(${enquiries.id})`,
-      closed: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
+      closed: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
       avgResponseHours: sql<number>`
         extract(epoch from avg(
           case when ${enquiries.contactedAt} is not null
@@ -248,14 +260,14 @@ export default defineEventHandler(async (event) => {
       id: users.id,
       firstName: users.firstName,
       lastName: users.lastName,
-      openEnquiries: sql<number>`count(*) filter (where ${enquiries.status} not in ('closed') and ${enquiries.archivedAt} is null)`,
-      newEnquiries: sql<number>`count(*) filter (where ${enquiries.status} = 'new')`,
-      inProgressEnquiries: sql<number>`count(*) filter (where ${enquiries.status} = 'in_progress')`,
-      contactedEnquiries: sql<number>`count(*) filter (where ${enquiries.status} = 'contacted')`,
-      highPriorityCount: sql<number>`count(*) filter (where ${enquiries.priority} in ('high', 'urgent') and ${enquiries.status} != 'closed')`,
+      openEnquiries: sql<number>`count(*) filter (where ${enquiries.status} not in ('sold', 'lost', 'dead') and ${enquiries.archivedAt} is null)`,
+      newEnquiries: sql<number>`count(*) filter (where ${enquiries.status} = 'new_lead')`,
+      inProgressEnquiries: sql<number>`count(*) filter (where ${enquiries.status} = 'appointment_set')`,
+      contactedEnquiries: sql<number>`count(*) filter (where ${enquiries.status} = 'attempted_contact')`,
+      highPriorityCount: sql<number>`count(*) filter (where ${enquiries.priority} in ('high', 'urgent') and ${enquiries.status} not in ('sold', 'lost', 'dead'))`,
       oldestEnquiryHours: sql<number>`
         extract(epoch from (now() - min(
-          case when ${enquiries.status} != 'closed' and ${enquiries.archivedAt} is null
+          case when ${enquiries.status} not in ('sold', 'lost', 'dead') and ${enquiries.archivedAt} is null
           then ${enquiries.createdAt}
           end
         ))) / 3600
@@ -316,8 +328,8 @@ export default defineEventHandler(async (event) => {
       source: sql<string>`coalesce(${enquiries.utmSource}, 'direct')`,
       medium: sql<string>`coalesce(${enquiries.utmMedium}, 'none')`,
       total: sql<number>`count(*)`,
-      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
-      conversionRate: sql<number>`round(count(*) filter (where ${enquiries.status} = 'closed')::numeric / nullif(count(*), 0) * 100, 1)`,
+      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
+      conversionRate: sql<number>`round(count(*) filter (where ${enquiries.status} = 'sold')::numeric / nullif(count(*), 0) * 100, 1)`,
       avgResponseHours: sql<number>`extract(epoch from avg(case when ${enquiries.contactedAt} is not null then ${enquiries.contactedAt} - ${enquiries.createdAt} end)) / 3600`,
       withTestDrive: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
       withFinance: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
@@ -338,8 +350,8 @@ export default defineEventHandler(async (event) => {
       source: sql<string>`coalesce(${enquiries.utmSource}, 'direct')`,
       medium: sql<string>`coalesce(${enquiries.utmMedium}, 'none')`,
       total: sql<number>`count(*)`,
-      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
-      conversionRate: sql<number>`round(count(*) filter (where ${enquiries.status} = 'closed')::numeric / nullif(count(*), 0) * 100, 1)`,
+      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
+      conversionRate: sql<number>`round(count(*) filter (where ${enquiries.status} = 'sold')::numeric / nullif(count(*), 0) * 100, 1)`,
       withTestDrive: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
       withFinance: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
     })
@@ -358,19 +370,19 @@ export default defineEventHandler(async (event) => {
     .select({
       // Organic (google organic, bing organic, etc.)
       organicTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'organic')`,
-      organicConverted: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'organic' and ${enquiries.status} = 'closed')`,
+      organicConverted: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'organic' and ${enquiries.status} = 'sold')`,
       // Paid (cpc, ppc, paid, etc.)
       paidTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display'))`,
-      paidConverted: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display') and ${enquiries.status} = 'closed')`,
+      paidConverted: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('cpc', 'ppc', 'paid', 'paidsearch', 'paid_social', 'display') and ${enquiries.status} = 'sold')`,
       // Direct (no UTM or direct)
       directTotal: sql<number>`count(*) filter (where ${enquiries.utmSource} is null or ${enquiries.utmSource} = 'direct')`,
-      directConverted: sql<number>`count(*) filter (where (${enquiries.utmSource} is null or ${enquiries.utmSource} = 'direct') and ${enquiries.status} = 'closed')`,
+      directConverted: sql<number>`count(*) filter (where (${enquiries.utmSource} is null or ${enquiries.utmSource} = 'direct') and ${enquiries.status} = 'sold')`,
       // Referral (referral medium or social sources)
       referralTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} in ('referral', 'social') or ${enquiries.utmSource} in ('facebook', 'instagram', 'linkedin', 'twitter'))`,
-      referralConverted: sql<number>`count(*) filter (where (${enquiries.utmMedium} in ('referral', 'social') or ${enquiries.utmSource} in ('facebook', 'instagram', 'linkedin', 'twitter')) and ${enquiries.status} = 'closed')`,
+      referralConverted: sql<number>`count(*) filter (where (${enquiries.utmMedium} in ('referral', 'social') or ${enquiries.utmSource} in ('facebook', 'instagram', 'linkedin', 'twitter')) and ${enquiries.status} = 'sold')`,
       // Email
       emailTotal: sql<number>`count(*) filter (where ${enquiries.utmMedium} = 'email' or ${enquiries.utmSource} = 'email')`,
-      emailConverted: sql<number>`count(*) filter (where (${enquiries.utmMedium} = 'email' or ${enquiries.utmSource} = 'email') and ${enquiries.status} = 'closed')`,
+      emailConverted: sql<number>`count(*) filter (where (${enquiries.utmMedium} = 'email' or ${enquiries.utmSource} = 'email') and ${enquiries.status} = 'sold')`,
     })
     .from(enquiries)
     .where(and(
@@ -391,7 +403,7 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       isNull(enquiries.archivedAt),
-      sql`${enquiries.status} != 'closed'`
+      sql`${enquiries.status} not in ('sold', 'lost', 'dead')`
     ))
     .groupBy(enquiries.priority);
 
@@ -403,7 +415,7 @@ export default defineEventHandler(async (event) => {
   const [monthlySalesMetrics] = await db
     .select({
       totalVehicleEnquiries: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive'))`,
-      convertedSales: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive') and ${enquiries.status} = 'closed')`,
+      convertedSales: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive') and ${enquiries.status} = 'sold')`,
       withFinanceInterest: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
       withTestDrive: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
       withAccessories: sql<number>`count(*) filter (where ${enquiries.accessoriesCart} is not null)`,
@@ -419,7 +431,7 @@ export default defineEventHandler(async (event) => {
   const [lastMonthSalesMetrics] = await db
     .select({
       totalVehicleEnquiries: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive'))`,
-      convertedSales: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive') and ${enquiries.status} = 'closed')`,
+      convertedSales: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive') and ${enquiries.status} = 'sold')`,
     })
     .from(enquiries)
     .where(and(
@@ -453,7 +465,7 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       isNull(enquiries.archivedAt),
-      sql`${enquiries.status} not in ('closed')`,
+      sql`${enquiries.status} not in ('sold', 'lost', 'dead')`,
       sql`(
         ${enquiries.priority} in ('high', 'urgent')
         OR ${enquiries.financeInterest} = true
@@ -481,19 +493,19 @@ export default defineEventHandler(async (event) => {
   const [followUpAlerts] = await db
     .select({
       overdueCount: sql<number>`count(*) filter (
-        where ${enquiries.status} = 'new'
+        where ${enquiries.status} = 'new_lead'
         and ${enquiries.createdAt} < ${twentyFourHoursAgo}
       )`,
       criticalOverdueCount: sql<number>`count(*) filter (
-        where ${enquiries.status} = 'new'
+        where ${enquiries.status} = 'new_lead'
         and ${enquiries.createdAt} < ${fortyEightHoursAgo}
       )`,
       stalePendingCount: sql<number>`count(*) filter (
-        where ${enquiries.status} = 'in_progress'
+        where ${enquiries.status} = 'appointment_set'
         and ${enquiries.updatedAt} < ${fortyEightHoursAgo}
       )`,
       noFollowUpCount: sql<number>`count(*) filter (
-        where ${enquiries.status} = 'contacted'
+        where ${enquiries.status} = 'attempted_contact'
         and ${enquiries.contactedAt} < ${fortyEightHoursAgo}
         and ${enquiries.updatedAt} < ${twentyFourHoursAgo}
       )`,
@@ -520,7 +532,7 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      eq(enquiries.status, 'new'),
+      eq(enquiries.status, 'new_lead'),
       lte(enquiries.createdAt, twentyFourHoursAgo),
       isNull(enquiries.archivedAt)
     ))
@@ -535,10 +547,10 @@ export default defineEventHandler(async (event) => {
     .select({
       totalLeads: sql<number>`count(*)`,
       contacted: sql<number>`count(*) filter (where ${enquiries.contactedAt} is not null)`,
-      qualified: sql<number>`count(*) filter (where ${enquiries.status} in ('in_progress', 'contacted', 'closed'))`,
+      qualified: sql<number>`count(*) filter (where ${enquiries.status} not in ('new_lead'))`,
       testDriveBooked: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
       financeApplied: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
-      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
+      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
     })
     .from(enquiries)
     .where(and(
@@ -592,9 +604,9 @@ export default defineEventHandler(async (event) => {
     .select({
       total: sql<number>`count(*)`,
       thisWeek: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${weekStart})`,
-      pending: sql<number>`count(*) filter (where ${enquiries.status} = 'new')`,
-      confirmed: sql<number>`count(*) filter (where ${enquiries.status} = 'contacted')`,
-      completed: sql<number>`count(*) filter (where ${enquiries.status} = 'closed')`,
+      pending: sql<number>`count(*) filter (where ${enquiries.status} = 'new_lead')`,
+      confirmed: sql<number>`count(*) filter (where ${enquiries.status} = 'attempted_contact')`,
+      completed: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
     })
     .from(enquiries)
     .where(and(
@@ -619,7 +631,7 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       eq(enquiries.testDrive, true),
-      sql`${enquiries.status} != 'closed'`,
+      sql`${enquiries.status} not in ('sold', 'lost', 'dead')`,
       isNull(enquiries.archivedAt)
     ))
     .orderBy(desc(enquiries.createdAt))
@@ -838,11 +850,21 @@ export default defineEventHandler(async (event) => {
       thisWeek: Number(thisWeekStats.count),
       weeklyChange,
       pipeline: {
-        new: Number(totalStats.newCount),
-        inProgress: Number(totalStats.inProgressCount),
-        contacted: Number(totalStats.contactedCount),
-        closed: Number(totalStats.closedCount),
+        // Canonical funnel keys consumed by the dashboard pipeline card.
+        newLead: Number(totalStats.newLead),
+        qualified: Number(totalStats.qualified),
+        attemptedContact: Number(totalStats.attemptedContact),
+        appointmentSet: Number(totalStats.appointmentSet),
+        showed: Number(totalStats.showed),
+        testDrive: Number(totalStats.testDrive),
+        negotiating: Number(totalStats.negotiating),
+        pendingFinance: Number(totalStats.pendingFinance),
+        depositTaken: Number(totalStats.depositTaken),
+        sold: Number(totalStats.sold),
+        lost: Number(totalStats.lost),
         unassigned: Number(totalStats.unassignedCount),
+        // Back-compat alias for the "new leads" quick-action badge.
+        new: Number(totalStats.newLead),
       },
     },
     departments: departmentStats.map(d => ({
