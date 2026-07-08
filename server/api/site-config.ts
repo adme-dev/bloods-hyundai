@@ -160,7 +160,92 @@ function normalizeSiteConfig(siteConfig: SiteConfig, dealerSlug: string): SiteCo
   return normalizedConfig;
 }
 
-export default defineCachedEventHandler(async (event) => {
+interface ResolvedRequestContext {
+  dealerSlug: string;
+  requestOrigin: string;
+  hostTenantName: string;
+  hostTenantSiteUrl: string;
+  cdnUrl: string;
+}
+
+function buildDefaultConfig(ctx: ResolvedRequestContext): SiteConfig {
+  return {
+    name: ctx.hostTenantName,
+    promotional: [],
+    scripts: { google: { analytics: [], gtm: '' } },
+    websiteUrl: ctx.requestOrigin || ctx.hostTenantSiteUrl || '',
+    siteUrl: ctx.requestOrigin || ctx.hostTenantSiteUrl || '',
+    dealerSlug: ctx.dealerSlug,
+  };
+}
+
+/**
+ * Build the full site config. Throws when the result would be degraded
+ * (no dealer row AND no CDN/local base config), so a transient DB/CDN
+ * failure is never cached — the caller serves an uncached fallback and the
+ * next request retries. Previously the catch-all returned a bare default
+ * (no navigation) which defineCachedEventHandler then cached for 10-40
+ * minutes: one blip during a deploy hid the nav site-wide until expiry.
+ */
+async function buildFullSiteConfig(ctx: ResolvedRequestContext) {
+  const [dealer] = await db
+    .select({
+      slug: dealers.slug,
+      name: dealers.name,
+      phone: dealers.phone,
+      address: dealers.address,
+      websiteUrl: dealers.websiteUrl,
+      logoUrl: dealers.logoUrl,
+      settings: dealers.settings,
+    })
+    .from(dealers)
+    .where(eq(dealers.slug, ctx.dealerSlug))
+    .limit(1);
+
+  const localConfig = loadLocalFallback(ctx.dealerSlug);
+  const matchingLocalConfig = localFallbackMatchesDealer(localConfig, ctx.dealerSlug)
+    ? localConfig
+    : null;
+  const remoteConfig = ctx.cdnUrl
+    ? await fetchTenantConfig(ctx.cdnUrl, ctx.dealerSlug)
+    : null;
+
+  const baseConfig =
+    remoteConfig ||
+    (matchingLocalConfig && matchingLocalConfig.name ? matchingLocalConfig : null);
+
+  // No real base config AND no dealer row = degraded result; refuse to cache it.
+  if (!baseConfig && !dealer) {
+    throw new Error('site-config degraded: no dealer row and no base config source');
+  }
+
+  const chosenBaseConfig = baseConfig || buildDefaultConfig(ctx);
+
+  const mergedConfig = dealer
+    ? mergeSiteConfig(chosenBaseConfig, dealer as DealerRow, ctx.requestOrigin)
+    : {
+        ...chosenBaseConfig,
+        websiteUrl: chosenBaseConfig.websiteUrl || ctx.requestOrigin || ctx.hostTenantSiteUrl || '',
+        siteUrl: chosenBaseConfig.siteUrl || ctx.requestOrigin || ctx.hostTenantSiteUrl || '',
+        dealerSlug: ctx.dealerSlug,
+      };
+
+  return normalizeSiteConfig(mergedConfig, ctx.dealerSlug);
+}
+
+// Success results cached per tenant for CACHE_MAX_AGE (+ stale window);
+// thrown (degraded) results are NOT cached by design.
+const getCachedSiteConfig = defineCachedFunction(
+  async (cacheKey: string, ctx: ResolvedRequestContext) => buildFullSiteConfig(ctx),
+  {
+    maxAge: CACHE_MAX_AGE,
+    staleMaxAge: CACHE_STALE_MAX_AGE,
+    name: 'site-config',
+    getKey: (cacheKey: string) => cacheKey,
+  },
+);
+
+export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const requestUrl = getRequestURL(event);
   const requestOrigin = resolveDealerSiteUrl(event, config.public.siteUrl || requestUrl.origin || '');
@@ -168,59 +253,29 @@ export default defineCachedEventHandler(async (event) => {
   const dealerSlug = resolveDealerSlug(event, fallbackSlug);
   const hostTenant = resolveTenantFromHostname(requestUrl.hostname, fallbackSlug);
 
-  const defaultConfig: SiteConfig = {
-    name: hostTenant.name,
-    promotional: [],
-    scripts: { google: { analytics: [], gtm: '' } },
-    websiteUrl: requestOrigin || hostTenant.siteUrl || '',
-    siteUrl: requestOrigin || hostTenant.siteUrl || '',
+  const ctx: ResolvedRequestContext = {
     dealerSlug,
+    requestOrigin,
+    hostTenantName: hostTenant.name,
+    hostTenantSiteUrl: hostTenant.siteUrl || '',
+    cdnUrl: config.public.cdnUrl || '',
   };
 
+  const cacheKey = resolveTenantCacheKey(event, 'site-config-data:v3');
+  const forceRefresh = getQuery(event).refresh === 'true';
+
   try {
-    const [dealer] = await db
-      .select({
-        slug: dealers.slug,
-        name: dealers.name,
-        phone: dealers.phone,
-        address: dealers.address,
-        websiteUrl: dealers.websiteUrl,
-        logoUrl: dealers.logoUrl,
-        settings: dealers.settings,
-      })
-      .from(dealers)
-      .where(eq(dealers.slug, dealerSlug))
-      .limit(1);
-
-    const localConfig = loadLocalFallback(dealerSlug);
-    const matchingLocalConfig = localFallbackMatchesDealer(localConfig, dealerSlug)
-      ? localConfig
-      : null;
-    const remoteConfig = config.public.cdnUrl
-      ? await fetchTenantConfig(config.public.cdnUrl, dealerSlug)
-      : null;
-
-    const chosenBaseConfig =
-      remoteConfig ||
-      (matchingLocalConfig && matchingLocalConfig.name ? matchingLocalConfig : null) ||
-      defaultConfig;
-
-    const mergedConfig = dealer
-      ? mergeSiteConfig(chosenBaseConfig, dealer as DealerRow, requestOrigin)
-      : {
-          ...chosenBaseConfig,
-          websiteUrl: chosenBaseConfig.websiteUrl || requestOrigin || hostTenant.siteUrl || '',
-          siteUrl: chosenBaseConfig.siteUrl || requestOrigin || hostTenant.siteUrl || '',
-          dealerSlug,
-        };
-
+    const siteConfig = forceRefresh
+      ? await buildFullSiteConfig(ctx)
+      : await getCachedSiteConfig(cacheKey, ctx);
     return {
-      config: normalizeSiteConfig(mergedConfig, dealerSlug),
-      _cached: false,
+      config: siteConfig,
+      _cached: !forceRefresh,
       _timestamp: Date.now(),
     };
   } catch (error: any) {
-    console.warn('[Site Config] Falling back to defaults:', error?.message);
+    // Degraded path: serve the best uncached fallback; next request retries.
+    console.warn('[Site Config] Serving uncached fallback:', error?.message);
     const localConfig = loadLocalFallback(dealerSlug);
     const matchingLocalConfig = localFallbackMatchesDealer(localConfig, dealerSlug)
       ? localConfig
@@ -233,21 +288,14 @@ export default defineCachedEventHandler(async (event) => {
           siteUrl: matchingLocalConfig.siteUrl || requestOrigin || hostTenant.siteUrl || '',
           dealerSlug,
         }
-      : defaultConfig;
+      : buildDefaultConfig(ctx);
 
+    setResponseHeader(event, 'Cache-Control', 'no-store');
     return {
       config: normalizeSiteConfig(fallbackConfig, dealerSlug),
       _cached: false,
+      _degraded: true,
       _timestamp: Date.now(),
     };
   }
-}, {
-  maxAge: CACHE_MAX_AGE,
-  staleMaxAge: CACHE_STALE_MAX_AGE,
-  name: 'site-config',
-  getKey: (event) => resolveTenantCacheKey(event, 'site-config-data:v2'),
-  shouldBypassCache: (event) => {
-    const query = getQuery(event);
-    return query.refresh === 'true';
-  },
 });
