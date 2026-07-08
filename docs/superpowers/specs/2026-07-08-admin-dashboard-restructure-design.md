@@ -58,7 +58,7 @@ Every existing section survives; nothing is deleted. Template line refs are pre-
 
 ## 4. Component architecture
 
-New directory `app/components/admin/dashboard/`, one component per section group. Each receives its data slice via a single prop (no fetching inside):
+New directory `app/components/admin/dashboard/`, one component per section group. Each receives the full dashboard API response as a single `data` prop (no fetching inside); moved markup referencing `data?.…` therefore works verbatim:
 
 - `TodayKpiStrip.vue` — props: `{ overview, taskStats }`
 - `ActionZone.vue` — props: `{ hotLeads, overdueFollowups, recentActivity, pipeline }` (composes the four existing cards; Quick Actions markup lives here)
