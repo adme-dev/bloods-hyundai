@@ -328,6 +328,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { ENQUIRY_STATUS_CONFIG, type EnquiryStatus } from '~~/shared/constants/salesFunnel';
 
 definePageMeta({
   layout: 'admin',
@@ -510,23 +511,18 @@ const formatType = (type: string) => {
 };
 
 const formatStatus = (status: string) => {
-  const statuses: Record<string, string> = {
-    new: 'New',
-    in_progress: 'In Progress',
-    contacted: 'Contacted',
-    closed: 'Closed',
-  };
-  return statuses[status] || status;
+  return ENQUIRY_STATUS_CONFIG[status as EnquiryStatus]?.label || status;
 };
 
 const statusBadgeVariant = (status: string) => {
+  const stage = ENQUIRY_STATUS_CONFIG[status as EnquiryStatus]?.stage;
   const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    new: 'default',
-    in_progress: 'secondary',
-    contacted: 'default',
-    closed: 'outline',
+    cold: 'secondary',
+    warm: 'default',
+    hot: 'default',
+    closed: status === 'lost' ? 'destructive' : 'outline',
   };
-  return map[status] || 'outline';
+  return (stage && map[stage]) || 'outline';
 };
 
 const fromResult = computed(() => {

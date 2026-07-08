@@ -41,14 +41,20 @@
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <Select :model-value="statusDraft" @update:model-value="onStatusSelect">
-              <SelectTrigger class="w-[180px]">
+              <SelectTrigger class="w-[200px]">
                 <SelectValue placeholder="Set status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="contacted">Contacted</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
+                <SelectGroup v-for="stage in PIPELINE_STAGES" :key="stage.key">
+                  <SelectLabel class="text-xs text-muted-foreground">{{ stage.label }}</SelectLabel>
+                  <SelectItem
+                    v-for="cfg in getStatusesByStage(stage.key)"
+                    :key="cfg.key"
+                    :value="cfg.key"
+                  >
+                    {{ cfg.label }}
+                  </SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" @click="refresh">
@@ -56,7 +62,35 @@
             </Button>
           </div>
         </div>
-        
+
+        <!-- Lost-reason capture -->
+        <div v-if="showLostPanel" class="mt-3 rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/10">
+          <p class="mb-2 text-sm font-medium text-red-800 dark:text-red-300">Why was this lead lost?</p>
+          <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-[220px]">
+              <Label class="text-xs">Reason</Label>
+              <Select v-model="lostReasonDraft">
+                <SelectTrigger class="w-[220px]">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem v-for="(label, key) in LOST_REASON_LABELS" :key="key" :value="key">
+                    {{ label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="min-w-[240px] flex-1">
+              <Label class="text-xs">Notes (optional)</Label>
+              <Input v-model="lostNotesDraft" placeholder="Any context…" />
+            </div>
+            <div class="flex gap-2">
+              <Button size="sm" :disabled="!lostReasonDraft || statusUpdating" @click="applyLostStatus">Mark as lost</Button>
+              <Button size="sm" variant="ghost" :disabled="statusUpdating" @click="cancelLost">Cancel</Button>
+            </div>
+          </div>
+        </div>
+
         <div class="flex flex-wrap gap-2">
           <Button v-if="enquiry.email" variant="secondary" size="sm" :href="`mailto:${enquiry.email}`">
             <Mail class="mr-2 h-4 w-4" /> Email customer
@@ -792,7 +826,9 @@ import { Input } from '~/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select';
@@ -805,6 +841,13 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog';
 import { useToast } from '~/composables/useToast';
+import {
+  ENQUIRY_STATUS_CONFIG,
+  PIPELINE_STAGES,
+  getStatusesByStage,
+  LOST_REASON_LABELS,
+  type EnquiryStatus,
+} from '~~/shared/constants/salesFunnel';
 
 definePageMeta({
   layout: 'admin',
@@ -833,25 +876,32 @@ const submittedRelative = computed(() => {
   return formatRelativeTime(enquiry.value.createdAt);
 });
 
-const statusDraft = ref('new');
+const statusDraft = ref<string>('new_lead');
 watch(enquiry, (value) => {
   if (value?.status) {
     statusDraft.value = value.status;
   }
 }, { immediate: true });
 
+// Lost-reason capture
+const showLostPanel = ref(false);
+const lostReasonDraft = ref('');
+const lostNotesDraft = ref('');
+
 const statusUpdating = ref(false);
-const onStatusSelect = async (nextStatus: string) => {
-  if (!enquiry.value || !nextStatus || statusUpdating.value) return;
-  const previousStatus = statusDraft.value;
+
+const applyStatus = async (nextStatus: string, extra: Record<string, unknown> = {}) => {
+  if (!enquiry.value) return;
+  const previousStatus = enquiry.value.status;
   statusDraft.value = nextStatus;
   statusUpdating.value = true;
   try {
     await $fetch(`/api/admin/enquiries/${enquiryId}/status`, {
       method: 'PATCH',
-      body: { status: nextStatus, oldStatus: enquiry.value.status },
+      body: { status: nextStatus, oldStatus: previousStatus, ...extra },
     });
     toast.success('Status updated');
+    showLostPanel.value = false;
     await refresh();
   } catch (err) {
     console.error('Failed to update status:', err);
@@ -860,6 +910,30 @@ const onStatusSelect = async (nextStatus: string) => {
   } finally {
     statusUpdating.value = false;
   }
+};
+
+const onStatusSelect = async (nextStatus: string) => {
+  if (!enquiry.value || !nextStatus || statusUpdating.value) return;
+  if (nextStatus === enquiry.value.status) return;
+  // 'lost' requires a reason; reveal the capture panel instead of submitting.
+  if (nextStatus === 'lost') {
+    statusDraft.value = 'lost';
+    lostReasonDraft.value = '';
+    lostNotesDraft.value = '';
+    showLostPanel.value = true;
+    return;
+  }
+  await applyStatus(nextStatus);
+};
+
+const applyLostStatus = async () => {
+  if (!lostReasonDraft.value) return;
+  await applyStatus('lost', { lostReason: lostReasonDraft.value, lostNotes: lostNotesDraft.value || undefined });
+};
+
+const cancelLost = () => {
+  showLostPanel.value = false;
+  statusDraft.value = enquiry.value?.status ?? 'new_lead';
 };
 
 const newNote = ref('');
@@ -919,23 +993,18 @@ const formatType = (type: string) => {
 };
 
 const formatStatus = (status: string) => {
-  const statuses: Record<string, string> = {
-    new: 'New',
-    in_progress: 'In Progress',
-    contacted: 'Contacted',
-    closed: 'Closed',
-  };
-  return statuses[status] || status;
+  return ENQUIRY_STATUS_CONFIG[status as EnquiryStatus]?.label || status;
 };
 
 const statusBadgeVariant = (status: string) => {
+  const stage = ENQUIRY_STATUS_CONFIG[status as EnquiryStatus]?.stage;
   const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    new: 'default',
-    in_progress: 'secondary',
-    contacted: 'default',
-    closed: 'outline',
+    cold: 'secondary',
+    warm: 'default',
+    hot: 'default',
+    closed: status === 'lost' ? 'destructive' : 'outline',
   };
-  return map[status] || 'outline';
+  return (stage && map[stage]) || 'outline';
 };
 
 const isFuture = (date: string) => new Date(date) > new Date();
