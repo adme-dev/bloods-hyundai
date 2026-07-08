@@ -5,6 +5,7 @@ import { sendFormNotifications } from '../utils/email';
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
 import { sanitizeIpAddress } from '../utils/intakeValidation';
+import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 
 /**
  * Internal Enquiry Submission Endpoint
@@ -218,6 +219,18 @@ export default defineEventHandler(async (event) => {
       configuration: body.vehicleConfiguration,
       appliedOffers: body.appliedOffers,
     } : undefined;
+
+    // 4b. Abuse controls (honeypot → rate limit → duplicate)
+    if (isHoneypotTripped(body)) {
+      return { success: true }; // silently accept; do not persist bot submissions
+    }
+    const rateKey = `${dealer.id}:${sanitizeIpAddress(ipAddress) ?? 'noip'}`;
+    if (!checkRateLimit(rateKey, Date.now())) {
+      throw createError({ statusCode: 429, message: 'Too many submissions. Please try again shortly.' });
+    }
+    if (await isDuplicateEnquiry(dealer.id, body.email)) {
+      return { success: true, duplicate: true };
+    }
 
     // 5. Insert enquiry into database
     const [enquiry] = await db
