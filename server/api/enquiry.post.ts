@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 import { evaluateRoutingRules } from '../utils/routing';
 import { sendEnquiryNotification, sendCustomerConfirmation } from '../utils/email';
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
+import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
+import { sanitizeIpAddress } from '../utils/intakeValidation';
 
 /**
  * Public Enquiry Submission Endpoint
@@ -137,7 +139,7 @@ export default defineEventHandler(async (event) => {
       .insert(enquiries)
       .values({
         dealerId: dealer.id,
-        type: body.type,
+        type: normalizeEnquiryType(body.type),
         source: body.source || event.path,
         department: body.department,
         firstName: body.firstName,
@@ -157,7 +159,7 @@ export default defineEventHandler(async (event) => {
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
-        ipAddress: ipAddress || undefined,
+        ipAddress: sanitizeIpAddress(ipAddress) || undefined,
         userAgent: userAgent || undefined,
       })
       .returning();
