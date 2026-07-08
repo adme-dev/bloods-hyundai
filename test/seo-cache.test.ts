@@ -9,10 +9,10 @@ import {
 } from '../shared/seo.ts';
 
 describe('SEO and cache helpers', () => {
-  it('allows short CDN caching for public document routes', () => {
+  it('prevents browser storage while allowing short CDN caching for public document routes', () => {
     const headers = getDocumentCacheHeaders('/');
 
-    assert.equal(headers['Cache-Control'], 'public, max-age=0, must-revalidate');
+    assert.equal(headers['Cache-Control'], 'no-cache, no-store, must-revalidate');
     assert.match(headers['Netlify-CDN-Cache-Control'], /max-age=300/);
     assert.match(headers['CDN-Cache-Control'], /stale-while-revalidate=3600/);
   });

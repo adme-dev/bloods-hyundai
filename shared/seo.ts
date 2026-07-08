@@ -70,7 +70,7 @@ export function getDocumentCacheHeaders(path: string): HeaderMap {
   }
 
   return {
-    'Cache-Control': 'public, max-age=0, must-revalidate',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Netlify-CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
     'CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
     Vary: 'Accept, Accept-Encoding',
