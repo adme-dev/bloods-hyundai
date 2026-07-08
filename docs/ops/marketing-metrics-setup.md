@@ -9,7 +9,7 @@ numbers. Data syncs automatically once a day; you can also trigger a sync on dem
 
 **Where credentials live:** all secrets go into Netlify's **Environment variables** for
 this site. Never put a secret in a git commit, a Slack message, or the settings SQL in
-step 5 — those are IDs, not secrets.
+step 6 — those are IDs, not secrets.
 
 **Netlify environment variables — how to get there every time:**
 1. Go to [app.netlify.com](https://app.netlify.com) and open this site.
@@ -153,10 +153,31 @@ environment at run time, and the sync endpoint compares against the same variabl
 
 ---
 
-## 5. Per-dealer settings (which GA4 property / ad accounts to pull)
+## 5. Apply the database migration (first-time setup only)
+
+The metrics tables (`marketing_metrics_daily`, `marketing_sync_runs`) need to exist
+before any sync can write data. This is a one-time step per environment.
+
+- Migration file: `scripts/migrations/2026-07-09-marketing-metrics.sql`
+- Target: Neon production project **`cold-sound-73227570`**
+
+Apply it using the Neon MCP tooling (`mcp__Neon__run_sql` against project
+`cold-sound-73227570`) or, if you have `psql` access to the prod connection string,
+run the file directly:
+
+```bash
+psql "$NEON_PROD_CONNECTION_STRING" -f scripts/migrations/2026-07-09-marketing-metrics.sql
+```
+
+The migration uses `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, so it's
+safe to re-run if you're ever unsure whether it already applied.
+
+---
+
+## 6. Per-dealer settings (which GA4 property / ad accounts to pull)
 
 Each dealer's platform IDs live in the `dealers.settings` JSON column, under
-`marketing.integrations`. Run this against the production database (see step 6 for how
+`marketing.integrations`. Run this against the production database (see step 5 for how
 to connect), filling in the real IDs and the dealer's UUID:
 
 > ⚠️ **This SQL replaces the entire `integrations` object — it does not merge.**
@@ -205,27 +226,6 @@ card just shows "Not connected" (harmless, no errors).
 
 ---
 
-## 6. Apply the database migration (first-time setup only)
-
-The metrics tables (`marketing_metrics_daily`, `marketing_sync_runs`) need to exist
-before any sync can write data. This is a one-time step per environment.
-
-- Migration file: `scripts/migrations/2026-07-09-marketing-metrics.sql`
-- Target: Neon production project **`cold-sound-73227570`**
-
-Apply it using the Neon MCP tooling (`mcp__Neon__run_sql` against project
-`cold-sound-73227570`) or, if you have `psql` access to the prod connection string,
-run the file directly:
-
-```bash
-psql "$NEON_PROD_CONNECTION_STRING" -f scripts/migrations/2026-07-09-marketing-metrics.sql
-```
-
-The migration uses `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, so it's
-safe to re-run if you're ever unsure whether it already applied.
-
----
-
 ## 7. Run the first sync and verify it worked
 
 Once steps 1–6 are done for a dealer, trigger a sync rather than waiting for the
@@ -262,7 +262,7 @@ LIMIT 10;
 - `marketing_sync_runs.status = 'success'` with a non-null `rows_upserted` — good.
 - `status = 'error'` — read the `error` column; it will say which platform and
   usually why (e.g. "401" means a credential from steps 1–3 is wrong or expired).
-- No row at all for a platform — its dealer ID (step 5) or its Netlify secret (steps
+- No row at all for a platform — its dealer ID (step 6) or its Netlify secret (steps
   1–3) is still missing; the sync silently skips unconfigured platforms.
 
 ---

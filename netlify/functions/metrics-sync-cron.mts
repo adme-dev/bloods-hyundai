@@ -13,7 +13,11 @@ export default async () => {
     method: 'POST',
     headers: { 'x-cron-secret': secret },
   });
-  console.log(`[metrics-sync-cron] status ${res.status}`);
+  if (res.ok) {
+    console.log(`[metrics-sync-cron] status ${res.status}`);
+  } else {
+    console.error(`[metrics-sync-cron] status ${res.status}`);
+  }
 };
 
 export const config: Config = { schedule: '30 18 * * *' }; // 18:30 UTC = 04:30 AEST, after ad platforms settle the prior day
