@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-process.env.NEON_DATABASE_URL ||= 'postgres://user:pass@localhost/db';
-
 describe('feature-flagged tenant resolver', () => {
   it('keeps the hard-coded fallback resolver when DB tenant resolution is disabled', async () => {
     const previous = process.env.HYUNDAI_ENABLE_DB_TENANT_RESOLVER;
+    const previousDatabaseUrl = process.env.NEON_DATABASE_URL;
     delete process.env.HYUNDAI_ENABLE_DB_TENANT_RESOLVER;
+    delete process.env.NEON_DATABASE_URL;
 
     const { isDbTenantResolverEnabled, resolveTenantContext } = await import('../server/utils/tenant-db.ts');
 
@@ -31,6 +31,12 @@ describe('feature-flagged tenant resolver', () => {
       delete process.env.HYUNDAI_ENABLE_DB_TENANT_RESOLVER;
     } else {
       process.env.HYUNDAI_ENABLE_DB_TENANT_RESOLVER = previous;
+    }
+
+    if (previousDatabaseUrl === undefined) {
+      delete process.env.NEON_DATABASE_URL;
+    } else {
+      process.env.NEON_DATABASE_URL = previousDatabaseUrl;
     }
   });
 

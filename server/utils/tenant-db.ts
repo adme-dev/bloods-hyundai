@@ -1,6 +1,4 @@
 import { and, eq } from 'drizzle-orm';
-import { dbHttp as db } from './db';
-import { dealerDomains, dealers } from '../database/schema';
 import type { H3Event } from 'h3';
 import {
   DEFAULT_DEALER_SLUG,
@@ -44,6 +42,11 @@ export async function resolveTenantFromDbHostname(
   if (!normalizedHostname) {
     return null;
   }
+
+  const [{ dbHttp: db }, { dealerDomains, dealers }] = await Promise.all([
+    import('./db'),
+    import('../database/schema'),
+  ]);
 
   const [row] = await db
     .select({

@@ -10,6 +10,7 @@
     "generate": "NODE_OPTIONS='--max-old-space-size=8192' nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "tenant:verify": "tsx scripts/verify-hyundai-tenants.ts",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {

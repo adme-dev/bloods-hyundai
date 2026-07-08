@@ -189,4 +189,5 @@ Loop exit criteria:
 - [x] `dealer_domains` migration added but not applied
 - [x] DB tenant resolver added behind `HYUNDAI_ENABLE_DB_TENANT_RESOLVER`
 - [x] `/api/site-config` reads from tenant context while preserving fallback-map default behavior
+- [x] Host-to-tenant/config verification script added
 - [x] No production push/domain change performed
