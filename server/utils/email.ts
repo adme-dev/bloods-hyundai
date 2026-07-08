@@ -8,23 +8,9 @@ import { db } from './db';
 import { emailLogs, enquiries } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { evaluateRoutingRules } from './routing';
+import { DEFAULT_DEALER_NAME, escapeHtml, getDealerName, getAdminEnquiryUrl, replaceMergeTags } from './emailTemplate';
 
-const DEFAULT_DEALER_NAME = 'Hyundai Dealer';
 const DEFAULT_FROM_EMAIL = 'noreply@hyundai-dealer.com.au';
-
-/**
- * Escape user-supplied text before interpolating it into email HTML.
- * Prevents HTML/link injection from public enquiry form fields.
- */
-function escapeHtml(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export interface EmailOptions {
   to: string[];
@@ -39,21 +25,8 @@ export interface EmailOptions {
   };
 }
 
-function getDealerName(dealer: any): string {
-  return dealer?.name || DEFAULT_DEALER_NAME;
-}
-
 function getDealerEmail(dealer: any): string {
   return dealer?.email || process.env.SENDGRID_FROM_EMAIL || DEFAULT_FROM_EMAIL;
-}
-
-function getDealerWebsiteUrl(dealer: any): string {
-  return dealer?.websiteUrl || dealer?.siteUrl || process.env.NUXT_PUBLIC_SITE_URL || '';
-}
-
-function getAdminEnquiryUrl(dealer: any, enquiryId: string): string {
-  const baseUrl = getDealerWebsiteUrl(dealer).replace(/\/$/, '');
-  return `${baseUrl}/admin/enquiries/${enquiryId}`;
 }
 
 // Initialize SendGrid
@@ -104,38 +77,6 @@ function getFormNotifications(dealer: any, formType: string): FormNotification[]
   const settings = dealer.settings || {};
   const formSettings = settings.forms?.[formType] || {};
   return formSettings.notifications || [];
-}
-
-/**
- * Replace merge tags in text with actual values
- */
-function replaceMergeTags(text: string, enquiry: any, dealer: any): string {
-  const replacements: Record<string, string> = {
-    '{customer_name}': `${enquiry.firstName} ${enquiry.lastName}`,
-    '{first_name}': enquiry.firstName || '',
-    '{last_name}': enquiry.lastName || '',
-    '{email}': enquiry.email || '',
-    '{phone}': enquiry.phone || '',
-    '{form_type}': enquiry.type || '',
-    '{vehicle_make}': enquiry.vehicleInfo?.make || '',
-    '{vehicle_model}': enquiry.vehicleInfo?.model || '',
-    '{vehicle_year}': enquiry.vehicleInfo?.year?.toString() || '',
-    '{vehicle_condition}': enquiry.vehicleInfo?.condition || '',
-    '{message}': enquiry.message || '',
-    '{submission_date}': new Date(enquiry.createdAt).toLocaleString('en-AU'),
-    '{enquiry_id}': enquiry.id?.substring(0, 8) || '',
-    '{admin_link}': getAdminEnquiryUrl(dealer, enquiry.id),
-    '{dealer_name}': getDealerName(dealer),
-    '{dealer_phone}': dealer.phone || '',
-    '{dealer_email}': dealer.email || '',
-    '{dealer_address}': dealer.address || '',
-  };
-
-  let result = text;
-  for (const [tag, value] of Object.entries(replacements)) {
-    result = result.replace(new RegExp(tag.replace(/[{}]/g, '\\$&'), 'g'), value);
-  }
-  return result;
 }
 
 /**
@@ -232,7 +173,7 @@ async function sendAdminNotification(
     ? replaceMergeTags(notification.bodyText, enquiry, dealer)
     : generateEnquiryEmailText(enquiry, dealer);
   const bodyHtml = notification.bodyHtml
-    ? replaceMergeTags(notification.bodyHtml, enquiry, dealer)
+    ? replaceMergeTags(notification.bodyHtml, enquiry, dealer, { html: true })
     : generateEnquiryEmailHTML(enquiry, dealer);
 
   const fromEmail = notification.fromEmail || notification.replyTo || getDealerEmail(dealer);
@@ -267,7 +208,7 @@ async function sendCustomerNotification(
     ? replaceMergeTags(notification.bodyText, enquiry, dealer)
     : generateCustomerConfirmationText(enquiry, dealer);
   const bodyHtml = notification.bodyHtml
-    ? replaceMergeTags(notification.bodyHtml, enquiry, dealer)
+    ? replaceMergeTags(notification.bodyHtml, enquiry, dealer, { html: true })
     : generateCustomerConfirmationHTML(enquiry, dealer);
 
   const fromEmail = notification.fromEmail || notification.replyTo || getDealerEmail(dealer);
