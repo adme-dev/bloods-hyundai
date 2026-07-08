@@ -197,4 +197,5 @@ Loop exit criteria:
 - [x] Hyundai AU OEM model/offers adapter boundary added and used by model summaries, offer hero banner, and variant-price URL construction
 - [x] Calculator route now resolves tenant context, enforces Hyundai-only usage, uses OEM adapter URL builders, and returns safe public errors for upstream failures
 - [x] Phase 6 admin comparison documented in `docs/superpowers/plans/2026-07-08-hyundai-admin-foundation-comparison.md`; initial generic port order defined with no runtime or live changes
+- [x] Hyundai navigation settings contract/compiler added; `/api/site-config` now overlays tenant `dealers.settings.navigation` into legacy `navigation.main`, `sitelinks.mainnav`, `sitelinks.footer`, and `quick_links` when configured
 - [x] No production push/domain change performed

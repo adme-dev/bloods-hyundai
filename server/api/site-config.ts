@@ -18,6 +18,7 @@ import { getRequestURL } from 'h3';
 import { DEFAULT_DEALER_SLUG, resolveDealerSiteUrl, resolveDealerSlugAliases, resolveTenantCacheKey } from '../utils/tenant';
 import { resolveTenantContext } from '../utils/tenant-db';
 import { buildTenantCdnUrls } from '../utils/tenant-cdn';
+import { applyHyundaiNavigationToSiteConfig } from '../../app/utils/siteNavigation';
 
 interface SiteConfig {
   name: string;
@@ -116,7 +117,7 @@ async function fetchTenantConfig(cdnUrl: string, dealerSlug: string): Promise<Si
 function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigin: string): SiteConfig {
   const siteUrl = dealer.websiteUrl || requestOrigin || baseConfig.websiteUrl || '';
 
-  return {
+  const mergedConfig = {
     ...baseConfig,
     name: dealer.name || baseConfig.name,
     logo: dealer.logoUrl || baseConfig.logo,
@@ -129,6 +130,10 @@ function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigi
       ? dealer.settings.siteConfig
       : {}),
   };
+
+  return dealer.settings?.navigation
+    ? applyHyundaiNavigationToSiteConfig(mergedConfig, dealer.settings.navigation)
+    : mergedConfig;
 }
 
 function normalizeSiteConfig(siteConfig: SiteConfig, dealerSlug: string): SiteConfig {
