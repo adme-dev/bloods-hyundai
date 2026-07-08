@@ -204,6 +204,35 @@ Currency formatted with the existing dashboard `formatCurrency` util.
   tested with injected fake fetchers.
 - Existing suite + typecheck baseline (532) must hold.
 
+## Reference implementation (cherry-pick source)
+
+`/Users/paulgiurin/Documents/Projects/dashboard` (XeroFlow Agency, same owner) has
+production-tested versions of these integrations. Port patterns, not files — its stack
+is Cloudflare/agency-multi-client; ours is Netlify/single-dealer.
+
+**Port directly (adapt names/config only):**
+- `server/utils/googleAdsClient.ts` → `gaqlQuery()` (dash-stripped IDs,
+  `developer-token` + `login-customer-id` headers, searchStream batch flattening,
+  `GoogleAdsFailure` detail extraction on 400/403, exponential backoff on 429/5xx)
+  and `refreshGoogleToken()`. **Gotcha it encodes: REST searchStream returns
+  camelCase (`metrics.costMicros`), not GAQL snake_case.**
+- `server/utils/ga4Client.ts` → `parseGa4Report()` index-mapped metric contract and
+  YYYYMMDD→ISO date normalization; the "metric array order is the request↔parse
+  contract" convention.
+- `server/utils/metaClient.ts` → insights fetch with `paging.next` loop and
+  `actions[]` extraction; note it counts `leads_retrieval` (lead-gen form) actions —
+  include alongside `lead` / `offsite_conversion.fb_pixel_lead` in our lead sum.
+- `server/api/cron/ga4-sync.post.ts` → cron endpoint guarded by `x-cron-secret`
+  header (identical to our `METRICS_CRON_SECRET` design).
+
+**Deliberate differences (do NOT port):**
+- Their GA4/Google auth is interactive user-OAuth (agency connects many clients'
+  accounts). We keep the service-account (GA4) / stored-refresh-token (Google Ads)
+  model — no OAuth UI needed for one dealer.
+- Their storage splits `media_spend` + `daily_spend` with budget management. We keep
+  the single `marketing_metrics_daily` table — budgets are out of scope.
+- Their trailing-48h re-sync validates our 3-day lookback; keep 3 days.
+
 ## Delivery order
 
 1. Migration + schema + normalizers with tests (pure layer)
