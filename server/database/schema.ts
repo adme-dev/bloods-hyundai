@@ -1,5 +1,5 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb, index, inet, uniqueIndex } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb, index, inet, uniqueIndex, integer, numeric, date } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 
 // ============================================================================
 // DEALER GROUPS (Optional - for multi-dealership owners)
@@ -1114,6 +1114,51 @@ export type NewCustomerActivity = typeof customerActivities.$inferInsert;
 
 export type RetentionCampaign = typeof retentionCampaigns.$inferSelect;
 export type NewRetentionCampaign = typeof retentionCampaigns.$inferInsert;
+
+// ============================================================================
+// MARKETING PLATFORM METRICS (GA4 / Meta Ads / Google Ads daily sync)
+// ============================================================================
+
+export const marketingMetricsDaily = pgTable('marketing_metrics_daily', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  platform: varchar('platform', { length: 20 }).notNull(),
+  date: date('date').notNull(),
+  campaignId: varchar('campaign_id', { length: 100 }).notNull().default(''),
+  campaignName: varchar('campaign_name', { length: 255 }),
+  spend: numeric('spend', { precision: 12, scale: 2 }),
+  impressions: integer('impressions'),
+  clicks: integer('clicks'),
+  platformLeads: integer('platform_leads'),
+  sessions: integer('sessions'),
+  users: integer('users'),
+  conversions: integer('conversions'),
+  raw: jsonb('raw'),
+  syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  metricsUniq: uniqueIndex('marketing_metrics_daily_uniq').on(t.dealerId, t.platform, t.date, t.campaignId),
+  metricsDealeDate: index('marketing_metrics_daily_dealer_date').on(t.dealerId, t.date),
+}));
+
+export const marketingSyncRuns = pgTable('marketing_sync_runs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  platform: varchar('platform', { length: 20 }).notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  status: varchar('status', { length: 20 }).notNull().default('running'),
+  error: text('error'),
+  rowsUpserted: integer('rows_upserted'),
+}, (t) => ({
+  syncRunsDealerPlatform: index('marketing_sync_runs_dealer_platform').on(t.dealerId, t.platform, t.startedAt),
+  oneRunning: uniqueIndex('marketing_sync_runs_one_running').on(t.dealerId, t.platform).where(sql`status = 'running'`),
+}));
+
+export type MarketingMetricsDaily = typeof marketingMetricsDaily.$inferSelect;
+export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert;
+
+export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
+export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
 
 
 

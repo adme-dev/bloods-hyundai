@@ -13,6 +13,15 @@
 [functions]
   node_bundler = "esbuild"
 
+# Scheduled functions (e.g. metrics-sync-cron) declare their cron schedule
+# inline via `export const config = { schedule }` in the .mts file itself —
+# the canonical mechanism for TypeScript/JavaScript functions per Netlify's
+# docs (https://docs.netlify.com/functions/scheduled-functions/). A
+# `[functions."<name>"] schedule = "..."` block here is documented as an
+# ALTERNATIVE for those functions, not a required supplement, and Netlify's
+# docs do not define precedence if both are set — so we intentionally do not
+# duplicate the schedule here to avoid two sources of truth drifting apart.
+
 # Security headers
 [[headers]]
   for = "/*"
