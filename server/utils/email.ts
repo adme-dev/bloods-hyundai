@@ -5,7 +5,9 @@
 
 import sgMail from '@sendgrid/mail';
 import { db } from './db';
-import { emailLogs } from '../database/schema';
+import { emailLogs, enquiries } from '../database/schema';
+import { eq } from 'drizzle-orm';
+import { evaluateRoutingRules } from './routing';
 
 const DEFAULT_DEALER_NAME = 'Hyundai Dealer';
 const DEFAULT_FROM_EMAIL = 'noreply@hyundai-dealer.com.au';
@@ -289,11 +291,32 @@ async function sendCustomerNotification(
  * Send default notifications when no form-specific ones are configured
  */
 async function sendDefaultNotifications(enquiry: any, dealer: any): Promise<void> {
-  // Send to staff
-  await sendEnquiryNotification(enquiry, dealer, [dealer.email || 'enquiries@hyundai.com.au']);
-  
+  // Route the staff notification through the department table / routing rules
+  // (previously every type collapsed to a single dealer.email inbox).
+  const routing = await evaluateRoutingRules(enquiry, dealer);
+  const recipients = routing.send_to.length > 0
+    ? routing.send_to
+    : [dealer.email || 'enquiries@hyundai.com.au'];
+
+  await sendEnquiryNotification(enquiry, dealer, recipients, {
+    cc: routing.cc,
+    bcc: routing.bcc,
+    priority: routing.priority,
+  });
+
   // Send to customer
   await sendCustomerConfirmation(enquiry, dealer);
+
+  // Auto-assign if a rule specified an owner.
+  if (routing.assign_to) {
+    try {
+      await db.update(enquiries)
+        .set({ assignedTo: routing.assign_to, priority: routing.priority })
+        .where(eq(enquiries.id, enquiry.id));
+    } catch (err) {
+      console.error('[Email] Auto-assign failed:', err);
+    }
+  }
 }
 
 /**
