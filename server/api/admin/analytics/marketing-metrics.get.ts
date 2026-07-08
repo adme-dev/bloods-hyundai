@@ -24,7 +24,13 @@ export default defineEventHandler(async (event) => {
   const connected = {
     ga4: Boolean(integrations.ga4PropertyId && process.env.GA4_SERVICE_ACCOUNT_KEY),
     meta_ads: Boolean(integrations.metaAdAccountId && process.env.META_SYSTEM_USER_TOKEN),
-    google_ads: Boolean(integrations.googleAdsCustomerId && process.env.GOOGLE_ADS_DEVELOPER_TOKEN),
+    google_ads: Boolean(
+      integrations.googleAdsCustomerId &&
+      process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
+      process.env.GOOGLE_ADS_CLIENT_ID &&
+      process.env.GOOGLE_ADS_CLIENT_SECRET &&
+      process.env.GOOGLE_ADS_REFRESH_TOKEN,
+    ),
   };
 
   const [metricRows, crmRows, syncRows] = await Promise.all([

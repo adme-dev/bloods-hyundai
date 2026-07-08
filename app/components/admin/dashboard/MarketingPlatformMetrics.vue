@@ -126,7 +126,13 @@ const syncing = ref(false);
 async function refreshNow() {
   syncing.value = true;
   try {
-    await $fetch('/api/admin/metrics/sync', { method: 'POST' });
+    try {
+      await $fetch('/api/admin/metrics/sync', { method: 'POST' });
+    } catch {
+      // Swallow — refresh() below still runs so the sync-failed badge
+      // (driven by lastError from the read endpoint) shows the failure
+      // instead of leaving an unhandled rejection.
+    }
     await refresh();
   } finally {
     syncing.value = false;
@@ -146,5 +152,5 @@ const lastSyncLabel = computed(() => {
 });
 
 const n = (v: number) => new Intl.NumberFormat('en-AU').format(v || 0);
-const cpl = (v: number | null) => (v == null ? '—' : formatCurrency(v));
+const cpl = (v: number | null) => (v == null ? '—' : formatCurrency(v, true));
 </script>
