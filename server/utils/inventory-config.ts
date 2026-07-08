@@ -11,6 +11,17 @@ export interface HomepageSellerConfig {
   secondary: string[];
 }
 
+export interface TenantInventorySettings {
+  feedSources?: Array<{
+    url?: string;
+    role?: InventorySourceRole;
+  }>;
+  feedUrls?: string[];
+  primarySellerIds?: string[];
+  groupSellerIds?: string[];
+  secondarySellerIds?: string[];
+}
+
 const BLOOD_FEED_SOURCES: InventoryFeedSource[] = [
   {
     url: 'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-hyundai/data.json',
@@ -56,26 +67,66 @@ function parseCsv(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function parseFeedSources(value: string | undefined): InventoryFeedSource[] {
-  return parseCsv(value).map((entry, index) => {
-    const [url, rawRole] = entry.split('|').map((part) => part.trim());
-    const role = rawRole === 'primary' || rawRole === 'group' || rawRole === 'secondary'
-      ? rawRole
-      : index === 0
-        ? 'primary'
-        : index === 1
-          ? 'group'
-          : 'secondary';
-
-    return { url, role };
-  }).filter((source) => Boolean(source.url));
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((entry) => String(entry).trim()).filter(Boolean)
+    : [];
 }
 
-export function getInventoryFeedSources(dealerSlug: string): InventoryFeedSource[] {
+function roleForFeedIndex(index: number): InventorySourceRole {
+  return index === 0 ? 'primary' : index === 1 ? 'group' : 'secondary';
+}
+
+function isInventorySourceRole(value: unknown): value is InventorySourceRole {
+  return value === 'primary' || value === 'group' || value === 'secondary';
+}
+
+function normalizeTenantFeedSources(settings?: TenantInventorySettings): InventoryFeedSource[] {
+  const explicitSources = Array.isArray(settings?.feedSources)
+    ? settings.feedSources
+        .map((source, index) => ({
+          url: String(source?.url || '').trim(),
+          role: isInventorySourceRole(source?.role) ? source.role : roleForFeedIndex(index),
+        }))
+        .filter((source): source is InventoryFeedSource => Boolean(source.url))
+    : [];
+
+  if (explicitSources.length > 0) {
+    return explicitSources;
+  }
+
+  return normalizeStringArray(settings?.feedUrls).map((url, index) => ({
+    url,
+    role: roleForFeedIndex(index),
+  }));
+}
+
+function parseFeedSources(value: string | undefined): InventoryFeedSource[] {
+  return parseCsv(value).flatMap((entry, index) => {
+    const [url, rawRole] = entry.split('|').map((part) => part.trim());
+    if (!url) return [];
+
+    const role = rawRole === 'primary' || rawRole === 'group' || rawRole === 'secondary'
+      ? rawRole
+      : roleForFeedIndex(index);
+
+    return { url, role };
+  });
+}
+
+export function getInventoryFeedSources(
+  dealerSlug: string,
+  tenantInventorySettings?: TenantInventorySettings
+): InventoryFeedSource[] {
+  const tenantSources = normalizeTenantFeedSources(tenantInventorySettings);
+  if (tenantSources.length > 0) {
+    return tenantSources;
+  }
+
   for (const prefix of envPrefixesForDealer(dealerSlug)) {
-    const tenantSources = parseFeedSources(process.env[`${prefix}_CARSALES_FEED_URLS`]);
-    if (tenantSources.length > 0) {
-      return tenantSources;
+    const envSources = parseFeedSources(process.env[`${prefix}_CARSALES_FEED_URLS`]);
+    if (envSources.length > 0) {
+      return envSources;
     }
   }
 
@@ -90,16 +141,29 @@ export function getInventoryFeedSources(dealerSlug: string): InventoryFeedSource
   return [];
 }
 
-export function getHomepageSellerConfig(dealerSlug: string): HomepageSellerConfig {
+export function getHomepageSellerConfig(
+  dealerSlug: string,
+  tenantInventorySettings?: TenantInventorySettings
+): HomepageSellerConfig {
+  const tenantConfig = {
+    primary: normalizeStringArray(tenantInventorySettings?.primarySellerIds),
+    group: normalizeStringArray(tenantInventorySettings?.groupSellerIds),
+    secondary: normalizeStringArray(tenantInventorySettings?.secondarySellerIds),
+  };
+
+  if (tenantConfig.primary.length || tenantConfig.group.length || tenantConfig.secondary.length) {
+    return tenantConfig;
+  }
+
   for (const prefix of envPrefixesForDealer(dealerSlug)) {
-    const tenantConfig = {
+    const envConfig = {
       primary: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_PRIMARY_SELLER_IDS`]),
       group: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_GROUP_SELLER_IDS`]),
       secondary: parseCsv(process.env[`${prefix}_HOMEPAGE_FILTER_SECONDARY_SELLER_IDS`]),
     };
 
-    if (tenantConfig.primary.length || tenantConfig.group.length || tenantConfig.secondary.length) {
-      return tenantConfig;
+    if (envConfig.primary.length || envConfig.group.length || envConfig.secondary.length) {
+      return envConfig;
     }
   }
 

@@ -190,4 +190,5 @@ Loop exit criteria:
 - [x] DB tenant resolver added behind `HYUNDAI_ENABLE_DB_TENANT_RESOLVER`
 - [x] `/api/site-config` reads from tenant context while preserving fallback-map default behavior
 - [x] Host-to-tenant/config verification script added
+- [x] Inventory feed and homepage filter seller config can read tenant settings before env/local fallbacks
 - [x] No production push/domain change performed

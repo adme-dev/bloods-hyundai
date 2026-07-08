@@ -83,10 +83,10 @@ The app already has a useful baseline:
 - `server/utils/inventory-config.ts`
   - contains Blood-specific Supabase fallback URL.
   - contains Blood slug checks and env prefix logic.
-  - needs tenant settings source for inventory feed provider/URL/account.
+  - now accepts tenant inventory settings for feed sources and homepage seller IDs before env/local fallbacks.
 - APIs likely affected:
-  - `server/api/carsales-feed.ts`
-  - `server/api/homepage-filters.ts`
+  - `server/api/carsales-feed.ts` now passes resolved tenant inventory settings.
+  - `server/api/homepage-filters.ts` now passes resolved tenant inventory settings.
   - `server/api/search.ts`
   - `server/api/vehicle-detail/[id].ts`
   - `server/api/vehicle-enrichment*.ts`

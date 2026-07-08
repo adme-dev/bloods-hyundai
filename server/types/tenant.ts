@@ -31,6 +31,10 @@ export interface HyundaiTenantHomepageSettings {
 
 export interface HyundaiTenantInventorySettings {
   provider?: 'carsales' | 'driveagent' | 'supabase' | 'custom';
+  feedSources?: Array<{
+    url: string;
+    role: 'primary' | 'group' | 'secondary';
+  }>;
   feedUrls?: string[];
   primarySellerIds?: string[];
   groupSellerIds?: string[];

@@ -8,7 +8,9 @@
  * - Stale-while-revalidate for better performance
  */
 import { getInventoryFeedSources, type InventoryFeedSource } from '../utils/inventory-config';
-import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveTenantCacheKey } from '../utils/tenant';
+import { resolveTenantContext } from '../utils/tenant-db';
+import type { HyundaiTenantSettings } from '../types/tenant';
 
 // Helper functions
 const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
@@ -88,8 +90,8 @@ function createFiltersFromVehicles(vehicles: any[]) {
 const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
-async function buildFeedSource(dealerSlug: string) {
-  const sources = getInventoryFeedSources(dealerSlug);
+async function buildFeedSource(dealerSlug: string, tenantSettings: HyundaiTenantSettings = {}) {
+  const sources = getInventoryFeedSources(dealerSlug, tenantSettings.inventory);
 
   if (sources.length === 0) {
     console.warn(`[Carsales Feed] No inventory feed configured for dealer: ${dealerSlug}`);
@@ -144,9 +146,9 @@ async function buildFeedSource(dealerSlug: string) {
     console.log('[Carsales Feed] Fetching sources for dealer:', dealerSlug, sources.map((source) => source.role));
 
     const settled = await Promise.allSettled(sources.map((source, index) => fetchOne(source, index)));
-    const responses = settled.map((r, index) => ({
-      source: sources[index],
-      data: r.status === 'fulfilled' ? r.value : [],
+    const responses = sources.map((source, index) => ({
+      source,
+      data: settled[index]?.status === 'fulfilled' ? settled[index].value : [],
     }));
     const successfulBuckets = responses.filter((response) => response.data.length > 0).length;
 
@@ -271,8 +273,12 @@ async function buildFeedSource(dealerSlug: string) {
   }
 }
 
-const buildFeed = defineCachedFunction(async (tenantKey: string, dealerSlug: string) => {
-  return await buildFeedSource(dealerSlug);
+const buildFeed = defineCachedFunction(async (
+  tenantKey: string,
+  dealerSlug: string,
+  tenantSettings: HyundaiTenantSettings = {}
+) => {
+  return await buildFeedSource(dealerSlug, tenantSettings);
 }, {
   maxAge: CACHE_MAX_AGE,
   staleMaxAge: CACHE_STALE_MAX_AGE,
@@ -287,7 +293,8 @@ const buildFeed = defineCachedFunction(async (tenantKey: string, dealerSlug: str
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
-  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
+  const tenantContext = await resolveTenantContext(event, fallbackSlug);
+  const dealerSlug = tenantContext.tenant.slug;
   const tenantKey = resolveTenantCacheKey(event, 'carsales-feed-data', fallbackSlug);
   const query = getQuery(event);
 
@@ -300,5 +307,5 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return await buildFeed(tenantKey, dealerSlug);
+  return await buildFeed(tenantKey, dealerSlug, tenantContext.tenant.settings);
 });

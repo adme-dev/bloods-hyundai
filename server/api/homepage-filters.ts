@@ -13,7 +13,8 @@ import {
   getHomepageSellerConfig,
   type HomepageSellerConfig,
 } from '../utils/inventory-config';
-import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
+import { DEFAULT_DEALER_SLUG, resolveTenantCacheKey } from '../utils/tenant';
+import { resolveTenantContext } from '../utils/tenant-db';
 
 /**
  * Extract condition values from database field
@@ -110,8 +111,9 @@ export default defineCachedEventHandler(async (event) => {
   try {
     const config = useRuntimeConfig();
     const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
-    const dealerSlug = resolveDealerSlug(event, fallbackSlug);
-    const sellerConfig = getHomepageSellerConfig(dealerSlug);
+    const tenantContext = await resolveTenantContext(event, fallbackSlug);
+    const dealerSlug = tenantContext.tenant.slug;
+    const sellerConfig = getHomepageSellerConfig(dealerSlug, tenantContext.tenant.settings.inventory);
     const sellerIds = getAllSellerIds(sellerConfig);
 
     if (sellerIds.length === 0) {
