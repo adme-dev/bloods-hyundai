@@ -1,10 +1,12 @@
-import { db, withTenantContext } from '../../../../utils/db';
-import { enquiryNotes, enquiryActivityLog } from '../../../../database/schema';
+import { and, eq } from 'drizzle-orm';
+import { db } from '../../../../utils/db';
+import { enquiries, enquiryNotes } from '../../../../database/schema';
+import { logEnquiryActivity } from '../../../../utils/enquiryActivity';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
   const dealerId = event.context.dealerId;
-  
+
   if (!user || !dealerId) {
     throw createError({
       statusCode: 401,
@@ -13,6 +15,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const enquiryId = getRouterParam(event, 'id');
+  if (!enquiryId) {
+    throw createError({ statusCode: 400, message: 'Enquiry ID is required' });
+  }
+
   const body = await readBody(event);
   const { content } = body;
 
@@ -23,25 +29,39 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Verify the enquiry belongs to the caller's dealer (tenancy / IDOR guard).
+  const owning = await db.query.enquiries.findFirst({
+    where: and(eq(enquiries.id, enquiryId), eq(enquiries.dealerId, dealerId)),
+    columns: { id: true },
+  });
+  if (!owning) {
+    throw createError({ statusCode: 404, message: 'Enquiry not found' });
+  }
+
   try {
-    let newNote;
-    
-    await withTenantContext(dealerId, async () => {
-      // Create note
-      const [note] = await db.insert(enquiryNotes).values({
-        enquiryId,
-        userId: user.id,
-        content: content.trim(),
-      }).returning();
+    let newNote: typeof enquiryNotes.$inferSelect | undefined;
+
+    await db.transaction(async (tx) => {
+      const [note] = await tx
+        .insert(enquiryNotes)
+        .values({
+          enquiryId,
+          userId: user.userId,
+          content: content.trim(),
+        })
+        .returning();
 
       newNote = note;
 
-      // Log activity
-      await db.insert(enquiryActivityLog).values({
-        enquiryId,
-        userId: user.id,
-        action: 'Added a note',
-      });
+      await logEnquiryActivity(
+        {
+          dealerId,
+          enquiryId,
+          userId: user.userId,
+          action: 'Added a note',
+        },
+        tx,
+      );
     });
 
     return { success: true, note: newNote };
@@ -53,13 +73,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-
-
-
-
-
-
-
-
-
