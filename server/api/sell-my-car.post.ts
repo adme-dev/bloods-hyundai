@@ -13,6 +13,7 @@ import { dealers, enquiries, enquiryActivityLog } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { evaluateRoutingRules } from '../utils/routing';
 import { sendEnquiryNotification, sendCustomerConfirmation } from '../utils/email';
+import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 
 interface SellMyCarSubmission {
   // Personal details
@@ -200,7 +201,7 @@ export default defineEventHandler(async (event) => {
         phone: body.phone,
         message: message,
         sellCarDetails: sellCarDetails,
-        status: 'new',
+        status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
