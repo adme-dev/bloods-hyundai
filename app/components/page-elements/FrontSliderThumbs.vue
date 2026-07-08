@@ -77,6 +77,7 @@
 
 <script setup lang="ts">
 import emblaCarouselVue from 'embla-carousel-vue';
+import Autoplay from 'embla-carousel-autoplay';
 import { isDateInRange } from '~/utils/date';
 import { getConfiguredFrontThumbs } from '~/utils/frontSlides';
 
@@ -101,7 +102,7 @@ const [emblaRef, emblaApi] = emblaCarouselVue({
     '(min-width: 640px)': { slidesToScroll: 2 },
     '(min-width: 960px)': { slidesToScroll: 3 },
   },
-});
+}, [Autoplay({ delay: 3500, stopOnInteraction: false })]);
 
 // Navigation state
 const canScrollPrev = ref(false);

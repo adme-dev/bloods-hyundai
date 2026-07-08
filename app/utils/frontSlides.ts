@@ -76,12 +76,10 @@ export function getConfiguredFrontSlides(source: unknown): FrontSlide[] {
       const item = entry as Record<string, unknown>;
 
       const legacySlides = Array.isArray(item.slides) ? item.slides : [];
-      const footerbannerSlides = Array.isArray(item.footerbanner) ? item.footerbanner : [];
       const footerblockSlides = Array.isArray(item.footerblocks) ? item.footerblocks : [];
 
       const mapped = [
         ...legacySlides.map(mapSlideConfig),
-        ...footerbannerSlides.map((footerBanner) => mapFooterBannerSlide(footerBanner)),
         ...footerblockSlides.map((block) => mapFooterBlockSlide(block)),
       ];
 
@@ -166,24 +164,6 @@ function mapSlideConfig(slide: unknown): FrontSlide {
     button_colour: pickFirstString(item.button_colour, item.button_color),
     start: pickFirstString(item.start, item.start_date),
     end: pickFirstString(item.end, item.end_date),
-  };
-}
-
-function mapFooterBannerSlide(slide: unknown): FrontSlide {
-  if (!slide || typeof slide !== 'object') return {};
-
-  const item = slide as Record<string, unknown>;
-
-  return {
-    desktop: pickFirstString(item.image, item.desktop, item.slides, item.slide),
-    tablet: pickFirstString(item.tablet, item.mobile_img, item.mobileImage),
-    mobile: pickFirstString(item.mobile, item.mobile_img, item.mobileImage),
-    heading_content: pickFirstString(item.title, item.heading, item.heading_content),
-    sub_heading: pickFirstString(item.content),
-    link: pickFirstString(item.link),
-    button_text: pickFirstString(item.button),
-    button_colour: pickFirstString(item.button_colour, item.button_color),
-    contrast: pickFirstString(item.contrast, item.text_contrast, item.textContrast),
   };
 }
 

@@ -14,9 +14,9 @@
 /*.html
   Cache-Control: no-cache, no-store, must-revalidate
 
-# Root index - short CDN cache, browser revalidates
+# Root index - short CDN cache, browser does not store dynamic HTML
 /
-  Cache-Control: public, max-age=0, must-revalidate
+  Cache-Control: no-cache, no-store, must-revalidate
   CDN-Cache-Control: public, max-age=300, stale-while-revalidate=3600
 
 # LLM discovery file
