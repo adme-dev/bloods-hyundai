@@ -16,10 +16,10 @@ describe('FrontSliderThumbs component', () => {
     assert.match(componentSource, /Autoplay\(\{\s*delay:\s*3500,\s*stopOnInteraction:\s*false\s*\}\)/s);
   });
 
-  it('keeps mobile thumbs stacked before enabling the carousel at tablet width', () => {
+  it('keeps mobile thumbs in a two-column stack before enabling the carousel at tablet width', () => {
     assert.match(componentSource, /active:\s*false,/);
     assert.match(componentSource, /'\(min-width:\s*640px\)':\s*\{\s*active:\s*true,\s*slidesToScroll:\s*2\s*\}/);
-    assert.match(componentSource, /\.thumbs-container\s*\{[\s\S]*?flex-direction:\s*column;/);
-    assert.match(componentSource, /@media\s*\(min-width:\s*640px\)\s*\{[\s\S]*?\.thumbs-container\s*\{[\s\S]*?flex-direction:\s*row;/);
+    assert.match(componentSource, /\.thumbs-container\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/);
+    assert.match(componentSource, /@media\s*\(min-width:\s*640px\)\s*\{[\s\S]*?\.thumbs-container\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*row;/);
   });
 });

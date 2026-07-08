@@ -167,8 +167,8 @@ onUnmounted(() => {
 }
 
 .thumbs-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   backface-visibility: hidden;
   touch-action: auto;
@@ -193,6 +193,7 @@ onUnmounted(() => {
   }
 
   .thumbs-container {
+    display: flex;
     flex-direction: row;
     touch-action: pan-y pinch-zoom;
   }
