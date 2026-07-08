@@ -13,6 +13,9 @@
 import { groqEnrichmentService } from '../../services/groq-enrichment';
 import { vehicleEnrichmentCache } from '../../services/vehicle-enrichment-cache';
 import type { VehicleInput, EnrichmentResponse } from '../../types/enrichment';
+import { DEFAULT_DEALER_SLUG } from '../../utils/tenant';
+import { resolveTenantContext } from '../../utils/tenant-db';
+import { resolveTenantSellerIds } from '../../utils/tenant-inventory-scope';
 
 export default defineEventHandler(async (event): Promise<EnrichmentResponse> => {
   const startTime = Date.now();
@@ -38,9 +41,16 @@ export default defineEventHandler(async (event): Promise<EnrichmentResponse> => 
   }
 
   try {
+    const config = useRuntimeConfig();
+    const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+    const tenantContext = await resolveTenantContext(event, fallbackSlug);
+    const tenantSellerIds = resolveTenantSellerIds(
+      tenantContext.tenant.slug,
+      tenantContext.tenant.settings
+    );
+
     // Get vehicle data from your inventory system
-    // This is a placeholder - replace with your actual vehicle lookup
-    const vehicle = await getVehicleById(id);
+    const vehicle = await getVehicleById(id, tenantSellerIds);
 
     if (!vehicle) {
       throw createError({
@@ -84,7 +94,10 @@ export default defineEventHandler(async (event): Promise<EnrichmentResponse> => 
  * Get vehicle by ID from your inventory system
  * Replace this with your actual implementation
  */
-async function getVehicleById(id: string): Promise<VehicleInput | null> {
+async function getVehicleById(
+  id: string,
+  tenantSellerIds: string[] = []
+): Promise<VehicleInput | null> {
   // Try to get from Supabase vehicle inventory
   // This is a placeholder - implement based on your data source
 
@@ -110,6 +123,10 @@ async function getVehicleById(id: string): Promise<VehicleInput | null> {
         .select('*')
         .or(`id.eq.${id},stock_number.eq.${id}`)
         .limit(1);
+
+      if (tenantSellerIds.length > 0) {
+        query = query.in('seller_id', tenantSellerIds);
+      }
 
       const { data, error } = await query.maybeSingle();
 

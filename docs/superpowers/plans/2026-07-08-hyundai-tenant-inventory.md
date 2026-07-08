@@ -89,7 +89,8 @@ The app already has a useful baseline:
   - `server/api/homepage-filters.ts` now passes resolved tenant inventory settings.
   - `server/api/search.ts`
   - `server/api/vehicle-detail/[id].ts`
-  - `server/api/vehicle-enrichment*.ts`
+  - `server/api/vehicle-enrichment/[id].get.ts` now scopes direct Supabase lookups by tenant seller IDs.
+  - `server/api/vehicle-enrichment-optimized/[id].get.ts`
   - `server/api/vehicle/[slug].ts`
 
 ### Reviews And Place Data

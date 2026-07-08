@@ -191,4 +191,5 @@ Loop exit criteria:
 - [x] `/api/site-config` reads from tenant context while preserving fallback-map default behavior
 - [x] Host-to-tenant/config verification script added
 - [x] Inventory feed and homepage filter seller config can read tenant settings before env/local fallbacks
+- [x] Standard vehicle enrichment direct inventory lookup is constrained by tenant seller IDs
 - [x] No production push/domain change performed
