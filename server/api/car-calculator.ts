@@ -89,7 +89,8 @@ const calculatorRouteResolutions: Record<string, CalculatorRouteResolution> = {
   },
 };
 
-const normalizeModelSlug = (modelname: string) => modelname.trim().toLowerCase();
+const normalizeModelSlug = (modelname: string) =>
+  modelname.trim().toLowerCase().replace(/^20\d{2}[-_\s]+/i, '');
 
 const normalizeHyundaiAssetUrl = (url?: string | null): string | null => {
   if (!url) return null;
