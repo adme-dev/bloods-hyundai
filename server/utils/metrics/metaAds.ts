@@ -1,6 +1,6 @@
 // Meta Marketing API insights (level=campaign, time_increment=1).
 // Lead action types ported from XeroFlow metaClient.ts (incl. leads_retrieval).
-import type { NormalizedRow } from './types';
+import type { DateRange, NormalizedRow } from './types';
 
 export const META_LEAD_ACTION_TYPES = new Set([
   'lead',
@@ -38,4 +38,36 @@ export function normalizeMetaInsights(insights: unknown[]): NormalizedRow[] {
       raw: i,
     };
   });
+}
+
+const META_GRAPH_BASE = 'https://graph.facebook.com/v23.0';
+
+/** adAccountId accepts '1234567890' or 'act_1234567890'. Follows paging.next. */
+export async function fetchMetaDaily(adAccountId: string, range: DateRange): Promise<NormalizedRow[]> {
+  const token = process.env.META_SYSTEM_USER_TOKEN;
+  if (!token) throw new Error('META_SYSTEM_USER_TOKEN not set');
+  const account = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+
+  // Token goes in the Authorization header, NEVER the URL — error messages echo
+  // URLs and sync_runs.error is persisted.
+  const insights: unknown[] = [];
+  let url: string | null = `${META_GRAPH_BASE}/${account}/insights?` + new URLSearchParams({
+    level: 'campaign',
+    time_increment: '1',
+    time_range: JSON.stringify({ since: range.from, until: range.to }),
+    fields: 'campaign_id,campaign_name,spend,impressions,clicks,actions',
+    limit: '100',
+  }).toString();
+
+  let guard = 0;
+  while (url && guard < 20) {
+    const res: { data?: unknown[]; paging?: { next?: string } } = await $fetch(url, {
+      timeout: 30_000,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    insights.push(...(res.data || []));
+    url = res.paging?.next || null;
+    guard++;
+  }
+  return normalizeMetaInsights(insights);
 }
