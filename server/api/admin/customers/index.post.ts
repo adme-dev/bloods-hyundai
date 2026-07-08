@@ -1,5 +1,7 @@
 import { db } from '../../../utils/db';
 import { customers, customerRetentionProfiles, customerActivities } from '../../../database/schema';
+import { pickSafeCustomer } from '../../../utils/customerSafe';
+import { VALID_LIFECYCLE_STAGES, type LifecycleStage } from '~~/shared/constants/salesFunnel';
 
 export default defineEventHandler(async (event) => {
   const dealerId = event.context.dealerId;
@@ -11,6 +13,14 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 400,
       message: 'First name, last name, and email are required',
+    });
+  }
+
+  // Validate lifecycle stage against the canonical set
+  if (body.lifecycleStage && !VALID_LIFECYCLE_STAGES.includes(body.lifecycleStage as LifecycleStage)) {
+    throw createError({
+      statusCode: 400,
+      message: `Invalid lifecycle stage. Valid values: ${VALID_LIFECYCLE_STAGES.join(', ')}`,
     });
   }
 
@@ -73,7 +83,7 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     customer: {
-      ...newCustomer,
+      ...pickSafeCustomer(newCustomer),
       retentionProfile,
     },
   };
