@@ -1,6 +1,11 @@
 import type { db } from './db';
 import { enquiryActivityLog } from '../database/schema';
 
+// Accepts either the base db or a transaction client (the callback arg of
+// db.transaction). A PgTransaction is not assignable to `typeof db` because db
+// carries an extra `$client: Pool`, so we type the union explicitly.
+type DbOrTx = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export interface EnquiryActivityInput {
   dealerId: string;
   enquiryId: string;
@@ -32,7 +37,7 @@ export function buildEnquiryActivityRow(input: EnquiryActivityInput) {
  * Insert an enquiry activity-log entry. Pass a transaction client as `tx` to
  * make the log write atomic with the change it records.
  */
-export async function logEnquiryActivity(input: EnquiryActivityInput, tx?: typeof db) {
-  const client = tx ?? (await import('./db')).db;
+export async function logEnquiryActivity(input: EnquiryActivityInput, tx?: DbOrTx) {
+  const client: DbOrTx = tx ?? (await import('./db')).db;
   await client.insert(enquiryActivityLog).values(buildEnquiryActivityRow(input));
 }
