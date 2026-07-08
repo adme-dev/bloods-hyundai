@@ -313,31 +313,44 @@ onUnmounted(() => {
 
 <style scoped>
 .hero-slider {
+  --hero-viewport-width: 100vw;
+  --hero-half-viewport-width: 50vw;
+  margin-left: calc(50% - var(--hero-half-viewport-width));
+  margin-right: calc(50% - var(--hero-half-viewport-width));
   padding: 0;
+  position: relative;
+  width: var(--hero-viewport-width);
+  max-width: var(--hero-viewport-width);
 }
 
 .hero-carousel {
   position: relative;
+  width: 100%;
+  max-width: none;
 }
 
 .hero-container--single {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .hero-viewport {
   overflow: hidden;
+  width: 100%;
+  max-width: none;
 }
 
 .hero-container {
   display: flex;
   backface-visibility: hidden;
   touch-action: pan-y pinch-zoom;
+  width: 100%;
 }
 
 .hero-slide {
   flex: 0 0 100%;
   min-width: 0;
   padding: 0;
+  width: 100%;
 }
 
 .slide-panel {
@@ -347,6 +360,8 @@ onUnmounted(() => {
   filter: none;
   transition: none;
   cursor: pointer;
+  width: 100%;
+  max-width: none;
 }
 
 .slide-panel.is-active {
@@ -362,19 +377,30 @@ onUnmounted(() => {
 .slide-media {
   position: relative;
   background-color: #fff;
+  width: 100%;
+  max-width: none;
 }
 
 .slide-image-wrapper {
   display: block;
   width: 100%;
+  max-width: none;
 }
 
 .slide-image {
   width: 100%;
+  max-width: none;
   height: auto;
   display: block;
   object-fit: contain;
   object-position: center center;
+}
+
+@supports (width: 100dvw) {
+  .hero-slider {
+    --hero-viewport-width: 100dvw;
+    --hero-half-viewport-width: 50dvw;
+  }
 }
 
 @media (max-width: 768px) {
