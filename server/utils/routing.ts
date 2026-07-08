@@ -62,7 +62,9 @@ export async function evaluateRoutingRules(
   enquiry: any,
   dealer: any
 ): Promise<RoutingResult> {
-  const rules: RoutingRule[] = dealer.routing_rules || [];
+  // Drizzle returns the column as the camelCase model property `routingRules`.
+  // (`routing_rules` was always undefined, silently disabling every rule.)
+  const rules: RoutingRule[] = dealer.routingRules || dealer.routing_rules || [];
   
   const result: RoutingResult = {
     send_to: [],
