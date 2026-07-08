@@ -7,7 +7,8 @@
  * - Automatic cache invalidation
  * - Stale-while-revalidate for better performance
  */
-import { getInventoryFeedSources, type InventoryFeedSource } from '../utils/inventory-config';
+import { getInventorySources } from '../utils/inventory-config';
+import type { InventorySource } from '../types/inventory';
 import { DEFAULT_DEALER_SLUG, resolveTenantCacheKey } from '../utils/tenant';
 import { resolveTenantContext } from '../utils/tenant-db';
 import type { HyundaiTenantSettings } from '../types/tenant';
@@ -91,7 +92,8 @@ const CACHE_MAX_AGE = 60 * 10; // 10 minutes
 const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
 
 async function buildFeedSource(dealerSlug: string, tenantSettings: HyundaiTenantSettings = {}) {
-  const sources = getInventoryFeedSources(dealerSlug, tenantSettings.inventory);
+  const sources = getInventorySources(dealerSlug, tenantSettings.inventory)
+    .filter((source) => source.enabled && source.transport === 'json-feed');
 
   if (sources.length === 0) {
     console.warn(`[Carsales Feed] No inventory feed configured for dealer: ${dealerSlug}`);
@@ -107,7 +109,7 @@ async function buildFeedSource(dealerSlug: string, tenantSettings: HyundaiTenant
 
   const PER_URL_DEADLINE_MS = 6000;
 
-  const fetchOne = async (source: InventoryFeedSource, index: number): Promise<any[]> => {
+  const fetchOne = async (source: InventorySource, index: number): Promise<any[]> => {
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), PER_URL_DEADLINE_MS);
     const startedAt = Date.now();

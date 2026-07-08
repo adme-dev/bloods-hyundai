@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   getHomepageSellerConfig,
   getInventoryFeedSources,
+  getInventorySources,
 } from '../server/utils/inventory-config';
 
 describe('tenant inventory config', () => {
@@ -48,5 +49,50 @@ describe('tenant inventory config', () => {
       group: ['tenant-group'],
       secondary: ['tenant-secondary'],
     });
+  });
+
+  it('builds tenant inventory sources with provider metadata and role seller IDs', () => {
+    const sources = getInventorySources('sale-hyundai', {
+      provider: 'carsales',
+      sources: [
+        { url: 'https://inventory.example.test/sale.json', role: 'primary' },
+        { url: 'https://inventory.example.test/group.json', role: 'group', provider: 'driveagent' },
+      ],
+      primarySellerIds: ['sale-primary'],
+      groupSellerIds: ['sale-group'],
+    });
+
+    assert.deepEqual(sources, [
+      {
+        provider: 'carsales',
+        transport: 'json-feed',
+        url: 'https://inventory.example.test/sale.json',
+        role: 'primary',
+        sellerIds: ['sale-primary'],
+        enabled: true,
+      },
+      {
+        provider: 'driveagent',
+        transport: 'json-feed',
+        url: 'https://inventory.example.test/group.json',
+        role: 'group',
+        sellerIds: ['sale-group'],
+        enabled: true,
+      },
+    ]);
+  });
+
+  it('keeps legacy feed source output compatible when contract sources are configured', () => {
+    const sources = getInventoryFeedSources('sale-hyundai', {
+      sources: [
+        { url: 'https://inventory.example.test/disabled.json', role: 'primary', enabled: false },
+        { url: 'https://inventory.example.test/sale.json', role: 'primary', sellerIds: ['sale-primary'] },
+      ],
+      feedUrls: ['https://inventory.example.test/legacy.json'],
+    });
+
+    assert.deepEqual(sources, [
+      { url: 'https://inventory.example.test/sale.json', role: 'primary' },
+    ]);
   });
 });

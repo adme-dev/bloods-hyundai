@@ -1,3 +1,5 @@
+import type { TenantInventorySettings } from './inventory';
+
 export type HyundaiTenantStatus = 'active' | 'staging' | 'disabled';
 
 export type HyundaiTenantOem = 'hyundai';
@@ -29,17 +31,7 @@ export interface HyundaiTenantHomepageSettings {
   footerBlocks?: unknown[];
 }
 
-export interface HyundaiTenantInventorySettings {
-  provider?: 'carsales' | 'driveagent' | 'supabase' | 'custom';
-  feedSources?: Array<{
-    url: string;
-    role: 'primary' | 'group' | 'secondary';
-  }>;
-  feedUrls?: string[];
-  primarySellerIds?: string[];
-  groupSellerIds?: string[];
-  secondarySellerIds?: string[];
-}
+export type HyundaiTenantInventorySettings = TenantInventorySettings;
 
 export interface HyundaiTenantChatbotSettings {
   enabled?: boolean;

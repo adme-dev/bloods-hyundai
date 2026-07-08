@@ -1,25 +1,16 @@
-export type InventorySourceRole = 'primary' | 'group' | 'secondary';
-
-export interface InventoryFeedSource {
-  url: string;
-  role: InventorySourceRole;
-}
+import type {
+  InventoryFeedSource,
+  InventorySource,
+  InventorySourceProvider,
+  InventorySourceRole,
+  InventorySourceTransport,
+  TenantInventorySettings,
+} from '../types/inventory';
 
 export interface HomepageSellerConfig {
   primary: string[];
   group: string[];
   secondary: string[];
-}
-
-export interface TenantInventorySettings {
-  feedSources?: Array<{
-    url?: string;
-    role?: InventorySourceRole;
-  }>;
-  feedUrls?: string[];
-  primarySellerIds?: string[];
-  groupSellerIds?: string[];
-  secondarySellerIds?: string[];
 }
 
 const BLOOD_FEED_SOURCES: InventoryFeedSource[] = [
@@ -44,6 +35,8 @@ const BLOOD_SELLER_CONFIG: HomepageSellerConfig = {
 };
 
 const DEFAULT_DEALER_SLUG = 'hyundai-dealer';
+const DEFAULT_INVENTORY_PROVIDER: InventorySourceProvider = 'carsales';
+const DEFAULT_INVENTORY_TRANSPORT: InventorySourceTransport = 'json-feed';
 
 function isBloodDealerSlug(dealerSlug: string): boolean {
   return dealerSlug === 'blood-hyundai' || dealerSlug === 'bloods-hyundai';
@@ -81,6 +74,14 @@ function isInventorySourceRole(value: unknown): value is InventorySourceRole {
   return value === 'primary' || value === 'group' || value === 'secondary';
 }
 
+function isInventorySourceProvider(value: unknown): value is InventorySourceProvider {
+  return value === 'carsales' || value === 'driveagent' || value === 'supabase' || value === 'custom';
+}
+
+function isInventorySourceTransport(value: unknown): value is InventorySourceTransport {
+  return value === 'json-feed' || value === 'api';
+}
+
 function normalizeTenantFeedSources(settings?: TenantInventorySettings): InventoryFeedSource[] {
   const explicitSources = Array.isArray(settings?.feedSources)
     ? settings.feedSources
@@ -114,10 +115,38 @@ function parseFeedSources(value: string | undefined): InventoryFeedSource[] {
   });
 }
 
+function normalizeTenantInventorySources(settings?: TenantInventorySettings): InventorySource[] {
+  if (!Array.isArray(settings?.sources)) {
+    return [];
+  }
+
+  return settings.sources
+    .map((source, index) => ({
+      provider: isInventorySourceProvider(source?.provider)
+        ? source.provider
+        : (isInventorySourceProvider(settings?.provider) ? settings.provider : DEFAULT_INVENTORY_PROVIDER),
+      transport: isInventorySourceTransport(source?.transport)
+        ? source.transport
+        : DEFAULT_INVENTORY_TRANSPORT,
+      url: String(source?.url || '').trim(),
+      role: isInventorySourceRole(source?.role) ? source.role : roleForFeedIndex(index),
+      sellerIds: normalizeStringArray(source?.sellerIds),
+      enabled: source?.enabled !== false,
+    }))
+    .filter((source): source is InventorySource => Boolean(source.url) && source.enabled);
+}
+
 export function getInventoryFeedSources(
   dealerSlug: string,
   tenantInventorySettings?: TenantInventorySettings
 ): InventoryFeedSource[] {
+  const contractSources = normalizeTenantInventorySources(tenantInventorySettings)
+    .filter((source) => source.transport === 'json-feed');
+
+  if (contractSources.length > 0) {
+    return contractSources.map(({ url, role }) => ({ url, role }));
+  }
+
   const tenantSources = normalizeTenantFeedSources(tenantInventorySettings);
   if (tenantSources.length > 0) {
     return tenantSources;
@@ -192,4 +221,32 @@ export function getAllSellerIds(config: HomepageSellerConfig): string[] {
     ...config.group,
     ...config.secondary,
   ]));
+}
+
+export function getInventorySources(
+  dealerSlug: string,
+  tenantInventorySettings?: TenantInventorySettings
+): InventorySource[] {
+  const sellerConfig = getHomepageSellerConfig(dealerSlug, tenantInventorySettings);
+  const contractSources = normalizeTenantInventorySources(tenantInventorySettings);
+
+  if (contractSources.length > 0) {
+    return contractSources.map((source) => ({
+      ...source,
+      sellerIds: source.sellerIds.length > 0 ? source.sellerIds : sellerConfig[source.role],
+    }));
+  }
+
+  const provider = isInventorySourceProvider(tenantInventorySettings?.provider)
+    ? tenantInventorySettings.provider
+    : DEFAULT_INVENTORY_PROVIDER;
+
+  return getInventoryFeedSources(dealerSlug, tenantInventorySettings).map((source) => ({
+    provider,
+    transport: DEFAULT_INVENTORY_TRANSPORT,
+    url: source.url,
+    role: source.role,
+    sellerIds: sellerConfig[source.role],
+    enabled: true,
+  }));
 }
