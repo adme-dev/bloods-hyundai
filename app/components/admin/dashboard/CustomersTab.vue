@@ -297,7 +297,7 @@
                     </div>
                   </div>
                 </div>
-                <Button variant="destructive" size="sm" as-child>
+                <Button variant="destructive" size="sm" class="bg-red-600 text-white no-underline hover:bg-red-700 hover:text-white" as-child>
                   <NuxtLink :to="`/admin/customers/${customer.id}`">
                     <Phone class="mr-1 h-3 w-3" /> Contact
                   </NuxtLink>

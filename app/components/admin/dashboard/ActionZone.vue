@@ -92,7 +92,7 @@
           <div
             v-for="enquiry in data.followUpAlerts.overdueEnquiries"
             :key="enquiry.id"
-            class="flex items-center justify-between px-6 py-3 bg-red-50/50 dark:bg-red-950/20"
+            class="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50"
           >
             <div class="flex items-center gap-3">
               <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
@@ -109,7 +109,7 @@
                 </div>
               </div>
             </div>
-            <Button variant="destructive" size="sm" as-child>
+            <Button variant="destructive" size="sm" class="bg-red-600 text-white no-underline hover:bg-red-700 hover:text-white" as-child>
               <NuxtLink :to="`/admin/enquiries/${enquiry.id}`">
                 Respond Now
               </NuxtLink>
