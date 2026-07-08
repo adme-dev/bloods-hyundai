@@ -298,15 +298,15 @@
         </CardHeader>
         <CardContent>
           <div class="h-[280px]">
-            <div v-if="data?.dailyTrend?.length" class="flex h-full items-end gap-1">
+            <div v-if="data?.dailyTrend?.length" class="flex h-full gap-1">
               <div
                 v-for="day in data.dailyTrend"
                 :key="day.date"
-                class="group relative flex-1"
+                class="group relative flex h-full flex-1 flex-col justify-end"
               >
                 <div
                   class="w-full rounded-t bg-primary/80 transition-colors hover:bg-primary"
-                  :style="{ height: `${getBarHeight(day)}%`, minHeight: day.total > 0 ? '4px' : '0' }"
+                  :style="{ height: `${Math.round(getBarHeight(day) * 0.9)}%`, minHeight: day.total > 0 ? '4px' : '0' }"
                 />
                 <div class="absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-background group-hover:block">
                   {{ day.total }} enquiries

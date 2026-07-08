@@ -21,10 +21,10 @@
           <div
             v-for="lead in data.hotLeads.slice(0, 5)"
             :key="lead.id"
-            class="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50"
+            class="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
           >
-            <div class="flex items-center gap-3">
-              <div class="relative">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <div class="relative shrink-0">
                 <Avatar class="h-9 w-9">
                   <AvatarImage :src="getGravatarUrl(lead.email)" :alt="lead.customer" />
                   <AvatarFallback>{{ getInitials(lead.customer) }}</AvatarFallback>
@@ -36,17 +36,18 @@
                   {{ lead.score }}
                 </div>
               </div>
-              <div>
+              <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">{{ lead.customer }}</span>
-                  <Badge v-if="lead.priority === 'urgent'" variant="destructive" class="text-[10px]">Urgent</Badge>
-                  <Badge v-else-if="lead.priority === 'high'" variant="default" class="text-[10px]">High</Badge>
+                  <span class="truncate font-medium">{{ lead.customer }}</span>
+                  <Badge v-if="lead.priority === 'urgent'" variant="destructive" class="shrink-0 text-[10px]">Urgent</Badge>
+                  <Badge v-else-if="lead.priority === 'high'" variant="default" class="shrink-0 text-[10px]">High</Badge>
                 </div>
-                <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span v-if="lead.vehicle">{{ lead.vehicle }}</span>
+                <div v-if="lead.vehicle || lead.variant" class="truncate text-xs text-muted-foreground">
+                  <span v-if="lead.vehicle" class="font-medium">{{ lead.vehicle }}</span>
+                  <span v-if="lead.vehicle && lead.variant"> · </span>
                   <span v-if="lead.variant" class="text-muted-foreground/70">{{ lead.variant }}</span>
                 </div>
-                <div class="flex gap-2 mt-1">
+                <div class="mt-1.5 flex flex-wrap gap-1.5">
                   <Badge v-if="lead.signals?.testDrive" variant="outline" class="text-[10px] gap-1">
                     <CalendarCheck class="h-3 w-3" /> Test Drive
                   </Badge>
@@ -59,9 +60,9 @@
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-muted-foreground">{{ formatTimeAgo(lead.createdAt) }}</span>
-              <Button variant="default" size="sm" as-child>
+            <div class="flex shrink-0 flex-col items-end gap-1.5">
+              <span class="whitespace-nowrap text-xs text-muted-foreground">{{ formatTimeAgo(lead.createdAt) }}</span>
+              <Button variant="default" size="sm" class="no-underline" as-child>
                 <NuxtLink :to="`/admin/enquiries/${lead.id}`">
                   <Phone class="mr-1 h-3 w-3" /> Contact
                 </NuxtLink>
@@ -92,18 +93,18 @@
           <div
             v-for="enquiry in data.followUpAlerts.overdueEnquiries"
             :key="enquiry.id"
-            class="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50"
+            class="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
           >
-            <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
                 <Clock class="h-5 w-5 text-red-600" />
               </div>
-              <div>
+              <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">{{ enquiry.customer }}</span>
-                  <Badge variant="outline" class="text-[10px]">{{ enquiry.typeLabel }}</Badge>
+                  <span class="truncate font-medium">{{ enquiry.customer }}</span>
+                  <Badge variant="outline" class="shrink-0 text-[10px]">{{ enquiry.typeLabel }}</Badge>
                 </div>
-                <div class="text-xs text-muted-foreground">
+                <div class="truncate text-xs text-muted-foreground">
                   <span v-if="enquiry.vehicle">{{ enquiry.vehicle }} • </span>
                   <span class="text-red-600 font-semibold">Waiting {{ enquiry.hoursWaiting }}h</span>
                 </div>
@@ -199,25 +200,25 @@
           <div
             v-for="enquiry in (data?.recentEnquiries || []).slice(0, 6)"
             :key="enquiry.id"
-            class="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50"
+            class="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
           >
-            <div class="flex items-center gap-3">
-              <Avatar class="h-9 w-9">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <Avatar class="h-9 w-9 shrink-0">
                 <AvatarImage :src="getGravatarUrl(enquiry.email)" :alt="enquiry.customer" />
                 <AvatarFallback>{{ getInitials(enquiry.customer) }}</AvatarFallback>
               </Avatar>
-              <div>
+              <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
-                  <span class="font-medium">{{ enquiry.customer }}</span>
-                  <Badge variant="outline" class="text-[10px]">{{ enquiry.typeLabel }}</Badge>
+                  <span class="truncate font-medium">{{ enquiry.customer }}</span>
+                  <Badge variant="outline" class="shrink-0 text-[10px]">{{ enquiry.typeLabel }}</Badge>
                 </div>
-                <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <div class="truncate text-xs text-muted-foreground">
                   <span>{{ enquiry.email }}</span>
-                  <span v-if="enquiry.vehicle">• {{ enquiry.vehicle }}</span>
+                  <span v-if="enquiry.vehicle"> • {{ enquiry.vehicle }}</span>
                 </div>
               </div>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex shrink-0 items-center gap-3">
               <Badge :variant="getStatusVariant(enquiry.status)">
                 {{ formatStatus(enquiry.status) }}
               </Badge>
