@@ -27,15 +27,23 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const limit = Math.min(Number(query.limit) || 20, 50);
 
-  // Get user's last seen timestamp
+  // Get user's last seen timestamp + individually-dismissed notification ids
   const userRecord = await db.query.users.findFirst({
     where: eq(users.id, user.userId),
     columns: {
       lastSeenNotificationsAt: true,
+      readNotificationIds: true,
     },
   });
 
   const lastSeenAt = userRecord?.lastSeenNotificationsAt || new Date(0);
+  const readSet = new Set(
+    Array.isArray(userRecord?.readNotificationIds) ? (userRecord!.readNotificationIds as string[]) : [],
+  );
+  // A notification is read if the whole feed was marked read past its timestamp,
+  // or it was individually dismissed. The latter survives later edits, so an
+  // assignment no longer re-appears as unread every time the enquiry changes.
+  const isRead = (id: string, ts: Date) => readSet.has(id) || new Date(ts) <= lastSeenAt;
   const now = new Date();
 
   // Calculate cutoff date (7 days ago for notifications)
@@ -71,7 +79,7 @@ export default defineEventHandler(async (event) => {
       subType: enquiry.type,
       title: enquiryTypeTitles[enquiry.type] || 'New enquiry',
       message: `${enquiry.firstName} ${enquiry.lastName} - ${enquiry.email}`,
-      read: new Date(enquiry.createdAt) <= lastSeenAt,
+      read: isRead(enquiry.id, enquiry.createdAt),
       createdAt: enquiry.createdAt.toISOString(),
       link: `/admin/enquiries/${enquiry.id}`,
       metadata: { enquiryId: enquiry.id },
@@ -102,7 +110,7 @@ export default defineEventHandler(async (event) => {
         subType: enquiry.type,
         title: 'Enquiry assigned to you',
         message: `${enquiry.firstName} ${enquiry.lastName} - ${enquiry.type} enquiry`,
-        read: new Date(enquiry.updatedAt) <= lastSeenAt,
+        read: isRead(`assign-${enquiry.id}`, enquiry.updatedAt),
         createdAt: enquiry.updatedAt.toISOString(),
         link: `/admin/enquiries/${enquiry.id}`,
         metadata: { enquiryId: enquiry.id },
@@ -134,7 +142,7 @@ export default defineEventHandler(async (event) => {
         subType: enquiry.type,
         title: 'Snooze expired',
         message: `${enquiry.firstName} ${enquiry.lastName} - Follow up needed`,
-        read: new Date(enquiry.snoozedUntil) <= lastSeenAt,
+        read: isRead(`snooze-${enquiry.id}`, enquiry.snoozedUntil),
         createdAt: enquiry.snoozedUntil.toISOString(),
         link: `/admin/enquiries/${enquiry.id}`,
         metadata: { enquiryId: enquiry.id },
