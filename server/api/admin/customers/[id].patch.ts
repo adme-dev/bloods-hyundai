@@ -108,7 +108,11 @@ export default defineEventHandler(async (event) => {
     activityDate: new Date(),
     subject: 'Customer Updated',
     description: 'Customer profile was updated',
-    oldValue: existingCustomer,
+    oldValue: Object.fromEntries(
+      Object.keys(customerUpdates)
+        .filter((k) => k !== 'updatedAt')
+        .map((k) => [k, (existingCustomer as any)[k]]),
+    ),
     newValue: { ...customerUpdates, retentionProfile: body.retentionProfile },
     createdBy: userId,
     isSystemGenerated: false,
