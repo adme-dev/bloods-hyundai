@@ -1,144 +1,15 @@
-type CalculatorRouteResolution = {
-  apiModelName: string;
-  preferredPowertrain?: string;
-  preferredVariantGroupName?: string;
-  fallbackModelNames?: string[];
-};
-
-const knownModelImages: Record<string, string> = {
-  'ioniq 6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
-  '2023 ioniq 6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
-  'ioniq-6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
-  'ioniq 5': 'https://www.hyundai.com/content/dam/hyundai/au/en/awards-page/2026/ioniq-5/IONIQ5_Front34_640x331-CarsGuide.png',
-  'ioniq-5': 'https://www.hyundai.com/content/dam/hyundai/au/en/awards-page/2026/ioniq-5/IONIQ5_Front34_640x331-CarsGuide.png',
-  'ioniq 5 n': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ5N_Front_Performance_Blue_640x331.png',
-  'ioniq-5-n': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ5N_Front_Performance_Blue_640x331.png',
-  'ioniq 9': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/ioniq-9-2025/3-4-images-colors/side-profile/models/IONIQ9-Models_Front34_640x331.png',
-  'ioniq-9': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/ioniq-9-2025/3-4-images-colors/side-profile/models/IONIQ9-Models_Front34_640x331.png',
-};
-
-const calculatorRouteResolutions: Record<string, CalculatorRouteResolution> = {
-  'kona-hybrid': {
-    apiModelName: 'kona',
-    preferredPowertrain: 'Hybrid',
-    preferredVariantGroupName: 'KONA Hybrid',
-  },
-  'tucson-hybrid': {
-    apiModelName: 'tucson',
-    preferredPowertrain: 'Hybrid',
-    preferredVariantGroupName: 'TUCSON Hybrid',
-  },
-  'santa-fe-hybrid': {
-    apiModelName: 'santa-fe',
-    preferredPowertrain: 'Hybrid',
-    preferredVariantGroupName: 'SANTA FE Hybrid',
-  },
-  'palisade-hybrid': {
-    apiModelName: 'palisade',
-    preferredPowertrain: 'Hybrid',
-    preferredVariantGroupName: 'PALISADE Elite (8-seat)',
-  },
-  'i30-n-line': {
-    apiModelName: 'i30',
-    preferredVariantGroupName: 'i30 Sedan N Line',
-  },
-  'i30-sedan': {
-    apiModelName: 'i30',
-    preferredVariantGroupName: 'i30 Sedan',
-  },
-  'i30-sedan-n-line': {
-    apiModelName: 'i30',
-    preferredVariantGroupName: 'i30 Sedan N Line',
-  },
-  'i30-sedan-hybrid': {
-    apiModelName: 'i30',
-    preferredPowertrain: 'Hybrid',
-    preferredVariantGroupName: 'i30 Sedan Hybrid',
-  },
-  'ioniq5': {
-    apiModelName: 'ioniq-5',
-  },
-  'ioniq-5': {
-    apiModelName: 'ioniq-5',
-  },
-  'ioniq5-n': {
-    apiModelName: 'ioniq-5-n',
-    fallbackModelNames: ['ioniq-5'],
-  },
-  'ioniq-5-n': {
-    apiModelName: 'ioniq-5-n',
-    fallbackModelNames: ['ioniq-5'],
-  },
-  'ioniq6': {
-    apiModelName: 'ioniq-6',
-  },
-  'ioniq-6': {
-    apiModelName: 'ioniq-6',
-  },
-  'ioniq6-n': {
-    apiModelName: 'ioniq-6',
-  },
-  'ioniq-6-n': {
-    apiModelName: 'ioniq-6',
-  },
-  'ioniq9': {
-    apiModelName: 'ioniq-9',
-  },
-  'ioniq-9': {
-    apiModelName: 'ioniq-9',
-  },
-};
-
-const normalizeModelSlug = (modelname: string) =>
-  modelname.trim().toLowerCase().replace(/^20\d{2}[-_\s]+/i, '');
-
-const normalizeHyundaiAssetUrl = (url?: string | null): string | null => {
-  if (!url) return null;
-  return url.startsWith('http') ? url : `https://www.hyundai.com${url}`;
-};
-
-const getKnownModelImage = (...names: Array<string | null | undefined>): string | null => {
-  for (const name of names) {
-    if (!name) continue;
-    const normalized = normalizeModelSlug(name).replace(/\s+/g, '-');
-    const spaced = normalizeModelSlug(name).replace(/-/g, ' ');
-    const image = knownModelImages[normalized] || knownModelImages[spaced];
-    if (image) return image;
-  }
-  return null;
-};
-
-const getCalculatorRouteResolution = (modelname: string): CalculatorRouteResolution => {
-  const slug = normalizeModelSlug(modelname);
-  const explicitResolution = calculatorRouteResolutions[slug];
-
-  if (explicitResolution) {
-    return explicitResolution;
-  }
-
-  const fallbackModelNames = new Set<string>();
-
-  if (slug.endsWith('-hybrid')) {
-    fallbackModelNames.add(slug.replace(/-hybrid$/, ''));
-  }
-
-  if (slug.includes('-sedan')) {
-    fallbackModelNames.add(slug.split('-sedan')[0]);
-  }
-
-  return {
-    apiModelName: slug,
-    fallbackModelNames: Array.from(fallbackModelNames).filter((name) => name && name !== slug),
-  };
-};
-
-const hasCalculatorInventory = (modelData: any) => {
-  return Boolean(
-    modelData &&
-    ((Array.isArray(modelData.variantGroups) && modelData.variantGroups.length > 0) ||
-      (Array.isArray(modelData.variants) && modelData.variants.length > 0))
-  );
-};
+import {
+  buildHyundaiCalculatorUrl,
+  getCalculatorRouteResolution,
+  getHyundaiModelAdditionalUrl,
+  getKnownModelImage,
+  getSafeCalculatorErrorPayload,
+  hasCalculatorInventory,
+  isHyundaiCalculatorTenant,
+  normalizeHyundaiAssetUrl,
+  normalizeModelSlug,
+} from '../utils/hyundaiCalculator';
+import { resolveTenantContext } from '../utils/tenant-db';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -157,6 +28,15 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
+    const tenantContext = await resolveTenantContext(event);
+
+    if (!isHyundaiCalculatorTenant(tenantContext.tenant)) {
+      throw createError({
+        statusCode: 404,
+        message: 'Calculator data is not available for this model right now.',
+      });
+    }
+
     const routeResolution = getCalculatorRouteResolution(modelname);
     const calculatorModelCandidates = [
       routeResolution.apiModelName,
@@ -165,7 +45,11 @@ export default defineEventHandler(async (event) => {
     let resolvedModelName = routeResolution.apiModelName;
 
     const fetchCalculatorData = async (apiModelName: string) => {
-      const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/carpricecalculator?postcode=${postcode}&modelname=${apiModelName}&displaypowertrain=${displaypowertrain}`;
+      const apiUrl = buildHyundaiCalculatorUrl({
+        modelName: apiModelName,
+        postcode,
+        displayPowertrain: displaypowertrain,
+      });
 
       console.log('[Calculator API] Fetching:', apiUrl);
 
@@ -201,7 +85,7 @@ export default defineEventHandler(async (event) => {
     };
 
     // Also fetch modeladditional API to get priceDisclaimer
-    const modelAdditionalUrl = 'https://www.hyundai.com/content/api/au/hyundai/pcm1/v1/modeladditional';
+    const modelAdditionalUrl = getHyundaiModelAdditionalUrl();
 
     const [initialResponse, modelAdditionalResponse] = await Promise.all([
       fetchCalculatorData(calculatorModelCandidates[0]),
@@ -625,10 +509,11 @@ export default defineEventHandler(async (event) => {
     return result;
   } catch (error: any) {
     console.error('[Calculator API] Error:', error.message);
+    const safeError = getSafeCalculatorErrorPayload(error.statusCode || error.response?.status);
     
     throw createError({
-      statusCode: error.statusCode || error.response?.status || 500,
-      message: error.message || 'Failed to fetch calculator data',
+      statusCode: safeError.statusCode,
+      message: safeError.message,
     });
   }
 });

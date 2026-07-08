@@ -95,7 +95,7 @@ Acceptance:
 - [x] Move stock feed config into tenant settings.
 - [x] Ensure `/api/carsales-feed`, `/api/homepage-filters`, `/api/search`, and vehicle detail APIs resolve by tenant.
 - [x] Define Hyundai OEM model/offers adapter boundaries.
-- [ ] Keep model calculator routes tenant-safe and Hyundai-specific.
+- [x] Keep model calculator routes tenant-safe and Hyundai-specific.
 
 Acceptance:
 - [ ] Blood inventory queries use Blood source settings.
@@ -195,4 +195,5 @@ Loop exit criteria:
 - [x] Inventory source contract added and used by `/api/carsales-feed`; `/api/search` and `/api/vehicle-detail` audited as tenant-forwarding through the feed
 - [x] Blood inventory settings moved into tenant defaults and additive `dealers.settings.inventory` migration; Sale seeded with an empty tenant-owned inventory settings shape pending confirmed feed values
 - [x] Hyundai AU OEM model/offers adapter boundary added and used by model summaries, offer hero banner, and variant-price URL construction
+- [x] Calculator route now resolves tenant context, enforces Hyundai-only usage, uses OEM adapter URL builders, and returns safe public errors for upstream failures
 - [x] No production push/domain change performed
