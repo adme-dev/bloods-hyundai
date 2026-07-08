@@ -11,9 +11,17 @@ import type { DateRange, MarketingIntegrations, NormalizedRow, Platform } from '
 
 export function resolveSyncWindow(latestDate: string | null, today: string): DateRange {
   const base = new Date(`${today}T00:00:00Z`);
-  const daysBack = latestDate === null ? 29 : 2;
-  const from = new Date(base);
-  from.setUTCDate(from.getUTCDate() - daysBack);
+  const lookback = new Date(base);
+  lookback.setUTCDate(lookback.getUTCDate() - 2);
+  let from: Date;
+  if (latestDate === null) {
+    from = new Date(base);
+    from.setUTCDate(from.getUTCDate() - 29);
+  } else {
+    const next = new Date(`${latestDate}T00:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    from = next < lookback ? next : lookback;
+  }
   return { from: from.toISOString().slice(0, 10), to: today };
 }
 
@@ -80,7 +88,13 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
       fetch: async () => fetchMetaDaily(accountId, await windowFor('meta_ads')),
     });
   }
-  if (integrations.googleAdsCustomerId && process.env.GOOGLE_ADS_DEVELOPER_TOKEN) {
+  if (
+    integrations.googleAdsCustomerId &&
+    process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
+    process.env.GOOGLE_ADS_CLIENT_ID &&
+    process.env.GOOGLE_ADS_CLIENT_SECRET &&
+    process.env.GOOGLE_ADS_REFRESH_TOKEN
+  ) {
     const { fetchGoogleAdsDaily } = await import('./googleAds');
     const cfg = {
       customerId: integrations.googleAdsCustomerId,
@@ -131,27 +145,18 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
 
     const [result] = await syncPlatforms([job], async (rows) => {
       if (rows.length === 0) return 0;
-      for (const r of rows) {
-        await db.insert(marketingMetricsDaily)
-          .values({
-            dealerId,
-            platform: r.platform,
-            date: r.date,
-            campaignId: r.campaignId,
-            campaignName: r.campaignName,
-            spend: r.spend != null ? String(r.spend) : null,
-            impressions: r.impressions,
-            clicks: r.clicks,
-            platformLeads: r.platformLeads,
-            sessions: r.sessions,
-            users: r.users,
-            conversions: r.conversions,
-            raw: r.raw,
-            syncedAt: new Date(),
-          })
-          .onConflictDoUpdate({
-            target: [marketingMetricsDaily.dealerId, marketingMetricsDaily.platform, marketingMetricsDaily.date, marketingMetricsDaily.campaignId],
-            set: {
+      // Transactional: a failure partway through leaves NO rows written for
+      // this platform's batch, so max(date) stays at its prior value and the
+      // next run's resolveSyncWindow re-attempts the same window cleanly
+      // instead of silently skipping the rows that failed to write.
+      await db.transaction(async (tx) => {
+        for (const r of rows) {
+          await tx.insert(marketingMetricsDaily)
+            .values({
+              dealerId,
+              platform: r.platform,
+              date: r.date,
+              campaignId: r.campaignId,
               campaignName: r.campaignName,
               spend: r.spend != null ? String(r.spend) : null,
               impressions: r.impressions,
@@ -162,9 +167,24 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
               conversions: r.conversions,
               raw: r.raw,
               syncedAt: new Date(),
-            },
-          });
-      }
+            })
+            .onConflictDoUpdate({
+              target: [marketingMetricsDaily.dealerId, marketingMetricsDaily.platform, marketingMetricsDaily.date, marketingMetricsDaily.campaignId],
+              set: {
+                campaignName: r.campaignName,
+                spend: r.spend != null ? String(r.spend) : null,
+                impressions: r.impressions,
+                clicks: r.clicks,
+                platformLeads: r.platformLeads,
+                sessions: r.sessions,
+                users: r.users,
+                conversions: r.conversions,
+                raw: r.raw,
+                syncedAt: new Date(),
+              },
+            });
+        }
+      });
       return rows.length;
     });
 

@@ -9,6 +9,9 @@ describe('resolveSyncWindow', () => {
   it('re-fetches trailing 3 days when rows exist', () => {
     assert.deepEqual(resolveSyncWindow('2026-07-08', '2026-07-09'), { from: '2026-07-07', to: '2026-07-09' });
   });
+  it('heals gaps longer than 3 days by resuming from the day after the latest row', () => {
+    assert.deepEqual(resolveSyncWindow('2026-07-01', '2026-07-09'), { from: '2026-07-02', to: '2026-07-09' });
+  });
 });
 
 describe('syncPlatforms isolation', () => {
