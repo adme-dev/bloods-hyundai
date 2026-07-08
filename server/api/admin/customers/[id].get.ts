@@ -1,6 +1,7 @@
 import { db } from '../../../utils/db';
 import { customers, customerRetentionProfiles, customerVehicles, customerActivities, customerTasks, serviceAppointments, enquiries } from '../../../database/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
+import { pickSafeCustomer, redactActivityValue } from '../../../utils/customerSafe';
 
 export default defineEventHandler(async (event) => {
   const dealerId = event.context.dealerId;
@@ -108,12 +109,18 @@ export default defineEventHandler(async (event) => {
   const callActivities = activities.filter(a => a.activityType.includes('call')).length;
   const serviceCount = appointments.length;
 
+  const safeActivities = activities.map((a) => ({
+    ...a,
+    oldValue: redactActivityValue(a.oldValue),
+    newValue: redactActivityValue(a.newValue),
+  }));
+
   return {
     customer: {
-      ...customer,
+      ...pickSafeCustomer(customer),
       retentionProfile,
       vehicles,
-      activities,
+      activities: safeActivities,
       tasks,
       appointments,
       enquiries: relatedEnquiries,

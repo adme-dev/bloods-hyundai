@@ -47,7 +47,7 @@
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem @click="editMode = true">
+            <DropdownMenuItem @click="openEdit">
               <Pencil class="mr-2 h-4 w-4" /> Edit Customer
             </DropdownMenuItem>
             <DropdownMenuItem @click="showAddVehicle = true">
@@ -444,11 +444,123 @@
         </form>
       </DialogContent>
     </Dialog>
+
+    <!-- Add Vehicle Dialog -->
+    <Dialog v-model:open="showAddVehicle">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Add Vehicle</DialogTitle>
+          <DialogDescription>
+            Register a vehicle for {{ customerName }}
+          </DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="submitVehicle">
+          <div class="grid gap-4 py-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="vMake">Make</Label>
+                <Input id="vMake" v-model="newVehicle.make" placeholder="e.g., Hyundai" required />
+              </div>
+              <div class="space-y-2">
+                <Label for="vModel">Model</Label>
+                <Input id="vModel" v-model="newVehicle.model" placeholder="e.g., Tucson" required />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="vYear">Year</Label>
+                <Input id="vYear" v-model="newVehicle.year" placeholder="e.g., 2024" />
+              </div>
+              <div class="space-y-2">
+                <Label for="vRego">Registration</Label>
+                <Input id="vRego" v-model="newVehicle.registration" placeholder="e.g., ABC123" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="vVin">VIN</Label>
+                <Input id="vVin" v-model="newVehicle.vin" placeholder="Optional" />
+              </div>
+              <div class="space-y-2">
+                <Label for="vColor">Colour</Label>
+                <Input id="vColor" v-model="newVehicle.color" placeholder="Optional" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Label for="vNotes">Notes</Label>
+              <Textarea id="vNotes" v-model="newVehicle.notes" placeholder="Optional details..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="showAddVehicle = false">Cancel</Button>
+            <Button type="submit" :disabled="creatingVehicle">
+              <span v-if="creatingVehicle">Saving...</span>
+              <span v-else>Add Vehicle</span>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Edit Customer Dialog -->
+    <Dialog v-model:open="editMode">
+      <DialogContent class="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit Customer</DialogTitle>
+          <DialogDescription>
+            Update {{ customerName }}'s details
+          </DialogDescription>
+        </DialogHeader>
+        <form @submit.prevent="submitEdit">
+          <div class="grid gap-4 py-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="eFirst">First Name</Label>
+                <Input id="eFirst" v-model="editCustomer.firstName" required />
+              </div>
+              <div class="space-y-2">
+                <Label for="eLast">Last Name</Label>
+                <Input id="eLast" v-model="editCustomer.lastName" required />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Label for="eEmail">Email</Label>
+              <Input id="eEmail" v-model="editCustomer.email" type="email" required />
+            </div>
+            <div class="space-y-2">
+              <Label for="ePhone">Phone</Label>
+              <Input id="ePhone" v-model="editCustomer.phone" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <Label for="eSuburb">Suburb</Label>
+                <Input id="eSuburb" v-model="editCustomer.suburb" />
+              </div>
+              <div class="space-y-2">
+                <Label for="eState">State</Label>
+                <Input id="eState" v-model="editCustomer.state" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Label for="ePostcode">Postcode</Label>
+              <Input id="ePostcode" v-model="editCustomer.postcode" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="editMode = false">Cancel</Button>
+            <Button type="submit" :disabled="savingEdit">
+              <span v-if="savingEdit">Saving...</span>
+              <span v-else>Save Changes</span>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue';
+import { computed, ref, reactive, onMounted } from 'vue';
 import {
   ArrowLeft, Phone, Mail, Plus, MoreHorizontal, Pencil, Car, Archive,
   Clock, Check, MessageSquare, FileText, Calendar, UserPlus, StickyNote
@@ -484,6 +596,7 @@ import {
 } from '~/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { getGravatarUrl, getInitials } from '~/utils/gravatar';
+import { LIFECYCLE_STAGE_CONFIG, type LifecycleStage } from '~~/shared/constants/salesFunnel';
 
 definePageMeta({
   layout: 'admin',
@@ -610,6 +723,83 @@ const archiveCustomer = async () => {
 
 // Add Vehicle Dialog
 const showAddVehicle = ref(false);
+const creatingVehicle = ref(false);
+const newVehicle = reactive({
+  make: '',
+  model: '',
+  year: '',
+  registration: '',
+  vin: '',
+  color: '',
+  notes: '',
+});
+
+const submitVehicle = async () => {
+  creatingVehicle.value = true;
+  try {
+    await $fetch(`/api/admin/customers/${customerId}/vehicles`, {
+      method: 'POST',
+      body: { ...newVehicle },
+    });
+    showAddVehicle.value = false;
+    Object.assign(newVehicle, { make: '', model: '', year: '', registration: '', vin: '', color: '', notes: '' });
+    refresh();
+  } catch (error) {
+    console.error('Failed to add vehicle:', error);
+  } finally {
+    creatingVehicle.value = false;
+  }
+};
+
+// Edit Customer Dialog
+const savingEdit = ref(false);
+const editCustomer = reactive({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  suburb: '',
+  state: '',
+  postcode: '',
+});
+
+const openEdit = () => {
+  const c = customer.value;
+  if (!c) return;
+  Object.assign(editCustomer, {
+    firstName: c.firstName ?? '',
+    lastName: c.lastName ?? '',
+    email: c.email ?? '',
+    phone: c.phone ?? '',
+    suburb: c.suburb ?? '',
+    state: c.state ?? '',
+    postcode: c.postcode ?? '',
+  });
+  editMode.value = true;
+};
+
+const submitEdit = async () => {
+  savingEdit.value = true;
+  try {
+    await $fetch(`/api/admin/customers/${customerId}`, {
+      method: 'PATCH',
+      body: { ...editCustomer },
+    });
+    editMode.value = false;
+    refresh();
+  } catch (error) {
+    console.error('Failed to update customer:', error);
+  } finally {
+    savingEdit.value = false;
+  }
+};
+
+// Open the edit dialog automatically when arrived at via ?edit=true.
+onMounted(() => {
+  if (route.query.edit === 'true') {
+    openEdit();
+  }
+});
 
 // Formatting helpers
 const formatDate = (date: string) => {
@@ -641,31 +831,20 @@ const formatDistanceToNow = (date: string) => {
 };
 
 const formatLifecycleStage = (stage?: string) => {
-  const stages: Record<string, string> = {
-    prospect: 'Prospect',
-    lead: 'Lead',
-    test_drive: 'Test Drive',
-    negotiating: 'Negotiating',
-    purchased: 'Purchased',
-    service_customer: 'Service',
-    at_risk: 'At Risk',
-    inactive: 'Inactive',
-  };
-  return stages[stage || 'prospect'] || stage || 'Prospect';
+  if (!stage) return 'Prospect';
+  return LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.label || stage;
 };
 
 const getLifecycleBadgeVariant = (stage?: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
-  const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    prospect: 'outline',
-    lead: 'secondary',
-    test_drive: 'secondary',
-    negotiating: 'default',
-    purchased: 'default',
-    service_customer: 'default',
-    at_risk: 'destructive',
-    inactive: 'outline',
+  const category = stage ? LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.category : undefined;
+  const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+    acquisition: 'outline',
+    conversion: 'secondary',
+    customer: 'default',
+    risk: 'destructive',
+    lost: 'outline',
   };
-  return variants[stage || 'prospect'] || 'outline';
+  return (category && map[category]) || 'outline';
 };
 
 const formatRiskLevel = (level?: string) => {

@@ -24,16 +24,28 @@ export default defineEventHandler(async (event) => {
 
   const now = new Date();
 
-  // Update user's lastSeenNotificationsAt
-  // For individual IDs, we still update the timestamp since our notification
-  // read status is determined by comparing createdAt with lastSeenNotificationsAt
-  await db
-    .update(users)
-    .set({
-      lastSeenNotificationsAt: now,
-      updatedAt: now,
-    })
-    .where(eq(users.id, user.id));
+  if (all) {
+    // Mark everything read up to now.
+    await db
+      .update(users)
+      .set({ lastSeenNotificationsAt: now, updatedAt: now })
+      .where(eq(users.id, user.userId));
+  } else {
+    // Mark only the specified notifications read (merge into the per-item set),
+    // leaving the rest unread.
+    const current = await db.query.users.findFirst({
+      where: eq(users.id, user.userId),
+      columns: { readNotificationIds: true },
+    });
+    const existing = Array.isArray(current?.readNotificationIds)
+      ? (current!.readNotificationIds as string[])
+      : [];
+    const merged = Array.from(new Set([...existing, ...(ids ?? [])]));
+    await db
+      .update(users)
+      .set({ readNotificationIds: merged, updatedAt: now })
+      .where(eq(users.id, user.userId));
+  }
 
   return {
     success: true,

@@ -144,6 +144,9 @@ export const users = pgTable('users', {
 
   // Notification tracking
   lastSeenNotificationsAt: timestamp('last_seen_notifications_at', { withTimezone: true }),
+  // Ids of individually-dismissed notifications (per-item read state). "Mark all"
+  // still uses lastSeenNotificationsAt; this is for marking one at a time.
+  readNotificationIds: jsonb('read_notification_ids').default([]).notNull(),
 }, (table) => ({
   dealerIdx: index('idx_users_dealer').on(table.dealerId),
   emailIdx: index('idx_users_email').on(table.email),
