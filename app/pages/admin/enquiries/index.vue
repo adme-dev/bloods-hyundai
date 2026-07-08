@@ -67,6 +67,7 @@
               <SelectItem value="service">Service</SelectItem>
               <SelectItem value="parts">Parts</SelectItem>
               <SelectItem value="accessories">Accessories</SelectItem>
+              <SelectItem value="sell_car">Sell My Car</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -347,11 +348,20 @@ const filters = reactive({
   page: parseInt(route.query.page as string) || 1,
 });
 
+// Reset to page 1 whenever a filter narrows/changes, so results aren't hidden
+// on a now-out-of-range page.
+watch(
+  () => [filters.search, filters.type, filters.status, filters.assigned, filters.view],
+  () => {
+    filters.page = 1;
+  },
+);
+
 // View tabs configuration
 const viewTabs = computed(() => [
-  { value: 'inbox', label: 'Inbox', icon: Inbox, count: 0 },
-  { value: 'snoozed', label: 'Snoozed', icon: Clock, count: 0 },
-  { value: 'archived', label: 'Archived', icon: Archive, count: 0 },
+  { value: 'inbox', label: 'Inbox', icon: Inbox, count: data.value?.counts?.inbox ?? 0 },
+  { value: 'snoozed', label: 'Snoozed', icon: Clock, count: data.value?.counts?.snoozed ?? 0 },
+  { value: 'archived', label: 'Archived', icon: Archive, count: data.value?.counts?.archived ?? 0 },
 ]);
 
 // Empty state messages
