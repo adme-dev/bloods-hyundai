@@ -1,5 +1,5 @@
 import { db } from '../../../utils/db';
-import { customerTasks, customerActivities } from '../../../database/schema';
+import { customerTasks, customerActivities, users } from '../../../database/schema';
 import { eq, and } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
@@ -25,6 +25,15 @@ export default defineEventHandler(async (event) => {
       statusCode: 404,
       message: 'Task not found',
     });
+  }
+
+  // If reassigning, the new assignee must belong to this dealer (IDOR guard).
+  if (body.assignedTo !== undefined && body.assignedTo !== null) {
+    const u = await db.query.users.findFirst({
+      where: and(eq(users.id, body.assignedTo), eq(users.dealerId, dealerId)),
+      columns: { id: true },
+    });
+    if (!u) throw createError({ statusCode: 400, message: 'Assignee is not a member of this dealer' });
   }
 
   // Build update object
