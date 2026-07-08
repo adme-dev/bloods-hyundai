@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
   await db.insert(enquiryActivityLog).values({
     dealerId: user.dealerId,
     enquiryId,
-    userId: user.id,
+    userId: user.userId,
     action,
     entityType: 'crm',
     oldValue: {

@@ -1,4 +1,5 @@
 import { verifyAccessToken, verifyRefreshToken, signAccessToken } from '../utils/jwt';
+import { toContextUser } from '../utils/authContext';
 import { db } from '../utils/db';
 import { users } from '../database/schema';
 import { eq } from 'drizzle-orm';
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event) => {
   if (accessToken) {
     try {
       const payload = await verifyAccessToken(accessToken);
-      event.context.user = payload;
+      event.context.user = toContextUser(payload);
       event.context.userId = payload.userId;
       event.context.dealerId = payload.dealerId;
       return;
@@ -65,14 +66,14 @@ export default defineEventHandler(async (event) => {
         });
 
         // Set user context
-        event.context.user = {
+        event.context.user = toContextUser({
           userId: user.id,
           dealerId: user.dealerId,
           email: user.email,
           role: user.role,
           firstName: user.firstName,
           lastName: user.lastName,
-        };
+        });
         event.context.userId = user.id;
         event.context.dealerId = user.dealerId;
         return;

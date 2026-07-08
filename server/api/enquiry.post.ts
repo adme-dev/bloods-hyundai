@@ -3,6 +3,10 @@ import { dealers, enquiries, enquiryActivityLog } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { evaluateRoutingRules } from '../utils/routing';
 import { sendEnquiryNotification, sendCustomerConfirmation } from '../utils/email';
+import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
+import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
+import { sanitizeIpAddress } from '../utils/intakeValidation';
+import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 
 /**
  * Public Enquiry Submission Endpoint
@@ -130,13 +134,25 @@ export default defineEventHandler(async (event) => {
     // 4. Get request metadata
     const ipAddress = getRequestIP(event, { xForwardedFor: true });
     const userAgent = getHeader(event, 'user-agent');
-    
+
+    // 4b. Abuse controls (honeypot → rate limit → duplicate)
+    if (isHoneypotTripped(body)) {
+      return { success: true };
+    }
+    const rateKey = `${dealer.id}:${sanitizeIpAddress(ipAddress) ?? 'noip'}`;
+    if (!checkRateLimit(rateKey, Date.now())) {
+      throw createError({ statusCode: 429, message: 'Too many submissions. Please try again shortly.' });
+    }
+    if (await isDuplicateEnquiry(dealer.id, body.email)) {
+      return { success: true, duplicate: true };
+    }
+
     // 5. Insert enquiry into database
     const [enquiry] = await db
       .insert(enquiries)
       .values({
         dealerId: dealer.id,
-        type: body.type,
+        type: normalizeEnquiryType(body.type),
         source: body.source || event.path,
         department: body.department,
         firstName: body.firstName,
@@ -151,12 +167,12 @@ export default defineEventHandler(async (event) => {
         financeDetails: body.financeDetails ? body.financeDetails : undefined,
         sellCarDetails: body.sellCarDetails ? body.sellCarDetails : undefined,
         accessoriesCart: body.accessoriesCart ? body.accessoriesCart : undefined,
-        status: 'new',
+        status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
-        ipAddress: ipAddress || undefined,
+        ipAddress: sanitizeIpAddress(ipAddress) || undefined,
         userAgent: userAgent || undefined,
       })
       .returning();

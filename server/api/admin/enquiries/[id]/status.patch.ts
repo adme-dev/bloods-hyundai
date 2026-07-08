@@ -1,7 +1,8 @@
-import { eq } from 'drizzle-orm';
-import { db, withTenantContext } from '../../../../utils/db';
-import { enquiries, enquiryActivityLog } from '../../../../database/schema';
-import { VALID_ENQUIRY_STATUSES, ENQUIRY_STATUS_CONFIG, type EnquiryStatus } from '~~/shared/constants/salesFunnel';
+import { and, eq } from 'drizzle-orm';
+import { db } from '../../../../utils/db';
+import { enquiries } from '../../../../database/schema';
+import { logEnquiryActivity } from '../../../../utils/enquiryActivity';
+import { VALID_ENQUIRY_STATUSES, type EnquiryStatus } from '~~/shared/constants/salesFunnel';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -15,6 +16,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const enquiryId = getRouterParam(event, 'id');
+  if (!enquiryId) {
+    throw createError({ statusCode: 400, message: 'Enquiry ID is required' });
+  }
+
   const body = await readBody(event);
   const { status, lostReason } = body;
 
@@ -25,24 +30,40 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  try {
-    await withTenantContext(dealerId, async () => {
-      // Update enquiry status
-      await db
-        .update(enquiries)
-        .set({ 
-          status,
-          updatedAt: new Date(),
-        })
-        .where(eq(enquiries.id, enquiryId));
+  // Verify the enquiry belongs to the caller's dealer (tenancy / IDOR guard).
+  const current = await db.query.enquiries.findFirst({
+    where: and(eq(enquiries.id, enquiryId), eq(enquiries.dealerId, dealerId)),
+    columns: { id: true, status: true },
+  });
+  if (!current) {
+    throw createError({ statusCode: 404, message: 'Enquiry not found' });
+  }
 
-      // Log activity
-      await db.insert(enquiryActivityLog).values({
-        enquiryId,
-        userId: user.id,
-        action: `Status changed to ${status}`,
-        metadata: { oldStatus: body.oldStatus, newStatus: status },
-      });
+  try {
+    await db.transaction(async (tx) => {
+      const patch: Record<string, any> = { status, updatedAt: new Date() };
+      if (status === 'lost') {
+        patch.lostReason = lostReason ?? null;
+        if (typeof body.lostNotes === 'string') patch.lostNotes = body.lostNotes;
+      }
+
+      await tx
+        .update(enquiries)
+        .set(patch)
+        .where(and(eq(enquiries.id, enquiryId), eq(enquiries.dealerId, dealerId)));
+
+      await logEnquiryActivity(
+        {
+          dealerId,
+          enquiryId,
+          userId: user.userId,
+          action: `Status changed to ${status}`,
+          entityType: 'status',
+          oldValue: { status: current.status },
+          newValue: { status },
+        },
+        tx,
+      );
     });
 
     return { success: true };
@@ -54,13 +75,3 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
 import { db } from '../../../../utils/db';
-import { customerActivities, customerRetentionProfiles } from '../../../../database/schema';
+import { customers, customerActivities, customerRetentionProfiles } from '../../../../database/schema';
 import { eq, and } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
@@ -20,6 +20,15 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       message: 'Activity type is required',
     });
+  }
+
+  // Verify the customer belongs to the caller's dealer (tenancy / IDOR guard).
+  const owning = await db.query.customers.findFirst({
+    where: and(eq(customers.id, customerId), eq(customers.dealerId, dealerId)),
+    columns: { id: true },
+  });
+  if (!owning) {
+    throw createError({ statusCode: 404, message: 'Customer not found' });
   }
 
   // Create activity

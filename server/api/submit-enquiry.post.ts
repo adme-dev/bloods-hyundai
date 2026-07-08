@@ -2,6 +2,10 @@ import { db } from '../utils/db';
 import { dealers, enquiries, enquiryActivityLog } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { sendFormNotifications } from '../utils/email';
+import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
+import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
+import { sanitizeIpAddress } from '../utils/intakeValidation';
+import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 
 /**
  * Internal Enquiry Submission Endpoint
@@ -216,12 +220,24 @@ export default defineEventHandler(async (event) => {
       appliedOffers: body.appliedOffers,
     } : undefined;
 
+    // 4b. Abuse controls (honeypot → rate limit → duplicate)
+    if (isHoneypotTripped(body)) {
+      return { success: true }; // silently accept; do not persist bot submissions
+    }
+    const rateKey = `${dealer.id}:${sanitizeIpAddress(ipAddress) ?? 'noip'}`;
+    if (!checkRateLimit(rateKey, Date.now())) {
+      throw createError({ statusCode: 429, message: 'Too many submissions. Please try again shortly.' });
+    }
+    if (await isDuplicateEnquiry(dealer.id, body.email)) {
+      return { success: true, duplicate: true };
+    }
+
     // 5. Insert enquiry into database
     const [enquiry] = await db
       .insert(enquiries)
       .values({
         dealerId: dealer.id,
-        type: body.type,
+        type: normalizeEnquiryType(body.type),
         source: body.source || referer || 'website',
         firstName: body.firstName,
         lastName: lastName,
@@ -238,12 +254,12 @@ export default defineEventHandler(async (event) => {
         accessoriesCart: body.accessoriesCart || undefined,
         testDrive: body.testDrive || false,
         financeInterest: body.financeInterest || false,
-        status: 'new',
+        status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
-        ipAddress: ipAddress || undefined,
+        ipAddress: sanitizeIpAddress(ipAddress) || undefined,
         userAgent: userAgent || undefined,
       })
       .returning();

@@ -1,6 +1,6 @@
 import { db } from '../../../utils/db';
 import { enquiries, users } from '../../../database/schema';
-import { eq, desc, and, like, or, sql, isNull, isNotNull, lte, gt } from 'drizzle-orm';
+import { eq, desc, and, ilike, or, sql, isNull, isNotNull, lte, gt } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
   const dealerId = event.context.dealerId;
@@ -39,14 +39,26 @@ export default defineEventHandler(async (event) => {
   if (query.type) {
     conditions.push(eq(enquiries.type, query.type as string));
   }
-  
+
+  // Assignment filter: 'unassigned' → no owner; 'assigned' → any owner;
+  // any other value is treated as a specific user id.
+  if (query.assigned) {
+    if (query.assigned === 'unassigned') {
+      conditions.push(isNull(enquiries.assignedTo));
+    } else if (query.assigned === 'assigned') {
+      conditions.push(isNotNull(enquiries.assignedTo));
+    } else {
+      conditions.push(eq(enquiries.assignedTo, query.assigned as string));
+    }
+  }
+
   if (query.search) {
     const searchTerm = `%${query.search}%`;
     conditions.push(
       or(
-        like(enquiries.firstName, searchTerm),
-        like(enquiries.lastName, searchTerm),
-        like(enquiries.email, searchTerm),
+        ilike(enquiries.firstName, searchTerm),
+        ilike(enquiries.lastName, searchTerm),
+        ilike(enquiries.email, searchTerm),
       )!
     );
   }
@@ -80,9 +92,37 @@ export default defineEventHandler(async (event) => {
     .select({ count: sql<number>`count(*)` })
     .from(enquiries)
     .where(and(...conditions));
-  
+
+  // Per-view counts for the tab badges (dealer-scoped, independent of the
+  // status/type/search/assigned filters — they reflect how many items live
+  // in each view).
+  const dealerScope = eq(enquiries.dealerId, dealerId);
+  const inboxCond = and(
+    dealerScope,
+    isNull(enquiries.archivedAt),
+    or(isNull(enquiries.snoozedUntil), lte(enquiries.snoozedUntil, now))!,
+  );
+  const snoozedCond = and(
+    dealerScope,
+    isNull(enquiries.archivedAt),
+    isNotNull(enquiries.snoozedUntil),
+    gt(enquiries.snoozedUntil, now),
+  );
+  const archivedCond = and(dealerScope, isNotNull(enquiries.archivedAt));
+
+  const [inboxRows, snoozedRows, archivedRows] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(enquiries).where(inboxCond),
+    db.select({ count: sql<number>`count(*)` }).from(enquiries).where(snoozedCond),
+    db.select({ count: sql<number>`count(*)` }).from(enquiries).where(archivedCond),
+  ]);
+
   return {
     enquiries: results,
+    counts: {
+      inbox: Number(inboxRows[0]?.count ?? 0),
+      snoozed: Number(snoozedRows[0]?.count ?? 0),
+      archived: Number(archivedRows[0]?.count ?? 0),
+    },
     pagination: {
       page,
       limit,

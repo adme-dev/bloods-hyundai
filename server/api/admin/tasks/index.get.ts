@@ -1,6 +1,9 @@
 import { db } from '../../../utils/db';
 import { customerTasks, customers } from '../../../database/schema';
-import { eq, and, desc, sql, lte, gte, or } from 'drizzle-orm';
+import { eq, and, desc, sql, lt, lte, gte, or, notInArray } from 'drizzle-orm';
+
+// A task is "active" (counts toward overdue/today) unless completed or cancelled.
+const ACTIVE_TASK_STATUSES_EXCLUDED = ['completed', 'cancelled'];
 
 export default defineEventHandler(async (event) => {
   const dealerId = event.context.dealerId;
@@ -51,17 +54,13 @@ export default defineEventHandler(async (event) => {
 
     switch (query.dueDate) {
       case 'overdue':
-        conditions.push(lte(customerTasks.dueDate, now));
-        conditions.push(
-          or(
-            eq(customerTasks.status, 'pending'),
-            eq(customerTasks.status, 'in_progress')
-          )!
-        );
+        // Strictly before today's midnight — mutually exclusive with "today".
+        conditions.push(lt(customerTasks.dueDate, today));
+        conditions.push(notInArray(customerTasks.status, ACTIVE_TASK_STATUSES_EXCLUDED));
         break;
       case 'today':
         conditions.push(gte(customerTasks.dueDate, today));
-        conditions.push(lte(customerTasks.dueDate, tomorrow));
+        conditions.push(lt(customerTasks.dueDate, tomorrow));
         break;
       case 'this_week':
         conditions.push(gte(customerTasks.dueDate, today));
@@ -120,29 +119,25 @@ export default defineEventHandler(async (event) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  // Overdue = active task due before today's midnight (matches the dashboard).
   const [overdueStats] = await db
     .select({ count: sql<number>`count(*)` })
     .from(customerTasks)
     .where(and(
       eq(customerTasks.dealerId, dealerId),
-      lte(customerTasks.dueDate, now),
-      or(
-        eq(customerTasks.status, 'pending'),
-        eq(customerTasks.status, 'in_progress')
-      )!
+      lt(customerTasks.dueDate, today),
+      notInArray(customerTasks.status, ACTIVE_TASK_STATUSES_EXCLUDED),
     ));
 
+  // Due today = active task due today (mutually exclusive with overdue).
   const [todayStats] = await db
     .select({ count: sql<number>`count(*)` })
     .from(customerTasks)
     .where(and(
       eq(customerTasks.dealerId, dealerId),
       gte(customerTasks.dueDate, today),
-      lte(customerTasks.dueDate, tomorrow),
-      or(
-        eq(customerTasks.status, 'pending'),
-        eq(customerTasks.status, 'in_progress')
-      )!
+      lt(customerTasks.dueDate, tomorrow),
+      notInArray(customerTasks.status, ACTIVE_TASK_STATUSES_EXCLUDED),
     ));
 
   const [myTasksStats] = await db
@@ -151,10 +146,7 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(customerTasks.dealerId, dealerId),
       eq(customerTasks.assignedTo, userId),
-      or(
-        eq(customerTasks.status, 'pending'),
-        eq(customerTasks.status, 'in_progress')
-      )!
+      notInArray(customerTasks.status, ACTIVE_TASK_STATUSES_EXCLUDED),
     ));
 
   return {

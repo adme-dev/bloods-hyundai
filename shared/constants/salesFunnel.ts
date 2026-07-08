@@ -415,3 +415,26 @@ export const LOST_REASON_LABELS: Record<LostReason, string> = {
   [LOST_REASONS.NO_RESPONSE]: 'No response / uncontactable',
   [LOST_REASONS.OTHER]: 'Other',
 };
+
+
+// ============================================================================
+// LEGACY STATUS NORMALIZATION (transitional — see Wave 1 status migration)
+// ============================================================================
+
+// Maps obsolete enquiry status values that predate the canonical funnel
+// vocabulary onto their closest canonical equivalent. `in_progress` and
+// `contacted` were both written when a service appointment was booked from an
+// enquiry, so both map to `appointment_set`.
+export const LEGACY_STATUS_MAP: Record<string, EnquiryStatus> = {
+  new: ENQUIRY_STATUSES.NEW_LEAD,
+  in_progress: ENQUIRY_STATUSES.APPOINTMENT_SET,
+  contacted: ENQUIRY_STATUSES.APPOINTMENT_SET,
+  closed: ENQUIRY_STATUSES.SOLD,
+};
+
+export function normalizeEnquiryStatus(status: string): EnquiryStatus {
+  if (VALID_ENQUIRY_STATUSES.includes(status as EnquiryStatus)) {
+    return status as EnquiryStatus;
+  }
+  return LEGACY_STATUS_MAP[status] ?? ENQUIRY_STATUSES.NEW_LEAD;
+}
