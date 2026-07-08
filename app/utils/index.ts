@@ -162,18 +162,43 @@ export function buildQueryString(params: Record<string, any>): string {
 }
 
 /**
- * Strip "hybrid", "electric", and "ev" suffixes from vehicle slug for calculator links
- * The calculator page expects the base model name without powertrain suffix
- * e.g., "kona-hybrid" -> "kona", "ioniq-5-electric" -> "ioniq-5"
+ * Strip leading model years from Hyundai route slugs.
+ * e.g., "2025-palisade" -> "palisade"
+ */
+export function stripModelYearPrefix(slug: string): string {
+  return slug.trim().replace(/^20\d{2}[-_\s]+/i, '');
+}
+
+/**
+ * Strip year and powertrain suffixes from vehicle slug for calculator links.
+ * The calculator page expects the base model name without powertrain suffix.
+ * e.g., "2025-palisade" -> "palisade", "kona-hybrid" -> "kona", "ioniq-5-electric" -> "ioniq-5"
  */
 export function getCalculatorSlug(slug: string): string {
-  return slug
+  return stripModelYearPrefix(slug)
     .replace(/-hybrid$/i, '')
     .replace(/-electric$/i, '')
     .replace(/-ev$/i, '');
 }
 
+/**
+ * Extract the base Hyundai model slug used for stock search and broad model matching.
+ * e.g., "2025-palisade" -> "palisade", "tucson-n-line" -> "tucson"
+ */
+export function getVehicleSearchModelSlug(slug: string): string {
+  const slugValue = stripModelYearPrefix(slug || '').toLowerCase();
+  if (!slugValue) return '';
 
+  const knownModels = ['santa-fe', 'staria-load', 'palisade', 'tucson', 'venue', 'kona', 'i30', 'inster', 'ioniq'];
+
+  for (const model of knownModels) {
+    if (slugValue === model || slugValue.startsWith(`${model}-`)) {
+      return model;
+    }
+  }
+
+  return slugValue.split('-')[0] || '';
+}
 
 
 

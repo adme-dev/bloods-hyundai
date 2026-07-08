@@ -414,29 +414,13 @@ function formattedVehicleTitle(value: string) {
 // Extract base model name for API calls and related vehicles search
 // Converts slugs like 'kona-electric' to 'kona', 'i30-sedan-n' to 'i30', etc.
 const vehicleSearchModel = computed(() => {
-  const slugValue = slug.value;
-  if (!slugValue) return '';
-
-  // Common model name patterns that should be preserved as-is
-  const knownModels = ['santa-fe', 'staria-load', 'palisade', 'tucson', 'venue', 'kona', 'i30', 'inster', 'ioniq'];
-
-  // Check if slug starts with a known model
-  for (const model of knownModels) {
-    if (slugValue === model || slugValue.startsWith(model + '-')) {
-      return model;
-    }
-  }
-
-  // Fallback: use the first part of the slug (before any variant suffix)
-  // This handles cases like 'tucson-n-line' -> 'tucson'
-  const parts = slugValue.split('-');
-  return parts[0];
+  return getVehicleSearchModelSlug(slug.value || '');
 });
 
 // Base model name for the calculator API.
 // IONIQ slugs need to stay specific; Hyundai's calculator has no generic "ioniq" model.
 const vehicleBaseModel = computed(() => {
-  const slugValue = slug.value?.toLowerCase() || '';
+  const slugValue = stripModelYearPrefix(slug.value || '').toLowerCase();
 
   const calculatorModelOverrides: Record<string, string> = {
     'ioniq-6-n': 'ioniq-6',

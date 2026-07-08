@@ -6,12 +6,6 @@
       <p class="uk-margin-small-top">Loading {{ modelTitle }} variants...</p>
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="error" class="uk-text-center uk-padding-large">
-      <p class="uk-text-danger">{{ error }}</p>
-      <button @click="fetchVariants" class="uk-button uk-button-primary">Retry</button>
-    </div>
-
     <!-- Content -->
     <div v-else-if="variantGroups.length > 0">
       <div class="uk-width-1-1 uk-text-center">
@@ -170,7 +164,7 @@
       </div>
     </div>
 
-    <!-- No variants found - hidden, component simply doesn't render anything -->
+    <!-- No variants found or optional calculator enrichment failed - hidden -->
     <div v-else></div>
   </div>
 </template>
