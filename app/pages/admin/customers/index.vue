@@ -338,12 +338,17 @@
           <Button variant="outline" size="sm" @click="bulkEmail">
             <Mail class="mr-2 h-4 w-4" /> Email
           </Button>
-          <Button variant="outline" size="sm" @click="bulkAddTask">
+          <Button variant="outline" size="sm" :disabled="bulkBusy" @click="bulkAddTask">
             <ListTodo class="mr-2 h-4 w-4" /> Add Task
           </Button>
-          <Button variant="outline" size="sm" @click="bulkUpdateStage">
-            <Tag class="mr-2 h-4 w-4" /> Update Stage
-          </Button>
+          <Select :model-value="''" @update:model-value="(v: any) => bulkUpdateStage(String(v))">
+            <SelectTrigger class="h-9 w-[150px]">
+              <SelectValue placeholder="Update Stage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="opt in lifecycleOptions" :key="opt.key" :value="opt.key">{{ opt.label }}</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="ghost" size="sm" @click="clearSelection">
             <X class="h-4 w-4" />
           </Button>
@@ -727,8 +732,8 @@ const submitTask = async () => {
 
 // Quick Actions
 const logCall = (customer: any) => {
-  // TODO: Implement call logging dialog
-  console.log('Log call for:', customer.firstName);
+  // The full call-logging dialog lives on the customer detail page.
+  navigateTo(`/admin/customers/${customer.id}`);
 };
 
 const sendEmail = (customer: any) => {
@@ -737,8 +742,8 @@ const sendEmail = (customer: any) => {
 };
 
 const addNote = (customer: any) => {
-  // TODO: Implement note dialog
-  console.log('Add note for:', customer.firstName);
+  // Notes/activities are managed on the customer detail page.
+  navigateTo(`/admin/customers/${customer.id}`);
 };
 
 const scheduleFollowup = (customer: any) => {
@@ -769,14 +774,49 @@ const bulkEmail = () => {
   window.open(`mailto:${selectedEmails.join(',')}`, '_blank');
 };
 
-const bulkAddTask = () => {
-  // TODO: Implement bulk task creation
-  console.log('Bulk add task for:', selectedCustomers.value);
+const bulkBusy = ref(false);
+
+const bulkAddTask = async () => {
+  if (selectedCustomers.value.length === 0 || bulkBusy.value) return;
+  bulkBusy.value = true;
+  const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  try {
+    await Promise.all(
+      selectedCustomers.value.map((id) =>
+        $fetch('/api/admin/tasks', {
+          method: 'POST',
+          body: { title: 'Follow up', taskType: 'follow_up', dueDate, priority: 'normal', customerId: id },
+        }),
+      ),
+    );
+    clearSelection();
+    refresh();
+  } catch (error) {
+    console.error('Bulk add task failed:', error);
+  } finally {
+    bulkBusy.value = false;
+  }
 };
 
-const bulkUpdateStage = () => {
-  // TODO: Implement bulk stage update
-  console.log('Bulk update stage for:', selectedCustomers.value);
+const bulkUpdateStage = async (stage: string) => {
+  if (!stage || selectedCustomers.value.length === 0 || bulkBusy.value) return;
+  bulkBusy.value = true;
+  try {
+    await Promise.all(
+      selectedCustomers.value.map((id) =>
+        $fetch(`/api/admin/customers/${id}`, {
+          method: 'PATCH',
+          body: { retentionProfile: { lifecycleStage: stage } },
+        }),
+      ),
+    );
+    clearSelection();
+    refresh();
+  } catch (error) {
+    console.error('Bulk update stage failed:', error);
+  } finally {
+    bulkBusy.value = false;
+  }
 };
 
 // Formatting helpers
