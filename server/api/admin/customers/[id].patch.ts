@@ -1,6 +1,8 @@
 import { db } from '../../../utils/db';
 import { customers, customerRetentionProfiles, customerActivities } from '../../../database/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
+import { pickSafeCustomer } from '../../../utils/customerSafe';
+import { VALID_LIFECYCLE_STAGES, type LifecycleStage } from '~~/shared/constants/salesFunnel';
 
 export default defineEventHandler(async (event) => {
   const dealerId = event.context.dealerId;
@@ -24,6 +26,31 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 404,
       message: 'Customer not found',
+    });
+  }
+
+  // Reject an email change that collides with another customer of this dealer
+  // (the (dealer_id, email) unique index would otherwise surface as a raw 500).
+  if (body.email !== undefined && body.email !== existingCustomer.email) {
+    const clash = await db.query.customers.findFirst({
+      where: and(
+        eq(customers.dealerId, dealerId),
+        eq(customers.email, body.email),
+        ne(customers.id, customerId),
+      ),
+      columns: { id: true },
+    });
+    if (clash) {
+      throw createError({ statusCode: 409, message: 'A customer with this email already exists' });
+    }
+  }
+
+  // Validate lifecycle stage against the canonical set
+  if (body.retentionProfile?.lifecycleStage !== undefined
+      && !VALID_LIFECYCLE_STAGES.includes(body.retentionProfile.lifecycleStage as LifecycleStage)) {
+    throw createError({
+      statusCode: 400,
+      message: `Invalid lifecycle stage. Valid values: ${VALID_LIFECYCLE_STAGES.join(', ')}`,
     });
   }
 
@@ -133,7 +160,7 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     customer: {
-      ...updatedCustomer,
+      ...pickSafeCustomer(updatedCustomer),
       retentionProfile,
     },
   };
