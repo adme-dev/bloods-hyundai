@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
   await db.insert(enquiryActivityLog).values({
     dealerId: user.dealerId,
     enquiryId,
-    userId: user.id,
+    userId: user.userId,
     action: 'snoozed',
     entityType: 'enquiry',
     newValue: { snoozedUntil: snoozedUntil.toISOString(), duration: body.duration },
