@@ -1,9 +1,9 @@
-import { toModelSummaries } from '../utils/modelSummaries';
+import { HYUNDAI_AU_OEM_ADAPTER } from '../utils/hyundaiOemAdapter';
 
 export default defineCachedEventHandler(async () => {
   try {
     const allVariants = await $fetch('/api/all-variants');
-    return toModelSummaries(allVariants);
+    return HYUNDAI_AU_OEM_ADAPTER.models.toModelSummaries(allVariants);
   } catch (error: any) {
     console.error('[model-summaries] Error:', error.message);
     return {

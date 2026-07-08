@@ -94,7 +94,7 @@ Acceptance:
 - [x] Define `InventorySource` contract for Carsales/DriveAgent/API-backed stock.
 - [x] Move stock feed config into tenant settings.
 - [x] Ensure `/api/carsales-feed`, `/api/homepage-filters`, `/api/search`, and vehicle detail APIs resolve by tenant.
-- [ ] Define Hyundai OEM model/offers adapter boundaries.
+- [x] Define Hyundai OEM model/offers adapter boundaries.
 - [ ] Keep model calculator routes tenant-safe and Hyundai-specific.
 
 Acceptance:
@@ -194,4 +194,5 @@ Loop exit criteria:
 - [x] Standard vehicle enrichment direct inventory lookup is constrained by tenant seller IDs
 - [x] Inventory source contract added and used by `/api/carsales-feed`; `/api/search` and `/api/vehicle-detail` audited as tenant-forwarding through the feed
 - [x] Blood inventory settings moved into tenant defaults and additive `dealers.settings.inventory` migration; Sale seeded with an empty tenant-owned inventory settings shape pending confirmed feed values
+- [x] Hyundai AU OEM model/offers adapter boundary added and used by model summaries, offer hero banner, and variant-price URL construction
 - [x] No production push/domain change performed

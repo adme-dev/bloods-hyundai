@@ -28,7 +28,7 @@ export interface ModelSummary {
   vehiclecat: string;
 }
 
-interface ModelSummariesResponse {
+export interface ModelSummariesResponse {
   success: boolean;
   totalModels: number;
   vehicleCategories: string[];

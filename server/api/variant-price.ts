@@ -1,5 +1,6 @@
+import { HYUNDAI_AU_OEM_ADAPTER } from '../utils/hyundaiOemAdapter';
+
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig();
   const query = getQuery(event);
   
   const { variantId, postcode = '3000', optionCost = '0' } = query;
@@ -13,7 +14,11 @@ export default defineEventHandler(async (event) => {
   }
   
   try {
-    const url = `https://www.hyundai.com/content/api/au/hyundai/v3/variantpricecalculator?variantId=${variantId}&optionCost=${optionCost}&postcode=${postcode}`;
+    const url = HYUNDAI_AU_OEM_ADAPTER.endpoints.variantPrice({
+      variantId: String(variantId),
+      optionCost: String(optionCost),
+      postcode: String(postcode),
+    });
     
     const response = await $fetch<any>(url, {
       headers: {
@@ -57,8 +62,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-
 
 
 

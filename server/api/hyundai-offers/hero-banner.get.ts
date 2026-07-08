@@ -2,9 +2,8 @@
  * GET /api/hyundai-offers/hero-banner
  * Lightweight endpoint for the current Hyundai offers hero creative.
  */
-import { DEFAULT_HERO_BANNER, extractHeroBanners } from '../../utils/hyundaiOffers';
+import { HYUNDAI_AU_OEM_ADAPTER } from '../../utils/hyundaiOemAdapter';
 
-const HYUNDAI_OFFERS_URL = 'https://www.hyundai.com/au/en/offers';
 const CACHE_MAX_AGE = 60 * 15;
 const CACHE_STALE_MAX_AGE = 60 * 60;
 
@@ -18,7 +17,7 @@ export default defineCachedEventHandler(async (event) => {
   };
 
   try {
-    const html = await $fetch<string>(HYUNDAI_OFFERS_URL, {
+    const html = await $fetch<string>(HYUNDAI_AU_OEM_ADAPTER.endpoints.offers(), {
       timeout: 3000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -27,7 +26,7 @@ export default defineCachedEventHandler(async (event) => {
       },
     });
 
-    const banners = extractHeroBanners(html);
+    const banners = HYUNDAI_AU_OEM_ADAPTER.offers.extractHeroBanners(html);
 
     setResponseHeaders(event, headers);
 
@@ -48,10 +47,12 @@ export default defineCachedEventHandler(async (event) => {
         : 'public, max-age=300, stale-while-revalidate=1800',
     });
 
+    const fallbackHeroBanner = HYUNDAI_AU_OEM_ADAPTER.offers.defaultHeroBanner;
+
     // Keep the homepage renderable even when Hyundai blocks or times out.
     return {
-      heroBanner: DEFAULT_HERO_BANNER,
-      desktop: DEFAULT_HERO_BANNER,
+      heroBanner: fallbackHeroBanner,
+      desktop: fallbackHeroBanner,
       mobile: null,
       _timestamp: Date.now(),
       _cache_bypassed: refreshRequested,
