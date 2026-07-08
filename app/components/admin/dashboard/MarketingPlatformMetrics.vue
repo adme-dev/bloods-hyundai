@@ -108,6 +108,9 @@
         </div>
         <p v-else class="text-xs text-muted-foreground">No campaign data yet — connect a platform and run a sync.</p>
       </template>
+      <p v-else class="py-8 text-center text-sm text-muted-foreground">
+        Couldn't load platform metrics — try refreshing.
+      </p>
     </CardContent>
   </Card>
 </template>
