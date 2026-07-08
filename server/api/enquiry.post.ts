@@ -6,6 +6,7 @@ import { sendEnquiryNotification, sendCustomerConfirmation } from '../utils/emai
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
 import { sanitizeIpAddress } from '../utils/intakeValidation';
+import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 
 /**
  * Public Enquiry Submission Endpoint
@@ -133,7 +134,19 @@ export default defineEventHandler(async (event) => {
     // 4. Get request metadata
     const ipAddress = getRequestIP(event, { xForwardedFor: true });
     const userAgent = getHeader(event, 'user-agent');
-    
+
+    // 4b. Abuse controls (honeypot → rate limit → duplicate)
+    if (isHoneypotTripped(body)) {
+      return { success: true };
+    }
+    const rateKey = `${dealer.id}:${sanitizeIpAddress(ipAddress) ?? 'noip'}`;
+    if (!checkRateLimit(rateKey, Date.now())) {
+      throw createError({ statusCode: 429, message: 'Too many submissions. Please try again shortly.' });
+    }
+    if (await isDuplicateEnquiry(dealer.id, body.email)) {
+      return { success: true, duplicate: true };
+    }
+
     // 5. Insert enquiry into database
     const [enquiry] = await db
       .insert(enquiries)
