@@ -94,13 +94,14 @@ const homeThumbs = computed(() => {
 
 // Embla Carousel setup
 const [emblaRef, emblaApi] = emblaCarouselVue({
+  active: false,
   loop: false,
   align: 'start',
   containScroll: 'trimSnaps',
   slidesToScroll: 1,
   breakpoints: {
-    '(min-width: 640px)': { slidesToScroll: 2 },
-    '(min-width: 960px)': { slidesToScroll: 3 },
+    '(min-width: 640px)': { active: true, slidesToScroll: 2 },
+    '(min-width: 960px)': { active: true, slidesToScroll: 3 },
   },
 }, [Autoplay({ delay: 3500, stopOnInteraction: false })]);
 
@@ -158,31 +159,47 @@ onUnmounted(() => {
 
 .thumbs-carousel {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .thumbs-viewport {
-  overflow: hidden;
-  flex: 1;
+  width: 100%;
+  overflow: visible;
 }
 
 .thumbs-container {
   display: flex;
+  flex-direction: column;
   gap: 16px;
   backface-visibility: hidden;
-  touch-action: pan-y pinch-zoom;
+  touch-action: auto;
 }
 
 .thumb-slide {
-  flex: 0 0 calc(50% - 8px);
+  flex: 0 0 auto;
+  width: 100%;
   min-width: 0;
 }
 
 @media (min-width: 640px) {
+  .thumbs-carousel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .thumbs-viewport {
+    overflow: hidden;
+    flex: 1;
+  }
+
+  .thumbs-container {
+    flex-direction: row;
+    touch-action: pan-y pinch-zoom;
+  }
+
   .thumb-slide {
     flex: 0 0 calc(33.333% - 11px);
+    width: auto;
   }
 }
 
