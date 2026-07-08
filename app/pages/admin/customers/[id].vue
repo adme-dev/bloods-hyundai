@@ -484,6 +484,7 @@ import {
 } from '~/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { getGravatarUrl, getInitials } from '~/utils/gravatar';
+import { LIFECYCLE_STAGE_CONFIG, type LifecycleStage } from '~~/shared/constants/salesFunnel';
 
 definePageMeta({
   layout: 'admin',
@@ -641,31 +642,20 @@ const formatDistanceToNow = (date: string) => {
 };
 
 const formatLifecycleStage = (stage?: string) => {
-  const stages: Record<string, string> = {
-    prospect: 'Prospect',
-    lead: 'Lead',
-    test_drive: 'Test Drive',
-    negotiating: 'Negotiating',
-    purchased: 'Purchased',
-    service_customer: 'Service',
-    at_risk: 'At Risk',
-    inactive: 'Inactive',
-  };
-  return stages[stage || 'prospect'] || stage || 'Prospect';
+  if (!stage) return 'Prospect';
+  return LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.label || stage;
 };
 
 const getLifecycleBadgeVariant = (stage?: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
-  const variants: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
-    prospect: 'outline',
-    lead: 'secondary',
-    test_drive: 'secondary',
-    negotiating: 'default',
-    purchased: 'default',
-    service_customer: 'default',
-    at_risk: 'destructive',
-    inactive: 'outline',
+  const category = stage ? LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.category : undefined;
+  const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+    acquisition: 'outline',
+    conversion: 'secondary',
+    customer: 'default',
+    risk: 'destructive',
+    lost: 'outline',
   };
-  return variants[stage || 'prospect'] || 'outline';
+  return (category && map[category]) || 'outline';
 };
 
 const formatRiskLevel = (level?: string) => {
