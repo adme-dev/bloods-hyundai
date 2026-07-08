@@ -93,7 +93,7 @@ Acceptance:
 
 - [x] Define `InventorySource` contract for Carsales/DriveAgent/API-backed stock.
 - [ ] Move stock feed config into tenant settings.
-- [ ] Ensure `/api/carsales-feed`, `/api/homepage-filters`, `/api/search`, and vehicle detail APIs resolve by tenant.
+- [x] Ensure `/api/carsales-feed`, `/api/homepage-filters`, `/api/search`, and vehicle detail APIs resolve by tenant.
 - [ ] Define Hyundai OEM model/offers adapter boundaries.
 - [ ] Keep model calculator routes tenant-safe and Hyundai-specific.
 
