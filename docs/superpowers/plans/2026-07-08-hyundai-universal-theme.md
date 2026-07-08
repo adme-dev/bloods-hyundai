@@ -104,7 +104,7 @@ Acceptance:
 
 ## Phase 6: Admin Foundation
 
-- [ ] Compare Toyota admin modules against Hyundai admin needs.
+- [x] Compare Toyota admin modules against Hyundai admin needs.
 - [ ] Port only the generic concepts first: tenant settings, nav editor, media/banner editor, forms, staff, routing.
 - [ ] Keep admin routes behind auth.
 - [ ] Ensure admin user belongs to one dealer or an explicit platform-admin role.
@@ -196,4 +196,5 @@ Loop exit criteria:
 - [x] Blood inventory settings moved into tenant defaults and additive `dealers.settings.inventory` migration; Sale seeded with an empty tenant-owned inventory settings shape pending confirmed feed values
 - [x] Hyundai AU OEM model/offers adapter boundary added and used by model summaries, offer hero banner, and variant-price URL construction
 - [x] Calculator route now resolves tenant context, enforces Hyundai-only usage, uses OEM adapter URL builders, and returns safe public errors for upstream failures
+- [x] Phase 6 admin comparison documented in `docs/superpowers/plans/2026-07-08-hyundai-admin-foundation-comparison.md`; initial generic port order defined with no runtime or live changes
 - [x] No production push/domain change performed
