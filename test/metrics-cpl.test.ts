@@ -72,4 +72,19 @@ describe('aggregateMarketingMetrics', () => {
     assert.deepEqual(out.platforms.ga4, { sessions: 200, users: 150, conversions: 6 });
     assert.equal(out.campaigns.length, 0);
   });
+
+  it('scopes campaign matching by platform when names collide', () => {
+    const out = aggregateMarketingMetrics(
+      [
+        meta({ campaignName: 'July Runout', campaignId: 'm1' }),
+        { ...meta({ platform: 'google_ads' as const, campaignName: 'July Runout', campaignId: 'g1', spend: 200 }) },
+      ],
+      [
+        { utmSource: 'facebook', utmMedium: 'paid', utmCampaign: 'july runout', count: 3 },
+        { utmSource: 'google', utmMedium: 'cpc', utmCampaign: 'july runout', count: 5 },
+      ],
+    );
+    assert.equal(out.campaigns.find(c => c.campaignId === 'm1')!.crmLeads, 3);
+    assert.equal(out.campaigns.find(c => c.campaignId === 'g1')!.crmLeads, 5);
+  });
 });
