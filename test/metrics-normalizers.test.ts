@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
 import { normalizeMetaInsights } from '../server/utils/metrics/metaAds.ts';
+import {
+  normalizeGoogleAdsResults,
+  flattenSearchStream,
+  buildCampaignGaql,
+} from '../server/utils/metrics/googleAds.ts';
 
 describe('normalizeGa4Response', () => {
   it('maps runReport rows to property-level NormalizedRows', () => {
@@ -75,5 +80,47 @@ describe('normalizeMetaInsights', () => {
     const rows = normalizeMetaInsights([{ ...insight, actions: undefined }]);
     assert.equal(rows[0]!.platformLeads, 0);
     assert.deepEqual(normalizeMetaInsights([]), []);
+  });
+});
+
+describe('googleAds helpers', () => {
+  // REST searchStream returns camelCase (costMicros), NOT GAQL snake_case.
+  const result = {
+    campaign: { id: '99887', name: 'Brand - Werribee' },
+    metrics: { costMicros: '84213000', impressions: '4100', clicks: '190', conversions: 5.0 },
+    segments: { date: '2026-07-03' },
+  };
+
+  it('normalizes searchStream results (costMicros -> AUD spend)', () => {
+    const rows = normalizeGoogleAdsResults([result]);
+    assert.deepEqual(rows[0], {
+      platform: 'google_ads',
+      date: '2026-07-03',
+      campaignId: '99887',
+      campaignName: 'Brand - Werribee',
+      spend: 84.21,
+      impressions: 4100,
+      clicks: 190,
+      platformLeads: 5,
+      sessions: null,
+      users: null,
+      conversions: null,
+      raw: result,
+    });
+  });
+
+  it('flattens searchStream batch arrays', () => {
+    assert.deepEqual(
+      flattenSearchStream([{ results: [1, 2] }, { results: [3] }, {}]),
+      [1, 2, 3],
+    );
+    assert.deepEqual(flattenSearchStream(undefined), []);
+  });
+
+  it('builds a campaign GAQL query for the range', () => {
+    const q = buildCampaignGaql({ from: '2026-07-01', to: '2026-07-09' });
+    assert.match(q, /FROM campaign/);
+    assert.match(q, /segments\.date BETWEEN '2026-07-01' AND '2026-07-09'/);
+    assert.match(q, /metrics\.cost_micros/);
   });
 });
