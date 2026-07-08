@@ -10,6 +10,20 @@ import { emailLogs } from '../database/schema';
 const DEFAULT_DEALER_NAME = 'Hyundai Dealer';
 const DEFAULT_FROM_EMAIL = 'noreply@hyundai-dealer.com.au';
 
+/**
+ * Escape user-supplied text before interpolating it into email HTML.
+ * Prevents HTML/link injection from public enquiry form fields.
+ */
+function escapeHtml(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export interface EmailOptions {
   to: string[];
   cc?: string[];
@@ -1087,22 +1101,22 @@ function generateEnquiryEmailHTML(enquiry: any, dealer: any): string {
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 8px 0; font-weight: 600; color: #555; width: 120px;">Name:</td>
-                    <td style="padding: 8px 0;">${enquiry.firstName} ${enquiry.lastName}</td>
+                    <td style="padding: 8px 0;">${escapeHtml(enquiry.firstName)} ${escapeHtml(enquiry.lastName)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; font-weight: 600; color: #555;">Email:</td>
-                    <td style="padding: 8px 0;"><a href="mailto:${enquiry.email}" style="color: ${primaryColor}; text-decoration: none;">${enquiry.email}</a></td>
+                    <td style="padding: 8px 0;"><a href="mailto:${escapeHtml(enquiry.email)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(enquiry.email)}</a></td>
                   </tr>
                   ${enquiry.phone ? `
                   <tr>
                     <td style="padding: 8px 0; font-weight: 600; color: #555;">Phone:</td>
-                    <td style="padding: 8px 0;"><a href="tel:${enquiry.phone}" style="color: ${primaryColor}; text-decoration: none;">${enquiry.phone}</a></td>
+                    <td style="padding: 8px 0;"><a href="tel:${escapeHtml(enquiry.phone)}" style="color: ${primaryColor}; text-decoration: none;">${escapeHtml(enquiry.phone)}</a></td>
                   </tr>
                   ` : ''}
                   ${enquiry.suburb || enquiry.state ? `
                   <tr>
                     <td style="padding: 8px 0; font-weight: 600; color: #555;">Location:</td>
-                    <td style="padding: 8px 0;">${enquiry.suburb || ''}${enquiry.state ? ', ' + enquiry.state : ''} ${enquiry.postcode || ''}</td>
+                    <td style="padding: 8px 0;">${escapeHtml(enquiry.suburb || '')}${enquiry.state ? ', ' + escapeHtml(enquiry.state) : ''} ${escapeHtml(enquiry.postcode || '')}</td>
                   </tr>
                   ` : ''}
                 </table>
@@ -1118,7 +1132,7 @@ function generateEnquiryEmailHTML(enquiry: any, dealer: any): string {
               <!-- Message Section -->
               <div style="background: #f8f9fa; padding: 20px; margin-bottom: 20px; border-radius: 8px;">
                 <h2 style="margin: 0 0 15px 0; color: ${primaryColor}; font-size: 18px;">Message</h2>
-                <p style="margin: 0; white-space: pre-wrap; color: #333;">${enquiry.message}</p>
+                <p style="margin: 0; white-space: pre-wrap; color: #333;">${escapeHtml(enquiry.message)}</p>
               </div>
               ` : ''}
 
@@ -1253,7 +1267,7 @@ function generateCustomerConfirmationHTML(enquiry: any, dealer: any): string {
           <tr>
             <td style="padding: 30px 25px;">
               <!-- Personalized greeting -->
-              <p style="font-size: 18px; margin: 0 0 20px 0;">Hi ${enquiry.firstName},</p>
+              <p style="font-size: 18px; margin: 0 0 20px 0;">Hi ${escapeHtml(enquiry.firstName)},</p>
 
               <p style="margin: 0 0 20px 0; font-size: 15px; color: #444;">
                 Thank you for contacting <strong>${dealer.name}</strong>. We've received your enquiry and one of our friendly team members will be in touch shortly.
