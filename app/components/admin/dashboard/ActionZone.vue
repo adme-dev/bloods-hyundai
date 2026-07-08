@@ -62,7 +62,7 @@
             </div>
             <div class="flex shrink-0 flex-col items-end gap-1.5">
               <span class="whitespace-nowrap text-xs text-muted-foreground">{{ formatTimeAgo(lead.createdAt) }}</span>
-              <Button variant="default" size="sm" class="no-underline" as-child>
+              <Button variant="default" size="sm" as-child>
                 <NuxtLink :to="`/admin/enquiries/${lead.id}`">
                   <Phone class="mr-1 h-3 w-3" /> Contact
                 </NuxtLink>
@@ -110,7 +110,7 @@
                 </div>
               </div>
             </div>
-            <Button variant="destructive" size="sm" class="bg-red-600 text-white no-underline hover:bg-red-700 hover:text-white" as-child>
+            <Button variant="destructive" size="sm" as-child>
               <NuxtLink :to="`/admin/enquiries/${enquiry.id}`">
                 Respond Now
               </NuxtLink>

@@ -32,7 +32,7 @@
             </span>
           </p>
         </div>
-        <Button variant="destructive" size="sm" class="bg-red-600 text-white no-underline hover:bg-red-700 hover:text-white" as-child>
+        <Button variant="destructive" size="sm" as-child>
           <NuxtLink to="/admin/enquiries?status=new_lead&sort=oldest">
             View Overdue <ArrowRight class="ml-1 h-4 w-4" />
           </NuxtLink>

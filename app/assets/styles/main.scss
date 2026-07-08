@@ -337,6 +337,7 @@ a {
 
 // Remove underline from navigation links, buttons, and card links
 a.uk-button,
+a.ui-button,
 a.no-underline,
 .uk-navbar-nav a,
 .uk-nav a,
@@ -498,7 +499,11 @@ body {
 
 // Links - use Active Blue (#00aad2)
 // Only style text links, exclude buttons, images, toolbar/footer links, and specific UIkit classes
-a:not(.uk-button):not(.uk-link-muted):not(.uk-link-text):not(.uk-navbar-item):not(.uk-card-media):not(.uk-card-media-top):not(.uk-card-media-bottom):not(.toolbar-link):not(.footer-wrap a):not(.uk-light a):not(.uk-background-primary a):not(.uk-background-secondary a):not(.uk-section-primary a):not(.uk-section-secondary a):not(.no-link-style) {
+// NOTE: every :not(.class) here adds class-level specificity, so this rule weighs ~(0,13,1)
+// and defeats any single utility class (e.g. shadcn text-* tokens) on an anchor. Components
+// that render anchors (Button as-child) must be excluded via the .ui-button marker below —
+// do NOT "fix" contrast at call sites with extra utilities; they lose to this rule.
+a:not(.ui-button):not(.uk-button):not(.uk-link-muted):not(.uk-link-text):not(.uk-navbar-item):not(.uk-card-media):not(.uk-card-media-top):not(.uk-card-media-bottom):not(.toolbar-link):not(.footer-wrap a):not(.uk-light a):not(.uk-background-primary a):not(.uk-background-secondary a):not(.uk-section-primary a):not(.uk-section-secondary a):not(.no-link-style) {
   color: var(--color-primary-light);
 
   &:hover {
