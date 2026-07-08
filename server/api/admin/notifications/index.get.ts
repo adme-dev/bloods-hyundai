@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
   // Get user's last seen timestamp
   const userRecord = await db.query.users.findFirst({
-    where: eq(users.id, user.id),
+    where: eq(users.id, user.userId),
     columns: {
       lastSeenNotificationsAt: true,
     },
@@ -82,7 +82,7 @@ export default defineEventHandler(async (event) => {
   const assignedEnquiries = await db.query.enquiries.findMany({
     where: and(
       eq(enquiries.dealerId, user.dealerId),
-      eq(enquiries.assignedTo, user.id),
+      eq(enquiries.assignedTo, user.userId),
       gt(enquiries.updatedAt, cutoffDate),
       isNull(enquiries.archivedAt)
     ),

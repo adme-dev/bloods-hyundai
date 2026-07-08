@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
       lastSeenNotificationsAt: now,
       updatedAt: now,
     })
-    .where(eq(users.id, user.id));
+    .where(eq(users.id, user.userId));
 
   return {
     success: true,
