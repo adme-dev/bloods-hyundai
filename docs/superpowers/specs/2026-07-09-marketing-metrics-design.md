@@ -28,7 +28,7 @@ daily into Neon; the dashboard never calls platform APIs directly.
 | dealer_id | uuid NOT NULL → dealers(id) ON DELETE CASCADE | |
 | platform | varchar(20) NOT NULL | `'ga4' \| 'meta_ads' \| 'google_ads'` |
 | date | date NOT NULL | platform-local day |
-| campaign_id | varchar(100) NULL | NULL = property/account-level row (GA4) |
+| campaign_id | varchar(100) NOT NULL DEFAULT '' | `''` = property/account-level row (GA4) |
 | campaign_name | varchar(255) NULL | |
 | spend | numeric(12,2) NULL | AUD; Google Ads `cost_micros / 1e6` |
 | impressions | integer NULL | |
@@ -40,12 +40,12 @@ daily into Neon; the dashboard never calls platform APIs directly.
 | raw | jsonb NULL | raw API row for debugging/backfill |
 | synced_at | timestamptz NOT NULL default now() | |
 
-Unique index: `(dealer_id, platform, date, COALESCE(campaign_id, ''))` — syncs are
-idempotent upserts (`ON CONFLICT ... DO UPDATE`).
+Unique index: `(dealer_id, platform, date, campaign_id)` — syncs are idempotent
+upserts (`ON CONFLICT ... DO UPDATE`).
 
 Row granularity: Meta/Google Ads write one row per campaign per day; account totals
 are computed at read time by summing. GA4 writes one row per day with `campaign_id`
-NULL.
+`''`.
 
 ### `marketing_sync_runs`
 
@@ -183,9 +183,11 @@ Currency formatted with the existing dashboard `formatCurrency` util.
 
 ## Error handling
 
-- Fetchers: 30s timeout, one retry on 429/5xx with backoff; auth errors (401/403)
-  recorded verbatim in `sync_runs.error` — the UI hint distinguishes "token expired /
-  permission missing" from transient failures.
+- Fetchers: 30s timeout. Google Ads retries once on 429/5xx with backoff; GA4/Meta
+  don't retry inline — the daily schedule plus the manual Refresh button self-heal
+  transient failures. Auth errors (401/403) are recorded in `sync_runs.error` — the
+  UI hint distinguishes "token expired / permission missing" from transient failures.
+  Tokens are sent in headers only (never URLs) so persisted errors can't leak them.
 - Upserts are transactional per platform; a failed platform leaves prior rows intact
   (dashboard shows stale-but-honest data + error badge).
 - The internal sync endpoint requires `METRICS_CRON_SECRET`; the admin endpoint reuses
