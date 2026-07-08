@@ -91,7 +91,7 @@ describe('front slide resolution', () => {
     );
   });
 
-  it('includes footerbanner slides when configured in promotional blocks', () => {
+  it('does not include footerbanner content in homepage hero slides', () => {
     const promotional = [{
       footerbanner: [
         {
@@ -106,12 +106,7 @@ describe('front slide resolution', () => {
 
     const slides = getConfiguredFrontSlides(promotional);
 
-    assert.equal(slides.length, 1);
-    assert.equal(slides[0].desktop, 'https://cdn.example.com/office-slide.jpg');
-    assert.equal(slides[0].link, '/test-drive');
-    assert.equal(slides[0].button_text, 'Book Now');
-    assert.equal(slides[0].heading_content, 'Test Drive');
-    assert.equal(slides[0].sub_heading, 'Book today');
+    assert.deepEqual(slides, []);
   });
 
   it('reads footer block date range fields as start_date/end_date', () => {
