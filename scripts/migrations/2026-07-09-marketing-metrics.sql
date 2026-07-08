@@ -38,3 +38,9 @@ CREATE TABLE IF NOT EXISTS marketing_sync_runs (
 
 CREATE INDEX IF NOT EXISTS marketing_sync_runs_dealer_platform
   ON marketing_sync_runs (dealer_id, platform, started_at DESC);
+
+-- One live sync per dealer+platform; stale 'running' rows are expired by the
+-- orchestrator before insert, so this cannot deadlock after a crash.
+CREATE UNIQUE INDEX IF NOT EXISTS marketing_sync_runs_one_running
+  ON marketing_sync_runs (dealer_id, platform)
+  WHERE status = 'running';

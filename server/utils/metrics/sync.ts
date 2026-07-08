@@ -55,7 +55,7 @@ export async function syncPlatforms(
 export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]> {
   const { db } = await import('../db');
   const { dealers, marketingMetricsDaily, marketingSyncRuns } = await import('../../database/schema');
-  const { and, eq, gte, max, sql } = await import('drizzle-orm');
+  const { and, eq, lt, max, sql } = await import('drizzle-orm');
 
   const [dealer] = await db.select({ settings: dealers.settings }).from(dealers).where(eq(dealers.id, dealerId));
   const integrations: MarketingIntegrations =
@@ -102,23 +102,32 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
 
   const results: PlatformResult[] = [];
   for (const job of jobs) {
-    // Concurrency guard: skip if a running sync younger than 10 min exists.
+    // Expire stale 'running' rows (crashed/never-finished syncs) before
+    // attempting the insert below, so a dead row can't hold the
+    // constraint-backed slot forever.
     const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
-    const [running] = await db.select({ id: marketingSyncRuns.id }).from(marketingSyncRuns)
+    await db.update(marketingSyncRuns)
+      .set({ status: 'error', error: 'stale: never finished', finishedAt: new Date() })
       .where(and(
         eq(marketingSyncRuns.dealerId, dealerId),
         eq(marketingSyncRuns.platform, job.platform),
         eq(marketingSyncRuns.status, 'running'),
-        gte(marketingSyncRuns.startedAt, tenMinAgo),
+        lt(marketingSyncRuns.startedAt, tenMinAgo),
       ));
-    if (running) {
+
+    // Constraint-backed concurrency guard: marketing_sync_runs_one_running
+    // (partial unique index on dealer_id, platform WHERE status = 'running')
+    // ensures only one live sync per dealer+platform can hold this slot, even
+    // when runMetricsSync is invoked concurrently (cron + manual refresh).
+    const [run] = await db.insert(marketingSyncRuns)
+      .values({ dealerId, platform: job.platform, status: 'running' })
+      .onConflictDoNothing()
+      .returning({ id: marketingSyncRuns.id });
+
+    if (!run) {
       results.push({ platform: job.platform, status: 'skipped', error: 'sync already running' });
       continue;
     }
-
-    const [run] = await db.insert(marketingSyncRuns)
-      .values({ dealerId, platform: job.platform, status: 'running' })
-      .returning({ id: marketingSyncRuns.id });
 
     const [result] = await syncPlatforms([job], async (rows) => {
       if (rows.length === 0) return 0;

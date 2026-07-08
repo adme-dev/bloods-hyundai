@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, jsonb, index, inet, uniqueIndex, integer, numeric, date } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // ============================================================================
 // DEALER GROUPS (Optional - for multi-dealership owners)
@@ -1151,6 +1151,7 @@ export const marketingSyncRuns = pgTable('marketing_sync_runs', {
   rowsUpserted: integer('rows_upserted'),
 }, (t) => ({
   syncRunsDealerPlatform: index('marketing_sync_runs_dealer_platform').on(t.dealerId, t.platform, t.startedAt),
+  oneRunning: uniqueIndex('marketing_sync_runs_one_running').on(t.dealerId, t.platform).where(sql`status = 'running'`),
 }));
 
 export type MarketingMetricsDaily = typeof marketingMetricsDaily.$inferSelect;
