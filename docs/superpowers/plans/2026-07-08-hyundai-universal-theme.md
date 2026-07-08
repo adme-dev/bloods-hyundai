@@ -92,7 +92,7 @@ Acceptance:
 ## Phase 5: Inventory And OEM Adapters
 
 - [x] Define `InventorySource` contract for Carsales/DriveAgent/API-backed stock.
-- [ ] Move stock feed config into tenant settings.
+- [x] Move stock feed config into tenant settings.
 - [x] Ensure `/api/carsales-feed`, `/api/homepage-filters`, `/api/search`, and vehicle detail APIs resolve by tenant.
 - [ ] Define Hyundai OEM model/offers adapter boundaries.
 - [ ] Keep model calculator routes tenant-safe and Hyundai-specific.
@@ -193,4 +193,5 @@ Loop exit criteria:
 - [x] Inventory feed and homepage filter seller config can read tenant settings before env/local fallbacks
 - [x] Standard vehicle enrichment direct inventory lookup is constrained by tenant seller IDs
 - [x] Inventory source contract added and used by `/api/carsales-feed`; `/api/search` and `/api/vehicle-detail` audited as tenant-forwarding through the feed
+- [x] Blood inventory settings moved into tenant defaults and additive `dealers.settings.inventory` migration; Sale seeded with an empty tenant-owned inventory settings shape pending confirmed feed values
 - [x] No production push/domain change performed

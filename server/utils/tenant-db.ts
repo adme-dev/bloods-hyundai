@@ -30,7 +30,7 @@ function toTenantConfigResult(
       status: 'active',
       timezone: 'Australia/Melbourne',
       locale: 'en-AU',
-      settings: {},
+      settings: tenant.settings || {},
     },
   };
 }

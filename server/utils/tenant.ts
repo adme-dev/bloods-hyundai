@@ -1,10 +1,13 @@
 import { getHeader, getRequestURL, type H3Event } from 'h3';
+import type { HyundaiTenantSettings } from '../types/tenant';
+import { getDefaultTenantSettings } from './tenant-default-settings';
 
 export interface TenantConfig {
   slug: string;
   name: string;
   siteUrl?: string;
   aliases?: string[];
+  settings?: HyundaiTenantSettings;
 }
 
 export const DEFAULT_DEALER_SLUG = 'hyundai-dealer';
@@ -19,6 +22,7 @@ const BLOOD_TENANT: TenantConfig = {
   name: 'Blood Hyundai',
   siteUrl: 'https://bloodhyundai.com.au',
   aliases: ['blood-hyundai'],
+  settings: getDefaultTenantSettings('bloods-hyundai'),
 };
 
 const SALE_TENANT: TenantConfig = {

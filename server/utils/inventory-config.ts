@@ -6,33 +6,13 @@ import type {
   InventorySourceTransport,
   TenantInventorySettings,
 } from '../types/inventory';
+import { BLOOD_HYUNDAI_INVENTORY_SETTINGS } from './tenant-default-settings';
 
 export interface HomepageSellerConfig {
   primary: string[];
   group: string[];
   secondary: string[];
 }
-
-const BLOOD_FEED_SOURCES: InventoryFeedSource[] = [
-  {
-    url: 'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-hyundai/data.json',
-    role: 'primary',
-  },
-  {
-    url: 'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/blood-motor-group/data.json',
-    role: 'group',
-  },
-  {
-    url: 'https://tsheefvkecaervnrxvdf.supabase.co/storage/v1/object/public/bucket/geelong-mazda/data.json',
-    role: 'secondary',
-  },
-];
-
-const BLOOD_SELLER_CONFIG: HomepageSellerConfig = {
-  primary: ['49b41e33-6e72-b64d-43a2-7897e61c1bf0'],
-  group: ['646680a2-406b-2430-bde8-761a48e4a2ed'],
-  secondary: ['41bba4aa-6460-dbd6-30f7-7f31dfa5ef61'],
-};
 
 const DEFAULT_DEALER_SLUG = 'hyundai-dealer';
 const DEFAULT_INVENTORY_PROVIDER: InventorySourceProvider = 'carsales';
@@ -160,7 +140,9 @@ export function getInventoryFeedSources(
   }
 
   if (isBloodDealerSlug(dealerSlug)) {
-    return BLOOD_FEED_SOURCES;
+    return normalizeTenantInventorySources(BLOOD_HYUNDAI_INVENTORY_SETTINGS)
+      .filter((source) => source.transport === 'json-feed')
+      .map(({ url, role }) => ({ url, role }));
   }
 
   if (dealerSlug === DEFAULT_DEALER_SLUG) {
@@ -197,7 +179,11 @@ export function getHomepageSellerConfig(
   }
 
   if (isBloodDealerSlug(dealerSlug)) {
-    return BLOOD_SELLER_CONFIG;
+    return {
+      primary: normalizeStringArray(BLOOD_HYUNDAI_INVENTORY_SETTINGS.primarySellerIds),
+      group: normalizeStringArray(BLOOD_HYUNDAI_INVENTORY_SETTINGS.groupSellerIds),
+      secondary: normalizeStringArray(BLOOD_HYUNDAI_INVENTORY_SETTINGS.secondarySellerIds),
+    };
   }
 
   if (dealerSlug === DEFAULT_DEALER_SLUG) {
