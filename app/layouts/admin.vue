@@ -171,6 +171,7 @@ const navItems = navLinks.map(link => ({
 }));
 
 const userState = useState<any>('auth-user', () => null);
+useAdminRealtime();
 
 const isActive = (path: string) => {
   if (path === '/admin') {

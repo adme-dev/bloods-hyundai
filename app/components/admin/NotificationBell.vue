@@ -147,6 +147,7 @@ const lastSeenAt = ref<string | null>(null);
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let visibilityHandler: (() => void) | null = null;
+let realtimeHandler: ((event: Event) => void) | null = null;
 
 const totalCount = computed(() =>
   notifications.value.filter(n => !n.read).length
@@ -293,6 +294,33 @@ function showBrowserNotification(notification: Notification) {
   });
 }
 
+function handleRealtimeEvent(event: Event) {
+  const detail = (event as CustomEvent).detail;
+  if (!detail || detail.type !== 'enquiry.created' || detail.entity?.type !== 'enquiry') return;
+
+  const notification: Notification = {
+    id: detail.entity.id,
+    type: 'enquiry',
+    subType: detail.summary?.enquiryType,
+    title: detail.summary?.title || getEnquiryTitle(detail.summary?.enquiryType || 'contact'),
+    message: detail.summary?.message || 'New enquiry received',
+    read: false,
+    createdAt: detail.occurredAt || new Date().toISOString(),
+    link: `/admin/enquiries/${detail.entity.id}`,
+    metadata: { enquiryId: detail.entity.id },
+  };
+
+  notifications.value = [
+    notification,
+    ...notifications.value.filter(existing => existing.id !== notification.id && existing.metadata?.enquiryId !== notification.id),
+  ].slice(0, 50);
+
+  isConnected.value = true;
+  if (document.visibilityState !== 'visible') {
+    showBrowserNotification(notification);
+  }
+}
+
 async function markAllAsRead() {
   try {
     await $fetch('/api/admin/notifications/read', {
@@ -376,6 +404,8 @@ onMounted(() => {
   if (import.meta.client) {
     startPolling();
     setupVisibilityHandler();
+    realtimeHandler = handleRealtimeEvent;
+    window.addEventListener('admin:realtime-event', realtimeHandler);
     requestNotificationPermission();
   }
 });
@@ -384,6 +414,9 @@ onUnmounted(() => {
   stopPolling();
   if (visibilityHandler) {
     document.removeEventListener('visibilitychange', visibilityHandler);
+  }
+  if (realtimeHandler) {
+    window.removeEventListener('admin:realtime-event', realtimeHandler);
   }
 });
 

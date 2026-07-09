@@ -12,6 +12,7 @@ import { inferLeadAttribution } from '../../utils/metrics/attribution';
 import { sendFormNotifications } from '../../utils/email';
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
+import { emitEnquiryCreatedRealtimeEvent } from '../../utils/realtime/events';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -136,6 +137,12 @@ export default defineEventHandler(async (event) => {
       externalRef,
     },
   });
+
+  try {
+    await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'inbound-leads-email' });
+  } catch (err) {
+    console.error('[Inbound Lead Email] Realtime event failed:', err);
+  }
 
   try {
     await sendFormNotifications(enquiry, matched.dealer);

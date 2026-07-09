@@ -104,13 +104,27 @@ const alerts = computed(() => data.value?.followUpAlerts);
 
 // Auto-refresh active dashboards without waking hidden browser tabs.
 let refreshInterval: ReturnType<typeof setInterval>;
+let realtimeRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+let realtimeHandler: ((event: Event) => void) | null = null;
 onMounted(() => {
   refreshInterval = setInterval(() => {
     if (document.visibilityState === 'visible') refresh();
   }, 60000);
+  realtimeHandler = (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    if (!detail?.invalidate?.includes?.('dashboard')) return;
+    if (realtimeRefreshTimer) return;
+    realtimeRefreshTimer = setTimeout(() => {
+      realtimeRefreshTimer = null;
+      if (document.visibilityState === 'visible') refresh();
+    }, 1000);
+  };
+  window.addEventListener('admin:realtime-event', realtimeHandler);
 });
 onUnmounted(() => {
   if (refreshInterval) clearInterval(refreshInterval);
+  if (realtimeRefreshTimer) clearTimeout(realtimeRefreshTimer);
+  if (realtimeHandler) window.removeEventListener('admin:realtime-event', realtimeHandler);
 });
 
 // Tab state, synced to the URL (?tab=) so views are bookmarkable. Tab content

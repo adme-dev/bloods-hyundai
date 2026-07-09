@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dealer-realtime-events",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-09",
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DEALER_REALTIME_ROOM",
+        "class_name": "DealerRealtimeRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["DealerRealtimeRoom"]
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "REALTIME_EVENTS_QUEUE",
+        "queue": "dealer-realtime-events"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "dealer-realtime-events"
+      }
+    ]
+  }
+}

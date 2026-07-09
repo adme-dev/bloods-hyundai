@@ -8,6 +8,7 @@ import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
 import { sanitizeIpAddress } from '../utils/intakeValidation';
 import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 import { inferLeadAttribution } from '../utils/metrics/attribution';
+import { emitEnquiryCreatedRealtimeEvent } from '../utils/realtime/events';
 
 /**
  * Public Enquiry Submission Endpoint
@@ -236,6 +237,12 @@ export default defineEventHandler(async (event) => {
         customer: `${enquiry.firstName} ${enquiry.lastName}`,
       },
     });
+
+    try {
+      await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'enquiry-api' });
+    } catch (realtimeError) {
+      console.error('[Enquiry API] Realtime event failed:', realtimeError);
+    }
     
     // 7. Evaluate routing rules and send notifications
     try {
@@ -307,7 +314,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

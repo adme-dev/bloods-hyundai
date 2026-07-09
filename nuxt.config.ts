@@ -134,6 +134,10 @@ export default {
     sendgridApiKey: process.env.SENDGRID_API_KEY || '',
     inboundLeadEmailDomain: process.env.INBOUND_LEAD_EMAIL_DOMAIN || '',
     inboundLeadWebhookSecret: process.env.INBOUND_LEAD_WEBHOOK_SECRET || '',
+    realtimeEventsEnabled: process.env.REALTIME_EVENTS_ENABLED || '',
+    realtimePublishUrl: process.env.REALTIME_PUBLISH_URL || '',
+    realtimePublishSecret: process.env.REALTIME_PUBLISH_SECRET || '',
+    realtimeClientSecret: process.env.REALTIME_CLIENT_SECRET || process.env.ADMIN_REALTIME_CLIENT_SECRET || '',
 
     // Cloudflare R2 Storage
     cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
@@ -158,6 +162,7 @@ export default {
       facebookPixelId: process.env.NUXT_PUBLIC_FACEBOOK_PIXEL_ID || '',
       // Google Tag Manager ID, loaded after initial render by analytics-lazy.client.ts
       gtmId: googleTagManagerId,
+      adminRealtimeUrl: process.env.NUXT_PUBLIC_ADMIN_REALTIME_URL || '',
     },
   },
 

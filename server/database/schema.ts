@@ -299,6 +299,32 @@ export const enquiryActivityLog = pgTable('enquiry_activity_log', {
 }));
 
 // ============================================================================
+// REALTIME EVENT OUTBOX
+// ============================================================================
+
+export const realtimeEventOutbox = pgTable('realtime_event_outbox', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+
+  eventType: varchar('event_type', { length: 80 }).notNull(),
+  aggregateType: varchar('aggregate_type', { length: 50 }).notNull(),
+  aggregateId: uuid('aggregate_id'),
+  payload: jsonb('payload').notNull(),
+
+  status: varchar('status', { length: 30 }).default('pending').notNull(),
+  attempts: integer('attempts').default(0).notNull(),
+  lastError: text('last_error'),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerCreatedIdx: index('idx_realtime_outbox_dealer_created_desc').on(table.dealerId, table.createdAt.desc()),
+  statusCreatedIdx: index('idx_realtime_outbox_status_created').on(table.status, table.createdAt),
+  aggregateIdx: index('idx_realtime_outbox_aggregate').on(table.aggregateType, table.aggregateId),
+}));
+
+// ============================================================================
 // EMAIL LOGS
 // ============================================================================
 
@@ -1212,7 +1238,6 @@ export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert
 
 export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
 export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
-
 
 
 
