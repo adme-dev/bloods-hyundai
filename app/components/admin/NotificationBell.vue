@@ -21,7 +21,10 @@
         />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" class="w-[22rem] overflow-hidden p-0 shadow-xl">
+    <DropdownMenuContent
+      align="end"
+      class="admin-notifications-dropdown w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0 shadow-xl"
+    >
       <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
         <DropdownMenuLabel class="p-0 text-sm font-semibold">Notifications</DropdownMenuLabel>
         <Button
@@ -35,7 +38,7 @@
         </Button>
       </div>
 
-      <div class="max-h-[22rem] overflow-y-auto">
+      <div class="max-h-[23rem] overflow-y-auto">
         <!-- Loading state -->
         <div v-if="loading" class="flex items-center justify-center py-8">
           <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
@@ -44,39 +47,39 @@
         <!-- Empty state -->
         <div v-else-if="notifications.length === 0" class="flex flex-col items-center justify-center py-8 text-center">
           <BellOff class="h-10 w-10 text-muted-foreground/50 mb-2" />
-          <p class="text-sm text-muted-foreground">No notifications</p>
-          <p class="text-xs text-muted-foreground/70 mt-1">You're all caught up!</p>
+          <div class="text-sm text-muted-foreground">No notifications</div>
+          <div class="mt-1 text-xs text-muted-foreground/70">You're all caught up!</div>
         </div>
 
         <!-- Notifications list -->
-        <div v-else class="divide-y divide-slate-200">
+        <div v-else class="space-y-1.5 bg-slate-50/70 p-2">
           <button
             v-for="notification in notifications"
             :key="notification.id"
             type="button"
-            class="grid w-full grid-cols-[1.75rem_minmax(0,1fr)_0.5rem] items-center gap-2 border-0 bg-white px-3 py-2 text-left outline-none transition-colors hover:bg-slate-50 focus:bg-slate-50 dark:bg-background dark:hover:bg-muted/50 dark:focus:bg-muted/50"
-            :class="{ 'bg-blue-50/60 dark:bg-blue-950/20': !notification.read }"
+            class="grid min-h-0 w-full grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm outline-none transition-colors hover:border-slate-300 hover:bg-white focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100 dark:border-border dark:bg-background dark:hover:bg-muted/50 dark:focus:bg-muted/50"
+            :class="{ 'border-sky-200 bg-sky-50/60 dark:bg-blue-950/20': !notification.read }"
             @click="handleNotificationClick(notification)"
           >
             <div
-              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+              class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
               :class="getNotificationIconClass(notification.subType || notification.type)"
             >
               <component :is="getNotificationIcon(notification.subType || notification.type)" class="h-3.5 w-3.5" />
             </div>
-            <div class="min-w-0">
-              <p class="truncate text-[13px] font-semibold leading-4" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
-                {{ notification.title }}
-              </p>
-              <p class="mt-0.5 truncate text-xs leading-4 text-muted-foreground">
+            <div class="min-w-0 space-y-1">
+              <div class="flex min-w-0 items-start justify-between gap-2">
+                <span class="truncate text-[13px] font-semibold leading-4" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
+                  {{ notification.title }}
+                </span>
+                <span v-if="!notification.read" class="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+              </div>
+              <div class="truncate text-xs leading-4 text-muted-foreground">
                 {{ notification.message }}
-              </p>
-              <p class="mt-0.5 text-[11px] leading-3 text-muted-foreground/70">
+              </div>
+              <div class="text-[11px] leading-3 text-muted-foreground/70">
                 {{ formatRelativeTime(notification.createdAt) }}
-              </p>
-            </div>
-            <div v-if="!notification.read" class="justify-self-end">
-              <span class="block h-1.5 w-1.5 rounded-full bg-blue-500" />
+              </div>
             </div>
           </button>
         </div>
@@ -388,3 +391,31 @@ defineExpose({
   refresh: fetchNotifications,
 });
 </script>
+
+<style scoped>
+:global(.admin-notifications-dropdown),
+:global(.admin-notifications-dropdown *) {
+  box-sizing: border-box;
+}
+
+:global(.admin-notifications-dropdown :where(p, ul, ol, li, dl, dd, h1, h2, h3, h4, h5, h6, figure)) {
+  margin: 0;
+  padding: 0;
+}
+
+:global(.admin-notifications-dropdown :where(button, input, textarea, select)) {
+  margin: 0;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+}
+
+:global(.admin-notifications-dropdown :where(button)) {
+  appearance: none;
+}
+
+:global(.admin-notifications-dropdown :where(svg)) {
+  max-width: none;
+}
+</style>

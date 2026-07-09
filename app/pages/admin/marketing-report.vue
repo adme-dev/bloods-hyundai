@@ -569,6 +569,7 @@
                 <MetricCell label="Click ID coverage" :value="pct(data.summary.clickIdCoverage)" />
                 <MetricCell label="Backfilled" :value="pct(data.summary.backfilledAttributionCoverage)" />
               </div>
+              <p class="mt-3 text-xs leading-5 text-muted-foreground">{{ dataLayerHelpText }}</p>
             </div>
             <div class="space-y-2">
               <div v-for="event in data.dataLayer.expectedEvents" :key="event.event" class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
@@ -959,7 +960,7 @@ interface ReportResponse {
     }>;
   };
   dataLayer: {
-    status: 'healthy' | 'needs_attention' | 'poor_coverage';
+    status: 'healthy' | 'needs_attention' | 'limited_sample' | 'low_attribution_signal' | 'field_mapping_gap' | 'no_leads' | 'poor_coverage';
     expectedEvents: Array<{ event: string; destination: string; status: string }>;
   };
   syncRuns: SyncRun[];
@@ -1209,12 +1210,28 @@ const websiteAnalyticsUnavailableMessage = computed(() => {
 });
 
 const dataLayerLabel = computed(() => {
-  if (data.value?.dataLayer.status === 'healthy') return 'Healthy';
-  if (data.value?.dataLayer.status === 'needs_attention') return 'Needs attention';
-  return 'Poor coverage';
+  const status = data.value?.dataLayer.status;
+  if (status === 'healthy') return 'Healthy';
+  if (status === 'needs_attention') return 'Needs attention';
+  if (status === 'limited_sample') return 'Limited sample';
+  if (status === 'low_attribution_signal' || status === 'poor_coverage') return 'Low attribution signal';
+  if (status === 'field_mapping_gap') return 'Field mapping gap';
+  return 'No CRM leads';
 });
 
-const dataLayerVariant = computed(() => data.value?.dataLayer.status === 'poor_coverage' ? 'destructive' : data.value?.dataLayer.status === 'healthy' ? 'default' : 'secondary');
+const dataLayerVariant = computed(() => data.value?.dataLayer.status === 'field_mapping_gap' ? 'destructive' : data.value?.dataLayer.status === 'healthy' ? 'default' : 'secondary');
+
+const dataLayerHelpText = computed(() => {
+  const status = data.value?.dataLayer.status;
+  const totalLeads = data.value?.summary.totalCrmLeads || 0;
+
+  if (status === 'healthy') return 'Lead source, campaign and paid attribution fields are being captured at healthy levels for this period.';
+  if (status === 'needs_attention') return 'Tracking events are implemented, but some admin CRM attribution fields are below target and should be monitored.';
+  if (status === 'limited_sample') return `Only ${n(totalLeads)} admin CRM leads are in this range, so attribution percentages can look severe from a small sample.`;
+  if (status === 'low_attribution_signal' || status === 'poor_coverage') return 'Tracking events are implemented, but current admin CRM leads are not carrying enough UTM, campaign or click ID fields.';
+  if (status === 'field_mapping_gap') return 'Admin CRM lead records are missing source fields. Check form payloads and inbound source mapping.';
+  return 'No admin CRM leads were captured in this range, so field coverage cannot be assessed yet.';
+});
 
 function priorityBadgeVariant(priority: 'high' | 'medium' | 'low') {
   if (priority === 'high') return 'destructive';

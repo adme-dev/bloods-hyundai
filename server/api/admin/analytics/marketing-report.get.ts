@@ -200,7 +200,7 @@ export default defineEventHandler(async (event) => {
       })),
     },
     dataLayer: {
-      status: dataLayerStatus(coverage.utmCoverage, coverage.sourceCoverage),
+      status: dataLayerStatus(coverage, professionalMetrics.paidMedia.spend > 0 || professionalMetrics.paidMedia.clicks > 0),
       expectedEvents: [
         { event: 'formSubmission', destination: 'GTM dataLayer', status: 'implemented' },
         { event: 'FormSubmission', destination: 'GTM dataLayer compatibility', status: 'implemented' },
@@ -533,10 +533,24 @@ function summarizeBy(leads: CrmLeadSignal[], keyFn: (lead: CrmLeadSignal) => str
     .sort((a, b) => b.total - a.total || a.key.localeCompare(b.key));
 }
 
-function dataLayerStatus(utmCoverage: number, sourceCoverage: number) {
-  if (utmCoverage >= 80 && sourceCoverage >= 95) return 'healthy';
-  if (utmCoverage >= 50 && sourceCoverage >= 80) return 'needs_attention';
-  return 'poor_coverage';
+function dataLayerStatus(
+  coverage: ReturnType<typeof calculateLeadSignalCoverage>,
+  hasPaidTraffic: boolean,
+) {
+  if (coverage.total === 0) return 'no_leads';
+  if (coverage.total < 5) return 'limited_sample';
+  if (coverage.sourceCoverage < 80) return 'field_mapping_gap';
+
+  const hasStrongAttribution =
+    coverage.utmCoverage >= 80 &&
+    coverage.campaignCoverage >= 80 &&
+    (!hasPaidTraffic || coverage.paidAttributionCoverage >= 80);
+
+  if (coverage.sourceCoverage >= 95 && hasStrongAttribution) return 'healthy';
+  if (coverage.utmCoverage < 50 || coverage.campaignCoverage < 50 || (hasPaidTraffic && coverage.paidAttributionCoverage < 50)) {
+    return 'low_attribution_signal';
+  }
+  return 'needs_attention';
 }
 
 function hasExternalCrmSyncEnabled(settings: Record<string, any>) {
