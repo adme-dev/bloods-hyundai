@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dealer-lead-email-router",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-09",
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "vars": {
+    "INBOUND_LEAD_WEBHOOK_URL": "https://bloodhyundai.com.au/api/inbound-leads/email"
+  }
+}

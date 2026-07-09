@@ -49,6 +49,32 @@ describe('inbound lead email helpers', () => {
     assert.match(parsed.message, /Interested in the Tucson/);
   });
 
+  it('extracts customer details from a raw Cloudflare routed MIME email', () => {
+    const parsed = parseInboundLeadEmail({
+      from: 'noreply@autotrader.com.au',
+      to: 'bloods-hyundai-autotrader@crm-leads.driveagent.io',
+      raw: [
+        'From: Autotrader <noreply@autotrader.com.au>',
+        'To: bloods-hyundai-autotrader@crm-leads.driveagent.io',
+        'Subject: New Autotrader lead',
+        'Message-ID: <lead-123@example.com>',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: quoted-printable',
+        '',
+        'Name: John Citizen',
+        'Email: john@example.com',
+        'Phone: 0499000000',
+        'Message: Looking at the Santa Fe=2E Please call back=2E',
+      ].join('\r\n'),
+    });
+
+    assert.equal(parsed.customerEmail, 'john@example.com');
+    assert.equal(parsed.firstName, 'John');
+    assert.equal(parsed.lastName, 'Citizen');
+    assert.equal(parsed.phone, '0499000000');
+    assert.match(parsed.message, /Santa Fe\. Please call back\./);
+  });
+
   it('extracts addresses from display-name strings', () => {
     assert.deepEqual(extractEmailAddresses('Carsales <lead@carsales.com.au>'), ['lead@carsales.com.au']);
   });
