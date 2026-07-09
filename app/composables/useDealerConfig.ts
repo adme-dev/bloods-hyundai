@@ -35,7 +35,7 @@ interface SiteConfigResponse {
 }
 
 // Shared base cache key - host suffix prevents cross-tenant payload reuse.
-const CACHE_KEY = 'site-config-data:v2';
+const CACHE_KEY = 'site-config-data:v3';
 
 export const useDealerConfig = async () => {
   const cacheKey = getRuntimeTenantCacheKey(CACHE_KEY);

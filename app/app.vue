@@ -94,7 +94,7 @@ const route = useRoute();
 const { initUtmTracking } = useUtmParams();
 const showPublicChatAssistant = computed(() => !route.path.startsWith('/admin'));
 const shouldRefreshSiteConfig = computed(() => route.query.refresh === 'true');
-const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data:v2');
+const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data:v3');
 
 if (import.meta.client) {
   onMounted(initUtmTracking);

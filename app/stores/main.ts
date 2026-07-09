@@ -6,10 +6,10 @@ import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
  * Handles: site config, loading state, models, meta
  *
  * Site config is hydrated from SSR payload - no client-side fetch needed
- * Uses host-scoped cache key 'site-config-data:v2:<host>' with pages
+ * Uses host-scoped cache key 'site-config-data:v3:<host>' with pages
  */
 
-const SITE_CONFIG_CACHE_KEY = 'site-config-data:v2';
+const SITE_CONFIG_CACHE_KEY = 'site-config-data:v3';
 
 interface SiteConfig {
   name: string;
