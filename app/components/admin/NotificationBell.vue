@@ -4,25 +4,28 @@
       <Button
         variant="ghost"
         size="icon"
-        class="relative"
+        class="relative h-10 w-10 rounded-lg border border-border/80 bg-background text-foreground shadow-sm hover:bg-muted hover:text-foreground data-[state=open]:border-primary/30 data-[state=open]:bg-muted data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/10 [&_svg]:size-[18px]"
         :aria-label="`Notifications${totalCount > 0 ? `, ${totalCount} unread` : ''}`"
+        title="Notifications"
       >
         <Bell class="h-5 w-5" />
         <span
           v-if="totalCount > 0"
-          class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-pulse"
+          class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-red-500 px-1 text-[10px] font-bold leading-none text-white shadow-sm"
         >
           {{ totalCount > 9 ? '9+' : totalCount }}
         </span>
         <span
           v-if="isConnected"
-          class="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500"
+          class="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500"
           title="Real-time updates active"
         />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent
       align="end"
+      :side-offset="8"
+      :collision-padding="8"
       class="admin-notifications-dropdown w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0 shadow-xl"
     >
       <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">

@@ -56,28 +56,37 @@
           </nav>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div class="admin-header-controls flex shrink-0 items-center gap-2">
           <!-- Real-time notification bell -->
           <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
-              <Button variant="ghost" class="flex items-center gap-3">
-                <div class="hidden text-left lg:block">
-                  <p class="text-sm font-semibold leading-tight">
-                    {{ userState?.firstName || 'Admin' }} {{ userState?.lastName || '' }}
-                  </p>
-                  <p class="text-xs text-muted-foreground">dealer_admin</p>
+              <Button
+                variant="ghost"
+                class="h-10 rounded-lg border border-border/80 bg-background px-2.5 text-left shadow-sm hover:bg-muted data-[state=open]:border-primary/30 data-[state=open]:bg-muted data-[state=open]:ring-2 data-[state=open]:ring-primary/10"
+                aria-label="Open account menu"
+              >
+                <div class="hidden min-w-0 flex-col leading-none lg:flex">
+                  <span class="max-w-[9rem] truncate text-sm font-semibold leading-4 text-foreground">
+                    {{ displayName }}
+                  </span>
+                  <span class="mt-0.5 max-w-[9rem] truncate text-[11px] leading-3 text-muted-foreground">
+                    {{ userRoleLabel }}
+                  </span>
                 </div>
-                <Avatar class="h-8 w-8">
-                  <AvatarImage src="https://www.gravatar.com/avatar?d=mp" alt="Avatar" />
-                  <AvatarFallback>{{ userInitials }}</AvatarFallback>
+                <Avatar class="h-8 w-8 border border-border bg-primary/10 text-primary">
+                  <AvatarImage v-if="userState?.avatarUrl" :src="userState.avatarUrl" :alt="avatarAlt" />
+                  <AvatarFallback class="text-xs font-semibold">{{ userInitials }}</AvatarFallback>
                 </Avatar>
+                <ChevronDown class="hidden h-4 w-4 text-muted-foreground lg:block" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" class="w-48">
-              <DropdownMenuLabel class="text-xs text-muted-foreground">Signed in as</DropdownMenuLabel>
-              <DropdownMenuLabel class="truncate text-sm font-semibold">{{ userEmail }}</DropdownMenuLabel>
+            <DropdownMenuContent align="end" :side-offset="8" :collision-padding="8" class="w-64 p-1.5">
+              <div class="rounded-md bg-muted/60 px-2.5 py-2">
+                <div class="truncate text-sm font-semibold text-foreground">{{ displayName }}</div>
+                <div class="mt-0.5 truncate text-xs text-muted-foreground">{{ userEmail }}</div>
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem @click="navigateTo('/admin/settings')">
                 <Settings class="mr-2 h-4 w-4" /> Settings
@@ -117,7 +126,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from '#imports';
-import { Menu, LogOut, Settings, GitBranch, Mail, MailPlus, Palette, Image } from 'lucide-vue-next';
+import { Menu, LogOut, Settings, GitBranch, Mail, MailPlus, Palette, Image, ChevronDown } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import NotificationBell from '~/components/admin/NotificationBell.vue';
@@ -179,12 +188,30 @@ const currentSectionLabel = computed(() => {
 });
 
 const userInitials = computed(() => {
-  if (!userState.value) return 'HD';
-  const { firstName = '', lastName = '' } = userState.value;
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const firstName = String(userState.value?.firstName || '').trim();
+  const lastName = String(userState.value?.lastName || '').trim();
+  const nameInitials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  if (nameInitials.trim()) return nameInitials;
+
+  const emailInitial = String(userState.value?.email || '').trim().charAt(0).toUpperCase();
+  return emailInitial || 'AD';
 });
 
 const userEmail = computed(() => userState.value?.email || 'admin@hyundai-dealer.com.au');
+
+const displayName = computed(() => {
+  const firstName = String(userState.value?.firstName || '').trim();
+  const lastName = String(userState.value?.lastName || '').trim();
+  return [firstName, lastName].filter(Boolean).join(' ') || 'Admin';
+});
+
+const userRoleLabel = computed(() =>
+  String(userState.value?.role || 'dealer_admin')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase())
+);
+
+const avatarAlt = computed(() => `${displayName.value} avatar`);
 
 const fetchUser = async () => {
   try {
@@ -209,7 +236,22 @@ const handleLogout = async () => {
 };
 </script>
 
+<style scoped>
+:global(.admin-header-controls),
+:global(.admin-header-controls *) {
+  box-sizing: border-box;
+}
 
+:global(.admin-header-controls :where(p, ul, ol, li, dl, dd, h1, h2, h3, h4, h5, h6, figure)) {
+  margin: 0;
+  padding: 0;
+}
 
-
-
+:global(.admin-header-controls :where(button, input, textarea, select)) {
+  margin: 0;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+}
+</style>
