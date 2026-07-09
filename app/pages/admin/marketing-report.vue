@@ -262,18 +262,58 @@
         <Card>
           <CardHeader>
             <CardTitle class="text-xl">Sync History</CardTitle>
-            <CardDescription>Latest platform ingestion runs.</CardDescription>
+            <CardDescription>Current ingestion health and recent platform runs.</CardDescription>
           </CardHeader>
-          <CardContent class="space-y-2">
-            <div v-for="run in data.syncRuns" :key="`${run.platform}:${run.startedAt}`" class="rounded-md border p-3">
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-sm font-semibold">{{ platformLabel(run.platform) }}</span>
-                <Badge :variant="run.status === 'success' ? 'default' : 'destructive'">{{ run.status }}</Badge>
+          <CardContent class="space-y-5">
+            <div class="space-y-2">
+              <div
+                v-for="run in latestSyncRuns"
+                :key="`latest:${run.platform}`"
+                class="rounded-lg border bg-background p-3"
+                :class="syncRunFrameClass(run)"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <component :is="syncRunIcon(run)" class="size-4 shrink-0" :class="syncRunIconClass(run)" />
+                      <span class="truncate text-sm font-semibold">{{ platformLabel(run.platform) }}</span>
+                    </div>
+                    <div class="mt-1 text-xs text-muted-foreground">
+                      Current · {{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows
+                    </div>
+                  </div>
+                  <Badge :variant="syncRunBadgeVariant(run)">{{ syncRunBadgeLabel(run) }}</Badge>
+                </div>
+                <p v-if="run.error && !isResolvedSyncRun(run)" class="mt-2 text-xs text-destructive">{{ run.error }}</p>
               </div>
-              <div class="mt-1 text-xs text-muted-foreground">
-                {{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows
+            </div>
+
+            <div v-if="recentSyncRuns.length" class="space-y-2 border-t pt-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-sm font-semibold">Recent runs</div>
+                  <div class="text-xs text-muted-foreground">Older failures are kept for audit, but resolved by newer successful syncs.</div>
+                </div>
+                <Badge variant="outline">{{ recentSyncRuns.length }} shown</Badge>
               </div>
-              <p v-if="run.error" class="mt-2 text-xs text-destructive">{{ run.error }}</p>
+
+              <div
+                v-for="run in recentSyncRuns"
+                :key="`${run.platform}:${run.startedAt}`"
+                class="rounded-md border px-3 py-2"
+                :class="syncHistoryRowClass(run)"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="truncate text-sm font-medium">{{ platformLabel(run.platform) }}</div>
+                    <div class="text-xs text-muted-foreground">{{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows</div>
+                  </div>
+                  <Badge :variant="syncRunBadgeVariant(run)">{{ syncRunBadgeLabel(run) }}</Badge>
+                </div>
+                <p v-if="run.error" class="mt-2 text-xs" :class="isResolvedSyncRun(run) ? 'text-muted-foreground' : 'text-destructive'">
+                  {{ isResolvedSyncRun(run) ? 'Resolved by a later successful sync. ' : '' }}{{ run.error }}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -288,9 +328,12 @@
 
 <script setup lang="ts">
 import {
+  AlertCircle,
   ArrowLeft,
+  CheckCircle2,
   Code2,
   Database,
+  History,
   RefreshCw,
   Target,
   UserCheck,
@@ -364,8 +407,17 @@ interface ReportResponse {
     status: 'healthy' | 'needs_attention' | 'poor_coverage';
     expectedEvents: Array<{ event: string; destination: string; status: string }>;
   };
-  syncRuns: Array<{ platform: string; status: string; rowsUpserted: number | null; error: string | null; startedAt: string }>;
+  syncRuns: SyncRun[];
 }
+
+type SyncRun = {
+  platform: string;
+  status: string;
+  rowsUpserted: number | null;
+  error: string | null;
+  startedAt: string;
+  finishedAt?: string | null;
+};
 
 const today = isoDate(new Date());
 const from = ref(`${today.slice(0, 8)}01`);
@@ -439,6 +491,18 @@ const connections = computed(() => [
   { label: 'Google Ads', connected: Boolean(data.value?.connected.google_ads) },
 ]);
 
+const latestSyncRuns = computed(() => {
+  const latestByPlatform = new Map<string, SyncRun>();
+  for (const run of data.value?.syncRuns || []) {
+    if (!latestByPlatform.has(run.platform)) latestByPlatform.set(run.platform, run);
+  }
+  return ['google_ads', 'meta_ads', 'ga4']
+    .map(platform => latestByPlatform.get(platform))
+    .filter(Boolean) as SyncRun[];
+});
+
+const recentSyncRuns = computed(() => (data.value?.syncRuns || []).slice(0, 10));
+
 const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
 const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdown.map(row => row.total) || [1]), 1));
 
@@ -464,6 +528,51 @@ function platformLabel(platform: string) {
   if (platform === 'ga4') return 'GA4';
   if (platform === 'crm') return 'CRM';
   return platform;
+}
+
+function isResolvedSyncRun(run: SyncRun) {
+  if (run.status === 'success') return false;
+  const runStartedAt = new Date(run.startedAt).getTime();
+  return Boolean(data.value?.syncRuns.some(candidate =>
+    candidate.platform === run.platform &&
+    candidate.status === 'success' &&
+    new Date(candidate.startedAt).getTime() > runStartedAt,
+  ));
+}
+
+function syncRunBadgeLabel(run: SyncRun) {
+  if (isResolvedSyncRun(run)) return 'resolved';
+  return run.status;
+}
+
+function syncRunBadgeVariant(run: SyncRun) {
+  if (run.status === 'success') return 'default';
+  if (isResolvedSyncRun(run)) return 'secondary';
+  return 'destructive';
+}
+
+function syncRunIcon(run: SyncRun) {
+  if (run.status === 'success') return CheckCircle2;
+  if (isResolvedSyncRun(run)) return History;
+  return AlertCircle;
+}
+
+function syncRunIconClass(run: SyncRun) {
+  if (run.status === 'success') return 'text-emerald-600';
+  if (isResolvedSyncRun(run)) return 'text-muted-foreground';
+  return 'text-destructive';
+}
+
+function syncRunFrameClass(run: SyncRun) {
+  if (run.status === 'success') return 'border-emerald-200 bg-emerald-50/40';
+  if (isResolvedSyncRun(run)) return 'border-muted bg-muted/20';
+  return 'border-destructive/40 bg-destructive/5';
+}
+
+function syncHistoryRowClass(run: SyncRun) {
+  if (run.status === 'success') return 'bg-background';
+  if (isResolvedSyncRun(run)) return 'border-muted bg-muted/20 opacity-80';
+  return 'border-destructive/40 bg-destructive/5';
 }
 
 function formatLabel(value: string) {
