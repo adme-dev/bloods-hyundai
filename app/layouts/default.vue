@@ -3,7 +3,7 @@
     <HeaderTicker />
 
     <div class="relative">
-      <header>
+      <header class="relative z-[60]">
         <PrimaryNav />
       </header>
     </div>
@@ -38,7 +38,6 @@
 }
 
 </style>
-
 
 
 

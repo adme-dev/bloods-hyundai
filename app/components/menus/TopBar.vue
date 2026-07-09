@@ -1,5 +1,5 @@
 <template>
-  <div class="top-bar bg-[#1a1a1a] text-white text-sm">
+  <div class="top-bar relative z-[61] bg-[#1a1a1a] text-white text-sm">
     <div class="max-w-[1400px] mx-auto px-4 lg:px-8">
       <div class="flex items-center justify-between h-10">
         <!-- Left side - Google Reviews (toggled via admin settings, hidden by default) -->

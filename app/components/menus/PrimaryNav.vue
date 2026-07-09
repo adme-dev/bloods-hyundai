@@ -1,5 +1,5 @@
 <template>
-  <div class="primary-nav">
+  <div class="primary-nav relative z-[60]">
       <!-- Loading indicator -->
       <div v-if="loading" class="fixed top-0 left-0 right-0 h-0.5 bg-gray-200 z-[10000]">
         <div class="h-full bg-primary-light animate-pulse" style="animation: loading 1.5s ease-in-out infinite;"></div>

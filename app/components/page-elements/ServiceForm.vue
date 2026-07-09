@@ -528,33 +528,35 @@
     <!-- Full Screen Dialog for External Booking -->
     <Dialog v-model:open="showFullScreenDialog">
       <DialogContent
-        class="!max-w-none !w-screen !h-screen !rounded-none !p-0 !m-0 !left-0 !top-0 !translate-x-0 !translate-y-0"
+        class="!fixed !inset-0 !z-50 !m-0 !w-screen !h-screen !max-w-none !rounded-none !border-0 !p-0 !overflow-hidden !left-0 !top-0 !translate-x-0 !translate-y-0 !grid !bg-white"
       >
-        <!-- Custom header with close button -->
-        <div class="flex items-center justify-between px-4 py-3 bg-gray-100 border-b absolute top-0 left-0 right-0 z-10">
-          <p class="text-sm font-medium text-gray-700 m-0">
-            Book Your Service Appointment
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            @click="showFullScreenDialog = false"
-            class="h-8 w-8 p-0"
-          >
-            <X class="h-5 w-5" />
-            <span class="sr-only">Close</span>
-          </Button>
-        </div>
-        <!-- Iframe container -->
-        <div class="pt-12 h-full">
+        <div class="flex h-full min-h-0 flex-col bg-white">
+          <!-- Custom header with close button -->
+          <div class="flex shrink-0 items-center justify-between border-b bg-gray-100 px-4 py-3">
+            <p class="m-0 text-sm font-medium text-gray-700">
+              Book Your Service Appointment
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              @click="showFullScreenDialog = false"
+              class="h-8 w-8 p-0"
+            >
+              <X class="h-5 w-5" />
+              <span class="sr-only">Close</span>
+            </Button>
+          </div>
+          <!-- Iframe container -->
+          <div class="min-h-0 flex-1">
           <iframe
             v-if="externalIframeUrl"
             :src="externalIframeUrl"
-            class="w-full h-full border-0"
+              class="block h-full w-full border-0"
             title="Service Booking - Full Screen"
             allow="geolocation; payment"
             sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
           />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
