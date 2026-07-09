@@ -497,7 +497,7 @@
         </CardContent>
       </Card>
 
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card>
           <CardHeader>
             <CardTitle class="text-xl">Recent CRM Leads</CardTitle>
@@ -551,12 +551,12 @@
             <CardTitle class="text-xl">Sync History</CardTitle>
             <CardDescription>Current ingestion health and recent platform runs.</CardDescription>
           </CardHeader>
-          <CardContent class="space-y-5">
+          <CardContent class="space-y-4">
             <div class="space-y-2">
               <div
                 v-for="run in latestSyncRuns"
                 :key="`latest:${run.platform}`"
-                class="rounded-lg border bg-background p-3"
+                class="rounded-md border bg-background px-3 py-2.5"
                 :class="syncRunFrameClass(run)"
               >
                 <div class="flex items-start justify-between gap-3">
@@ -575,33 +575,38 @@
               </div>
             </div>
 
-            <div v-if="recentSyncRuns.length" class="space-y-2 border-t pt-4">
-              <div class="flex items-center justify-between gap-3">
-                <div>
+            <details v-if="recentSyncRuns.length" class="group rounded-md border">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
+                <div class="min-w-0">
                   <div class="text-sm font-semibold">Recent runs</div>
-                  <div class="text-xs text-muted-foreground">Older failures are kept for audit, but resolved by newer successful syncs.</div>
+                  <div class="truncate text-xs text-muted-foreground">Older sync history and resolved failures.</div>
                 </div>
-                <Badge variant="outline">{{ recentSyncRuns.length }} shown</Badge>
-              </div>
+                <div class="flex items-center gap-2">
+                  <Badge variant="outline">{{ recentSyncRuns.length }}</Badge>
+                  <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                </div>
+              </summary>
 
-              <div
-                v-for="run in recentSyncRuns"
-                :key="`${run.platform}:${run.startedAt}`"
-                class="rounded-md border px-3 py-2"
-                :class="syncHistoryRowClass(run)"
-              >
-                <div class="flex items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="truncate text-sm font-medium">{{ platformLabel(run.platform) }}</div>
-                    <div class="text-xs text-muted-foreground">{{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows</div>
+              <div class="max-h-[320px] space-y-2 overflow-auto border-t p-3">
+                <div
+                  v-for="run in recentSyncRuns"
+                  :key="`${run.platform}:${run.startedAt}`"
+                  class="rounded-md border px-3 py-2"
+                  :class="syncHistoryRowClass(run)"
+                >
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-medium">{{ platformLabel(run.platform) }}</div>
+                      <div class="text-xs text-muted-foreground">{{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows</div>
+                    </div>
+                    <Badge :variant="syncRunBadgeVariant(run)">{{ syncRunBadgeLabel(run) }}</Badge>
                   </div>
-                  <Badge :variant="syncRunBadgeVariant(run)">{{ syncRunBadgeLabel(run) }}</Badge>
+                  <p v-if="run.error" class="mt-2 text-xs" :class="isResolvedSyncRun(run) ? 'text-muted-foreground' : 'text-destructive'">
+                    {{ isResolvedSyncRun(run) ? 'Resolved by a later successful sync. ' : '' }}{{ run.error }}
+                  </p>
                 </div>
-                <p v-if="run.error" class="mt-2 text-xs" :class="isResolvedSyncRun(run) ? 'text-muted-foreground' : 'text-destructive'">
-                  {{ isResolvedSyncRun(run) ? 'Resolved by a later successful sync. ' : '' }}{{ run.error }}
-                </p>
               </div>
-            </div>
+            </details>
           </CardContent>
         </Card>
       </div>
@@ -619,6 +624,7 @@ import {
   Activity,
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Code2,
   Database,
   Gauge,
