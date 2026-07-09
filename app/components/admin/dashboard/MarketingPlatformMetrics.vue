@@ -14,7 +14,7 @@
             </span>
           </div>
           <CardDescription class="mt-1">
-            Paid media, GA4 website signals and CRM lead matching for {{ rangeLabel }}
+            Paid media, GA4 website signals and admin CRM lead matching for {{ rangeLabel }}
           </CardDescription>
         </div>
 
@@ -120,7 +120,7 @@
                 <th class="py-2 pr-3 text-right font-medium">Clicks</th>
                 <th class="hidden py-2 pr-3 text-right font-medium lg:table-cell">CTR</th>
                 <th class="py-2 pr-3 text-right font-medium">Platform leads</th>
-                <th class="py-2 pr-3 text-right font-medium">CRM leads</th>
+                <th class="py-2 pr-3 text-right font-medium">Admin CRM leads</th>
                 <th class="hidden py-2 pr-3 font-medium xl:table-cell">Match</th>
                 <th class="py-2 text-right font-medium">CPL</th>
               </tr>
@@ -296,9 +296,9 @@ const executiveKpis = computed(() => [
     iconClass: 'text-sky-600',
   },
   {
-    label: 'CRM match',
+    label: 'Admin CRM match',
     value: n(paidTotals.value.crmLeads),
-    caption: `${pct(crmMatchRate.value)} of platform leads matched into CRM`,
+    caption: `${pct(crmMatchRate.value)} of platform leads matched into this admin CRM`,
     icon: Target,
     iconClass: 'text-violet-600',
   },
@@ -332,8 +332,8 @@ const paidKpis = computed(() => [
   { label: 'Ad spend', value: formatCurrency(paidTotals.value.spend), caption: 'Meta + Google', icon: WalletCards },
   { label: 'Impressions', value: n(paidTotals.value.impressions), caption: `${pct(paidTotals.value.ctr)} CTR`, icon: Eye },
   { label: 'Clicks', value: n(paidTotals.value.clicks), caption: 'Paid traffic', icon: MousePointerClick },
-  { label: 'CRM leads', value: n(paidTotals.value.crmLeads), caption: `${n(paidTotals.value.platformLeads)} platform leads`, icon: Target },
-  { label: 'Blended CPL', value: cpl(paidTotals.value.cpl), caption: 'Spend / CRM leads', icon: CalendarDays },
+  { label: 'Admin CRM leads', value: n(paidTotals.value.crmLeads), caption: `${n(paidTotals.value.platformLeads)} platform leads`, icon: Target },
+  { label: 'Blended CPL', value: cpl(paidTotals.value.cpl), caption: 'Spend / admin CRM leads', icon: CalendarDays },
 ]);
 
 const ga4Cells = computed(() => {
@@ -376,7 +376,7 @@ const platformCards = computed(() => {
       icon: meta?.lastError ? AlertCircle : CheckCircle2,
       iconClass: meta?.lastError ? 'text-amber-600' : meta?.connected ? 'text-emerald-600' : 'text-muted-foreground',
       metrics: metaAdsCells.value,
-      helper: `${n(meta?.crmLeads || 0)} CRM leads from ${n(meta?.platformLeads || 0)} platform leads`,
+      helper: `${n(meta?.crmLeads || 0)} admin CRM leads from ${n(meta?.platformLeads || 0)} platform leads`,
       notConnectedText: 'Not connected. Meta needs the ad account ID and system-user token.',
     },
     {
@@ -388,7 +388,7 @@ const platformCards = computed(() => {
       icon: google?.lastError ? AlertCircle : CheckCircle2,
       iconClass: google?.lastError ? 'text-amber-600' : google?.connected ? 'text-emerald-600' : 'text-muted-foreground',
       metrics: googleAdsCells.value,
-      helper: `${n(google?.crmLeads || 0)} CRM leads from ${n(google?.platformLeads || 0)} platform leads`,
+      helper: `${n(google?.crmLeads || 0)} admin CRM leads from ${n(google?.platformLeads || 0)} platform leads`,
       notConnectedText: 'Not connected. Google Ads needs the customer ID and API tokens.',
     },
   ];
@@ -486,7 +486,7 @@ function paidPlatformCells(platform?: PaidPlatformMetrics) {
     { label: 'Impressions', value: n(platform.impressions) },
     { label: 'Clicks', value: n(platform.clicks) },
     { label: 'CTR', value: pct(platform.ctr) },
-    { label: 'CRM / platform leads', value: `${n(platform.crmLeads)} / ${n(platform.platformLeads)}` },
+    { label: 'Admin CRM / platform leads', value: `${n(platform.crmLeads)} / ${n(platform.platformLeads)}` },
     { label: 'CPL', value: cpl(platform.cpl) },
   ];
 }

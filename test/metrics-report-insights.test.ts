@@ -90,10 +90,10 @@ describe('buildMarketingReportInsights', () => {
     assert.equal(out.sourceDiagnostics[1]!.crmSyncCoverage, 50);
     assert.equal(out.campaignDiagnostics.bestByCpl!.campaignName, 'Brand Search');
     assert.equal(out.campaignDiagnostics.highestSpendNoCrmLead!.campaignName, 'IONIQ Runout');
-    assert.equal(out.campaignDiagnostics.opportunities[0]!.issue, 'Spend without CRM lead match');
+    assert.equal(out.campaignDiagnostics.opportunities[0]!.issue, 'Spend without admin CRM lead match');
   });
 
-  it('raises a high priority recommendation when paid spend has no CRM attribution', () => {
+  it('raises a high priority recommendation when paid spend has no admin CRM attribution', () => {
     const input = baseInput();
     input.summary.paidCrmLeads = 0;
     input.professionalMetrics.paidMedia.crmLeads = 0;
@@ -103,7 +103,7 @@ describe('buildMarketingReportInsights', () => {
 
     assert.equal(out.executive.blendedCpl, null);
     assert.equal(out.recommendations[0]!.priority, 'high');
-    assert.match(out.recommendations[0]!.title, /no paid crm attribution/i);
+    assert.match(out.recommendations[0]!.title, /no paid admin crm attribution/i);
   });
 
   it('omits external CRM sync checks when no external connector is enabled', () => {

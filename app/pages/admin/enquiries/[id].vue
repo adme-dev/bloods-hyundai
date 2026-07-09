@@ -619,8 +619,8 @@
           <CardHeader class="space-y-1">
             <div class="flex items-center justify-between">
               <div>
-                <CardTitle>CRM sync</CardTitle>
-                <CardDescription>Push to the dealer CRM when ready.</CardDescription>
+                <CardTitle>External CRM sync</CardTitle>
+                <CardDescription>Push to the external dealer CRM/export when ready.</CardDescription>
               </div>
               <Badge :class="crmBadgeClass" class="gap-1 text-xs">
                 <component :is="enquiry.syncedToCrm ? CheckCircle2 : AlertTriangle" class="h-3.5 w-3.5" />
@@ -632,7 +632,7 @@
             <dl class="space-y-3 text-sm">
               <div class="flex items-start justify-between gap-2">
                 <div>
-                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">CRM record</dt>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">External CRM record</dt>
                   <dd class="mt-1 font-medium">
                     {{ enquiry.crmRef || 'Not linked' }}
                   </dd>
@@ -642,7 +642,7 @@
                   variant="ghost"
                   size="icon"
                   class="h-8 w-8"
-                  @click="copyValue(enquiry.crmRef, 'CRM record ID')"
+                  @click="copyValue(enquiry.crmRef, 'External CRM record ID')"
                 >
                   <Copy class="h-3.5 w-3.5" />
                 </Button>
@@ -784,12 +784,12 @@
         <DialogHeader>
           <DialogTitle>{{ enquiry.syncedToCrm ? 'Update CRM link' : 'Sync enquiry to CRM' }}</DialogTitle>
           <DialogDescription>
-            Store the CRM record reference so everyone can jump back into the same deal.
+            Store the external CRM record reference so everyone can jump back into the same deal.
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-4 py-2">
           <div class="space-y-2">
-            <Label for="crmRef">CRM record ID</Label>
+            <Label for="crmRef">External CRM record ID</Label>
             <Input id="crmRef" v-model="crmForm.crmRef" placeholder="e.g. DEAL-001234" />
           </div>
           <div class="space-y-2">
@@ -1296,12 +1296,12 @@ const submitCrmSync = async () => {
         synced: crmForm.synced,
       },
     });
-    toast.success('CRM details saved');
+    toast.success('External CRM details saved');
     crmDialogOpen.value = false;
     await refresh();
   } catch (err) {
-    console.error('CRM sync failed', err);
-    toast.error('Unable to save CRM details');
+    console.error('External CRM sync failed', err);
+    toast.error('Unable to save external CRM details');
   } finally {
     savingCrm.value = false;
   }

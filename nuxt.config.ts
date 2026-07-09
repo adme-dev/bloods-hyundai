@@ -130,6 +130,8 @@ export default defineNuxtConfig({
     jwtSecret: process.env.NUXT_JWT_SECRET || '',
     stripeSecretKey: process.env.NUXT_STRIPE_SECRET_KEY || '',
     sendgridApiKey: process.env.SENDGRID_API_KEY || '',
+    inboundLeadEmailDomain: process.env.INBOUND_LEAD_EMAIL_DOMAIN || '',
+    inboundLeadWebhookSecret: process.env.INBOUND_LEAD_WEBHOOK_SECRET || '',
 
     // Cloudflare R2 Storage
     cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',

@@ -39,6 +39,12 @@ export function classifyCrmLeadSource(lead: Pick<CrmLeadSignal, 'source' | 'utmS
   if (haystack.includes('auto trader') || haystack.includes('autotrader') || haystack.includes('auto-trader')) {
     return { key: 'autotrader', label: 'Autotrader', category: 'external_marketplace' };
   }
+  if (haystack.includes('hyundai_oem') || haystack.includes('hyundai oem') || haystack.includes('hyundai lead')) {
+    return { key: 'hyundai_oem', label: 'Hyundai OEM', category: 'external_marketplace' };
+  }
+  if (haystack.includes('meta_lead_ads') || haystack.includes('facebook lead') || haystack.includes('lead ads')) {
+    return { key: 'meta_lead_ads', label: 'Meta Lead Ads', category: 'paid' };
+  }
   if (attributedPlatform === 'meta_ads' || lead.fbclid || ['facebook', 'fb', 'meta', 'instagram', 'ig'].includes(utmSource)) {
     return { key: 'meta_paid', label: 'Meta paid', category: 'paid' };
   }

@@ -144,7 +144,7 @@ export function buildMarketingReportInsights(input: MarketingReportInsightsInput
       topLeadSource,
       bestCampaign,
       dataQualityScore,
-      primaryRecommendation: recommendations[0]?.title || 'Keep monitoring campaign quality and CRM lead matching.',
+      primaryRecommendation: recommendations[0]?.title || 'Keep monitoring campaign quality and admin CRM lead matching.',
     },
     funnel: buildFunnel(summary, professionalMetrics, externalCrmSyncEnabled),
     recommendations,
@@ -189,7 +189,7 @@ function buildFunnel(
     },
     {
       key: 'crm_leads',
-      label: 'CRM leads',
+      label: 'Admin CRM leads',
       value: crmLeads,
       rateFromPrevious: percent(crmLeads, keyEvents || sessions),
       caption: 'Enquiries captured in this CRM.',
@@ -221,8 +221,8 @@ function buildRecommendations(
   if (summary.totalCrmLeads > 0 && !hasEnoughLeadSample) {
     recommendations.push({
       priority: 'medium',
-      title: 'Low CRM sample size for this period',
-      detail: `Only ${summary.totalCrmLeads} CRM leads are in the selected range, so coverage percentages can look severe from a small number of records.`,
+      title: 'Low admin CRM sample size for this period',
+      detail: `Only ${summary.totalCrmLeads} admin CRM leads are in the selected range, so coverage percentages can look severe from a small number of records.`,
       action: 'Use these warnings as a data-quality check, then confirm against a 30 or 90 day range before treating them as a tracking outage.',
     });
   }
@@ -230,8 +230,8 @@ function buildRecommendations(
   if (paid.spend > 0 && summary.paidCrmLeads === 0) {
     recommendations.push({
       priority: hasEnoughLeadSample ? 'high' : 'medium',
-      title: 'No paid CRM attribution in this range',
-      detail: `Spend is active but no CRM leads in the selected range are currently attributed to Google or Meta.`,
+      title: 'No paid admin CRM attribution in this range',
+      detail: `Spend is active but no admin CRM leads in the selected range are currently attributed to Google or Meta.`,
       action: hasEnoughLeadSample
         ? 'Audit UTM campaign values, click IDs, and form attribution fields before judging campaign CPL.'
         : 'Check the lead records and a longer date range before concluding the paid tracking path is broken.',
@@ -242,11 +242,11 @@ function buildRecommendations(
   if (noLeadSpend && noLeadSpend.spend >= 50) {
     recommendations.push({
       priority: hasEnoughLeadSample ? 'high' : 'medium',
-      title: 'Campaign spend has no matched CRM leads',
-      detail: `${noLeadSpend.campaignName || noLeadSpend.campaignId} spent ${roundMoney(noLeadSpend.spend)} with ${noLeadSpend.clicks} clicks and no matched CRM lead.`,
+      title: 'Campaign spend has no matched admin CRM leads',
+      detail: `${noLeadSpend.campaignName || noLeadSpend.campaignId} spent ${roundMoney(noLeadSpend.spend)} with ${noLeadSpend.clicks} clicks and no matched admin CRM lead.`,
       action: hasEnoughLeadSample
-        ? 'Check the landing page form, campaign UTM, and CRM ingestion path for this campaign.'
-        : 'Review this campaign again once enough CRM leads exist in the selected period.',
+        ? 'Check the landing page form, campaign UTM, and admin CRM ingestion path for this campaign.'
+        : 'Review this campaign again once enough admin CRM leads exist in the selected period.',
     });
   }
 
@@ -256,7 +256,7 @@ function buildRecommendations(
         priority: 'high',
         title: `${check.label} is below target`,
         detail: `${check.label} is ${roundRate(check.value)}% against a ${check.target}% target.`,
-        action: 'Fix the website data layer and CRM field mapping for the affected lead sources.',
+        action: 'Fix the website data layer and admin CRM field mapping for the affected lead sources.',
       });
     } else if (check.status === 'watch') {
       recommendations.push({
@@ -272,7 +272,7 @@ function buildRecommendations(
     recommendations.push({
       priority: 'medium',
       title: 'External marketplaces are driving the lead mix',
-      detail: `${summary.externalMarketplaceLeads} of ${summary.totalCrmLeads} CRM leads came from external marketplace feeds.`,
+      detail: `${summary.externalMarketplaceLeads} of ${summary.totalCrmLeads} admin CRM leads came from external marketplace feeds.`,
       action: 'Separate OEM/paid website performance from Carsales and Autotrader when reviewing campaign ROI.',
     });
   }
@@ -281,7 +281,7 @@ function buildRecommendations(
     recommendations.push({
       priority: 'low',
       title: 'Core reporting signals are healthy',
-      detail: 'Campaign, source, paid attribution, and CRM sync coverage are within normal reporting thresholds.',
+      detail: 'Campaign, source, paid attribution, and configured external CRM sync coverage are within normal reporting thresholds.',
       action: 'Review campaign CPL and landing page trends for optimisation opportunities.',
     });
   }
@@ -310,7 +310,7 @@ function buildCampaignDiagnostics(campaigns: MarketingReportCampaignInput[]): Ma
       spend: roundMoney(campaign.spend),
       clicks: campaign.clicks,
       crmLeads: campaign.crmLeads,
-      issue: campaign.crmLeads === 0 ? 'Spend without CRM lead match' : 'High CRM CPL',
+      issue: campaign.crmLeads === 0 ? 'Spend without admin CRM lead match' : 'High admin CRM CPL',
     }));
 
   return {

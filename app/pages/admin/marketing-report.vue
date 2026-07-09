@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div>
-        <p class="text-sm text-muted-foreground">CRM attribution, platform sync, and data-layer coverage</p>
+        <p class="text-sm text-muted-foreground">Admin CRM attribution, platform ingestion, and data-layer coverage</p>
         <h1 class="text-3xl font-semibold tracking-tight">Marketing Report</h1>
       </div>
       <div class="flex flex-wrap items-center gap-2">
@@ -73,7 +73,7 @@
                 <Gauge class="h-5 w-5 text-sky-600" />
                 Executive Readout
               </CardTitle>
-              <CardDescription>Commercial view of spend, lead quality, attribution and CRM flow.</CardDescription>
+              <CardDescription>Commercial view of spend, lead quality, attribution and admin CRM capture.</CardDescription>
             </div>
             <Badge :variant="data.insights.executive.dataQualityScore >= 80 ? 'default' : data.insights.executive.dataQualityScore >= 60 ? 'secondary' : 'destructive'">
               {{ data.insights.executive.dataQualityScore }}% data quality
@@ -94,10 +94,10 @@
               <div class="mb-3 flex items-center justify-between gap-3">
                 <div>
                   <div class="text-sm font-semibold">Marketing funnel</div>
-                  <div class="text-xs text-muted-foreground">Website, paid media, GA4 key events and CRM sync in one flow.</div>
+                  <div class="text-xs text-muted-foreground">Website, paid media, GA4 key events and admin CRM leads in one flow.</div>
                 </div>
               </div>
-              <div class="grid gap-3 md:grid-cols-5">
+              <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
                 <div v-for="step in data.insights.funnel" :key="step.key" class="rounded-md border p-3">
                   <div class="text-xs font-medium uppercase text-muted-foreground">{{ step.label }}</div>
                   <div class="mt-2 text-xl font-semibold">{{ n(step.value) }}</div>
@@ -133,7 +133,7 @@
                 <div v-if="data.insights.campaignDiagnostics.opportunities.length" class="space-y-3">
                   <div v-for="item in data.insights.campaignDiagnostics.opportunities" :key="`${item.platform}:${item.campaignName}`" class="rounded-md bg-muted/40 p-3">
                     <div class="truncate text-sm font-medium">{{ item.campaignName }}</div>
-                    <div class="mt-1 text-xs text-muted-foreground">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} CRM leads</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} admin CRM leads</div>
                     <Badge variant="outline" class="mt-2">{{ item.issue }}</Badge>
                   </div>
                 </div>
@@ -172,7 +172,7 @@
             <Database class="h-5 w-5 text-blue-600" />
             Dealer Lead Diagnostics
           </CardTitle>
-          <CardDescription>Source mix, CRM sync and campaign tagging coverage by lead channel.</CardDescription>
+          <CardDescription>Source mix, campaign tagging and admin CRM lead capture by channel.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -197,6 +197,72 @@
               </TableRow>
               <TableRow v-if="!data.insights.sourceDiagnostics.length">
                 <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 6 : 5" class="py-8 text-center text-muted-foreground">No lead source diagnostics for this range.</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <MailPlus class="h-5 w-5 text-sky-600" />
+              Inbound Lead Email Sources
+            </CardTitle>
+            <CardDescription>Platform-specific addresses for Carsales, Autotrader, Hyundai OEM and other lead providers to send into this admin CRM.</CardDescription>
+          </div>
+          <Badge :variant="inboundEmailData?.configured ? 'default' : 'secondary'">
+            {{ inboundEmailData?.configured ? 'Email domain active' : 'Domain not configured' }}
+          </Badge>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div v-if="!inboundEmailData?.configured" class="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+            Set <code>INBOUND_LEAD_EMAIL_DOMAIN</code> and <code>INBOUND_LEAD_WEBHOOK_SECRET</code> before using these addresses with external platforms.
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <Button
+              v-for="source in inboundLeadSources"
+              :key="source.source"
+              size="sm"
+              variant="outline"
+              :disabled="creatingInboundSource === source.source"
+              @click="createInboundAddress(source.source, source.label)"
+            >
+              <MailPlus class="h-4 w-4" />
+              {{ existingInboundAddress(source.source) ? `Update ${source.label}` : `Create ${source.label}` }}
+            </Button>
+          </div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Source</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead class="text-right">Status</TableHead>
+                <TableHead class="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="address in inboundEmailData?.addresses || []" :key="address.id">
+                <TableCell class="font-medium">{{ address.label }}</TableCell>
+                <TableCell>
+                  <div class="font-mono text-xs">{{ address.email || address.localPart }}</div>
+                  <div v-if="!address.email" class="text-xs text-muted-foreground">Local part ready; email domain not configured.</div>
+                </TableCell>
+                <TableCell class="text-right">
+                  <Badge :variant="address.enabled ? 'default' : 'secondary'">{{ address.enabled ? 'Active' : 'Disabled' }}</Badge>
+                </TableCell>
+                <TableCell class="text-right">
+                  <Button size="sm" variant="outline" :disabled="!address.email" @click="copyInboundAddress(address.email)">
+                    <Copy class="h-4 w-4" />
+                    Copy
+                  </Button>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="!(inboundEmailData?.addresses || []).length">
+                <TableCell colspan="4" class="py-8 text-center text-muted-foreground">No inbound lead email sources have been created yet.</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -240,7 +306,7 @@
             <MetricCell label="Clicks" :value="n(data.professionalMetrics.paidMedia.clicks)" />
             <MetricCell label="Avg CPC" :value="moneyOrDash(data.professionalMetrics.paidMedia.averageCpc)" />
             <MetricCell label="Platform lead rate" :value="pctOrDash(data.professionalMetrics.paidMedia.platformLeadRate)" />
-            <MetricCell label="CRM CPL" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpl)" />
+            <MetricCell label="Admin CRM CPL" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpl)" />
           </CardContent>
         </Card>
 
@@ -282,12 +348,12 @@
               <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div class="text-sm font-semibold">Website performance trend</div>
-                  <div class="text-xs text-muted-foreground">Sessions, key events and CRM leads indexed to their selected-period peak.</div>
+                  <div class="text-xs text-muted-foreground">Sessions, key events and admin CRM leads indexed to their selected-period peak.</div>
                 </div>
                 <div class="flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-sky-600" />Sessions</span>
                   <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-amber-500" />Key events</span>
-                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-emerald-600" />CRM leads</span>
+                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-emerald-600" />Admin CRM leads</span>
                 </div>
               </div>
               <div v-if="trendHasData" class="overflow-hidden">
@@ -321,7 +387,7 @@
                 <TrendingUp class="h-4 w-4 text-sky-600" />
                 <div>
                   <div class="text-sm font-semibold">Website to lead funnel</div>
-                  <div class="text-xs text-muted-foreground">High-level path from visits to CRM.</div>
+                  <div class="text-xs text-muted-foreground">High-level path from visits to this admin CRM.</div>
                 </div>
               </div>
               <div class="space-y-4">
@@ -480,9 +546,9 @@
           <CardHeader>
             <CardTitle class="flex items-center gap-2 text-xl">
               <Database class="h-5 w-5 text-sky-600" />
-              CRM Lead Sources
+              Admin CRM Lead Sources
             </CardTitle>
-            <CardDescription>{{ rangeLabel }}. Includes website forms and external marketplace/email leads stored in CRM.</CardDescription>
+            <CardDescription>{{ rangeLabel }}. Includes website forms and external marketplace/email leads stored in this admin CRM.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -506,7 +572,7 @@
                   <TableCell class="text-right">{{ n(source.withCampaign) }}</TableCell>
                 </TableRow>
                 <TableRow v-if="!data.crm.leadSources.length">
-                  <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 5 : 4" class="py-8 text-center text-muted-foreground">No CRM leads in this range.</TableCell>
+                  <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 5 : 4" class="py-8 text-center text-muted-foreground">No admin CRM leads in this range.</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -519,7 +585,7 @@
               <Code2 class="h-5 w-5 text-emerald-600" />
               Data Layer Audit
             </CardTitle>
-            <CardDescription>Lead tracking contract and CRM field coverage.</CardDescription>
+            <CardDescription>Lead tracking contract and admin CRM field coverage.</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             <div class="rounded-md border p-3">
@@ -553,7 +619,7 @@
         <Card>
           <CardHeader>
             <CardTitle class="text-xl">Connections</CardTitle>
-            <CardDescription>Configured platform and CRM sync state.</CardDescription>
+            <CardDescription>Configured platform ingestion and outbound sync state.</CardDescription>
           </CardHeader>
           <CardContent class="space-y-3">
             <div v-for="connection in connections" :key="connection.label" class="flex items-center justify-between rounded-md border px-3 py-2">
@@ -570,7 +636,7 @@
         <Card>
           <CardHeader>
             <CardTitle class="text-xl">Lead Types</CardTitle>
-            <CardDescription>CRM enquiry mix for the selected period.</CardDescription>
+            <CardDescription>Admin CRM enquiry mix for the selected period.</CardDescription>
           </CardHeader>
           <CardContent class="space-y-2">
             <BreakdownRow v-for="row in data.crm.typeBreakdown.slice(0, 8)" :key="row.key" :label="formatLabel(row.key)" :value="row.total" :max="maxTypeTotal" />
@@ -580,7 +646,7 @@
         <Card>
           <CardHeader>
             <CardTitle class="text-xl">Lead Status</CardTitle>
-            <CardDescription>Pipeline state of report-period CRM leads.</CardDescription>
+            <CardDescription>Pipeline state of report-period admin CRM leads.</CardDescription>
           </CardHeader>
           <CardContent class="space-y-2">
             <BreakdownRow v-for="row in data.crm.statusBreakdown.slice(0, 8)" :key="row.key" :label="formatLabel(row.key)" :value="row.total" :max="maxStatusTotal" />
@@ -594,7 +660,7 @@
             <Target class="h-5 w-5 text-violet-600" />
             Campaign CPL Reconciliation
           </CardTitle>
-          <CardDescription>Ad-platform rows matched to CRM leads by UTM campaign, campaign ID, or campaign name.</CardDescription>
+          <CardDescription>Ad-platform rows matched to admin CRM leads by UTM campaign, campaign ID, or campaign name.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -609,7 +675,7 @@
                 <TableHead class="text-right">CPC</TableHead>
                 <TableHead class="text-right">Platform leads</TableHead>
                 <TableHead class="text-right">Lead rate</TableHead>
-                <TableHead class="text-right">CRM leads</TableHead>
+                <TableHead class="text-right">Admin CRM leads</TableHead>
                 <TableHead class="text-right">CPL</TableHead>
               </TableRow>
             </TableHeader>
@@ -638,7 +704,7 @@
       <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card>
           <CardHeader>
-            <CardTitle class="text-xl">Recent CRM Leads</CardTitle>
+            <CardTitle class="text-xl">Recent Admin CRM Leads</CardTitle>
             <CardDescription>Latest leads with source, UTM and attribution indicators.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -764,11 +830,13 @@ import {
   CheckCircle2,
   ChevronDown,
   Code2,
+  Copy,
   Database,
   Gauge,
   GitBranch,
   Globe2,
   History,
+  MailPlus,
   MonitorSmartphone,
   MousePointerClick,
   RefreshCw,
@@ -792,6 +860,7 @@ definePageMeta({
 });
 
 type PresetId = 'mtd' | '7d' | '30d' | '90d';
+type InboundLeadSource = 'carsales' | 'autotrader' | 'hyundai_oem' | 'meta_lead_ads' | 'other';
 
 interface ReportResponse {
   period: { from: string; to: string };
@@ -939,6 +1008,23 @@ type SyncRun = {
   finishedAt?: string | null;
 };
 
+type InboundLeadEmailAddress = {
+  id: string;
+  source: InboundLeadSource;
+  label: string;
+  localPart: string;
+  email: string | null;
+  enabled: boolean;
+  enquiryType: string;
+  createdAt: string;
+};
+
+type InboundLeadEmailResponse = {
+  configured: boolean;
+  domain: string | null;
+  addresses: InboundLeadEmailAddress[];
+};
+
 type Ga4BreakdownRow = {
   dimensions: Record<string, string>;
   metrics: Record<string, number>;
@@ -997,13 +1083,23 @@ const query = computed(() => ({ from: from.value, to: to.value }));
 const { data, pending, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', {
   query,
 });
+const { data: inboundEmailData, refresh: refreshInboundEmailData } = await useFetch<InboundLeadEmailResponse>('/api/admin/lead-ingestion/email-addresses');
 const backfillPending = ref(false);
+const creatingInboundSource = ref<InboundLeadSource | null>(null);
 
 const presets: { id: PresetId; label: string }[] = [
   { id: 'mtd', label: 'Month to date' },
   { id: '7d', label: '7 days' },
   { id: '30d', label: '30 days' },
   { id: '90d', label: '90 days' },
+];
+
+const inboundLeadSources: { source: InboundLeadSource; label: string }[] = [
+  { source: 'carsales', label: 'Carsales' },
+  { source: 'autotrader', label: 'Autotrader' },
+  { source: 'hyundai_oem', label: 'Hyundai OEM' },
+  { source: 'meta_lead_ads', label: 'Meta Lead Ads' },
+  { source: 'other', label: 'Other Source' },
 ];
 
 const activePreset = computed<PresetId | null>(() => {
@@ -1022,7 +1118,7 @@ const summaryCards = computed(() => {
   const platforms = data.value?.platformMetrics;
   return [
     {
-      label: 'CRM leads',
+      label: 'Admin CRM leads',
       value: n(summary?.totalCrmLeads || 0),
       caption: `${n(summary?.paidCrmLeads || 0)} matched to paid media`,
       icon: UserCheck,
@@ -1126,9 +1222,9 @@ const websiteFunnelRows = computed(() => {
       class: 'bg-amber-500',
     },
     {
-      label: 'CRM leads',
+      label: 'Admin CRM leads',
       value: crmLeads,
-      caption: 'Enquiries stored in CRM',
+      caption: 'Enquiries stored in this admin CRM',
       width: barPercent(crmLeads, max),
       class: 'bg-emerald-600',
     },
@@ -1192,6 +1288,29 @@ async function runAttributionBackfill() {
   } finally {
     backfillPending.value = false;
   }
+}
+
+async function createInboundAddress(source: InboundLeadSource, label: string) {
+  if (creatingInboundSource.value) return;
+  creatingInboundSource.value = source;
+  try {
+    await $fetch('/api/admin/lead-ingestion/email-addresses', {
+      method: 'POST',
+      body: { source, label },
+    });
+    await refreshInboundEmailData();
+  } finally {
+    creatingInboundSource.value = null;
+  }
+}
+
+function existingInboundAddress(source: InboundLeadSource) {
+  return inboundEmailData.value?.addresses.find(address => address.source === source) || null;
+}
+
+async function copyInboundAddress(email: string | null) {
+  if (!email || typeof navigator === 'undefined' || !navigator.clipboard) return;
+  await navigator.clipboard.writeText(email);
 }
 
 function applyPreset(id: PresetId) {
