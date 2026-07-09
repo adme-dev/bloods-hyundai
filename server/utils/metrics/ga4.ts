@@ -31,12 +31,22 @@ export interface Ga4BreakdownRow {
 export interface Ga4WebsiteAnalytics {
   status: 'connected' | 'not_configured' | 'error';
   error: string | null;
+  dailyTrend: Ga4WebsiteTrendRow[];
   topLandingPages: Ga4BreakdownRow[];
   trafficChannels: Ga4BreakdownRow[];
   sourceMedium: Ga4BreakdownRow[];
   deviceCategories: Ga4BreakdownRow[];
   topEvents: Ga4BreakdownRow[];
   formEvents: Ga4BreakdownRow[];
+}
+
+export interface Ga4WebsiteTrendRow {
+  date: string;
+  sessions: number;
+  users: number;
+  keyEvents: number;
+  crmLeads: number;
+  paidSpend: number;
 }
 
 export function normalizeGa4Response(resp: unknown): NormalizedRow[] {
@@ -179,6 +189,7 @@ export async function fetchGa4WebsiteAnalytics(propertyId: string, range: DateRa
   return {
     status: 'connected',
     error: null,
+    dailyTrend: [],
     topLandingPages,
     trafficChannels,
     sourceMedium,

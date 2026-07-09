@@ -10,7 +10,7 @@ import {
 } from '../../../utils/metrics/crmReport';
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
 import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
-import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics } from '../../../utils/metrics/ga4';
+import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -125,7 +125,13 @@ export default defineEventHandler(async (event) => {
       process.env.GOOGLE_ADS_REFRESH_TOKEN,
     ),
   };
-  const websiteAnalytics = await buildWebsiteAnalytics(integrations, { from, to }, connected.ga4);
+  const websiteAnalytics = await buildWebsiteAnalytics(
+    integrations,
+    { from, to },
+    connected.ga4,
+    metricRows,
+    dailyLeadRows,
+  );
 
   return {
     period: { from, to },
@@ -224,22 +230,31 @@ async function buildWebsiteAnalytics(
   integrations: MarketingIntegrations,
   range: { from: string; to: string },
   ga4Connected: boolean,
+  metricRows: MarketingMetricsDaily[],
+  dailyLeadRows: Array<{ date: string; total: number }>,
 ): Promise<Ga4WebsiteAnalytics> {
+  const dailyTrend = buildWebsiteTrend(range, metricRows, dailyLeadRows);
   if (!ga4Connected || !integrations.ga4PropertyId) {
-    return emptyWebsiteAnalytics('not_configured', null);
+    return emptyWebsiteAnalytics('not_configured', null, dailyTrend);
   }
 
   try {
-    return await fetchGa4WebsiteAnalytics(integrations.ga4PropertyId, range);
+    const analytics = await fetchGa4WebsiteAnalytics(integrations.ga4PropertyId, range);
+    return { ...analytics, dailyTrend };
   } catch (err) {
-    return emptyWebsiteAnalytics('error', err instanceof Error ? err.message : String(err));
+    return emptyWebsiteAnalytics('error', err instanceof Error ? err.message : String(err), dailyTrend);
   }
 }
 
-function emptyWebsiteAnalytics(status: Ga4WebsiteAnalytics['status'], error: string | null): Ga4WebsiteAnalytics {
+function emptyWebsiteAnalytics(
+  status: Ga4WebsiteAnalytics['status'],
+  error: string | null,
+  dailyTrend: Ga4WebsiteTrendRow[],
+): Ga4WebsiteAnalytics {
   return {
     status,
     error,
+    dailyTrend,
     topLandingPages: [],
     trafficChannels: [],
     sourceMedium: [],
@@ -247,6 +262,53 @@ function emptyWebsiteAnalytics(status: Ga4WebsiteAnalytics['status'], error: str
     topEvents: [],
     formEvents: [],
   };
+}
+
+function buildWebsiteTrend(
+  range: { from: string; to: string },
+  metricRows: MarketingMetricsDaily[],
+  dailyLeadRows: Array<{ date: string; total: number }>,
+): Ga4WebsiteTrendRow[] {
+  const byDate = new Map<string, Ga4WebsiteTrendRow>();
+  for (const date of enumerateDates(range.from, range.to)) {
+    byDate.set(date, { date, sessions: 0, users: 0, keyEvents: 0, crmLeads: 0, paidSpend: 0 });
+  }
+
+  for (const row of metricRows) {
+    const date = String(row.date);
+    const day = byDate.get(date);
+    if (!day) continue;
+
+    if (row.platform === 'ga4') {
+      day.sessions += row.sessions || 0;
+      day.users += row.users || 0;
+      day.keyEvents += row.conversions || 0;
+    }
+    if (row.platform === 'google_ads' || row.platform === 'meta_ads') {
+      day.paidSpend += Number(row.spend || 0);
+    }
+  }
+
+  for (const row of dailyLeadRows) {
+    const day = byDate.get(String(row.date));
+    if (day) day.crmLeads = Number(row.total || 0);
+  }
+
+  return [...byDate.values()].map(row => ({
+    ...row,
+    paidSpend: Math.round(row.paidSpend * 100) / 100,
+  }));
+}
+
+function enumerateDates(from: string, to: string) {
+  const dates: string[] = [];
+  const cursor = new Date(`${from}T00:00:00Z`);
+  const end = new Date(`${to}T00:00:00Z`);
+  while (cursor <= end) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return dates;
 }
 
 function summarizeCrmCampaigns(leads: CrmLeadSignal[]): CrmCampaignCount[] {

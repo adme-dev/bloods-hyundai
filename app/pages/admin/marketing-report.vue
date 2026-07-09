@@ -139,6 +139,68 @@
           <Badge :variant="websiteAnalyticsBadgeVariant">{{ websiteAnalyticsStatusLabel }}</Badge>
         </CardHeader>
         <CardContent v-if="data.websiteAnalytics.status === 'connected'" class="space-y-6">
+          <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+            <div class="rounded-md border p-4">
+              <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div class="text-sm font-semibold">Website performance trend</div>
+                  <div class="text-xs text-muted-foreground">Sessions, key events and CRM leads indexed to their selected-period peak.</div>
+                </div>
+                <div class="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-sky-600" />Sessions</span>
+                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-amber-500" />Key events</span>
+                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-emerald-600" />CRM leads</span>
+                </div>
+              </div>
+              <div v-if="trendHasData" class="overflow-hidden">
+                <svg viewBox="0 0 640 210" role="img" aria-label="Website analytics trend chart" class="h-[240px] w-full">
+                  <line x1="36" y1="20" x2="36" y2="170" class="stroke-muted" stroke-width="1" />
+                  <line x1="36" y1="170" x2="620" y2="170" class="stroke-muted" stroke-width="1" />
+                  <line v-for="y in chartGridLines" :key="y" x1="36" :y1="y" x2="620" :y2="y" class="stroke-muted/70" stroke-width="1" />
+                  <polyline :points="trendLinePoints('sessions')" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600" />
+                  <polyline :points="trendLinePoints('keyEvents')" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500" />
+                  <polyline :points="trendLinePoints('crmLeads')" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600" />
+                  <circle
+                    v-for="point in trendEndPoints"
+                    :key="point.key"
+                    :cx="point.x"
+                    :cy="point.y"
+                    r="4"
+                    :class="point.class"
+                    fill="currentColor"
+                  />
+                  <text x="36" y="198" class="fill-muted-foreground text-[11px]">{{ chartStartLabel }}</text>
+                  <text x="620" y="198" text-anchor="end" class="fill-muted-foreground text-[11px]">{{ chartEndLabel }}</text>
+                </svg>
+              </div>
+              <div v-else class="rounded-md bg-muted/30 py-10 text-center text-sm text-muted-foreground">
+                No daily website trend data for this period.
+              </div>
+            </div>
+
+            <div class="rounded-md border p-4">
+              <div class="mb-4 flex items-center gap-2">
+                <TrendingUp class="h-4 w-4 text-sky-600" />
+                <div>
+                  <div class="text-sm font-semibold">Website to lead funnel</div>
+                  <div class="text-xs text-muted-foreground">High-level path from visits to CRM.</div>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div v-for="step in websiteFunnelRows" :key="step.label" class="space-y-1.5">
+                  <div class="flex items-center justify-between gap-3 text-sm">
+                    <span class="font-medium">{{ step.label }}</span>
+                    <span class="text-muted-foreground">{{ n(step.value) }}</span>
+                  </div>
+                  <div class="h-3 overflow-hidden rounded-full bg-muted">
+                    <div class="h-full rounded-full" :class="step.class" :style="{ width: `${step.width}%` }" />
+                  </div>
+                  <div class="text-xs text-muted-foreground">{{ step.caption }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
             <div class="rounded-md border">
               <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
@@ -160,8 +222,13 @@
                 </TableHeader>
                 <TableBody>
                   <TableRow v-for="row in data.websiteAnalytics.topLandingPages" :key="dimension(row, 'landingPagePlusQueryString')">
-                    <TableCell class="max-w-[420px] truncate font-medium">{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'sessions')) }}</TableCell>
+                    <TableCell class="max-w-[420px]">
+                      <div class="truncate font-medium">{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</div>
+                      <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div class="h-full rounded-full bg-sky-600" :style="{ width: `${barPercent(metric(row, 'sessions'), maxLandingPageSessions)}%` }" />
+                      </div>
+                    </TableCell>
+                    <TableCell class="text-right font-medium">{{ n(metric(row, 'sessions')) }}</TableCell>
                     <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
                     <TableCell class="text-right">{{ fractionPct(metric(row, 'engagementRate')) }}</TableCell>
                     <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
@@ -563,6 +630,7 @@ import {
   RefreshCw,
   Route,
   Target,
+  TrendingUp,
   UserCheck,
   WalletCards,
 } from 'lucide-vue-next';
@@ -621,6 +689,7 @@ interface ReportResponse {
   websiteAnalytics: {
     status: 'connected' | 'not_configured' | 'error';
     error: string | null;
+    dailyTrend: WebsiteTrendRow[];
     topLandingPages: Ga4BreakdownRow[];
     trafficChannels: Ga4BreakdownRow[];
     sourceMedium: Ga4BreakdownRow[];
@@ -685,6 +754,17 @@ type Ga4BreakdownRow = {
   dimensions: Record<string, string>;
   metrics: Record<string, number>;
 };
+
+type WebsiteTrendRow = {
+  date: string;
+  sessions: number;
+  users: number;
+  keyEvents: number;
+  crmLeads: number;
+  paidSpend: number;
+};
+
+type TrendMetricKey = 'sessions' | 'keyEvents' | 'crmLeads';
 
 type ProfessionalAdMetrics = {
   spend: number;
@@ -796,10 +876,59 @@ const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdo
 const totalWebsiteSessions = computed(() => data.value?.professionalMetrics.ga4Website.sessions || 0);
 const maxChannelSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.trafficChannels.map(row => metric(row, 'sessions')) || [1]), 1));
 const maxDeviceSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.deviceCategories.map(row => metric(row, 'sessions')) || [1]), 1));
+const maxLandingPageSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.topLandingPages.map(row => metric(row, 'sessions')) || [1]), 1));
+const websiteTrendRows = computed(() => data.value?.websiteAnalytics.dailyTrend || []);
+const trendHasData = computed(() => websiteTrendRows.value.some(row => row.sessions || row.keyEvents || row.crmLeads));
+const chartGridLines = [57.5, 95, 132.5];
+const chartStartLabel = computed(() => websiteTrendRows.value[0]?.date ? displayShortDate(websiteTrendRows.value[0].date) : '');
+const chartEndLabel = computed(() => websiteTrendRows.value.at(-1)?.date ? displayShortDate(websiteTrendRows.value.at(-1)!.date) : '');
+const trendEndPoints = computed(() => [
+  { key: 'sessions', class: 'text-sky-600', ...trendPoint('sessions', Math.max(websiteTrendRows.value.length - 1, 0)) },
+  { key: 'keyEvents', class: 'text-amber-500', ...trendPoint('keyEvents', Math.max(websiteTrendRows.value.length - 1, 0)) },
+  { key: 'crmLeads', class: 'text-emerald-600', ...trendPoint('crmLeads', Math.max(websiteTrendRows.value.length - 1, 0)) },
+]);
 const websiteEventRows = computed(() => {
   const analytics = data.value?.websiteAnalytics;
   if (!analytics) return [];
   return analytics.formEvents.length ? analytics.formEvents : analytics.topEvents.slice(0, 8);
+});
+const totalFormEventCount = computed(() => websiteEventRows.value.reduce((sum, row) => sum + metric(row, 'eventCount'), 0));
+const websiteFunnelRows = computed(() => {
+  const sessions = data.value?.professionalMetrics.ga4Website.sessions || 0;
+  const keyEvents = data.value?.professionalMetrics.ga4Website.keyEvents || 0;
+  const crmLeads = data.value?.summary.totalCrmLeads || 0;
+  const max = Math.max(sessions, totalFormEventCount.value, keyEvents, crmLeads, 1);
+
+  return [
+    {
+      label: 'Sessions',
+      value: sessions,
+      caption: 'Website visits tracked by GA4',
+      width: barPercent(sessions, max),
+      class: 'bg-sky-600',
+    },
+    {
+      label: 'Form events',
+      value: totalFormEventCount.value,
+      caption: 'GA4 lead/form activity',
+      width: barPercent(totalFormEventCount.value, max),
+      class: 'bg-blue-500',
+    },
+    {
+      label: 'Key events',
+      value: keyEvents,
+      caption: 'GA4 conversion events',
+      width: barPercent(keyEvents, max),
+      class: 'bg-amber-500',
+    },
+    {
+      label: 'CRM leads',
+      value: crmLeads,
+      caption: 'Enquiries stored in CRM',
+      width: barPercent(crmLeads, max),
+      class: 'bg-emerald-600',
+    },
+  ];
 });
 
 const websiteAnalyticsStatusLabel = computed(() => {
@@ -926,6 +1055,30 @@ function metric(row: Ga4BreakdownRow, key: string) {
   return Number.isFinite(value) ? value : 0;
 }
 
+function barPercent(value: number, max: number) {
+  if (!max) return 0;
+  return Math.max(value > 0 ? 3 : 0, Math.min(100, (value / max) * 100));
+}
+
+function trendLinePoints(key: TrendMetricKey) {
+  return websiteTrendRows.value
+    .map((_, index) => {
+      const point = trendPoint(key, index);
+      return `${point.x},${point.y}`;
+    })
+    .join(' ');
+}
+
+function trendPoint(key: TrendMetricKey, index: number) {
+  const rows = websiteTrendRows.value;
+  const max = Math.max(...rows.map(row => row[key]), 1);
+  const row = rows[index] || rows[0];
+  const value = row?.[key] || 0;
+  const x = rows.length <= 1 ? 36 : 36 + (index / (rows.length - 1)) * 584;
+  const y = 170 - (value / max) * 150;
+  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+}
+
 function daysAgo(days: number) {
   const date = new Date(`${today}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() - days);
@@ -938,6 +1091,10 @@ function isoDate(date: Date) {
 
 function displayDate(value: string) {
   return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function displayShortDate(value: string) {
+  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' }).format(new Date(`${value}T00:00:00Z`));
 }
 
 function shortDateTime(value: string) {
