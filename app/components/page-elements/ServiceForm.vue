@@ -26,10 +26,11 @@
           <Button
             variant="outline"
             size="sm"
-            @click="openFullScreenDialog"
+            type="button"
+            @click="openBookingInNewTab"
           >
-            <Maximize2 class="h-4 w-4 mr-2" />
-            Full Screen
+            <ExternalLink class="h-4 w-4 mr-2" />
+            Open in new tab
           </Button>
         </div>
         <CardContent class="p-0">
@@ -525,41 +526,6 @@
       </Card>
     </div>
 
-    <!-- Full Screen Dialog for External Booking -->
-    <Dialog v-model:open="showFullScreenDialog">
-      <DialogContent
-        class="!fixed !inset-0 !z-50 !m-0 !w-screen !h-screen !max-w-none !rounded-none !border-0 !p-0 !overflow-hidden !left-0 !top-0 !translate-x-0 !translate-y-0 !grid !bg-white"
-      >
-        <div class="flex h-full min-h-0 flex-col bg-white">
-          <!-- Custom header with close button -->
-          <div class="flex shrink-0 items-center justify-between border-b bg-gray-100 px-4 py-3">
-            <p class="m-0 text-sm font-medium text-gray-700">
-              Book Your Service Appointment
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              @click="showFullScreenDialog = false"
-              class="h-8 w-8 p-0"
-            >
-              <X class="h-5 w-5" />
-              <span class="sr-only">Close</span>
-            </Button>
-          </div>
-          <!-- Iframe container -->
-          <div class="min-h-0 flex-1">
-          <iframe
-            v-if="externalIframeUrl"
-            :src="externalIframeUrl"
-              class="block h-full w-full border-0"
-            title="Service Booking - Full Screen"
-            allow="geolocation; payment"
-            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-          />
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   </div>
 </template>
 
@@ -577,11 +543,9 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  Maximize2,
-  X
+  ExternalLink
 } from 'lucide-vue-next'
 import { Card, CardContent, CardHeader } from '~/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '~/components/ui/dialog'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
@@ -641,12 +605,10 @@ const externalIframeUrl = computed(() => {
   return null
 })
 
-// Full screen dialog state
-const showFullScreenDialog = ref(false)
-
-// Open external booking in full screen dialog
-const openFullScreenDialog = () => {
-  showFullScreenDialog.value = true
+// Open external booking in a new tab to avoid iframe positioning issues
+const openBookingInNewTab = () => {
+  if (!externalIframeUrl.value || !import.meta.client) return
+  window.open(externalIframeUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 // Stepper configuration
