@@ -26,82 +26,73 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Get retention profile
-  const retentionProfile = await db.query.customerRetentionProfiles.findFirst({
-    where: and(
-      eq(customerRetentionProfiles.customerId, customerId),
-      eq(customerRetentionProfiles.dealerId, dealerId)
-    ),
-  });
-
-  // Get vehicles
-  const vehicles = await db.query.customerVehicles.findMany({
-    where: and(
-      eq(customerVehicles.customerId, customerId),
-      eq(customerVehicles.dealerId, dealerId),
-      eq(customerVehicles.isActive, true)
-    ),
-    orderBy: [desc(customerVehicles.createdAt)],
-  });
-
-  // Get recent activities (last 50)
-  const activities = await db.query.customerActivities.findMany({
-    where: and(
-      eq(customerActivities.customerId, customerId),
-      eq(customerActivities.dealerId, dealerId)
-    ),
-    with: {
-      creator: {
-        columns: {
-          id: true,
-          firstName: true,
-          lastName: true,
+  const [retentionProfile, vehicles, activities, tasks, appointments, relatedEnquiries] = await Promise.all([
+    db.query.customerRetentionProfiles.findFirst({
+      where: and(
+        eq(customerRetentionProfiles.customerId, customerId),
+        eq(customerRetentionProfiles.dealerId, dealerId)
+      ),
+    }),
+    db.query.customerVehicles.findMany({
+      where: and(
+        eq(customerVehicles.customerId, customerId),
+        eq(customerVehicles.dealerId, dealerId),
+        eq(customerVehicles.isActive, true)
+      ),
+      orderBy: [desc(customerVehicles.createdAt)],
+    }),
+    db.query.customerActivities.findMany({
+      where: and(
+        eq(customerActivities.customerId, customerId),
+        eq(customerActivities.dealerId, dealerId)
+      ),
+      with: {
+        creator: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
-    },
-    orderBy: [desc(customerActivities.activityDate)],
-    limit: 50,
-  });
-
-  // Get pending tasks
-  const tasks = await db.query.customerTasks.findMany({
-    where: and(
-      eq(customerTasks.customerId, customerId),
-      eq(customerTasks.dealerId, dealerId),
-      sql`${customerTasks.status} IN ('pending', 'in_progress', 'overdue')`
-    ),
-    with: {
-      assignedUser: {
-        columns: {
-          id: true,
-          firstName: true,
-          lastName: true,
+      orderBy: [desc(customerActivities.activityDate)],
+      limit: 50,
+    }),
+    db.query.customerTasks.findMany({
+      where: and(
+        eq(customerTasks.customerId, customerId),
+        eq(customerTasks.dealerId, dealerId),
+        sql`${customerTasks.status} IN ('pending', 'in_progress', 'overdue')`
+      ),
+      with: {
+        assignedUser: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
         },
       },
-    },
-    orderBy: [desc(customerTasks.dueDate)],
-    limit: 10,
-  });
-
-  // Get service appointments
-  const appointments = await db.query.serviceAppointments.findMany({
-    where: and(
-      eq(serviceAppointments.customerId, customerId),
-      eq(serviceAppointments.dealerId, dealerId)
-    ),
-    orderBy: [desc(serviceAppointments.scheduledDate)],
-    limit: 10,
-  });
-
-  // Get related enquiries
-  const relatedEnquiries = await db.query.enquiries.findMany({
-    where: and(
-      eq(enquiries.dealerId, dealerId),
-      eq(enquiries.email, customer.email)
-    ),
-    orderBy: [desc(enquiries.createdAt)],
-    limit: 10,
-  });
+      orderBy: [desc(customerTasks.dueDate)],
+      limit: 10,
+    }),
+    db.query.serviceAppointments.findMany({
+      where: and(
+        eq(serviceAppointments.customerId, customerId),
+        eq(serviceAppointments.dealerId, dealerId)
+      ),
+      orderBy: [desc(serviceAppointments.scheduledDate)],
+      limit: 10,
+    }),
+    db.query.enquiries.findMany({
+      where: and(
+        eq(enquiries.dealerId, dealerId),
+        eq(enquiries.email, customer.email)
+      ),
+      orderBy: [desc(enquiries.createdAt)],
+      limit: 10,
+    }),
+  ]);
 
   // Calculate engagement metrics
   const totalActivities = activities.length;

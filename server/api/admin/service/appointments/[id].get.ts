@@ -28,10 +28,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Appointment not found' });
   }
 
-  // Get technician info if assigned
-  let technician = null;
-  if (appointment.assignedTechnicianId) {
-    const [tech] = await db
+  const technicianPromise = appointment.assignedTechnicianId
+    ? db
       .select({
         id: users.id,
         firstName: users.firstName,
@@ -40,14 +38,15 @@ export default defineEventHandler(async (event) => {
         department: users.department,
       })
       .from(users)
-      .where(eq(users.id, appointment.assignedTechnicianId));
-    technician = tech;
-  }
+      .where(and(
+        eq(users.id, appointment.assignedTechnicianId),
+        eq(users.dealerId, dealerId)
+      ))
+      .then(([tech]) => tech ?? null)
+    : Promise.resolve(null);
 
-  // Get service advisor info if assigned
-  let serviceAdvisor = null;
-  if (appointment.assignedServiceAdvisorId) {
-    const [advisor] = await db
+  const serviceAdvisorPromise = appointment.assignedServiceAdvisorId
+    ? db
       .select({
         id: users.id,
         firstName: users.firstName,
@@ -55,14 +54,15 @@ export default defineEventHandler(async (event) => {
         email: users.email,
       })
       .from(users)
-      .where(eq(users.id, appointment.assignedServiceAdvisorId));
-    serviceAdvisor = advisor;
-  }
+      .where(and(
+        eq(users.id, appointment.assignedServiceAdvisorId),
+        eq(users.dealerId, dealerId)
+      ))
+      .then(([advisor]) => advisor ?? null)
+    : Promise.resolve(null);
 
-  // Get customer info if linked
-  let customer = null;
-  if (appointment.customerId) {
-    const [cust] = await db
+  const customerPromise = appointment.customerId
+    ? db
       .select({
         id: customers.id,
         firstName: customers.firstName,
@@ -75,24 +75,26 @@ export default defineEventHandler(async (event) => {
         postcode: customers.postcode,
       })
       .from(customers)
-      .where(eq(customers.id, appointment.customerId));
-    customer = cust;
-  }
+      .where(and(
+        eq(customers.id, appointment.customerId),
+        eq(customers.dealerId, dealerId)
+      ))
+      .then(([cust]) => cust ?? null)
+    : Promise.resolve(null);
 
-  // Get vehicle info if linked
-  let vehicle = null;
-  if (appointment.vehicleId) {
-    const [veh] = await db
+  const vehiclePromise = appointment.vehicleId
+    ? db
       .select()
       .from(customerVehicles)
-      .where(eq(customerVehicles.id, appointment.vehicleId));
-    vehicle = veh;
-  }
+      .where(and(
+        eq(customerVehicles.id, appointment.vehicleId),
+        eq(customerVehicles.dealerId, dealerId)
+      ))
+      .then(([veh]) => veh ?? null)
+    : Promise.resolve(null);
 
-  // Get service history for this vehicle registration
-  let vehicleServiceHistory: any[] = [];
-  if (appointment.vehicleRegistration) {
-    vehicleServiceHistory = await db
+  const vehicleServiceHistoryPromise = appointment.vehicleRegistration
+    ? db
       .select({
         id: serviceHistory.id,
         serviceDate: serviceHistory.serviceDate,
@@ -108,11 +110,10 @@ export default defineEventHandler(async (event) => {
         eq(serviceHistory.dealerId, dealerId)
       ))
       .orderBy(desc(serviceHistory.serviceDate))
-      .limit(10);
-  }
+      .limit(10)
+    : Promise.resolve([]);
 
-  // Get available technicians for assignment
-  const technicians = await db
+  const techniciansPromise = db
     .select({
       id: users.id,
       firstName: users.firstName,
@@ -125,6 +126,22 @@ export default defineEventHandler(async (event) => {
       eq(users.isActive, true),
       eq(users.department, 'service')
     ));
+
+  const [
+    technician,
+    serviceAdvisor,
+    customer,
+    vehicle,
+    vehicleServiceHistory,
+    technicians,
+  ] = await Promise.all([
+    technicianPromise,
+    serviceAdvisorPromise,
+    customerPromise,
+    vehiclePromise,
+    vehicleServiceHistoryPromise,
+    techniciansPromise,
+  ]);
 
   return {
     appointment: {

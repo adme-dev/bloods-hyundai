@@ -277,6 +277,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~
 
 definePageMeta({
   layout: 'admin',
+  middleware: 'auth',
 })
 
 type ServiceAppointmentListItem = {

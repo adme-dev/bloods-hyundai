@@ -12,8 +12,9 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
   // Query params
-  const page = parseInt(query.page as string) || 1;
-  const limit = parseInt(query.limit as string) || 20;
+  const MAX_LIMIT = 100;
+  const page = Math.max(1, parseInt(query.page as string) || 1);
+  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(query.limit as string) || 20));
   const offset = (page - 1) * limit;
   const status = query.status as string;
   const search = query.search as string;

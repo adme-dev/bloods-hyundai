@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Only admins and managers can update branding settings
-  if (!['admin', 'manager'].includes(user.role)) {
+  // Dealer admins manage the dealership brand settings in this admin console.
+  if (!['admin', 'dealer_admin', 'manager'].includes(user.role)) {
     throw createError({
       statusCode: 403,
       message: 'Insufficient permissions',
