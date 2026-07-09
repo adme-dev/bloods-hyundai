@@ -47,6 +47,13 @@ export default defineEventHandler(async (event) => {
     }
     
     // Verify password
+    if (!user.passwordHash) {
+      throw createError({
+        statusCode: 401,
+        message: 'Invalid email or password',
+      });
+    }
+
     const isValidPassword = await verifyPassword(password, user.passwordHash);
     
     if (!isValidPassword) {
@@ -125,7 +132,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

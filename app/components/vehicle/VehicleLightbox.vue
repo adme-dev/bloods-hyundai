@@ -169,13 +169,17 @@ const touchEndX = ref(0);
 const isSwiping = ref(false);
 
 const handleTouchStart = (e: TouchEvent) => {
-  touchStartX.value = e.touches[0].clientX;
+  const touch = e.touches[0];
+  if (!touch) return;
+  touchStartX.value = touch.clientX;
   isSwiping.value = true;
 };
 
 const handleTouchMove = (e: TouchEvent) => {
   if (!isSwiping.value) return;
-  touchEndX.value = e.touches[0].clientX;
+  const touch = e.touches[0];
+  if (!touch) return;
+  touchEndX.value = touch.clientX;
 };
 
 const handleTouchEnd = () => {

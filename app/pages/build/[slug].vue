@@ -115,28 +115,46 @@
 </template>
 
 <script setup lang="ts">
+interface BuildVariant {
+  id: string | number;
+  name: string;
+  image?: string;
+  formattedPrice?: string;
+  price?: number;
+  highlights?: string[];
+  features?: string[];
+}
+
+interface VariantDetailsResponse {
+  variant?: unknown | null;
+  variants?: unknown[];
+}
+
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 
 // Fetch variant data
-const { data, pending } = await useFetch('/api/variant-details', {
+const { data, pending } = await useFetch<VariantDetailsResponse>('/api/variant-details', {
   params: { variantId: slug },
   lazy: true,
 });
 
-const variants = computed(() => data.value?.variants || []);
-const modelName = computed(() => data.value?.variant?.name || slug.value);
+const variants = computed<BuildVariant[]>(() => (data.value?.variants || []).filter(isBuildVariant));
+const modelName = computed(() => {
+  const variant = data.value?.variant;
+  return isBuildVariant(variant) ? variant.name : slug.value;
+});
 
 // Selected variant
-const selectedVariant = ref<any>(null);
+const selectedVariant = ref<BuildVariant | null>(null);
 
 watch(variants, (newVariants) => {
   if (newVariants?.length && !selectedVariant.value) {
-    selectedVariant.value = newVariants[0];
+    selectedVariant.value = newVariants[0] ?? null;
   }
 }, { immediate: true });
 
-const selectVariant = (variant: any) => {
+const selectVariant = (variant: BuildVariant) => {
   selectedVariant.value = variant;
 };
 
@@ -147,10 +165,16 @@ useSiteMeta({
 });
 
 // Price formatter
-const formatPrice = (price: number) => {
+const formatPrice = (price?: number) => {
   if (!price) return 'POA';
   return `$${price.toLocaleString()}`;
 };
+
+function isBuildVariant(value: unknown): value is BuildVariant {
+  if (!value || typeof value !== 'object') return false;
+  const variant = value as Record<string, unknown>;
+  return (typeof variant.id === 'string' || typeof variant.id === 'number') && typeof variant.name === 'string';
+}
 </script>
 
 <style lang="scss" scoped>
@@ -167,8 +191,6 @@ const formatPrice = (price: number) => {
   border: 3px solid var(--color-primary);
 }
 </style>
-
-
 
 
 

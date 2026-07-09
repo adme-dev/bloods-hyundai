@@ -279,13 +279,13 @@
           </div>
           <div class="space-y-2">
             <Label>Status</Label>
-            <Select v-model="editData.isActive" :disabled="editData.id === currentUser?.id">
+            <Select v-model="editStatus" :disabled="editData.id === currentUser?.id">
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem :value="true">Active</SelectItem>
-                <SelectItem :value="false">Inactive</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
             <p v-if="editData.id === currentUser?.id" class="text-xs text-muted-foreground">
@@ -354,12 +354,33 @@ definePageMeta({
 
 const { toast } = useToast();
 
+type StaffMember = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: string;
+  isActive: boolean;
+  invitedAt?: string | null;
+};
+
+type StaffResponse = {
+  staff: StaffMember[];
+};
+
+type AuthResponse = {
+  user: { id: string } | null;
+};
+
 // Fetch staff data
-const { data, pending, refresh } = await useFetch('/api/admin/staff');
-const staff = computed(() => data.value?.staff || []);
+const { data, pending, refresh } = await useFetch<StaffResponse>('/api/admin/staff', {
+  default: () => ({ staff: [] }),
+});
+const staff = computed<StaffMember[]>(() => data.value?.staff || []);
 
 // Get current user from auth state
-const { data: authData } = await useFetch('/api/admin/auth/me');
+const { data: authData } = await useFetch<AuthResponse>('/api/admin/auth/me');
 const currentUser = computed(() => authData.value?.user);
 
 // Filter state
@@ -427,6 +448,13 @@ const editData = ref({
   isActive: true,
 });
 
+const editStatus = computed({
+  get: () => editData.value.isActive ? 'active' : 'inactive',
+  set: (value: string) => {
+    editData.value.isActive = value === 'active';
+  },
+});
+
 // Role definitions by department
 const rolesByDepartment: Record<string, { value: string; label: string }[]> = {
   executive: [
@@ -456,22 +484,24 @@ const rolesByDepartment: Record<string, { value: string; label: string }[]> = {
 
 // Get available roles based on department
 const getAvailableRoles = (department: string) => {
-  return rolesByDepartment[department] || rolesByDepartment.sales;
+  return rolesByDepartment[department] || rolesByDepartment.sales || [];
 };
 
 // When department changes in add form, reset role to first available
 watch(() => formData.value.department, (newDept) => {
   const roles = getAvailableRoles(newDept);
-  if (roles.length > 0) {
-    formData.value.role = roles[0].value;
+  const firstRole = roles[0];
+  if (firstRole) {
+    formData.value.role = firstRole.value;
   }
 });
 
 // When department changes in edit form, reset role to first available
 watch(() => editData.value.department, (newDept) => {
   const roles = getAvailableRoles(newDept);
-  if (roles.length > 0 && !roles.some(r => r.value === editData.value.role)) {
-    editData.value.role = roles[0].value;
+  const firstRole = roles[0];
+  if (firstRole && !roles.some(r => r.value === editData.value.role)) {
+    editData.value.role = firstRole.value;
   }
 });
 
@@ -716,7 +746,6 @@ const toggleStatus = async (member: any) => {
   }
 };
 </script>
-
 
 
 

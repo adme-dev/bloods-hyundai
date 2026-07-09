@@ -117,6 +117,13 @@ export default defineEventHandler(async (event) => {
     userAgent: getHeader(event, 'user-agent') || undefined,
   }).returning();
 
+  if (!enquiry) {
+    throw createError({
+      statusCode: 500,
+      message: 'Failed to create inbound lead enquiry',
+    });
+  }
+
   await db.insert(enquiryActivityLog).values({
     dealerId: matched.dealer.id,
     enquiryId: enquiry.id,

@@ -411,12 +411,14 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import {
   getTrendClass, formatTrend, formatResponseTime, getConversionBarClass,
-  formatChartDate, formatCurrency, getTargetProgress, getTargetProgressClass,
+  formatChartDate, formatDashboardCurrency, getTargetProgress, getTargetProgressClass,
   getDeptBgClass, getDeptTextClass,
 } from '~/utils/dashboardFormat';
 import type { DashboardData } from './types';
 
 const props = defineProps<{ data: DashboardData }>();
+
+const formatCurrency = formatDashboardCurrency;
 
 const selectedChartType = ref('total');
 const chartTypes = [

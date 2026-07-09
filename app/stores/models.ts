@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { useModelSummaries } from '~/composables/useModelSummaries';
+import type { VehicleModelSummary } from '~/composables/useModelSummaries';
 
 /**
  * Models Store
@@ -10,8 +11,8 @@ export const useModelsStore = defineStore('models', () => {
   const { models, pending, error, refresh } = useModelSummaries();
 
   // Transform Hyundai API models to match component expectations
-  const allModels = computed(() => {
-    return (models.value || []).map((model: any) => ({
+  const allModels = computed<VehicleModelSummary[]>(() => {
+    return (models.value || []).map((model) => ({
       ...model,
       // Adapt fields for component compatibility
       'title': {
@@ -27,7 +28,7 @@ export const useModelsStore = defineStore('models', () => {
   // Get unique categories - sorted with "Coming Soon" always at the end
   const uniqueCategories = computed(() => {
     const categories = new Set<string>();
-    allModels.value.forEach((model: any) => {
+    allModels.value.forEach((model) => {
       if (model.category) {
         categories.add(model.category);
       }
@@ -55,7 +56,7 @@ export const useModelsStore = defineStore('models', () => {
   // Get models by category
   const modelsByCategory = (category: string) => {
     if (!category) return [];
-    return allModels.value.filter((model: any) => model.category === category);
+    return allModels.value.filter((model) => model.category === category);
   };
 
   // Check if store is initialized
@@ -87,7 +88,6 @@ export const useModelsStore = defineStore('models', () => {
     refresh,
   };
 });
-
 
 
 

@@ -173,7 +173,7 @@ export const usePriceBuilderStore = defineStore('priceBuilder', {
         this.availableVariants = []; // Populate from data
         
         if (this.availableVariants.length > 0) {
-          this.selectedVariant = this.availableVariants[0];
+          this.selectedVariant = this.availableVariants[0] ?? null;
         }
       } catch (err: any) {
         this.error = err.message || 'Failed to load variants';
@@ -295,7 +295,7 @@ export const usePriceBuilderStore = defineStore('priceBuilder', {
     // Only persist on client to prevent SSR hydration mismatch
     // Storage is undefined on server, so persist is skipped during SSR
     storage: import.meta.client ? localStorage : undefined,
-    paths: [
+    pick: [
       'selectedModel',
       'selectedVariant',
       'accessories',

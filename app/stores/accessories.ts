@@ -8,6 +8,13 @@ import { pushAccessoryCommerceEvent } from '~/utils/accessoriesCommerceTracking'
  * For the R&D accessories shop feature
  */
 
+export interface IncludedAccessory {
+  id: string;
+  quantity: number;
+  citation: string;
+  order?: number;
+}
+
 export interface Accessory {
   id: string;
   name: string;
@@ -25,6 +32,11 @@ export interface Accessory {
   features: string[];
   disclaimer: string;
   variants: any[];
+  savingsAmount?: number;
+  imageHero?: string | null;
+  imageCloseUp1?: string | null;
+  imageCloseUp2?: string | null;
+  includedAccessories?: IncludedAccessory[];
 }
 
 export interface AccessoryPack {
@@ -36,6 +48,7 @@ export interface AccessoryPack {
   rrp?: number;
   savingsAmount: number;
   image: string | null;
+  thumbnail?: string | null;
   imageHero?: string | null;
   imageCloseUp1?: string | null;
   imageCloseUp2?: string | null;
@@ -44,14 +57,12 @@ export interface AccessoryPack {
   partNumber?: string;
   isFitted?: boolean;
   isPopular?: boolean;
+  features?: string[];
   disclaimer: string;
-  includedAccessories: {
-    id: string;
-    quantity: number;
-    citation: string;
-    order?: number;
-  }[];
+  includedAccessories: IncludedAccessory[];
 }
+
+export type AccessoryCatalogItem = Accessory | AccessoryPack;
 
 export interface CartItem {
   accessory: Accessory | AccessoryPack;
@@ -153,10 +164,9 @@ export const useAccessoriesStore = defineStore('accessories', () => {
   const modelsByCategory = computed(() => {
     const grouped: Record<string, HyundaiModel[]> = {};
     HYUNDAI_MODELS.forEach(model => {
-      if (!grouped[model.category]) {
-        grouped[model.category] = [];
-      }
-      grouped[model.category].push(model);
+      const categoryModels = grouped[model.category] ?? [];
+      categoryModels.push(model);
+      grouped[model.category] = categoryModels;
     });
     return grouped;
   });
@@ -304,7 +314,8 @@ export const useAccessoriesStore = defineStore('accessories', () => {
   const removeFromCart = (accessoryId: string) => {
     const index = cartItems.value.findIndex(item => item.accessory.id === accessoryId);
     if (index !== -1) {
-      const removedItem = { ...cartItems.value[index] };
+      const removedItem = cartItems.value[index];
+      if (!removedItem) return;
       cartItems.value.splice(index, 1);
       trackCartEvent('remove_from_cart', [removedItem], { source: 'accessories_cart' });
     }
@@ -427,6 +438,6 @@ export const useAccessoriesStore = defineStore('accessories', () => {
     // Only persist on client to prevent SSR hydration mismatch
     // Storage is undefined on server, so persist is skipped during SSR
     storage: import.meta.client ? localStorage : undefined,
-    paths: ['cartItems', 'selectedModel'],
+    pick: ['cartItems', 'selectedModel'],
   },
 });

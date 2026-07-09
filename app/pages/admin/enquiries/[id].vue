@@ -867,7 +867,7 @@ const { toast } = useToast();
 const route = useRoute();
 const enquiryId = route.params.id as string;
 
-const { data, pending, error, refresh } = await useFetch(`/api/admin/enquiries/${enquiryId}`);
+const { data, pending, error, refresh } = await useFetch<any>(`/api/admin/enquiries/${enquiryId}`);
 
 const enquiry = computed(() => data.value?.enquiry);
 const notes = computed(() => data.value?.notes ?? []);
@@ -921,7 +921,8 @@ const applyStatus = async (nextStatus: string, extra: Record<string, unknown> = 
   }
 };
 
-const onStatusSelect = async (nextStatus: string) => {
+const onStatusSelect = async (value: unknown) => {
+  const nextStatus = typeof value === 'string' ? value : '';
   if (!enquiry.value || !nextStatus || statusUpdating.value) return;
   if (nextStatus === enquiry.value.status) return;
   // 'lost' requires a reason; reveal the capture panel instead of submitting.

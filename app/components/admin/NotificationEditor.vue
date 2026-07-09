@@ -290,8 +290,16 @@ interface Notification {
   conditions?: Array<{ field: string; operator: string; value: string }>;
 }
 
+type NotificationCondition = { field: string; operator: string; value: string };
+
+interface NotificationForm extends Omit<Notification, 'sendTo' | 'conditions' | 'hasConditions'> {
+  sendTo: string[];
+  hasConditions: boolean;
+  conditions: NotificationCondition[];
+}
+
 interface Props {
-  notification?: Notification | null;
+  notification?: Partial<Notification> | null;
   formSlug: string;
 }
 
@@ -308,7 +316,7 @@ const bodyTab = ref('visual');
 const showMergeTags = ref(false);
 
 // Form state
-const form = ref<Notification>({
+const form = ref<NotificationForm>({
   name: props.notification?.name || '',
   type: props.notification?.type || 'admin',
   isActive: props.notification?.isActive ?? true,
@@ -387,8 +395,6 @@ const handleSubmit = async () => {
   }
 };
 </script>
-
-
 
 
 

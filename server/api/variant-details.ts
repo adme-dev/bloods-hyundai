@@ -1,7 +1,25 @@
 /**
  * API route to get variant details by ID/slug
  */
-export default defineEventHandler(async (event) => {
+type VariantDetailsSourceResponse = {
+  success?: boolean;
+  error?: string;
+  variant?: unknown;
+  variants?: unknown[];
+  accessories?: unknown[];
+  features?: unknown[];
+};
+
+type VariantDetailsApiResponse = {
+  success: boolean;
+  error?: string;
+  variant?: unknown | null;
+  variants?: unknown[];
+  accessories?: unknown[];
+  features?: unknown[];
+};
+
+export default defineEventHandler(async (event): Promise<VariantDetailsApiResponse> => {
   const config = useRuntimeConfig();
   const query = getQuery(event);
   
@@ -25,7 +43,7 @@ export default defineEventHandler(async (event) => {
   
   try {
     // Fetch from external API
-    const response = await $fetch<any>(`${config.public.apiUrl}/get-hyundai-variant-by-id`, {
+    const response = await $fetch<VariantDetailsSourceResponse>(`${config.public.apiUrl}/get-hyundai-variant-by-id`, {
       method: 'GET',
       params: { variantId },
     });
@@ -53,8 +71,6 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
-
-
 
 
 

@@ -47,6 +47,13 @@ export default defineEventHandler(async (event) => {
     }
 
     // Verify current password
+    if (!currentUser.passwordHash) {
+      throw createError({
+        statusCode: 401,
+        message: 'Current password is incorrect',
+      });
+    }
+
     const isValid = await verifyPassword(currentPassword, currentUser.passwordHash);
     if (!isValid) {
       throw createError({
@@ -79,7 +86,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

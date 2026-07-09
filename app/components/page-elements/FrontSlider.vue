@@ -124,7 +124,7 @@ const offersHeroRequest = computed(() => {
 });
 
 if (offersHeroRequest.value) {
-  const { data, error } = useFetch<OffersHeroImage>('/api/hyundai-offers/hero-banner', {
+  const { data, error } = useFetch<OffersHeroImage | null>('/api/hyundai-offers/hero-banner', {
     key: offersHeroRequest.value.key,
     query: offersHeroRequest.value.query,
     server: true,
@@ -224,7 +224,7 @@ const formatLink = (link: string) => {
   return 'https://' + link;
 };
 
-const strippedHeadingContent = (content: string) => {
+const strippedHeadingContent = (content?: string | null) => {
   if (!content) return '';
   return content.replace(/<[^>]*>/g, '');
 };

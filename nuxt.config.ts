@@ -1,3 +1,5 @@
+import type { UserConfig as ViteUserConfig } from 'vite';
+
 const googleTagId = process.env.NUXT_PUBLIC_GTAG_ID || process.env.NUXT_PUBLIC_GOOGLE_TAG_ID || ''
 const googleTagManagerId = process.env.NUXT_PUBLIC_GTM_ID || ''
 const privateSitemapExcludes = [
@@ -45,7 +47,7 @@ const enableNetlifyNuxt =
 
 const hmrPort = Number(process.env.NUXT_HMR_PORT || process.env.PORT || 3000);
 
-export default defineNuxtConfig({
+export default {
   // Nuxt 4 - no compatibility flag needed anymore
   devtools: { enabled: false },
 
@@ -233,7 +235,7 @@ export default defineNuxtConfig({
   },
 
   hooks: {
-    'vite:extendConfig'(config, env) {
+    'vite:extendConfig'(config: ViteUserConfig) {
       config.server ||= {};
 
       config.server.hmr = {
@@ -507,4 +509,4 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2024-12-05',
-});
+};

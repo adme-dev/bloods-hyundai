@@ -273,7 +273,13 @@ const defaultTargets = {
   testDriveConversionTarget: 50,
 };
 
-const { data, pending, error, refresh } = await useFetch('/api/admin/settings/targets');
+type TargetsResponse = {
+  targets?: Partial<typeof defaultTargets>;
+};
+
+const { data, pending, error, refresh } = await useFetch<TargetsResponse>('/api/admin/settings/targets', {
+  default: () => ({ targets: defaultTargets }),
+});
 
 const targets = ref({ ...defaultTargets });
 const saving = ref(false);

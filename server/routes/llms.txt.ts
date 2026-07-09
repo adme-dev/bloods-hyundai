@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
 
   const siteConfigResponse = await $fetch<SiteConfigResponse>('/api/site-config', {
     headers: getTenantForwardHeaders(event),
-  }).catch(() => ({ config: {} }));
+  }).catch((): SiteConfigResponse => ({ config: {} }));
 
   const site = siteConfigResponse.config || {};
   const dealershipName = site.name || 'Hyundai Dealer';

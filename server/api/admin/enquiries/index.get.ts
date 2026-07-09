@@ -88,10 +88,11 @@ export default defineEventHandler(async (event) => {
   });
   
   // Get total count
-  const [{ count }] = await db
+  const [countRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(enquiries)
     .where(and(...conditions));
+  const count = countRow?.count ?? 0;
 
   // Per-view counts for the tab badges (dealer-scoped, independent of the
   // status/type/search/assigned filters — they reflect how many items live
@@ -131,7 +132,6 @@ export default defineEventHandler(async (event) => {
     },
   };
 });
-
 
 
 

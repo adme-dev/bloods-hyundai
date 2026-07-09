@@ -827,10 +827,10 @@ const handleTestDriveSubmit = async (formData: any) => {
       model: offer.value?.model || '',
       variant: offer.value?.variantName || '',
       price: offer.value?.price || 0,
-      thumbnail: offer.value?.images?.[0] || '',
+      thumbnail: offer.value?.image || offer.value?.heroImage || '',
       condition: 'new',
       offerId: offerId.value,
-      offerTitle: offer.value?.title || '',
+      offerTitle: [offer.value?.model, offer.value?.variantName].filter(Boolean).join(' '),
     };
 
     // Build the test drive submission payload
@@ -859,10 +859,10 @@ const handleTestDriveSubmit = async (formData: any) => {
     
     // Track the test drive booking
     analytics.trackTestDriveBooking({
-      id: 'test-drive',
-      type: 'special-offer-test-drive',
       vehicle: vehicleInfo,
-      datetime: new Date().toISOString(),
+      source: 'special-offer-test-drive',
+      page_url: route.fullPath,
+      preferred_date: new Date().toISOString(),
     });
 
   } catch (error) {
@@ -2015,7 +2015,6 @@ onUpdated(() => {
   }
 }
 </style>
-
 
 
 

@@ -318,7 +318,7 @@ import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 interface RoutingCondition {
   field: string;
   operator: string;
-  value: any;
+  value: string;
 }
 
 interface RoutingActions {
@@ -328,7 +328,7 @@ interface RoutingActions {
 }
 
 interface RoutingRule {
-  id: string;
+  id?: string;
   name: string;
   enabled: boolean;
   conditions: RoutingCondition[];
@@ -431,6 +431,7 @@ const validate = (): boolean => {
   // Validate conditions
   for (let i = 0; i < form.conditions.length; i++) {
     const condition = form.conditions[i];
+    if (!condition) continue;
     if (!condition.field) {
       errors.value.push(`Condition ${i + 1}: Field is required`);
     }

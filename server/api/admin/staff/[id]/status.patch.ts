@@ -25,6 +25,13 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { isActive } = body;
 
+  if (!staffId) {
+    throw createError({
+      statusCode: 400,
+      message: 'Staff member ID is required',
+    });
+  }
+
   if (typeof isActive !== 'boolean') {
     throw createError({
       statusCode: 400,
@@ -49,7 +56,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

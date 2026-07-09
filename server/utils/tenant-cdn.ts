@@ -4,7 +4,8 @@ export function buildTenantCdnUrls(cdnUrl: string, dealerSlug: string, path: str
   const trimmed = cdnUrl.replace(/\/+$/, '');
   const tenantMatch = trimmed.match(/\/files\/([^/]+)$/);
   const aliases = resolveDealerSlugAliases(dealerSlug);
-  const allowLegacyPath = !tenantMatch || aliases.includes(tenantMatch[1]);
+  const tenantSlug = tenantMatch?.[1];
+  const allowLegacyPath = !tenantSlug || aliases.includes(tenantSlug);
 
   return Array.from(new Set([
     ...aliases.map((slug) => {

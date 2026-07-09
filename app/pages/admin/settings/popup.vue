@@ -128,7 +128,7 @@
                       ref="imageInput"
                       @change="handleImageUpload"
                     />
-                    <Button variant="outline" size="sm" @click="$refs.imageInput.click()" :disabled="uploading">
+                    <Button variant="outline" size="sm" @click="imageInput?.click()" :disabled="uploading">
                       <Upload v-if="!uploading" class="mr-2 h-4 w-4" />
                       <Loader2 v-else class="mr-2 h-4 w-4 animate-spin" />
                       {{ uploading ? 'Uploading...' : 'Upload Image' }}
@@ -471,8 +471,31 @@ const availablePages = [
   { path: '/accessories', label: 'Accessories' },
 ];
 
+type PopupSettings = {
+  enabled: boolean;
+  contentType: 'custom' | 'iframe';
+  iframeUrl: string;
+  title: string;
+  htmlContent: string;
+  imageUrl: string;
+  buttonText: string;
+  buttonUrl: string;
+  displayMode: 'all' | 'specific';
+  specificPages: string[];
+  startDate: string | null;
+  endDate: string | null;
+  showOncePerSession: boolean;
+  cooldownMinutes: number;
+  delaySeconds: number;
+};
+
+type PopupSettingsResponse = {
+  success: boolean;
+  settings: PopupSettings;
+};
+
 // Fetch current settings
-const { data, pending, error, refresh } = await useFetch('/api/admin/settings/popup');
+const { data, pending, error, refresh } = await useFetch<PopupSettingsResponse>('/api/admin/settings/popup');
 
 // Form state
 const form = reactive({
@@ -575,7 +598,7 @@ const handleImageUpload = async (event: Event) => {
     });
 
     // Set the image URL
-    const baseUrl = presignResponse.url.split('?')[0];
+    const baseUrl = presignResponse.url.split('?')[0] ?? '';
     form.imageUrl = baseUrl;
   } catch (err) {
     console.error('Image upload failed:', err);
@@ -602,7 +625,7 @@ const saveSettings = async () => {
   saveSuccess.value = false;
 
   try {
-    await $fetch('/api/admin/settings/popup', {
+    await $fetch('/api/admin/settings/popup' as string, {
       method: 'PUT',
       body: {
         enabled: form.enabled,

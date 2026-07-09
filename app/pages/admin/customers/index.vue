@@ -228,11 +228,11 @@
                 <span v-else class="text-sm text-muted-foreground italic">Never contacted</span>
               </TableCell>
               <TableCell>
-                <div v-if="customer.vehicles && customer.vehicles.length > 0">
-                  <div class="text-sm font-medium">{{ customer.vehicles[0].year }} {{ customer.vehicles[0].model }}</div>
-                  <p class="text-xs text-muted-foreground">{{ customer.vehicles[0].registration }}</p>
-                  <Badge v-if="customer.vehicles.length > 1" variant="outline" class="mt-1 text-xs">
-                    +{{ customer.vehicles.length - 1 }} more
+                <div v-if="firstVehicle(customer)">
+                  <div class="text-sm font-medium">{{ firstVehicle(customer)?.year }} {{ firstVehicle(customer)?.model }}</div>
+                  <p class="text-xs text-muted-foreground">{{ firstVehicle(customer)?.registration }}</p>
+                  <Badge v-if="vehicleCount(customer) > 1" variant="outline" class="mt-1 text-xs">
+                    +{{ vehicleCount(customer) - 1 }} more
                   </Badge>
                 </div>
                 <span v-else class="text-sm text-muted-foreground italic">No vehicle</span>
@@ -530,6 +530,47 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { getGravatarUrl, getInitials } from '~/utils/gravatar';
 import { LIFECYCLE_STAGE_CONFIG, type LifecycleStage } from '~~/shared/constants/salesFunnel';
 
+type CheckedState = boolean | 'indeterminate';
+
+type CustomerVehicle = {
+  year?: string | number | null;
+  model?: string | null;
+  registration?: string | null;
+};
+
+type CustomerRetentionProfile = {
+  lifecycleStage?: string | null;
+  riskLevel?: string | null;
+  riskScore?: number | null;
+  lastContactDate?: string | null;
+};
+
+type CustomerListItem = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string | null;
+  retentionProfile?: CustomerRetentionProfile | null;
+  vehicles?: CustomerVehicle[] | null;
+};
+
+type CustomersResponse = {
+  customers: CustomerListItem[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  stats?: {
+    total?: number;
+    atRisk?: number;
+    dueFollowups?: number;
+    newThisMonth?: number;
+  };
+};
+
 // Canonical lifecycle stages for dropdowns, ordered.
 const lifecycleOptions = Object.values(LIFECYCLE_STAGE_CONFIG).sort((a, b) => a.order - b.order);
 
@@ -598,14 +639,18 @@ const apiFilters = computed(() => ({
 }));
 
 // Fetch customers
-const { data, pending, refresh } = await useFetch('/api/admin/customers', {
+const { data, pending, refresh } = await useFetch<CustomersResponse>('/api/admin/customers', {
   query: apiFilters,
   watch: [apiFilters],
+  default: () => ({ customers: [] }),
 });
 
-const customers = computed(() => data.value?.customers || []);
+const customers = computed<CustomerListItem[]>(() => data.value?.customers || []);
 const pagination = computed(() => data.value?.pagination);
 const stats = computed(() => data.value?.stats);
+
+const firstVehicle = (customer: CustomerListItem) => customer.vehicles?.[0];
+const vehicleCount = (customer: CustomerListItem) => customer.vehicles?.length || 0;
 
 // Selection state
 const selectedCustomers = ref<string[]>([]);
@@ -613,16 +658,16 @@ const allSelected = computed(() =>
   customers.value.length > 0 && selectedCustomers.value.length === customers.value.length
 );
 
-const toggleSelectAll = (checked: boolean) => {
-  if (checked) {
-    selectedCustomers.value = customers.value.map((c: any) => c.id);
+const toggleSelectAll = (checked: CheckedState) => {
+  if (checked === true) {
+    selectedCustomers.value = customers.value.map((c) => c.id);
   } else {
     selectedCustomers.value = [];
   }
 };
 
-const toggleSelect = (id: string, checked: boolean) => {
-  if (checked) {
+const toggleSelect = (id: string, checked: CheckedState) => {
+  if (checked === true) {
     selectedCustomers.value.push(id);
   } else {
     selectedCustomers.value = selectedCustomers.value.filter(cid => cid !== id);
@@ -704,7 +749,7 @@ const addTask = (customer: any) => {
   taskCustomer.value = customer;
   newTask.title = '';
   newTask.taskType = 'follow_up';
-  newTask.dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // Tomorrow
+  newTask.dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] || ''; // Tomorrow
   newTask.priority = 'normal';
   newTask.description = '';
   showAddTask.value = true;
@@ -779,7 +824,7 @@ const bulkBusy = ref(false);
 const bulkAddTask = async () => {
   if (selectedCustomers.value.length === 0 || bulkBusy.value) return;
   bulkBusy.value = true;
-  const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '';
   try {
     await Promise.all(
       selectedCustomers.value.map((id) =>
@@ -838,12 +883,12 @@ const formatDistanceToNow = (date: string) => {
   return months === 1 ? '1 month' : `${months} months`;
 };
 
-const formatLifecycleStage = (stage?: string) => {
+const formatLifecycleStage = (stage?: string | null) => {
   if (!stage) return 'Prospect';
   return LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.label || stage;
 };
 
-const getLifecycleBadgeVariant = (stage?: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
+const getLifecycleBadgeVariant = (stage?: string | null): 'default' | 'secondary' | 'outline' | 'destructive' => {
   const category = stage ? LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.category : undefined;
   const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
     acquisition: 'outline',
@@ -855,7 +900,7 @@ const getLifecycleBadgeVariant = (stage?: string): 'default' | 'secondary' | 'ou
   return (category && map[category]) || 'outline';
 };
 
-const formatRiskLevel = (level?: string) => {
+const formatRiskLevel = (level?: string | null) => {
   const levels: Record<string, string> = {
     low: 'Low',
     medium: 'Medium',
@@ -865,7 +910,7 @@ const formatRiskLevel = (level?: string) => {
   return levels[level || 'low'] || 'Low';
 };
 
-const getRiskDotClass = (level?: string) => {
+const getRiskDotClass = (level?: string | null) => {
   const classes: Record<string, string> = {
     low: 'bg-green-500',
     medium: 'bg-yellow-500',
@@ -875,7 +920,7 @@ const getRiskDotClass = (level?: string) => {
   return classes[level || 'low'] || 'bg-green-500';
 };
 
-const getRiskTextClass = (level?: string) => {
+const getRiskTextClass = (level?: string | null) => {
   const classes: Record<string, string> = {
     low: 'text-green-600',
     medium: 'text-yellow-600',

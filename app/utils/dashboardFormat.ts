@@ -60,7 +60,7 @@ export function formatStatus(status: string): string {
   return ENQUIRY_STATUS_CONFIG[status as EnquiryStatus]?.label || status;
 }
 
-export function getInitials(name: string): string {
+export function getDashboardInitials(name: string): string {
   return name
     .split(' ')
     .map((n) => n[0])
@@ -69,7 +69,7 @@ export function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export function formatCurrency(value: number | undefined): string {
+export function formatDashboardCurrency(value: number | undefined): string {
   if (!value || isNaN(value)) return '0';
   return value.toLocaleString('en-AU', { maximumFractionDigits: 0 });
 }

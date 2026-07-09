@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
     ));
 
   const blockedDateStrings = new Set(
-    blockedDates.map(d => d.blockedDate.toISOString().split('T')[0])
+    blockedDates.map(d => d.blockedDate.toISOString().split('T')[0] || '')
   );
 
   // Get existing appointments count per day/time
@@ -127,8 +127,12 @@ export default defineEventHandler(async (event) => {
 
   const currentDate = new Date(startDate);
   while (currentDate <= endDate) {
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const dayOfWeek = dayNames[currentDate.getDay()];
+    const dateStr = currentDate.toISOString().split('T')[0] || '';
+    const dayOfWeek = dayNames[currentDate.getDay()] || '';
+    if (!dateStr || !dayOfWeek) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      continue;
+    }
 
     // Skip weekends if no slots configured
     if (dayOfWeek === 'saturday' || dayOfWeek === 'sunday') {

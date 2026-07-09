@@ -333,7 +333,15 @@ const dealer = computed(() => data.value?.dealer);
 const headerReviewsEnabled = ref(false);
 const headerReviewsSaving = ref(false);
 
-const { data: headerReviewsData } = await useFetch('/api/admin/settings/header-reviews');
+type HeaderReviewsResponse = {
+  settings?: {
+    enabled?: boolean;
+  };
+};
+
+const { data: headerReviewsData } = await useFetch<HeaderReviewsResponse>('/api/admin/settings/header-reviews', {
+  default: () => ({ settings: { enabled: false } }),
+});
 watchEffect(() => {
   headerReviewsEnabled.value = headerReviewsData.value?.settings?.enabled ?? false;
 });

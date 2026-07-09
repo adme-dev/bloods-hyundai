@@ -50,6 +50,13 @@ export default defineEventHandler(async (event) => {
     metadata: body.metadata || {},
   }).returning();
 
+  if (!newActivity) {
+    throw createError({
+      statusCode: 500,
+      message: 'Failed to create customer activity',
+    });
+  }
+
   // Update last contact/engagement date on retention profile
   const isContactActivity = ['call_outbound', 'call_inbound', 'email_sent', 'sms_sent', 'meeting'].includes(body.activityType);
 

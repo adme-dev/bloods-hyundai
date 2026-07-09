@@ -217,8 +217,25 @@ definePageMeta({
   middleware: 'auth',
 });
 
+type FormStatsEntry = {
+  isActive?: boolean;
+  total?: number;
+  weekly?: number;
+  weeklyChange?: number;
+  notifications?: {
+    admin: number;
+    customer: number;
+  };
+};
+
+type FormStatsResponse = {
+  formStats: Record<string, FormStatsEntry>;
+};
+
 // Fetch form stats from API
-const { data: statsData, refresh: refreshStats } = await useFetch('/api/admin/forms/stats');
+const { data: statsData, refresh: refreshStats } = await useFetch<FormStatsResponse>('/api/admin/forms/stats', {
+  default: () => ({ formStats: {} }),
+});
 
 // Form definitions with icons and colors
 const formDefinitions = [
@@ -349,7 +366,6 @@ const previewForm = (form: any) => {
   window.open(routes[form.slug] || '/', '_blank');
 };
 </script>
-
 
 
 

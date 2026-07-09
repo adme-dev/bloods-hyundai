@@ -29,7 +29,7 @@ const SOURCE_LABELS: Record<InboundLeadSource, string> = {
 export function listInboundLeadEmailAddresses(settings: Record<string, any>, domain: string | null): InboundLeadEmailSettings {
   const configured = settings?.marketing?.inboundLeadEmail || {};
   const configuredDomain = normalizeDomain(configured.domain || domain);
-  const addresses = Array.isArray(configured.addresses) ? configured.addresses : [];
+  const addresses: unknown[] = Array.isArray(configured.addresses) ? configured.addresses : [];
 
   return {
     domain: configuredDomain,
@@ -148,9 +148,9 @@ function stableAddressId(dealerSlug: string, source: InboundLeadSource) {
   return createHash('sha1').update(`${dealerSlug}:${source}`).digest('hex').slice(0, 16);
 }
 
-function normalizeAddress(address: Record<string, any>, domain: string | null): InboundLeadEmailAddress {
+function normalizeAddress(address: Record<string, unknown>, domain: string | null): InboundLeadEmailAddress {
   const source = isSource(address.source) ? address.source : 'other';
-  const localPart = slugify(address.localPart || buildLocalPart('dealer', source));
+  const localPart = slugify(String(address.localPart || buildLocalPart('dealer', source)));
   return {
     id: String(address.id || stableAddressId(localPart, source)),
     source,
@@ -163,7 +163,7 @@ function normalizeAddress(address: Record<string, any>, domain: string | null): 
   };
 }
 
-function isAddressLike(value: unknown): value is Record<string, any> {
+function isAddressLike(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object');
 }
 

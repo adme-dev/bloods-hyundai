@@ -160,7 +160,7 @@ export default defineEventHandler(async (event) => {
   
   try {
     // 1. Get dealer ID from runtime config or environment
-    const dealerApiKey = config.dealerApiKey || process.env.DEALER_API_KEY;
+    const dealerApiKey = String(config.dealerApiKey || process.env.DEALER_API_KEY || '');
     
     let dealer;
     
@@ -302,6 +302,13 @@ export default defineEventHandler(async (event) => {
         userAgent: userAgent || undefined,
       })
       .returning();
+
+    if (!enquiry) {
+      throw createError({
+        statusCode: 500,
+        message: 'Failed to create enquiry',
+      });
+    }
     
     console.log(`✅ [Submit Enquiry] Created enquiry ${enquiry.id} for ${body.firstName} ${body.lastName}`);
     
@@ -347,7 +354,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

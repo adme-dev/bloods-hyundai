@@ -477,7 +477,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Accessory, AccessoryPack, HyundaiModel } from '~/stores/accessories';
+import type { Accessory, AccessoryCatalogItem, AccessoryPack, HyundaiModel } from '~/stores/accessories';
 
 const accessoriesStore = useAccessoriesStore();
 const { siteName, siteUrl } = useSiteIdentity();
@@ -520,7 +520,7 @@ useSchemaOrg([
 
 // Modal state
 const showDetailModal = ref(false);
-const selectedAccessory = ref<Accessory | null>(null);
+const selectedAccessory = ref<AccessoryCatalogItem | null>(null);
 const showMobileFilters = ref(false);
 const showEnquiryModal = ref(false);
 
@@ -655,8 +655,8 @@ const changeModel = async () => {
   await navigateTo('/accessories');
 };
 
-const handleAddToCart = (accessory: Accessory) => {
-  accessoriesStore.addToCart(accessory, 'accessory');
+const handleAddToCart = (accessory: AccessoryCatalogItem) => {
+  accessoriesStore.addToCart(accessory, accessory.includedAccessories?.length ? 'pack' : 'accessory');
 };
 
 const handleAddPack = (pack: AccessoryPack) => {
@@ -669,8 +669,7 @@ const viewAccessoryDetails = (accessory: Accessory) => {
 };
 
 const viewPackDetails = (pack: AccessoryPack) => {
-  // For now, treat packs similarly to accessories
-  selectedAccessory.value = pack as unknown as Accessory;
+  selectedAccessory.value = pack;
   showDetailModal.value = true;
 };
 

@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   // TODAY'S OVERVIEW
   // ============================================================================
 
-  const [todayStats] = await db
+  const [todayStatsRow] = await db
     .select({
       total: sql<number>`count(*)`,
       pending: sql<number>`count(*) filter (where ${serviceAppointments.status} = 'pending')`,
@@ -47,12 +47,20 @@ export default defineEventHandler(async (event) => {
       gte(serviceAppointments.scheduledDate, todayStart),
       lte(serviceAppointments.scheduledDate, todayEnd)
     ));
+  const todayStats = todayStatsRow ?? {
+    total: 0,
+    pending: 0,
+    confirmed: 0,
+    inProgress: 0,
+    completed: 0,
+    cancelled: 0,
+  };
 
   // ============================================================================
   // THIS WEEK'S OVERVIEW
   // ============================================================================
 
-  const [weekStats] = await db
+  const [weekStatsRow] = await db
     .select({
       total: sql<number>`count(*)`,
       completed: sql<number>`count(*) filter (where ${serviceAppointments.status} = 'completed')`,
@@ -64,12 +72,17 @@ export default defineEventHandler(async (event) => {
       gte(serviceAppointments.scheduledDate, weekStart),
       lte(serviceAppointments.scheduledDate, weekEnd)
     ));
+  const weekStats = weekStatsRow ?? {
+    total: 0,
+    completed: 0,
+    revenue: 0,
+  };
 
   // ============================================================================
   // PENDING SERVICE ENQUIRIES (not yet converted to appointments)
   // ============================================================================
 
-  const [pendingEnquiries] = await db
+  const [pendingEnquiriesRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(enquiries)
     .where(and(
@@ -77,6 +90,7 @@ export default defineEventHandler(async (event) => {
       eq(enquiries.type, 'service'),
       eq(enquiries.status, 'new')
     ));
+  const pendingEnquiries = pendingEnquiriesRow ?? { count: 0 };
 
   // ============================================================================
   // TODAY'S APPOINTMENTS LIST

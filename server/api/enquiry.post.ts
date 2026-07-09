@@ -216,6 +216,13 @@ export default defineEventHandler(async (event) => {
         userAgent: userAgent || undefined,
       })
       .returning();
+
+    if (!enquiry) {
+      throw createError({
+        statusCode: 500,
+        message: 'Failed to create enquiry',
+      });
+    }
     
     // 6. Log activity
     await db.insert(enquiryActivityLog).values({
@@ -300,7 +307,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

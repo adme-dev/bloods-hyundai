@@ -17,7 +17,7 @@ const emits = defineEmits<{
       props.class,
     )"
     v-bind="props"
-    @update:model-value="emits('update:modelValue', $event)"
+    @update:model-value="emits('update:modelValue', $event ?? [])"
   >
     <SliderTrack class="relative h-2 w-full grow overflow-hidden rounded-full bg-gray-200">
       <SliderRange class="absolute h-full bg-[#001E50]" />
@@ -29,7 +29,6 @@ const emits = defineEmits<{
     />
   </SliderRoot>
 </template>
-
 
 
 

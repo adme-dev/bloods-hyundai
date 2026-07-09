@@ -62,11 +62,12 @@ export default defineEventHandler(async (event) => {
   const appointmentsByDate: Record<string, any[]> = {};
 
   for (const apt of appointments) {
-    const dateKey = apt.scheduledDate.toISOString().split('T')[0];
+    const dateKey = apt.scheduledDate.toISOString().split('T')[0] || '';
+    if (!dateKey) continue;
     if (!appointmentsByDate[dateKey]) {
       appointmentsByDate[dateKey] = [];
     }
-    appointmentsByDate[dateKey].push({
+    appointmentsByDate[dateKey]?.push({
       id: apt.id,
       title: `${apt.vehicleYear || ''} ${apt.vehicleMake} ${apt.vehicleModel}`.trim(),
       customer: `${apt.customerFirstName} ${apt.customerLastName}`,

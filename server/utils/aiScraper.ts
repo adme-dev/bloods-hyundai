@@ -239,7 +239,8 @@ function extractContentWithCheerio(html: string, slug: string): ExtractedContent
     const urls = [src];
     srcset.split(',').forEach(s => {
       const match = s.trim().match(/^(\S+)/);
-      if (match) urls.push(match[1]);
+      const matchedUrl = match?.[1];
+      if (matchedUrl) urls.push(matchedUrl);
     });
 
     urls.forEach(url => {
@@ -279,8 +280,9 @@ function extractContentWithCheerio(html: string, slug: string): ExtractedContent
     const srcset = $(source).attr('srcset') || '';
     srcset.split(',').forEach(s => {
       const match = s.trim().match(/^(\S+)/);
-      if (match && match[1].includes('/content/dam/hyundai')) {
-        const url = match[1];
+      const matchedUrl = match?.[1];
+      if (matchedUrl && matchedUrl.includes('/content/dam/hyundai')) {
+        const url = matchedUrl;
         if (!seenUrls.has(url) && !isOtherVehicle(url)) {
           seenUrls.add(url);
           const fullUrl = url.startsWith('http') ? url : `https://www.hyundai.com${url}`;

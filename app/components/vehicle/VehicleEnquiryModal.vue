@@ -431,6 +431,7 @@ import EmblaCarousel from 'embla-carousel';
 
 // Finance widget settings type
 type VehicleCondition = 'new' | 'used' | 'demo';
+type VehicleDisplayField = { displayValue?: Array<string | number>; value?: Array<string | number> } | string | number | null | undefined;
 
 interface FinanceWidgetSettings {
   success: boolean;
@@ -454,17 +455,17 @@ interface Vehicle {
   photo_count?: number;
   price?: number | string;
   perweek?: number;
-  condition?: { displayValue?: string[] } | string;
-  make?: { displayValue?: string[] } | string;
-  model?: { displayValue?: string[] } | string;
-  badge?: { displayValue?: string[] } | string;
-  year?: { displayValue?: string[] } | string;
-  variant?: { displayValue?: string[] } | string;
-  transmission?: { displayValue?: string[] } | string;
-  drivetrain?: { displayValue?: string[] } | string;
-  seats?: { displayValue?: string[] } | string;
+  condition?: VehicleDisplayField;
+  make?: VehicleDisplayField;
+  model?: VehicleDisplayField;
+  badge?: VehicleDisplayField;
+  year?: VehicleDisplayField;
+  variant?: VehicleDisplayField;
+  transmission?: VehicleDisplayField;
+  drivetrain?: VehicleDisplayField;
+  seats?: VehicleDisplayField;
   kms?: number;
-  odometer?: { displayValue?: string[]; value?: string[] } | number;
+  odometer?: VehicleDisplayField;
   [key: string]: any;
 }
 
@@ -581,11 +582,11 @@ const closeLightbox = () => {
 
 
 // Helper to get display value
-const getDisplay = (field: any): string => {
+const getDisplay = (field: VehicleDisplayField): string => {
   if (!field) return '';
   if (typeof field === 'string' || typeof field === 'number') return String(field);
-  if (Array.isArray(field?.displayValue)) return field.displayValue[0] || '';
-  if (Array.isArray(field?.value)) return field.value[0] || '';
+  if (Array.isArray(field?.displayValue)) return String(field.displayValue[0] || '');
+  if (Array.isArray(field?.value)) return String(field.value[0] || '');
   return '';
 };
 
@@ -719,16 +720,43 @@ const vehicleColour = computed(() => getDisplay(props.vehicle?.colour) || props.
 const vehicleDescription = computed(() => props.vehicle?.Comments || props.vehicle?.description || '');
 
 const vehicleKms = computed(() => {
-  const kms = props.vehicle?.kms || 
-              props.vehicle?.odometer?.value?.[0] || 
-              props.vehicle?.odometer?.displayValue?.[0] ||
-              props.vehicle?.odometer;
+  const odometer = props.vehicle?.odometer;
+  const odometerValue = typeof odometer === 'object' && odometer !== null
+    ? odometer.value?.[0] || odometer.displayValue?.[0]
+    : odometer;
+  const kms = props.vehicle?.kms ?? odometerValue;
   if (kms === 0) return '0 km';
   if (!kms) return '';
   const numKms = typeof kms === 'number' ? kms : parseFloat(String(kms));
   if (isNaN(numKms)) return '';
   return `${numKms.toLocaleString()} km`;
 });
+
+const vehicleYearNumber = (vehicle?: Vehicle | null) => {
+  const year = getDisplay(vehicle?.year);
+  const parsedYear = year ? parseInt(year, 10) : NaN;
+  return Number.isFinite(parsedYear) ? parsedYear : undefined;
+};
+
+const vehicleAnalyticsPayload = (vehicle?: Vehicle | null) => {
+  if (!vehicle) return undefined;
+  const parsedPrice = typeof vehicle.price === 'number'
+    ? vehicle.price
+    : parseFloat(String(vehicle.price || ''));
+
+  return {
+    stockid: vehicle.stockid,
+    identifier: vehicle.identifier,
+    make: getDisplay(vehicle.make),
+    model: getDisplay(vehicle.model),
+    badge: getDisplay(vehicle.badge),
+    variant: getDisplay(vehicle.variant),
+    year: getDisplay(vehicle.year),
+    price: Number.isFinite(parsedPrice) ? parsedPrice : undefined,
+    condition: getDisplay(vehicle.condition),
+    colour: getDisplay(vehicle.colour),
+  };
+};
 
 const vehiclePrice = computed(() => {
   const price = props.vehicle?.price;
@@ -888,7 +916,7 @@ const submitForm = async () => {
           make: getDisplay(vehicle?.make) || undefined,
           model: getDisplay(vehicle?.model) || undefined,
           variant: getDisplay(vehicle?.badge) || getDisplay(vehicle?.variant) || undefined,
-          year: vehicle?.year?.displayValue?.[0] ? parseInt(vehicle.year.displayValue[0]) : (vehicle?.year || undefined),
+          year: vehicleYearNumber(vehicle),
 
           // Specifications
           kms: vehicleKms.value || undefined,
@@ -921,7 +949,7 @@ const submitForm = async () => {
 
     // GA4 Analytics tracking
     trackEnquirySubmit({
-      vehicle: vehicle || undefined,
+      vehicle: vehicleAnalyticsPayload(vehicle),
       form_type: 'enquiry',
       has_trade_in: form.tradeIn,
       interested_in_finance: form.finance,

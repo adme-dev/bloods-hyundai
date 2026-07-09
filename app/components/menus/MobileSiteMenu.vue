@@ -325,12 +325,13 @@ const phoneFormatted = computed(() => phone.value.replace(/[^0-9]/g, ''));
 const serviceBookingUrl = computed(() => mainStore.site?.service_booking_url || '#');
 
 // Social links
-const social = computed(() => {
+const social = computed<Record<string, string> | null>(() => {
   const socialData = mainStore.site?.social;
-  if (!socialData || (Array.isArray(socialData) && socialData.length === 0)) {
+  if (!socialData || Array.isArray(socialData) || typeof socialData !== 'object') {
     return null;
   }
-  return socialData;
+  const entries = Object.entries(socialData).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0);
+  return entries.length ? Object.fromEntries(entries) : null;
 });
 
 // Footer links from site config (sitelinks.footer) - same as FooterLinks.vue
@@ -1025,7 +1026,6 @@ $hyundai-sand: rgb(246, 243, 242);
   }
 }
 </style>
-
 
 
 

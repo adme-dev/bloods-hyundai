@@ -41,7 +41,8 @@ export const useOffersStore = defineStore('offers', () => {
       if (!grouped[offer.model]) {
         grouped[offer.model] = [];
       }
-      grouped[offer.model].push(offer);
+      const group = grouped[offer.model];
+      if (group) group.push(offer);
     });
     return grouped;
   });

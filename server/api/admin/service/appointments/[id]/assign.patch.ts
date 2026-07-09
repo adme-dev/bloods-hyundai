@@ -88,6 +88,13 @@ export default defineEventHandler(async (event) => {
     .where(eq(serviceAppointments.id, appointmentId))
     .returning();
 
+  if (!updated) {
+    throw createError({
+      statusCode: 404,
+      message: 'Appointment not found',
+    });
+  }
+
   // Get updated technician/advisor names for response
   let technicianName = null;
   let advisorName = null;

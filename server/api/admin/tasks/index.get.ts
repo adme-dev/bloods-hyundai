@@ -108,10 +108,11 @@ export default defineEventHandler(async (event) => {
   });
 
   // Get total count
-  const [{ count }] = await db
+  const [countRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(customerTasks)
     .where(and(...conditions));
+  const count = countRow?.count ?? 0;
 
   // Get stats
   const now = new Date();
@@ -120,7 +121,7 @@ export default defineEventHandler(async (event) => {
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   // Overdue = active task due before today's midnight (matches the dashboard).
-  const [overdueStats] = await db
+  const [overdueStatsRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(customerTasks)
     .where(and(
@@ -130,7 +131,7 @@ export default defineEventHandler(async (event) => {
     ));
 
   // Due today = active task due today (mutually exclusive with overdue).
-  const [todayStats] = await db
+  const [todayStatsRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(customerTasks)
     .where(and(
@@ -140,7 +141,7 @@ export default defineEventHandler(async (event) => {
       notInArray(customerTasks.status, ACTIVE_TASK_STATUSES_EXCLUDED),
     ));
 
-  const [myTasksStats] = await db
+  const [myTasksStatsRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(customerTasks)
     .where(and(
@@ -148,6 +149,9 @@ export default defineEventHandler(async (event) => {
       eq(customerTasks.assignedTo, userId),
       notInArray(customerTasks.status, ACTIVE_TASK_STATUSES_EXCLUDED),
     ));
+  const overdueStats = overdueStatsRow ?? { count: 0 };
+  const todayStats = todayStatsRow ?? { count: 0 };
+  const myTasksStats = myTasksStatsRow ?? { count: 0 };
 
   return {
     tasks,

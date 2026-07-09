@@ -80,8 +80,18 @@ useSiteMeta({
 const route = useRoute();
 const sessionId = computed(() => route.query.session_id as string);
 
+type PaymentSessionData = {
+  success: boolean;
+  status?: string;
+  vehicleId?: string;
+  description?: string;
+  customerEmail?: string | null;
+  amountTotal?: number;
+  error?: string;
+};
+
 // Fetch session data
-const { data: sessionData, pending, error } = await useFetch('/api/stripe/retrieve-session', {
+const { data: sessionData, pending, error } = await useFetch<PaymentSessionData>('/api/stripe/retrieve-session', {
   method: 'POST',
   body: {
     id: sessionId.value,
@@ -148,7 +158,6 @@ if (process.client && sessionData.value) {
   font-size: 1.125rem;
 }
 </style>
-
 
 
 

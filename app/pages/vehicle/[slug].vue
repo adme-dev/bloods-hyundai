@@ -284,7 +284,7 @@ const closeEnquiryModal = () => {
 const slug = computed(() => route.params.slug as string);
 
 // Fetch vehicle data from the new API endpoint
-const { data: apiResponse, pending, error } = await useFetch(() => `/api/vehicle/${slug.value}`, {
+const { data: apiResponse, pending, error } = await useFetch<any>(() => `/api/vehicle/${slug.value}`, {
   key: `vehicle-${slug.value}`,
   watch: [slug],
 });

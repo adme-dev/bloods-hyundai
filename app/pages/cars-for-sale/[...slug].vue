@@ -270,7 +270,7 @@ const titleCase = (str: string) => {
 
 // SEO
 useSiteMeta({
-  title: pageTitle,
+  title: () => pageTitle.value,
   description: () => `Browse ${totalCount.value} ${condition.value || ''} ${make.value || ''} ${model.value || ''} cars for sale at ${siteName.value}. Competitive prices and finance available.`,
 });
 </script>
@@ -314,7 +314,6 @@ useSiteMeta({
   line-height: 1.3;
 }
 </style>
-
 
 
 

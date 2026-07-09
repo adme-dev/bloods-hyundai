@@ -252,11 +252,12 @@ const getFieldValue = (vehicle: any, key: string) => {
 };
 
 const clearAllFavorites = () => {
-  if (process.client && window.UIkit) {
-    window.UIkit.modal.confirm('Are you sure you want to remove all saved vehicles?').then(
+  const uikit = process.client ? window.UIkit : undefined;
+  if (uikit) {
+    uikit.modal.confirm('Are you sure you want to remove all saved vehicles?').then(
       () => {
         comparisonIds.value = [];
-        window.UIkit.notification({
+        uikit.notification({
           message: 'All saved vehicles removed',
           status: 'success',
           pos: 'top-center',
@@ -287,7 +288,6 @@ const closeEnquiryModal = () => {
   background: linear-gradient(135deg, #001E50 0%, #1a4a8a 100%);
 }
 </style>
-
 
 
 

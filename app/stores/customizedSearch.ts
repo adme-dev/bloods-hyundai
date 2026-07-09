@@ -122,7 +122,7 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
       }
     });
 
-    const makes = allMakesAndModels.value.makes.map((make) => ({
+    const makes = allMakesAndModels.value.makes.map((make: { value: string; displayValue: string }) => ({
       ...make,
       count: makeCounts.get(make.value.toLowerCase()) || makeCounts.get(make.displayValue.toLowerCase()) || 0,
     }));
@@ -252,7 +252,7 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     return filters.value.make
       .map((makeValue) => {
         const make = allMakesAndModels.value.makes.find(
-          (m) => m.value.toLowerCase() === makeValue.toLowerCase()
+          (m: { value: string; displayValue: string }) => m.value.toLowerCase() === makeValue.toLowerCase()
         );
         return make ? { value: make.value, displayValue: make.displayValue } : null;
       })
@@ -463,7 +463,6 @@ export const useCustomizedSearchStore = defineStore('customizedSearch', () => {
     getModelBodyType,
   };
 });
-
 
 
 

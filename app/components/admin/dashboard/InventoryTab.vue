@@ -268,10 +268,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/com
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
-import { formatCurrency } from '~/utils/dashboardFormat';
+import { formatDashboardCurrency } from '~/utils/dashboardFormat';
 import type { DashboardData } from './types';
 
 const props = defineProps<{ data: DashboardData }>();
+
+const formatCurrency = formatDashboardCurrency;
 
 function getModelInterestWidth(enquiries: number): number {
   if (!props.data?.vehicleInterest?.length) return 0;

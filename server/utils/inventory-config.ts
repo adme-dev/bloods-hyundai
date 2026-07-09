@@ -57,8 +57,9 @@ function parseCsv(value: string | undefined): string[] {
 }
 
 function parseFeedSources(value: string | undefined): InventoryFeedSource[] {
-  return parseCsv(value).map((entry, index) => {
+  return parseCsv(value).flatMap((entry, index) => {
     const [url, rawRole] = entry.split('|').map((part) => part.trim());
+    if (!url) return [];
     const role = rawRole === 'primary' || rawRole === 'group' || rawRole === 'secondary'
       ? rawRole
       : index === 0
@@ -67,8 +68,8 @@ function parseFeedSources(value: string | undefined): InventoryFeedSource[] {
           ? 'group'
           : 'secondary';
 
-    return { url, role };
-  }).filter((source) => Boolean(source.url));
+    return [{ url, role }];
+  });
 }
 
 export function getInventoryFeedSources(dealerSlug: string): InventoryFeedSource[] {

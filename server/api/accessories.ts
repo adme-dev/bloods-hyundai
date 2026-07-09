@@ -120,7 +120,9 @@ export default defineEventHandler(async (event) => {
       success: false,
       error: 'Accessories group ID is required. Use ?groupId=xxx or ?model=model-name',
       hint: 'The groupId is a CMS-specific ID. You can also provide a model name (e.g., ?model=tucson) and we will look it up.',
-      knownModels: Object.keys(ACCESSORIES_GROUP_IDS).filter(k => !ACCESSORIES_GROUP_IDS[k].includes('_GROUP_ID')),
+      knownModels: Object.entries(ACCESSORIES_GROUP_IDS)
+        .filter(([, value]) => !value.includes('_GROUP_ID'))
+        .map(([key]) => key),
       accessories: [],
       accessoryPacks: [],
     };
@@ -280,7 +282,6 @@ export default defineEventHandler(async (event) => {
     };
   }
 });
-
 
 
 

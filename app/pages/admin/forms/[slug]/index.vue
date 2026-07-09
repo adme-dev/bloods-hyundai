@@ -328,7 +328,7 @@
               <div class="flex flex-1 items-start gap-3 min-w-0">
                 <Switch
                   :checked="rule.enabled"
-                  @update:checked="(value) => toggleRuleEnabled(rule, value)"
+                  @update:checked="(value: boolean | 'indeterminate') => handleRuleCheckedChange(rule, value)"
                   class="shrink-0"
                 />
                 <div>
@@ -535,38 +535,102 @@ const formConfig = computed(() => formConfigs[slug] || { name: slug, description
 const activeTab = ref(getInitialTab());
 
 // Sync tab with URL
-watch(activeTab, (newTab) => {
+watch(activeTab, (newTab: string) => {
   router.replace({ query: { ...route.query, tab: newTab } });
 });
 const saving = ref(false);
 const showNotificationEditor = ref(false);
-const editingNotification = ref<any>(null);
+const editingNotification = ref<NotificationConfig | null>(null);
+
+type FormSettings = {
+  isActive: boolean;
+  title: string;
+  description: string;
+  saveToDatabase: boolean;
+  requireAllFields: boolean;
+  antiSpam: boolean;
+  defaultAssignee: string;
+};
+
+type ConfirmationSettings = {
+  type: string;
+  title: string;
+  message: string;
+  buttonText: string;
+  buttonLink: string;
+  redirectUrl: string;
+};
+
+type NotificationConfig = Record<string, unknown> & { id?: string; name?: string };
+
+type StaffMember = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+};
+
+type RoutingCondition = {
+  field: string;
+  operator: string;
+  value: string;
+};
+
+type RoutingRule = {
+  id?: string;
+  name: string;
+  enabled: boolean;
+  conditions: RoutingCondition[];
+  actions: {
+    send_to: string[];
+    priority: string;
+    assign_to?: string;
+  };
+};
+
+type FormDataResponse = {
+  settings?: Partial<FormSettings>;
+  notifications?: NotificationConfig[];
+  confirmation?: Partial<ConfirmationSettings>;
+};
+
+type StaffResponse = {
+  staff: StaffMember[];
+};
+
+type RoutingResponse = {
+  rules: RoutingRule[];
+};
 
 // Fetch form settings
-const { data: formData, pending: formLoading, refresh: refreshFormData } = await useFetch(`/api/admin/forms/${slug}`);
+const { data: formData, pending: formLoading, refresh: refreshFormData } = await useFetch<FormDataResponse>(`/api/admin/forms/${slug}`);
 
 // Fetch staff for assignment dropdown
-const { data: staffData } = await useFetch('/api/admin/staff');
-const staffMembers = computed(() => staffData.value?.staff || []);
+const { data: staffData } = await useFetch<StaffResponse>('/api/admin/staff', {
+  default: () => ({ staff: [] }),
+});
+const staffMembers = computed<StaffMember[]>(() => staffData.value?.staff || []);
 
 // Fetch routing rules
-const { data: routingData, refresh: refreshRouting } = await useFetch('/api/admin/settings/routing');
+const { data: routingData, refresh: refreshRouting } = await useFetch<RoutingResponse>('/api/admin/settings/routing', {
+  default: () => ({ rules: [] }),
+});
 
 // Filter rules that apply to this form type
 const formRules = computed(() => {
   const rules = routingData.value?.rules || [];
-  return rules.filter((rule: any) => 
-    rule.conditions.some((c: any) => c.field === 'type' && c.value === slug) ||
+  return rules.filter((rule) =>
+    rule.conditions.some((c) => c.field === 'type' && c.value === slug) ||
     (rule.conditions.length === 0) // Rules with no conditions apply to all
   );
 });
 
 // Routing rule management
 const showRoutingEditor = ref(false);
-const editingRule = ref<any>(null);
+const editingRule = ref<RoutingRule | null>(null);
 
 const findStaffName = (staffId: string) => {
-  const staff = staffMembers.value.find((s: any) => s.id === staffId);
+  const staff = staffMembers.value.find((s) => s.id === staffId);
   return staff ? `${staff.firstName} ${staff.lastName}` : staffId;
 };
 
@@ -612,17 +676,17 @@ const addRoutingRule = () => {
   showRoutingEditor.value = true;
 };
 
-const editRoutingRule = (rule: any) => {
+const editRoutingRule = (rule: RoutingRule) => {
   editingRule.value = rule;
   showRoutingEditor.value = true;
 };
 
-const toggleRuleEnabled = async (rule: any, enabled: boolean) => {
+const toggleRuleEnabled = async (rule: RoutingRule, enabled: boolean) => {
   try {
-    await $fetch('/api/admin/settings/routing', {
+    await $fetch('/api/admin/settings/routing' as string, {
       method: 'PUT',
       body: { 
-        rules: routingData.value?.rules.map((r: any) => 
+        rules: (routingData.value?.rules || []).map((r) =>
           r.id === rule.id ? { ...r, enabled } : r
         )
       },
@@ -633,12 +697,22 @@ const toggleRuleEnabled = async (rule: any, enabled: boolean) => {
   }
 };
 
+const handleRuleCheckedChange = (rule: RoutingRule, value: boolean | string) => {
+  return toggleRuleEnabled(rule, value === true);
+};
+
 const moveRuleUp = async (index: number) => {
   if (index <= 0) return;
   const allRules = [...(routingData.value?.rules || [])];
-  const ruleIndex = allRules.findIndex((r: any) => r.id === formRules.value[index].id);
+  const currentRule = formRules.value[index];
+  if (!currentRule) return;
+  const ruleIndex = allRules.findIndex((r) => r.id === currentRule.id);
   if (ruleIndex > 0) {
-    [allRules[ruleIndex - 1], allRules[ruleIndex]] = [allRules[ruleIndex], allRules[ruleIndex - 1]];
+    const previous = allRules[ruleIndex - 1];
+    const current = allRules[ruleIndex];
+    if (!previous || !current) return;
+    allRules[ruleIndex - 1] = current;
+    allRules[ruleIndex] = previous;
     await saveRulesOrder(allRules);
   }
 };
@@ -646,16 +720,22 @@ const moveRuleUp = async (index: number) => {
 const moveRuleDown = async (index: number) => {
   if (index >= formRules.value.length - 1) return;
   const allRules = [...(routingData.value?.rules || [])];
-  const ruleIndex = allRules.findIndex((r: any) => r.id === formRules.value[index].id);
+  const currentRule = formRules.value[index];
+  if (!currentRule) return;
+  const ruleIndex = allRules.findIndex((r) => r.id === currentRule.id);
   if (ruleIndex < allRules.length - 1) {
-    [allRules[ruleIndex], allRules[ruleIndex + 1]] = [allRules[ruleIndex + 1], allRules[ruleIndex]];
+    const current = allRules[ruleIndex];
+    const next = allRules[ruleIndex + 1];
+    if (!current || !next) return;
+    allRules[ruleIndex] = next;
+    allRules[ruleIndex + 1] = current;
     await saveRulesOrder(allRules);
   }
 };
 
-const saveRulesOrder = async (rules: any[]) => {
+const saveRulesOrder = async (rules: RoutingRule[]) => {
   try {
-    await $fetch('/api/admin/settings/routing', {
+    await $fetch('/api/admin/settings/routing' as string, {
       method: 'PUT',
       body: { rules },
     });
@@ -665,13 +745,13 @@ const saveRulesOrder = async (rules: any[]) => {
   }
 };
 
-const deleteRoutingRule = async (rule: any) => {
+const deleteRoutingRule = async (rule: RoutingRule) => {
   if (!confirm(`Delete rule "${rule.name}"?`)) return;
   try {
-    await $fetch('/api/admin/settings/routing', {
+    await $fetch('/api/admin/settings/routing' as string, {
       method: 'PUT',
       body: { 
-        rules: routingData.value?.rules.filter((r: any) => r.id !== rule.id)
+        rules: (routingData.value?.rules || []).filter((r) => r.id !== rule.id)
       },
     });
     await refreshRouting();
@@ -680,13 +760,13 @@ const deleteRoutingRule = async (rule: any) => {
   }
 };
 
-const handleSaveRoutingRule = async (ruleData: any) => {
+const handleSaveRoutingRule = async (ruleData: RoutingRule) => {
   try {
     const allRules = [...(routingData.value?.rules || [])];
     
     if (editingRule.value?.id) {
       // Update existing
-      const index = allRules.findIndex((r: any) => r.id === editingRule.value.id);
+      const index = allRules.findIndex((r) => r.id === editingRule.value?.id);
       if (index >= 0) {
         allRules[index] = { ...ruleData, id: editingRule.value.id };
       }
@@ -695,7 +775,7 @@ const handleSaveRoutingRule = async (ruleData: any) => {
       allRules.push({ ...ruleData, id: `rule-${Date.now()}` });
     }
     
-    await $fetch('/api/admin/settings/routing', {
+    await $fetch('/api/admin/settings/routing' as string, {
       method: 'PUT',
       body: { rules: allRules },
     });
@@ -718,7 +798,7 @@ const settings = ref({
 });
 
 // Notifications state
-const notifications = ref<any[]>([]);
+const notifications = ref<NotificationConfig[]>([]);
 
 // Confirmation state
 const confirmation = ref({
@@ -786,7 +866,7 @@ const saveSettings = async () => {
   saveError.value = '';
   
   try {
-    const result = await $fetch(`/api/admin/forms/${slug}`, {
+    const result = await $fetch(`/api/admin/forms/${slug}` as string, {
       method: 'PUT',
       body: {
         settings: {
@@ -818,30 +898,30 @@ const addNotification = () => {
   showNotificationEditor.value = true;
 };
 
-const editNotification = (notification: any) => {
+const editNotification = (notification: NotificationConfig) => {
   editingNotification.value = notification;
   showNotificationEditor.value = true;
 };
 
-const duplicateNotification = (notification: any) => {
+const duplicateNotification = (notification: NotificationConfig) => {
   const newNotification = {
     ...notification,
     id: `notif-${Date.now()}`,
-    name: `${notification.name} (Copy)`,
+    name: `${notification.name || 'Notification'} (Copy)`,
   };
   notifications.value.push(newNotification);
 };
 
-const deleteNotification = (notification: any) => {
+const deleteNotification = (notification: NotificationConfig) => {
   if (confirm(`Delete "${notification.name}"?`)) {
-    notifications.value = notifications.value.filter((n: any) => n.id !== notification.id);
+    notifications.value = notifications.value.filter((n) => n.id !== notification.id);
   }
 };
 
-const handleSaveNotification = async (notificationData: any) => {
+const handleSaveNotification = async (notificationData: NotificationConfig) => {
   // Update local state
   if (editingNotification.value) {
-    const index = notifications.value.findIndex((n: any) => n.id === editingNotification.value.id);
+    const index = notifications.value.findIndex((n) => n.id === editingNotification.value?.id);
     if (index >= 0) {
       notifications.value[index] = { ...notificationData, id: editingNotification.value.id };
     }
@@ -857,13 +937,6 @@ const handleSaveNotification = async (notificationData: any) => {
   await saveSettings();
 };
 </script>
-
-
-
-
-
-
-
 
 
 

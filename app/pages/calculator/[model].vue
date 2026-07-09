@@ -817,7 +817,8 @@ const { data: variantPricingResponse, pending: pricingLoading, execute: fetchVar
     if (!selectedVariant.value?.id || !variantPricingParams.value) {
       return Promise.resolve(null);
     }
-    return $fetch('/api/variant-price', {
+    const fetchJson = $fetch as <T = any>(request: string, opts?: Record<string, unknown>) => Promise<T>;
+    return fetchJson('/api/variant-price', {
       query: variantPricingParams.value,
     });
   },

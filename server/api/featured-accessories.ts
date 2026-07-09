@@ -4,6 +4,45 @@
  */
 
 // Sample models to fetch accessories from (ones we know have accessories)
+type FeaturedModel = { name: string; groupId: string };
+
+type HyundaiAccessory = {
+  accessoryId?: string | number;
+  id?: string | number;
+  partName?: string;
+  name?: string;
+  description?: string;
+  rrpIncFitment?: string | number | null;
+  price?: string | number | null;
+  category?: string;
+  image?: string;
+  isFeature?: boolean;
+};
+
+type HyundaiAccessoriesResponse = {
+  accessories?: HyundaiAccessory[];
+};
+
+type FeaturedAccessory = {
+  id?: string | number;
+  name?: string;
+  description?: string;
+  price: number;
+  category?: string;
+  image: string | null;
+  isPopular: boolean;
+  modelName: string;
+  modelSlug: string;
+};
+
+type FeaturedAccessoriesResponse = {
+  success: boolean;
+  accessories: FeaturedAccessory[];
+  error?: string;
+  totalAvailable?: number;
+  modelsUsed?: string[];
+};
+
 const FEATURED_MODELS = [
   { name: 'Tucson', groupId: '990EEC2C-4AFE-4AD2-B016-73BCD2EB5B44' },
   { name: 'Kona', groupId: '9F6AA9F2-17C6-4148-B47B-1054467C933B' },
@@ -28,16 +67,20 @@ const shuffleArray = <T>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    const current = shuffled[i];
+    const swap = shuffled[j];
+    if (current === undefined || swap === undefined) continue;
+    shuffled[i] = swap;
+    shuffled[j] = current;
   }
   return shuffled;
 };
 
-async function fetchAccessoriesForModel(model: { name: string; groupId: string }) {
+async function fetchAccessoriesForModel(model: FeaturedModel): Promise<FeaturedAccessory[]> {
   try {
     const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/accessories?groupId=${model.groupId}`;
 
-    const data = await $fetch<any>(apiUrl, {
+    const data = await $fetch<HyundaiAccessoriesResponse>(apiUrl, {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
@@ -51,11 +94,11 @@ async function fetchAccessoriesForModel(model: { name: string; groupId: string }
     }
 
     return data.accessories
-      .filter((acc: any) => {
+      .filter((acc: HyundaiAccessory) => {
         const price = parsePrice(acc.rrpIncFitment) || parsePrice(acc.price);
         return price !== null && price > 0 && acc.image;
       })
-      .map((acc: any) => ({
+      .map((acc: HyundaiAccessory): FeaturedAccessory => ({
         id: acc.accessoryId || acc.id,
         name: acc.partName || acc.name,
         description: acc.description,
@@ -72,7 +115,7 @@ async function fetchAccessoriesForModel(model: { name: string; groupId: string }
   }
 }
 
-export default defineCachedEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event): Promise<FeaturedAccessoriesResponse> => {
   const query = getQuery(event);
   const limit = parseInt(query.limit as string) || 8;
 
@@ -81,7 +124,7 @@ export default defineCachedEventHandler(async (event) => {
     const shuffledModels = shuffleArray(FEATURED_MODELS);
     const selectedModels = shuffledModels.slice(0, 3);
 
-    const allAccessories = (await Promise.all(selectedModels.map(fetchAccessoriesForModel))).flat();
+    const allAccessories: FeaturedAccessory[] = (await Promise.all(selectedModels.map(fetchAccessoriesForModel))).flat();
 
     if (allAccessories.length === 0) {
       return {
@@ -92,14 +135,14 @@ export default defineCachedEventHandler(async (event) => {
     }
 
     // Prioritize popular items, then shuffle
-    const popular = allAccessories.filter(a => a.isPopular);
-    const regular = allAccessories.filter(a => !a.isPopular);
+    const popular = allAccessories.filter((a: FeaturedAccessory) => a.isPopular);
+    const regular = allAccessories.filter((a: FeaturedAccessory) => !a.isPopular);
 
     // Take some popular ones first, then fill with regular
     const popularCount = Math.min(Math.ceil(limit / 2), popular.length);
     const regularCount = limit - popularCount;
 
-    const selectedAccessories = [
+    const selectedAccessories: FeaturedAccessory[] = [
       ...shuffleArray(popular).slice(0, popularCount),
       ...shuffleArray(regular).slice(0, regularCount),
     ];

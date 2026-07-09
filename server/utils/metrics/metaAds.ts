@@ -60,8 +60,9 @@ export async function fetchMetaDaily(adAccountId: string, range: DateRange): Pro
   }).toString();
 
   let guard = 0;
+  const fetchJson = $fetch as <T>(request: string, opts?: Record<string, unknown>) => Promise<T>;
   while (url && guard < 20) {
-    const res: { data?: unknown[]; paging?: { next?: string } } = await $fetch(url, {
+    const res: { data?: unknown[]; paging?: { next?: string } } = await fetchJson<{ data?: unknown[]; paging?: { next?: string } }>(url, {
       timeout: 30_000,
       headers: { Authorization: `Bearer ${token}` },
     });

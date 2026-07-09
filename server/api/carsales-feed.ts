@@ -10,6 +10,36 @@
 import { getInventoryFeedSources, type InventoryFeedSource } from '../utils/inventory-config';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
 
+type FeedDisplayField = {
+  value?: string[];
+  displayValue?: string[];
+  displayMake?: Array<{ displayValue?: string[] }>;
+  displayBody?: unknown[];
+};
+
+type FeedVehicle = Record<string, unknown> & {
+  identifier?: string | number;
+  id?: string | number;
+  stockid?: string | number;
+  title?: string;
+  slug?: string;
+  price?: number;
+  model?: FeedDisplayField;
+  condition?: FeedDisplayField;
+  address?: { suburb?: string };
+  suburb?: unknown;
+  perweek?: number;
+  stock_special?: unknown;
+};
+
+type FeedResponse = {
+  source: InventoryFeedSource;
+  data: unknown[];
+};
+
+const isFeedVehicle = (value: unknown): value is FeedVehicle =>
+  Boolean(value && typeof value === 'object' && !Array.isArray(value));
+
 // Helper functions
 const capitalize = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
 const roundToTen = (num: number) => Math.round(num / 10) * 10;
@@ -105,7 +135,7 @@ async function buildFeedSource(dealerSlug: string) {
 
   const PER_URL_DEADLINE_MS = 6000;
 
-  const fetchOne = async (source: InventoryFeedSource, index: number): Promise<any[]> => {
+  const fetchOne = async (source: InventoryFeedSource, index: number): Promise<unknown[]> => {
     const controller = new AbortController();
     const abortTimer = setTimeout(() => controller.abort(), PER_URL_DEADLINE_MS);
     const startedAt = Date.now();
@@ -116,7 +146,7 @@ async function buildFeedSource(dealerSlug: string) {
         retry: 0,
       });
 
-      let data: any;
+      let data: unknown;
       try {
         data = typeof rawResponse === 'string' ? JSON.parse(rawResponse) : rawResponse;
       } catch (parseError: any) {
@@ -144,16 +174,21 @@ async function buildFeedSource(dealerSlug: string) {
     console.log('[Carsales Feed] Fetching sources for dealer:', dealerSlug, sources.map((source) => source.role));
 
     const settled = await Promise.allSettled(sources.map((source, index) => fetchOne(source, index)));
-    const responses = settled.map((r, index) => ({
-      source: sources[index],
-      data: r.status === 'fulfilled' ? r.value : [],
-    }));
+    const responses = settled
+      .map((r, index) => {
+        const source = sources[index];
+        return source ? {
+          source,
+          data: r.status === 'fulfilled' ? r.value : [],
+        } : null;
+      })
+      .filter((response): response is FeedResponse => response !== null);
     const successfulBuckets = responses.filter((response) => response.data.length > 0).length;
 
     console.log('[Carsales Feed] Received responses:', responses.map(response => response.data.length));
 
-    const uniqueIds = new Set();
-    const vehicles: any[] = [];
+    const uniqueIds = new Set<string | number>();
+    const vehicles: FeedVehicle[] = [];
 
     responses.forEach(({ data, source }, sourceIndex) => {
       if (!Array.isArray(data)) {
@@ -163,7 +198,12 @@ async function buildFeedSource(dealerSlug: string) {
       
       console.log(`[Carsales Feed] Processing source ${sourceIndex} (${source.role}): ${data.length} vehicles`);
       
-      for (const vehicle of data) {
+      for (const rawVehicle of data) {
+        if (!isFeedVehicle(rawVehicle)) {
+          continue;
+        }
+
+        const vehicle = rawVehicle;
         // Use identifier as the unique ID (not vehicle.id)
         const vehicleId = vehicle.identifier || vehicle.id || vehicle.stockid;
         if (!vehicleId) {
@@ -172,11 +212,11 @@ async function buildFeedSource(dealerSlug: string) {
         }
         if (uniqueIds.has(vehicleId)) continue;
 
-        const isHyundai = vehicle.model?.displayMake?.some((makes: any) =>
+        const isHyundai = Boolean(vehicle.model?.displayMake?.some((makes) =>
           makes?.displayValue?.some((make: string) =>
             make?.toLowerCase().includes('hyundai')
           )
-        );
+        ));
 
         const conditionValues = vehicle.condition?.value || [];
         const isDemo = conditionValues.some((value: string) => value.toLowerCase().includes('demo'));
@@ -240,7 +280,9 @@ async function buildFeedSource(dealerSlug: string) {
     const stockSpecialCount = 7;
     const startIndex = Math.max(vehicles.length - stockSpecialCount, 0);
     for (let i = startIndex; i < vehicles.length; i++) {
-      vehicles[i].stock_special = {
+      const vehicle = vehicles[i];
+      if (!vehicle) continue;
+      vehicle.stock_special = {
         value: ["stock-special"],
         displayValue: ["STOCK SPECIAL"]
       };

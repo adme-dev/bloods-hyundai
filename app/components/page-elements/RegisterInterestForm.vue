@@ -124,7 +124,7 @@
             <Checkbox
               id="testDrive"
               :checked="form.testDrive"
-              @update:checked="form.testDrive = $event"
+              @update:checked="form.testDrive = $event === true"
             />
             <Label for="testDrive" class="font-normal cursor-pointer">
               Booking a test drive
@@ -135,7 +135,7 @@
             <Checkbox
               id="financeInterest"
               :checked="form.financeInterest"
-              @update:checked="form.financeInterest = $event"
+              @update:checked="form.financeInterest = $event === true"
             />
             <Label for="financeInterest" class="font-normal cursor-pointer">
               Finance options
@@ -146,7 +146,7 @@
             <Checkbox
               id="tradeIn"
               :checked="form.tradeIn"
-              @update:checked="form.tradeIn = $event"
+              @update:checked="form.tradeIn = $event === true"
             />
             <Label for="tradeIn" class="font-normal cursor-pointer">
               Trading in my current vehicle

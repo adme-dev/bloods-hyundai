@@ -11,6 +11,7 @@ function parseDate(dateStr: string | Date, boundary: 'start' | 'end' = 'start'):
   
   if (match) {
     const [, day, month, year] = match;
+    if (!day || !month || !year) return null;
     const parsed = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     if (boundary === 'end') {
       parsed.setHours(23, 59, 59, 999);
@@ -93,7 +94,6 @@ export function getRelativeTime(date: string | Date): string {
   if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
   return 'Just now';
 }
-
 
 
 

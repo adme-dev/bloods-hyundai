@@ -833,21 +833,65 @@ export default defineEventHandler(async (event) => {
   // Wait for catalog data
   const [catalogData, offersData] = await Promise.all([catalogPromise, offersPromise]);
 
+  const todayCount = Number(todayStats?.count || 0);
+  const yesterdayCount = Number(yesterdayStats?.count || 0);
+  const thisWeekCount = Number(thisWeekStats?.count || 0);
+  const lastWeekCount = Number(lastWeekStats?.count || 0);
+  const safeResponseMetrics = responseMetrics ?? {
+    avgResponseHours: 0,
+    medianResponseHours: 0,
+    respondedWithin1h: 0,
+    respondedWithin24h: 0,
+    totalContacted: 0,
+  };
+  const safeChannelSummary = channelSummary ?? {
+    organicTotal: 0,
+    organicConverted: 0,
+    paidTotal: 0,
+    paidConverted: 0,
+    directTotal: 0,
+    directConverted: 0,
+    referralTotal: 0,
+    referralConverted: 0,
+    emailTotal: 0,
+    emailConverted: 0,
+  };
+  const safeMonthlySalesMetrics = monthlySalesMetrics ?? {
+    totalVehicleEnquiries: 0,
+    convertedSales: 0,
+    withFinanceInterest: 0,
+    withTestDrive: 0,
+    withAccessories: 0,
+    totalAccessoriesValue: 0,
+  };
+  const safeLastMonthSalesMetrics = lastMonthSalesMetrics ?? {
+    totalVehicleEnquiries: 0,
+    convertedSales: 0,
+  };
+  const safeConversionFunnel = conversionFunnel ?? {
+    totalLeads: 0,
+    contacted: 0,
+    qualified: 0,
+    testDriveBooked: 0,
+    financeApplied: 0,
+    converted: 0,
+  };
+
   // Calculate week-over-week change
-  const weeklyChange = lastWeekStats.count > 0
-    ? Math.round(((Number(thisWeekStats.count) - Number(lastWeekStats.count)) / Number(lastWeekStats.count)) * 100)
+  const weeklyChange = lastWeekCount > 0
+    ? Math.round(((thisWeekCount - lastWeekCount) / lastWeekCount) * 100)
     : 0;
 
-  const dailyChange = yesterdayStats.count > 0
-    ? Math.round(((Number(todayStats.count) - Number(yesterdayStats.count)) / Number(yesterdayStats.count)) * 100)
+  const dailyChange = yesterdayCount > 0
+    ? Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100)
     : 0;
 
   return {
     overview: {
       total: Number(totalStats.total),
-      newToday: Number(todayStats.count),
+      newToday: todayCount,
       dailyChange,
-      thisWeek: Number(thisWeekStats.count),
+      thisWeek: thisWeekCount,
       weeklyChange,
       pipeline: {
         // Canonical funnel keys consumed by the dashboard pipeline card.
@@ -893,13 +937,13 @@ export default defineEventHandler(async (event) => {
       testDrive: Number(d.testDrive),
     })),
     responseMetrics: {
-      avgHours: responseMetrics.avgResponseHours ? Math.round(Number(responseMetrics.avgResponseHours) * 10) / 10 : null,
-      medianHours: responseMetrics.medianResponseHours ? Math.round(Number(responseMetrics.medianResponseHours) * 10) / 10 : null,
-      within1hRate: responseMetrics.totalContacted > 0
-        ? Math.round((Number(responseMetrics.respondedWithin1h) / Number(responseMetrics.totalContacted)) * 100)
+      avgHours: safeResponseMetrics.avgResponseHours ? Math.round(Number(safeResponseMetrics.avgResponseHours) * 10) / 10 : null,
+      medianHours: safeResponseMetrics.medianResponseHours ? Math.round(Number(safeResponseMetrics.medianResponseHours) * 10) / 10 : null,
+      within1hRate: safeResponseMetrics.totalContacted > 0
+        ? Math.round((Number(safeResponseMetrics.respondedWithin1h) / Number(safeResponseMetrics.totalContacted)) * 100)
         : 0,
-      within24hRate: responseMetrics.totalContacted > 0
-        ? Math.round((Number(responseMetrics.respondedWithin24h) / Number(responseMetrics.totalContacted)) * 100)
+      within24hRate: safeResponseMetrics.totalContacted > 0
+        ? Math.round((Number(safeResponseMetrics.respondedWithin24h) / Number(safeResponseMetrics.totalContacted)) * 100)
         : 0,
     },
     staffPerformance: staffPerformance
@@ -970,38 +1014,38 @@ export default defineEventHandler(async (event) => {
       })),
       channelSummary: {
         organic: {
-          total: Number(channelSummary?.organicTotal || 0),
-          converted: Number(channelSummary?.organicConverted || 0),
-          rate: channelSummary?.organicTotal > 0
-            ? Math.round((Number(channelSummary.organicConverted) / Number(channelSummary.organicTotal)) * 100)
+          total: Number(safeChannelSummary.organicTotal || 0),
+          converted: Number(safeChannelSummary.organicConverted || 0),
+          rate: safeChannelSummary.organicTotal > 0
+            ? Math.round((Number(safeChannelSummary.organicConverted) / Number(safeChannelSummary.organicTotal)) * 100)
             : 0,
         },
         paid: {
-          total: Number(channelSummary?.paidTotal || 0),
-          converted: Number(channelSummary?.paidConverted || 0),
-          rate: channelSummary?.paidTotal > 0
-            ? Math.round((Number(channelSummary.paidConverted) / Number(channelSummary.paidTotal)) * 100)
+          total: Number(safeChannelSummary.paidTotal || 0),
+          converted: Number(safeChannelSummary.paidConverted || 0),
+          rate: safeChannelSummary.paidTotal > 0
+            ? Math.round((Number(safeChannelSummary.paidConverted) / Number(safeChannelSummary.paidTotal)) * 100)
             : 0,
         },
         direct: {
-          total: Number(channelSummary?.directTotal || 0),
-          converted: Number(channelSummary?.directConverted || 0),
-          rate: channelSummary?.directTotal > 0
-            ? Math.round((Number(channelSummary.directConverted) / Number(channelSummary.directTotal)) * 100)
+          total: Number(safeChannelSummary.directTotal || 0),
+          converted: Number(safeChannelSummary.directConverted || 0),
+          rate: safeChannelSummary.directTotal > 0
+            ? Math.round((Number(safeChannelSummary.directConverted) / Number(safeChannelSummary.directTotal)) * 100)
             : 0,
         },
         referral: {
-          total: Number(channelSummary?.referralTotal || 0),
-          converted: Number(channelSummary?.referralConverted || 0),
-          rate: channelSummary?.referralTotal > 0
-            ? Math.round((Number(channelSummary.referralConverted) / Number(channelSummary.referralTotal)) * 100)
+          total: Number(safeChannelSummary.referralTotal || 0),
+          converted: Number(safeChannelSummary.referralConverted || 0),
+          rate: safeChannelSummary.referralTotal > 0
+            ? Math.round((Number(safeChannelSummary.referralConverted) / Number(safeChannelSummary.referralTotal)) * 100)
             : 0,
         },
         email: {
-          total: Number(channelSummary?.emailTotal || 0),
-          converted: Number(channelSummary?.emailConverted || 0),
-          rate: channelSummary?.emailTotal > 0
-            ? Math.round((Number(channelSummary.emailConverted) / Number(channelSummary.emailTotal)) * 100)
+          total: Number(safeChannelSummary.emailTotal || 0),
+          converted: Number(safeChannelSummary.emailConverted || 0),
+          rate: safeChannelSummary.emailTotal > 0
+            ? Math.round((Number(safeChannelSummary.emailConverted) / Number(safeChannelSummary.emailTotal)) * 100)
             : 0,
         },
       },
@@ -1013,22 +1057,22 @@ export default defineEventHandler(async (event) => {
     // ========== SALES PERFORMANCE ==========
     salesPerformance: {
       thisMonth: {
-        leads: Number(monthlySalesMetrics?.totalVehicleEnquiries || 0),
-        conversions: Number(monthlySalesMetrics?.convertedSales || 0),
-        conversionRate: monthlySalesMetrics?.totalVehicleEnquiries > 0
-          ? Math.round((Number(monthlySalesMetrics.convertedSales) / Number(monthlySalesMetrics.totalVehicleEnquiries)) * 100)
+        leads: Number(safeMonthlySalesMetrics.totalVehicleEnquiries || 0),
+        conversions: Number(safeMonthlySalesMetrics.convertedSales || 0),
+        conversionRate: safeMonthlySalesMetrics.totalVehicleEnquiries > 0
+          ? Math.round((Number(safeMonthlySalesMetrics.convertedSales) / Number(safeMonthlySalesMetrics.totalVehicleEnquiries)) * 100)
           : 0,
-        withFinance: Number(monthlySalesMetrics?.withFinanceInterest || 0),
-        withTestDrive: Number(monthlySalesMetrics?.withTestDrive || 0),
-        withAccessories: Number(monthlySalesMetrics?.withAccessories || 0),
-        accessoriesValue: Math.round(Number(monthlySalesMetrics?.totalAccessoriesValue || 0)),
+        withFinance: Number(safeMonthlySalesMetrics.withFinanceInterest || 0),
+        withTestDrive: Number(safeMonthlySalesMetrics.withTestDrive || 0),
+        withAccessories: Number(safeMonthlySalesMetrics.withAccessories || 0),
+        accessoriesValue: Math.round(Number(safeMonthlySalesMetrics.totalAccessoriesValue || 0)),
       },
       lastMonth: {
-        leads: Number(lastMonthSalesMetrics?.totalVehicleEnquiries || 0),
-        conversions: Number(lastMonthSalesMetrics?.convertedSales || 0),
+        leads: Number(safeLastMonthSalesMetrics.totalVehicleEnquiries || 0),
+        conversions: Number(safeLastMonthSalesMetrics.convertedSales || 0),
       },
-      monthOverMonthChange: lastMonthSalesMetrics?.totalVehicleEnquiries > 0
-        ? Math.round(((Number(monthlySalesMetrics?.totalVehicleEnquiries || 0) - Number(lastMonthSalesMetrics.totalVehicleEnquiries)) / Number(lastMonthSalesMetrics.totalVehicleEnquiries)) * 100)
+      monthOverMonthChange: safeLastMonthSalesMetrics.totalVehicleEnquiries > 0
+        ? Math.round(((Number(safeMonthlySalesMetrics.totalVehicleEnquiries || 0) - Number(safeLastMonthSalesMetrics.totalVehicleEnquiries)) / Number(safeLastMonthSalesMetrics.totalVehicleEnquiries)) * 100)
         : 0,
       // Configurable targets from dealer settings
       targets: {
@@ -1084,26 +1128,26 @@ export default defineEventHandler(async (event) => {
     },
     // ========== CONVERSION FUNNEL ==========
     conversionFunnel: {
-      totalLeads: Number(conversionFunnel?.totalLeads || 0),
-      contacted: Number(conversionFunnel?.contacted || 0),
-      contactedRate: conversionFunnel?.totalLeads > 0
-        ? Math.round((Number(conversionFunnel.contacted) / Number(conversionFunnel.totalLeads)) * 100)
+      totalLeads: Number(safeConversionFunnel.totalLeads || 0),
+      contacted: Number(safeConversionFunnel.contacted || 0),
+      contactedRate: safeConversionFunnel.totalLeads > 0
+        ? Math.round((Number(safeConversionFunnel.contacted) / Number(safeConversionFunnel.totalLeads)) * 100)
         : 0,
-      qualified: Number(conversionFunnel?.qualified || 0),
-      qualifiedRate: conversionFunnel?.totalLeads > 0
-        ? Math.round((Number(conversionFunnel.qualified) / Number(conversionFunnel.totalLeads)) * 100)
+      qualified: Number(safeConversionFunnel.qualified || 0),
+      qualifiedRate: safeConversionFunnel.totalLeads > 0
+        ? Math.round((Number(safeConversionFunnel.qualified) / Number(safeConversionFunnel.totalLeads)) * 100)
         : 0,
-      testDriveBooked: Number(conversionFunnel?.testDriveBooked || 0),
-      testDriveRate: conversionFunnel?.totalLeads > 0
-        ? Math.round((Number(conversionFunnel.testDriveBooked) / Number(conversionFunnel.totalLeads)) * 100)
+      testDriveBooked: Number(safeConversionFunnel.testDriveBooked || 0),
+      testDriveRate: safeConversionFunnel.totalLeads > 0
+        ? Math.round((Number(safeConversionFunnel.testDriveBooked) / Number(safeConversionFunnel.totalLeads)) * 100)
         : 0,
-      financeApplied: Number(conversionFunnel?.financeApplied || 0),
-      financeRate: conversionFunnel?.totalLeads > 0
-        ? Math.round((Number(conversionFunnel.financeApplied) / Number(conversionFunnel.totalLeads)) * 100)
+      financeApplied: Number(safeConversionFunnel.financeApplied || 0),
+      financeRate: safeConversionFunnel.totalLeads > 0
+        ? Math.round((Number(safeConversionFunnel.financeApplied) / Number(safeConversionFunnel.totalLeads)) * 100)
         : 0,
-      converted: Number(conversionFunnel?.converted || 0),
-      conversionRate: conversionFunnel?.totalLeads > 0
-        ? Math.round((Number(conversionFunnel.converted) / Number(conversionFunnel.totalLeads)) * 100)
+      converted: Number(safeConversionFunnel.converted || 0),
+      conversionRate: safeConversionFunnel.totalLeads > 0
+        ? Math.round((Number(safeConversionFunnel.converted) / Number(safeConversionFunnel.totalLeads)) * 100)
         : 0,
     },
     // Vehicle Catalog Data
@@ -1291,12 +1335,10 @@ async function fetchVehicleCatalog() {
     for (const variant of variants) {
       // Category is nested object with .name property
       const category = variant.primaryCategory?.name || 'Other';
-      if (!categories[category]) {
-        categories[category] = [];
-      }
+      const categoryModels = categories[category] ?? [];
       // Model name is nested in .model.model
       const modelName = variant.model?.model || variant.model || 'Unknown';
-      categories[category].push({
+      categoryModels.push({
         id: variant.id || variant.modelId,
         name: modelName,
         slug: modelName?.toLowerCase().replace(/\s+/g, '-'),
@@ -1308,6 +1350,7 @@ async function fetchVehicleCatalog() {
         isNPerformance: variant.isNPerformance,
         hasOffer: false, // Not available in this API response
       });
+      categories[category] = categoryModels;
     }
 
     // Sort categories by order
@@ -1315,7 +1358,7 @@ async function fetchVehicleCatalog() {
       .filter(cat => categories[cat])
       .map(cat => ({
         name: cat,
-        models: categories[cat].sort((a, b) => (a.lowPrice || 0) - (b.lowPrice || 0)),
+        models: (categories[cat] ?? []).sort((a, b) => (a.lowPrice || 0) - (b.lowPrice || 0)),
       }));
 
     // Add any remaining categories
@@ -1324,7 +1367,7 @@ async function fetchVehicleCatalog() {
       .forEach(cat => {
         sortedCategories.push({
           name: cat,
-          models: categories[cat],
+          models: categories[cat] ?? [],
         });
       });
 

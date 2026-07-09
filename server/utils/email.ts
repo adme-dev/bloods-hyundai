@@ -330,6 +330,10 @@ async function sendEmail(
 ): Promise<void> {
   const startTime = Date.now();
   const isSendGridAvailable = initSendGrid();
+  const recipientEmail = options.to[0];
+  if (!recipientEmail) {
+    throw new Error('Email recipient is required');
+  }
   
   try {
     const fromEmail = options.from?.email || process.env.SENDGRID_FROM_EMAIL || DEFAULT_FROM_EMAIL;
@@ -375,7 +379,7 @@ async function sendEmail(
         enquiryId,
         dealerId,
         templateId,
-        recipientEmail: options.to[0],
+        recipientEmail,
         recipientType,
         subject: options.subject,
         status: 'sent',
@@ -397,7 +401,7 @@ async function sendEmail(
         enquiryId,
         dealerId,
         templateId,
-        recipientEmail: options.to[0],
+        recipientEmail,
         recipientType,
         subject: options.subject,
         status: 'queued',
@@ -425,7 +429,7 @@ async function sendEmail(
         enquiryId,
         dealerId,
         templateId,
-        recipientEmail: options.to[0],
+        recipientEmail,
         recipientType,
         subject: options.subject,
         status: 'failed',
@@ -1340,8 +1344,6 @@ ${dealer.phone || ''} | ${dealer.email || ''}
 ${dealer.websiteUrl || ''}
   `.trim();
 }
-
-
 
 
 

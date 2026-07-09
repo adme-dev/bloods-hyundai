@@ -24,7 +24,7 @@ interface VehicleData {
 
 interface EnquiryEventData {
   vehicle?: VehicleData;
-  source: 'stock_param' | 'card_click' | 'detail_page' | 'gallery' | 'calculator' | 'homepage';
+  source: 'stock_param' | 'card_click' | 'detail_page' | 'gallery' | 'calculator' | 'homepage' | 'special_offer_page';
   page_url?: string;
 }
 
@@ -433,6 +433,7 @@ export const useAnalytics = () => {
     });
 
     const dataLayerPayload = {
+      ...eventData,
       formType: data.form_type,
       formLocation: data.form_location,
       enquiryId: data.enquiry_id,
@@ -450,7 +451,6 @@ export const useAnalytics = () => {
       landingPage: eventData.landing_page,
       referrer: eventData.referrer,
       conversionValue,
-      ...eventData,
     };
 
     // Push to dataLayer for GTM triggers. Keep the legacy capitalized event
@@ -873,8 +873,6 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
-
 
 
 

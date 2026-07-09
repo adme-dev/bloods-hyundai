@@ -163,18 +163,29 @@
 </template>
 
 <script setup lang="ts">
-const config = useRuntimeConfig();
+import type { VehicleModelSummary } from '~/composables/useModelSummaries';
+
 const mainStore = useMainStore();
 const { models: modelSummaries } = useModelSummaries();
 
+type VehiclesPageContent = {
+  content?: {
+    rendered?: string;
+  };
+};
+
+type VehiclesPageResponse = VehiclesPageContent & {
+  page?: VehiclesPageContent;
+};
+
 // State
-const page = ref<any>(null);
+const page = ref<VehiclesPageContent | null>(null);
 const selectedCategory = ref('All');
 
 // Fetch page content
 onMounted(async () => {
   try {
-    const response = await $fetch<any>('/api/page/vehicles');
+    const response = await $fetch<VehiclesPageResponse>('/api/page/vehicles');
     page.value = response?.page || response;
   } catch (err) {
     console.error('Failed to fetch vehicles page:', err);
@@ -182,7 +193,9 @@ onMounted(async () => {
 });
 
 // Computed
-const vehicles = computed(() => modelSummaries.value?.length ? modelSummaries.value : (mainStore.models || []));
+const vehicles = computed<VehicleModelSummary[]>(() =>
+  modelSummaries.value?.length ? modelSummaries.value : (mainStore.models as VehicleModelSummary[] || [])
+);
 
 watch(modelSummaries, (models) => {
   if (models?.length) {
@@ -190,21 +203,24 @@ watch(modelSummaries, (models) => {
   }
 }, { immediate: true });
 
-const categories = computed(() => {
+const categories = computed<string[]>(() => {
   if (!vehicles.value.length) return [];
-  return [...new Set(vehicles.value.map((v: any) => v.vehiclecat).filter(Boolean))];
+  const categoryValues: string[] = vehicles.value
+    .map((vehicle) => String(vehicle.vehiclecat || ''))
+    .filter((value: string) => value.length > 0);
+  return Array.from(new Set<string>(categoryValues));
 });
 
-const filteredVehicles = computed(() => {
+const filteredVehicles = computed<VehicleModelSummary[]>(() => {
   if (selectedCategory.value === 'All') {
     return vehicles.value;
   }
-  return vehicles.value.filter((v: any) => v.vehiclecat === selectedCategory.value);
+  return vehicles.value.filter((vehicle) => vehicle.vehiclecat === selectedCategory.value);
 });
 
-const groupedModels = computed(() => {
-  const grouped: Record<string, any[]> = {};
-  filteredVehicles.value.forEach((model: any) => {
+const groupedModels = computed<Record<string, VehicleModelSummary[]>>(() => {
+  const grouped: Record<string, VehicleModelSummary[]> = {};
+  filteredVehicles.value.forEach((model) => {
     const category = model.vehiclecat || 'Other';
     if (!grouped[category]) grouped[category] = [];
     grouped[category].push(model);
@@ -213,7 +229,7 @@ const groupedModels = computed(() => {
 });
 
 // Methods
-const modelLink = (model: any) => {
+const modelLink = (model: VehicleModelSummary) => {
   if (model.form) {
     return `/vehicle/${model.slug}`;
   }

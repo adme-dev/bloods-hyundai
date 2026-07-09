@@ -11,7 +11,7 @@
       class="uk-subnav uk-subnav-pill uk-flex uk-flex-center" 
       uk-switcher
     >
-      <li v-for="(department, key) in departments" :key="key" :class="{ 'uk-active': activeTab === key }">
+      <li v-for="(department, key) in departments" :key="key" :class="{ 'uk-active': activeTab === String(key) }">
         <a href="#">{{ department.name }}</a>
       </li>
     </ul>
@@ -124,7 +124,6 @@ const departments = computed(() => {
   padding: 10px;
 }
 </style>
-
 
 
 

@@ -71,11 +71,7 @@ async function fetchMedia() {
     });
     files.value = (response as any).files || [];
   } catch (error: any) {
-    toast({
-      title: 'Error',
-      description: error.data?.message || 'Failed to load media files',
-      variant: 'destructive',
-    });
+    toast.error(error.data?.message || 'Failed to load media files', 'Error');
   } finally {
     loading.value = false;
   }
@@ -116,6 +112,7 @@ async function handleUpload(event: Event) {
 
   uploading.value = true;
   const file = input.files[0];
+  if (!file) return;
 
   try {
     const formData = new FormData();
@@ -127,19 +124,12 @@ async function handleUpload(event: Event) {
       body: formData,
     });
 
-    toast({
-      title: 'Success',
-      description: 'File uploaded successfully',
-    });
+    toast.success('File uploaded successfully', 'Success');
 
     // Refresh the list
     fetchMedia();
   } catch (error: any) {
-    toast({
-      title: 'Upload Failed',
-      description: error.data?.message || 'Failed to upload file',
-      variant: 'destructive',
-    });
+    toast.error(error.data?.message || 'Failed to upload file', 'Upload Failed');
   } finally {
     uploading.value = false;
     // Reset input
@@ -165,10 +155,7 @@ async function handleDelete() {
       method: 'DELETE',
     });
 
-    toast({
-      title: 'Success',
-      description: 'File deleted successfully',
-    });
+    toast.success('File deleted successfully', 'Success');
 
     // Remove from list
     files.value = files.value.filter((f) => f.key !== fileToDelete.value?.key);
@@ -178,11 +165,7 @@ async function handleDelete() {
       selectedFile.value = null;
     }
   } catch (error: any) {
-    toast({
-      title: 'Delete Failed',
-      description: error.data?.message || 'Failed to delete file',
-      variant: 'destructive',
-    });
+    toast.error(error.data?.message || 'Failed to delete file', 'Delete Failed');
   } finally {
     deleting.value = false;
     deleteDialogOpen.value = false;

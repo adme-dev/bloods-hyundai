@@ -238,12 +238,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Accessory } from '~/stores/accessories';
+import type { AccessoryCatalogItem } from '~/stores/accessories';
 import { useAccessoriesStore } from '~/stores/accessories';
 
 interface Props {
   show: boolean;
-  accessory: Accessory | null;
+  accessory: AccessoryCatalogItem | null;
   isInCart?: boolean;
 }
 
@@ -253,7 +253,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 defineEmits<{
   (e: 'close'): void;
-  (e: 'add-to-cart', accessory: Accessory): void;
+  (e: 'add-to-cart', accessory: AccessoryCatalogItem): void;
   (e: 'view-cart'): void;
 }>();
 
@@ -299,7 +299,7 @@ const allImages = computed(() => {
 
 // Get full accessory details for included items in packs
 const sortedIncludedAccessories = computed(() => {
-  if (!props.accessory || !('includedAccessories' in props.accessory)) return [];
+  if (!props.accessory?.includedAccessories?.length) return [];
   
   const items = props.accessory.includedAccessories?.map(item => {
     const fullAccessory = accessoriesStore.getAccessoryById(item.id);
@@ -318,7 +318,7 @@ const sortedIncludedAccessories = computed(() => {
 // Set initial image when accessory changes
 watch(() => props.accessory, (newAccessory) => {
   if (newAccessory && allImages.value.length > 0) {
-    currentImage.value = allImages.value[0];
+    currentImage.value = allImages.value[0] ?? null;
   }
 }, { immediate: true });
 
@@ -349,7 +349,6 @@ const formatPrice = (price: number) => {
   transform: scale(0.95);
 }
 </style>
-
 
 
 

@@ -8,19 +8,21 @@ export default defineEventHandler(async (event) => {
   today.setHours(0, 0, 0, 0);
   
   // Total enquiries
-  const [{ total }] = await db
+  const [totalRow] = await db
     .select({ total: sql<number>`count(*)` })
     .from(enquiries)
     .where(eq(enquiries.dealerId, dealerId));
+  const total = totalRow?.total ?? 0;
   
   // New today
-  const [{ newToday }] = await db
+  const [newTodayRow] = await db
     .select({ newToday: sql<number>`count(*)` })
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
       gte(enquiries.createdAt, today)
     ));
+  const newToday = newTodayRow?.newToday ?? 0;
   
   // By status
   const byStatus = await db
@@ -49,7 +51,6 @@ export default defineEventHandler(async (event) => {
     byType,
   };
 });
-
 
 
 

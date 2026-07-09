@@ -1,5 +1,19 @@
-export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig();
+type VariantPricingResponse = Record<string, unknown> & {
+  finalDriveAwayPrice?: unknown;
+  mlp?: unknown;
+  mlpWithOptions?: unknown;
+  onRoadCosts?: unknown;
+  dealerDiscount?: unknown;
+  gst?: unknown;
+};
+
+type VariantPriceApiResponse = {
+  success: boolean;
+  error?: string;
+  pricing?: VariantPricingResponse | null;
+};
+
+export default defineEventHandler(async (event): Promise<VariantPriceApiResponse> => {
   const query = getQuery(event);
   
   const { variantId, postcode = '3000', optionCost = '0' } = query;
@@ -13,14 +27,16 @@ export default defineEventHandler(async (event) => {
   }
   
   try {
-    const url = `https://www.hyundai.com/content/api/au/hyundai/v3/variantpricecalculator?variantId=${variantId}&optionCost=${optionCost}&postcode=${postcode}`;
+    const url = `https://www.hyundai.com/content/api/au/hyundai/v3/variantpricecalculator?variantId=${String(variantId)}&optionCost=${String(optionCost)}&postcode=${String(postcode)}`;
     
-    const response = await $fetch<any>(url, {
+    const response = await $fetch<VariantPricingResponse>(url, {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       },
     });
+    const onRoadCosts = isRecord(response.onRoadCosts) ? response.onRoadCosts : {};
+    const dealerDiscount = isRecord(response.dealerDiscount) ? response.dealerDiscount : {};
     
     // Log the response structure for debugging
     console.log('[Variant Price API] Response structure:', {
@@ -38,8 +54,8 @@ export default defineEventHandler(async (event) => {
         finalDriveAwayPrice: response.finalDriveAwayPrice,
         mlp: response.mlp,
         mlpWithOptions: response.mlpWithOptions,
-        onRoadCostsTotal: response.onRoadCosts?.onRoadCost || response.onRoadCosts?.total,
-        dealerDiscount: response.dealerDiscount?.discount,
+        onRoadCostsTotal: onRoadCosts.onRoadCost || onRoadCosts.total,
+        dealerDiscount: dealerDiscount.discount,
         gst: response.gst,
       },
     });
@@ -58,8 +74,9 @@ export default defineEventHandler(async (event) => {
   }
 });
 
-
-
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
 
 
 

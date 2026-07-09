@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Unauthorized' });
   }
 
-  const body = await readBody<{ days?: number; force?: boolean }>(event).catch(() => ({}));
+  const body = await readBody<{ days?: number; force?: boolean }>(event).catch((): { days?: number; force?: boolean } => ({}));
   const days = Math.max(1, Math.min(MAX_DAYS, Number(body.days || 180)));
   const fromDate = new Date();
   fromDate.setUTCDate(fromDate.getUTCDate() - days);

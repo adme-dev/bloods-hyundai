@@ -308,7 +308,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Accessory, AccessoryPack } from '~/stores/accessories';
+import type { Accessory, AccessoryCatalogItem, AccessoryPack } from '~/stores/accessories';
 import { HYUNDAI_MODELS } from '~/stores/accessories';
 import { Car, Zap, CarFront, Truck, Gauge, Bus, Leaf } from 'lucide-vue-next';
 
@@ -375,7 +375,7 @@ useSchemaOrg([
 
 // Modal state
 const showDetailModal = ref(false);
-const selectedAccessory = ref<Accessory | null>(null);
+const selectedAccessory = ref<AccessoryCatalogItem | null>(null);
 
 // Scroll to results ref
 const resultsHeaderRef = ref<HTMLElement | null>(null);
@@ -417,8 +417,8 @@ const loadAccessories = async () => {
   }
 };
 
-const handleAddToCart = (accessory: Accessory) => {
-  accessoriesStore.addToCart(accessory, 'accessory');
+const handleAddToCart = (accessory: AccessoryCatalogItem) => {
+  accessoriesStore.addToCart(accessory, accessory.includedAccessories?.length ? 'pack' : 'accessory');
 };
 
 const handleAddPack = (pack: AccessoryPack) => {
@@ -431,7 +431,7 @@ const viewAccessoryDetails = (accessory: Accessory) => {
 };
 
 const viewPackDetails = (pack: AccessoryPack) => {
-  selectedAccessory.value = pack as unknown as Accessory;
+  selectedAccessory.value = pack;
   showDetailModal.value = true;
 };
 

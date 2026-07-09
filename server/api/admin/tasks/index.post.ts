@@ -68,6 +68,13 @@ export default defineEventHandler(async (event) => {
     automationRule: body.automationRule || null,
   }).returning();
 
+  if (!newTask) {
+    throw createError({
+      statusCode: 500,
+      message: 'Failed to create task',
+    });
+  }
+
   // Log activity if customer is associated
   if (body.customerId) {
     await db.insert(customerActivities).values({

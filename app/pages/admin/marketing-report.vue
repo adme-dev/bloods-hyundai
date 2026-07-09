@@ -1140,7 +1140,10 @@ const websiteTrendRows = computed(() => data.value?.websiteAnalytics.dailyTrend 
 const trendHasData = computed(() => websiteTrendRows.value.some(row => row.sessions || row.keyEvents || row.crmLeads));
 const chartGridLines = [57.5, 95, 132.5];
 const chartStartLabel = computed(() => websiteTrendRows.value[0]?.date ? displayShortDate(websiteTrendRows.value[0].date) : '');
-const chartEndLabel = computed(() => websiteTrendRows.value.at(-1)?.date ? displayShortDate(websiteTrendRows.value.at(-1)!.date) : '');
+const chartEndLabel = computed(() => {
+  const lastRow = websiteTrendRows.value.at(-1);
+  return lastRow?.date ? displayShortDate(lastRow.date) : '';
+});
 const trendEndPoints = computed(() => [
   { key: 'sessions', class: 'text-sky-600', ...trendPoint('sessions', Math.max(websiteTrendRows.value.length - 1, 0)) },
   { key: 'keyEvents', class: 'text-amber-500', ...trendPoint('keyEvents', Math.max(websiteTrendRows.value.length - 1, 0)) },
@@ -1345,7 +1348,7 @@ function dimension(row: Ga4BreakdownRow, key: string) {
 
 function metric(row: Ga4BreakdownRow, key: string) {
   const value = row.metrics[key];
-  return Number.isFinite(value) ? value : 0;
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
 function barPercent(value: number, max: number) {

@@ -52,7 +52,7 @@
             <StepperItem
               v-for="step in formSteps"
               :key="step.step"
-              v-slot="{ state }"
+              v-slot="slotProps"
               class="relative flex w-full flex-col items-center justify-center"
               :step="step.step"
             >
@@ -68,14 +68,14 @@
                   type="button"
                   class="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2"
                   :class="[
-                    state === 'completed' && 'border-[#001E50] bg-[#001E50] text-white',
-                    state === 'active' && 'border-[#001E50] bg-[#001E50] text-white ring-4 ring-blue-100',
-                    state === 'inactive' && 'border-gray-200 bg-white text-gray-400 cursor-default'
+                    getStepperState(slotProps) === 'completed' && 'border-[#001E50] bg-[#001E50] text-white',
+                    getStepperState(slotProps) === 'active' && 'border-[#001E50] bg-[#001E50] text-white ring-4 ring-blue-100',
+                    getStepperState(slotProps) === 'inactive' && 'border-gray-200 bg-white text-gray-400 cursor-default'
                   ]"
-                  :disabled="state === 'inactive'"
-                  @click="state !== 'inactive' && goToStep(step.step)"
+                  :disabled="getStepperState(slotProps) === 'inactive'"
+                  @click="getStepperState(slotProps) !== 'inactive' && goToStep(step.step)"
                 >
-                  <Check v-if="state === 'completed'" class="h-5 w-5" />
+                  <Check v-if="getStepperState(slotProps) === 'completed'" class="h-5 w-5" />
                   <component v-else :is="step.icon" class="h-5 w-5" />
                 </button>
               </StepperTrigger>
@@ -85,9 +85,9 @@
                 <StepperTitle 
                   class="text-xs sm:text-sm font-semibold transition-colors m-0"
                   :class="[
-                    state === 'active' && 'text-[#001E50]',
-                    state === 'completed' && 'text-gray-700',
-                    state === 'inactive' && 'text-gray-400'
+                    getStepperState(slotProps) === 'active' && 'text-[#001E50]',
+                    getStepperState(slotProps) === 'completed' && 'text-gray-700',
+                    getStepperState(slotProps) === 'inactive' && 'text-gray-400'
                   ]"
                 >
                   {{ step.title }}
@@ -95,9 +95,9 @@
                 <StepperDescription 
                   class="hidden sm:block text-xs mt-0.5 transition-colors"
                   :class="[
-                    state === 'active' && 'text-[#001E50]/70',
-                    state === 'completed' && 'text-gray-500',
-                    state === 'inactive' && 'text-gray-400'
+                    getStepperState(slotProps) === 'active' && 'text-[#001E50]/70',
+                    getStepperState(slotProps) === 'completed' && 'text-gray-500',
+                    getStepperState(slotProps) === 'inactive' && 'text-gray-400'
                   ]"
                 >
                   {{ step.description }}
@@ -655,6 +655,15 @@ const formSteps = [
   { step: 4, title: 'Review', description: 'Confirm', icon: ClipboardCheck },
 ]
 
+type StepperState = 'active' | 'completed' | 'inactive'
+
+const getStepperState = (slotProps: { state?: unknown }): StepperState => {
+  const state = slotProps.state
+  return state === 'active' || state === 'completed' || state === 'inactive'
+    ? state
+    : 'inactive'
+}
+
 // Generate years
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 30 }, (_, i) => String(currentYear - i))
@@ -851,11 +860,4 @@ const handleStepSubmit = async () => {
   }
 }
 
-// Type declarations
-declare global {
-  interface Window {
-    dataLayer: any[]
-  }
-}
 </script>
-

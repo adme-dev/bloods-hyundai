@@ -3,8 +3,14 @@ import { join } from 'path';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey } from '../../utils/tenant';
 import { buildTenantCdnUrls } from '../../utils/tenant-cdn';
 
+type PageApiResponse = {
+  success: boolean;
+  page: unknown;
+  _source?: string;
+};
+
 // Try to load local fallback page data for development
-function loadLocalPageFallback(slug: string, dealerSlug: string): any | null {
+function loadLocalPageFallback(slug: string, dealerSlug: string): unknown | null {
   try {
     const fallbackPath = join(process.cwd(), `server/data/pages/${slug}.json`);
     if (existsSync(fallbackPath)) {
@@ -34,7 +40,7 @@ function loadLocalPageFallback(slug: string, dealerSlug: string): any | null {
 const CACHE_MAX_AGE = 60 * 10;
 const CACHE_STALE_MAX_AGE = 60 * 30;
 
-export default defineCachedEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event): Promise<PageApiResponse> => {
   const config = useRuntimeConfig();
   const slug = getRouterParam(event, 'slug');
 
@@ -52,7 +58,7 @@ export default defineCachedEventHandler(async (event) => {
   if (config.public.cdnUrl) {
     for (const cdnUrl of buildTenantCdnUrls(config.public.cdnUrl, dealerSlug, `pages/${slug}.json`)) {
       try {
-        const response = await $fetch<any[]>(cdnUrl, {
+        const response = await $fetch<unknown[]>(cdnUrl, {
           headers: {
             'Accept': 'application/json',
           },
@@ -89,7 +95,7 @@ export default defineCachedEventHandler(async (event) => {
     try {
       const url = `${config.public.apiUrl}/page/${slug}`;
 
-      const response = await $fetch<any>(url, {
+      const response = await $fetch<unknown>(url, {
         headers: {
           'Accept': 'application/json',
         },
@@ -97,7 +103,7 @@ export default defineCachedEventHandler(async (event) => {
 
       return {
         success: true,
-        page: response.page || response,
+        page: getPagePayload(response),
       };
     } catch (error: any) {
       console.error('[Page API] API Error:', error.message);
@@ -121,4 +127,10 @@ export default defineCachedEventHandler(async (event) => {
   shouldBypassCache: (event) => getQuery(event).refresh === 'true',
 });
 
+function getPagePayload(response: unknown) {
+  return isRecord(response) && response.page ? response.page : response;
+}
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}

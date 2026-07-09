@@ -32,7 +32,7 @@
             <div class="flex flex-1 items-start gap-3 min-w-0">
               <Switch
                 :checked="rule.enabled"
-                @update:checked="(value) => toggleRule(rule, value)"
+                @update:checked="(value: boolean | 'indeterminate') => toggleRule(rule, value)"
                 class="shrink-0"
               />
               <div>
@@ -93,7 +93,7 @@
                   <span class="font-medium">{{ formatValue(condition.value) }}</span>
                 </div>
               </div>
-              <Alert v-else variant="secondary">
+                  <Alert v-else variant="default">
                 <AlertDescription>No conditions &mdash; this rule matches all enquiries.</AlertDescription>
               </Alert>
             </div>
@@ -137,7 +137,7 @@
       </Card>
     </template>
 
-    <Alert variant="secondary">
+    <Alert variant="default">
       <AlertTitle>How it works</AlertTitle>
       <AlertDescription>
         Rules run from top to bottom. The first match handles the enquiry, so keep your catch-all rule last.
@@ -282,14 +282,15 @@ const formatRelative = (value?: string) => {
   return date.toLocaleDateString();
 };
 
-const toggleRule = async (rule: RoutingRule, enabled: boolean) => {
+const toggleRule = async (rule: RoutingRule, enabled: boolean | 'indeterminate') => {
+  const nextEnabled = enabled === true;
   try {
     await $fetch(`/api/admin/settings/routing/${rule.id}`, {
       method: 'PUT',
       body: {
         rule: {
           ...rule,
-          enabled,
+          enabled: nextEnabled,
         },
       },
     });
@@ -327,6 +328,7 @@ const moveRule = async (index: number, direction: number) => {
   
   const reorderedRules = [...rules.value];
   const [removed] = reorderedRules.splice(index, 1);
+  if (!removed) return;
   reorderedRules.splice(newIndex, 0, removed);
   
   try {

@@ -441,7 +441,73 @@ definePageMeta({
 const route = useRoute()
 const appointmentId = route.params.id as string
 
-const { data, pending, refresh } = await useFetch(`/api/admin/service/appointments/${appointmentId}`, {
+type AppointmentStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show'
+  | 'awaiting_parts'
+
+type ServiceAppointment = {
+  customerName: string
+  customerEmail?: string
+  customerPhone?: string
+  vehicleDisplay?: string
+  vehicleRegistration?: string
+  vehicleMake?: string
+  vehicleModel?: string
+  vehicleYear?: string | number | null
+  vehicleVin?: string | null
+  vehicleOdometer?: string | number | null
+  scheduledDate: string | Date
+  scheduledTime?: string | null
+  dropOffDate?: string | Date | null
+  dropOffTime?: string | null
+  pickUpDate?: string | Date | null
+  pickUpTime?: string | null
+  serviceType?: string
+  serviceDescription?: string | null
+  customerNotes?: string | null
+  isScheduledService?: boolean
+  isPreviouslyServiced?: boolean
+  hasOtherRepairs?: boolean
+  requiresLoanCar?: boolean
+  status: AppointmentStatus
+  internalNotes?: string | null
+  assignedTechnicianId?: string | null
+  estimatedCost?: string | number | null
+  actualCost?: string | number | null
+  confirmationSent?: boolean
+  reminderSent?: boolean
+}
+
+type VehicleServiceHistoryItem = {
+  id: string
+  serviceDate: string | Date
+  odometerReading?: string | number | null
+  serviceType?: string
+  workPerformed?: string | null
+  totalCost?: string | number | null
+}
+
+type AvailableTechnician = {
+  id: string
+  name: string
+}
+
+type ServiceAppointmentDetailResponse = {
+  appointment: ServiceAppointment
+  technician: unknown | null
+  serviceAdvisor: unknown | null
+  customer: unknown | null
+  vehicle: unknown | null
+  vehicleServiceHistory: VehicleServiceHistoryItem[]
+  availableTechnicians: AvailableTechnician[]
+}
+
+const { data, pending, refresh } = await useFetch<ServiceAppointmentDetailResponse>(`/api/admin/service/appointments/${appointmentId}`, {
   headers: useRequestHeaders(['cookie']),
 })
 

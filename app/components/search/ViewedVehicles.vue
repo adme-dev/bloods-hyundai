@@ -84,7 +84,7 @@ const recentVehicles = computed(() => {
   
   return recentIds
     .map(id => vehiclesStore.vehicles.find(v => v.stockid === id || v.id === id))
-    .filter(Boolean)
+    .filter((vehicle): vehicle is any => Boolean(vehicle))
     .slice(0, 10);
 });
 
@@ -154,7 +154,6 @@ const clearHistory = () => {
   }
 }
 </style>
-
 
 
 

@@ -39,7 +39,7 @@
     <!-- Error State -->
     <div v-else-if="error" class="error-container">
       <p class="error-message">{{ error }}</p>
-      <button @click="refresh" class="retry-button">Try Again</button>
+      <button @click="refresh()" class="retry-button">Try Again</button>
     </div>
 
     <!-- Main Content -->
@@ -174,6 +174,7 @@ interface Variant {
   fuelType?: string | null;
   image?: string | null;
   hasValueOffer?: boolean;
+  offerDescription?: string | null;
   offerType?: string | null;
   offerAmount?: string | null;
   offerCode?: string | null;

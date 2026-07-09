@@ -5,6 +5,48 @@ type CalculatorRouteResolution = {
   fallbackModelNames?: string[];
 };
 
+type ExternalRecord = Record<string, unknown>;
+
+type CalculatorModelData = ExternalRecord & {
+  model?: string;
+  modelId?: string | number;
+  priceEnabled?: unknown;
+  displayPowertrain?: unknown;
+  modelHasNLineOptionPackEnabled?: unknown;
+  modelHasTechnologyOptionPackEnabled?: unknown;
+  isBlueDrive?: unknown;
+  variantGroups?: ExternalRecord[];
+  variants?: ExternalRecord[];
+  engines?: unknown[];
+  powertrains?: unknown[];
+  categories?: unknown[];
+};
+
+type CalculatorResult = {
+  success: true;
+  requestedModel: string;
+  resolvedModel: string;
+  preferredPowertrain: string | null;
+  preferredVariantGroupName: string | null;
+  model?: string;
+  modelId?: string | number;
+  priceEnabled?: unknown;
+  displayPowertrain?: unknown;
+  hasNLineOptionPack?: unknown;
+  hasTechnologyOptionPack?: unknown;
+  isBlueDrive?: unknown;
+  powertrains: unknown[];
+  engines: unknown[];
+  categories: unknown[];
+  modelImage: string | null;
+  variantGroups: ExternalRecord[];
+  variants: ExternalRecord[];
+  disclaimers: Array<{ citation: string; text: string }>;
+  priceDisclaimer: string | null;
+  totalVariants: number;
+  totalVariantGroups: number;
+};
+
 const knownModelImages: Record<string, string> = {
   'ioniq 6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
   '2023 ioniq 6': 'https://www.hyundai.com/content/dam/hyundai/au/en/models/front-3-4-models/IONIQ6_Front34_640x331.png',
@@ -123,7 +165,8 @@ const getCalculatorRouteResolution = (modelname: string): CalculatorRouteResolut
   }
 
   if (slug.includes('-sedan')) {
-    fallbackModelNames.add(slug.split('-sedan')[0]);
+    const sedanBase = slug.split('-sedan')[0];
+    if (sedanBase) fallbackModelNames.add(sedanBase);
   }
 
   return {
@@ -132,7 +175,7 @@ const getCalculatorRouteResolution = (modelname: string): CalculatorRouteResolut
   };
 };
 
-const hasCalculatorInventory = (modelData: any) => {
+const hasCalculatorInventory = (modelData: CalculatorModelData | undefined) => {
   return Boolean(
     modelData &&
     ((Array.isArray(modelData.variantGroups) && modelData.variantGroups.length > 0) ||
@@ -140,9 +183,20 @@ const hasCalculatorInventory = (modelData: any) => {
   );
 };
 
+const isExternalRecord = (value: unknown): value is ExternalRecord =>
+  Boolean(value && typeof value === 'object' && !Array.isArray(value));
+
+const normalizeCalculatorPayload = (response: unknown): CalculatorModelData[] => {
+  const records = Array.isArray(response) ? response : (response ? [response] : []);
+  return records.filter(isExternalRecord) as CalculatorModelData[];
+};
+
+const optionalString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.length > 0 ? value : undefined;
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<CalculatorResult> => {
   const query = getQuery(event);
   
   const modelname = (query.modelname || query.model || '') as string;
@@ -164,7 +218,7 @@ export default defineEventHandler(async (event) => {
     ].filter((candidate, index, candidates) => candidate && candidates.indexOf(candidate) === index);
     let resolvedModelName = routeResolution.apiModelName;
 
-    const fetchCalculatorData = async (apiModelName: string) => {
+    const fetchCalculatorData = async (apiModelName: string): Promise<unknown> => {
       const apiUrl = `https://www.hyundai.com/content/api/au/hyundai/v3/carpricecalculator?postcode=${postcode}&modelname=${apiModelName}&displaypowertrain=${displaypowertrain}`;
 
       console.log('[Calculator API] Fetching:', apiUrl);
@@ -173,7 +227,7 @@ export default defineEventHandler(async (event) => {
 
       for (let attempt = 1; attempt <= 2; attempt += 1) {
         try {
-          return await $fetch<any>(apiUrl, {
+          return await $fetch<unknown>(apiUrl, {
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
@@ -203,9 +257,14 @@ export default defineEventHandler(async (event) => {
     // Also fetch modeladditional API to get priceDisclaimer
     const modelAdditionalUrl = 'https://www.hyundai.com/content/api/au/hyundai/pcm1/v1/modeladditional';
 
+    const initialModelCandidate = calculatorModelCandidates[0];
+    if (!initialModelCandidate) {
+      throw createError({ statusCode: 400, message: 'Unable to resolve model name' });
+    }
+
     const [initialResponse, modelAdditionalResponse] = await Promise.all([
-      fetchCalculatorData(calculatorModelCandidates[0]),
-      $fetch<any>(modelAdditionalUrl, {
+      fetchCalculatorData(initialModelCandidate),
+      $fetch<unknown>(modelAdditionalUrl, {
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
@@ -217,8 +276,8 @@ export default defineEventHandler(async (event) => {
       }),
     ]);
 
-    let response = initialResponse;
-    let data = Array.isArray(response) ? response : (response ? [response] : []);
+    let response: unknown = initialResponse;
+    let data = normalizeCalculatorPayload(response);
     let modelData = data[0];
 
     if (!hasCalculatorInventory(modelData) && calculatorModelCandidates.length > 1) {
@@ -230,7 +289,7 @@ export default defineEventHandler(async (event) => {
         });
 
         response = await fetchCalculatorData(fallbackModelName);
-        data = Array.isArray(response) ? response : (response ? [response] : []);
+        data = normalizeCalculatorPayload(response);
         modelData = data[0];
         resolvedModelName = fallbackModelName;
 
@@ -244,9 +303,12 @@ export default defineEventHandler(async (event) => {
     console.log('[Calculator API] Response length:', Array.isArray(response) ? response.length : 'N/A');
     
     // Find the matching model in modeladditional for priceDisclaimer
-    const modelAdditionalData = Array.isArray(modelAdditionalResponse) ? modelAdditionalResponse : [];
-    const matchingModel = modelAdditionalData.find((m: any) => {
-      const modelName = (m.model?.model || '').toLowerCase().replace(/^20\d{2}\s+/, '').replace(/\s+/g, '-');
+    const modelAdditionalData = Array.isArray(modelAdditionalResponse)
+      ? modelAdditionalResponse.filter(isExternalRecord)
+      : [];
+    const matchingModel = modelAdditionalData.find((modelAdditional) => {
+      const model = isExternalRecord(modelAdditional.model) ? modelAdditional.model : {};
+      const modelName = (optionalString(model.model) || '').toLowerCase().replace(/^20\d{2}\s+/, '').replace(/\s+/g, '-');
       const requestedModelName = normalizeModelSlug(modelname);
       const canUseBroadRequestedMatch = requestedModelName.length >= 4;
       const canUseBroadResolvedMatch = resolvedModelName.length >= 4;
@@ -258,7 +320,7 @@ export default defineEventHandler(async (event) => {
           resolvedModelName.includes(modelName)
         ));
     });
-    const priceDisclaimer = matchingModel?.priceDisclaimer || null;
+    const priceDisclaimer = optionalString(matchingModel?.priceDisclaimer) || null;
 
     if (!data || !Array.isArray(data) || data.length === 0) {
       console.error('[Calculator API] No data returned from API for model:', modelname);
@@ -289,7 +351,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const modelFallbackImage =
-      normalizeHyundaiAssetUrl(matchingModel?.desktopImageUrl || matchingModel?.mobileImageUrl) ||
+      normalizeHyundaiAssetUrl(optionalString(matchingModel?.desktopImageUrl) || optionalString(matchingModel?.mobileImageUrl)) ||
       getKnownModelImage(modelData.model, resolvedModelName, modelname);
     
     console.log('[Calculator API] Model data received:', {
@@ -515,7 +577,7 @@ export default defineEventHandler(async (event) => {
         // Get image from first variant's first colour
         if (matchingVariants.length > 0) {
           const firstVariant = matchingVariants[0];
-          if (firstVariant.colours && firstVariant.colours.length > 0) {
+          if (firstVariant?.colours && firstVariant.colours.length > 0) {
             const firstColour = firstVariant.colours[0];
             if (firstColour.image) {
               group.image = normalizeHyundaiAssetUrl(firstColour.image);
@@ -560,10 +622,12 @@ export default defineEventHandler(async (event) => {
     if (smartSenseDisclaimers.size > 0 && !disclaimerMap.has('S')) {
       // Use the first one since they're typically identical
       const smartSenseText = Array.from(smartSenseDisclaimers)[0];
-      allDisclaimers.push({
-        citation: 'S',
-        text: smartSenseText,
-      });
+      if (smartSenseText) {
+        allDisclaimers.push({
+          citation: 'S',
+          text: smartSenseText,
+        });
+      }
     }
 
     // Get engines and powertrains
@@ -590,7 +654,7 @@ export default defineEventHandler(async (event) => {
       }
     });
 
-    const result = {
+    const result: CalculatorResult = {
       success: true,
       requestedModel: modelname,
       resolvedModel: resolvedModelName,

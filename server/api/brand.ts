@@ -4,7 +4,7 @@ import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 const CACHE_MAX_AGE = 60 * 10;
 const CACHE_STALE_MAX_AGE = 60 * 30;
 
-export default defineCachedEventHandler(async (event) => {
+export default defineCachedEventHandler(async (event): Promise<unknown | null> => {
   const config = useRuntimeConfig();
   const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
   const dealerSlug = resolveDealerSlug(event, fallbackSlug);
@@ -15,7 +15,7 @@ export default defineCachedEventHandler(async (event) => {
 
   for (const url of buildTenantCdnUrls(config.public.cdnUrl, dealerSlug, 'brand/brand.json')) {
     try {
-      return await $fetch(url, {
+      return await $fetch<unknown>(url as string, {
         headers: { Accept: 'application/json' },
         timeout: 5000,
       });

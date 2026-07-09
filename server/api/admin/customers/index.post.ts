@@ -52,6 +52,13 @@ export default defineEventHandler(async (event) => {
     emailVerified: false,
   }).returning();
 
+  if (!newCustomer) {
+    throw createError({
+      statusCode: 500,
+      message: 'Failed to create customer',
+    });
+  }
+
   // Create retention profile
   const [retentionProfile] = await db.insert(customerRetentionProfiles).values({
     dealerId,
@@ -67,6 +74,13 @@ export default defineEventHandler(async (event) => {
     notes: body.notes || null,
     isActive: true,
   }).returning();
+
+  if (!retentionProfile) {
+    throw createError({
+      statusCode: 500,
+      message: 'Failed to create retention profile',
+    });
+  }
 
   // Log activity
   await db.insert(customerActivities).values({

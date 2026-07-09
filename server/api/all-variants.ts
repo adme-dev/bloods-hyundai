@@ -319,7 +319,7 @@ export default defineCachedEventHandler(async (event) => {
       if (processedSlugs.has(slug)) return;
       
       // Find base model name for lookups
-      const baseModelName = modelDef.name.split(' ')[0].toLowerCase();
+      const baseModelName = modelDef.name.split(' ')[0]?.toLowerCase() || modelDef.name.toLowerCase();
       const baseModelAdditional = modelAdditionalByName.get(baseModelName);
       const baseModel = allModels.find(m => m.name.toLowerCase() === baseModelName);
       

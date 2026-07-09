@@ -42,8 +42,8 @@
                   <div class="uk-h5 uk-margin-remove uk-text-secondary uk-text-capitalize">
                     {{ vehicle.condition?.displayValue?.[0] }}
                     {{ vehicle.year?.displayValue?.[0] }}
-                    {{ vehicle.make?.value?.[0] }}
-                    {{ vehicle.model?.value?.[0] }}
+                    {{ fieldValue(vehicle.make) }}
+                    {{ fieldValue(vehicle.model) }}
                   </div>
                   <div class="uk-text-secondary uk-text-uppercase uk-text-light">
                     {{ vehicle.badge?.displayValue?.[0] }} {{ vehicle.series?.value?.[0] }}
@@ -55,8 +55,8 @@
                   <div class="uk-h5 uk-margin-remove uk-text-secondary uk-text-capitalize">
                     {{ vehicle.condition?.displayValue?.[0] }}
                     {{ vehicle.year?.displayValue?.[0] }}
-                    {{ vehicle.make?.value?.[0] }}
-                    {{ vehicle.model?.value?.[0] }}
+                    {{ fieldValue(vehicle.make) }}
+                    {{ fieldValue(vehicle.model) }}
                   </div>
                 </div>
               </div>
@@ -173,6 +173,11 @@ const formatKms = (kms: number) => {
   return kms.toString();
 };
 
+const fieldValue = (field: unknown) => {
+  const typed = field as { value?: string[]; displayValue?: string[] } | undefined;
+  return typed?.value?.[0] || typed?.displayValue?.[0] || '';
+};
+
 const getTransmissionShort = (transmission: string) => {
   if (!transmission) return '-';
   if (transmission === 'Constantly Variable Transmission') return 'CVT';
@@ -258,7 +263,6 @@ const getTransmissionShort = (transmission: string) => {
   }
 }
 </style>
-
 
 
 

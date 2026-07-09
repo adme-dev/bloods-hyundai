@@ -79,6 +79,13 @@ export default defineEventHandler(async (event) => {
     })
     .returning();
 
+  if (!customer) {
+    throw createError({
+      statusCode: 500,
+      message: 'Failed to create customer',
+    });
+  }
+
   // Generate JWT
   const config = useRuntimeConfig();
   const accessToken = jwt.sign(

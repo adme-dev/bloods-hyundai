@@ -124,7 +124,9 @@ const formatTime = (time?: string) => {
   }
   
   // Convert 24h to 12h
-  const [hours, minutes] = time.split(':').map(Number);
+  const [hoursPart = '0', minutesPart = '0'] = time.split(':');
+  const hours = Number(hoursPart);
+  const minutes = Number(minutesPart);
   const period = hours >= 12 ? 'pm' : 'am';
   const hour12 = hours % 12 || 12;
   
@@ -147,7 +149,6 @@ const formatTime = (time?: string) => {
   padding-bottom: 4px;
 }
 </style>
-
 
 
 

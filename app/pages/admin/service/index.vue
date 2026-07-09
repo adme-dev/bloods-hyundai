@@ -7,7 +7,7 @@
         <p class="text-sm text-muted-foreground">Manage service appointments and workshop schedule</p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="sm" @click="refresh">
+        <Button variant="outline" size="sm" @click="refresh()">
           <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': pending }" />
           Refresh
         </Button>
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Overdue Alert -->
-    <div v-if="data?.overdueCount > 0" class="rounded-lg border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-4">
+    <div v-if="data.overdueCount > 0" class="rounded-lg border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-4">
       <div class="flex items-start gap-3">
         <AlertTriangle class="h-5 w-5 text-amber-500 mt-0.5" />
         <div class="flex-1">
@@ -38,7 +38,7 @@
     </div>
 
     <!-- Pending Enquiries Alert -->
-    <div v-if="data?.pendingEnquiries > 0" class="rounded-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4">
+    <div v-if="data.pendingEnquiries > 0" class="rounded-lg border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4">
       <div class="flex items-start gap-3">
         <Inbox class="h-5 w-5 text-blue-500 mt-0.5" />
         <div class="flex-1">
@@ -63,7 +63,7 @@
           <Calendar class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-3xl font-bold">{{ data?.today?.total || 0 }}</div>
+          <div class="text-3xl font-bold">{{ data.today.total || 0 }}</div>
           <p class="text-xs text-muted-foreground">Scheduled appointments</p>
         </CardContent>
       </Card>
@@ -74,7 +74,7 @@
           <Clock class="h-4 w-4 text-amber-500" />
         </CardHeader>
         <CardContent>
-          <div class="text-3xl font-bold text-amber-600">{{ data?.today?.pending || 0 }}</div>
+          <div class="text-3xl font-bold text-amber-600">{{ data.today.pending || 0 }}</div>
           <p class="text-xs text-muted-foreground">Awaiting confirmation</p>
         </CardContent>
       </Card>
@@ -85,7 +85,7 @@
           <Wrench class="h-4 w-4 text-blue-500" />
         </CardHeader>
         <CardContent>
-          <div class="text-3xl font-bold text-blue-600">{{ data?.today?.inProgress || 0 }}</div>
+          <div class="text-3xl font-bold text-blue-600">{{ data.today.inProgress || 0 }}</div>
           <p class="text-xs text-muted-foreground">Currently being serviced</p>
         </CardContent>
       </Card>
@@ -96,7 +96,7 @@
           <CheckCircle class="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div class="text-3xl font-bold text-green-600">{{ data?.today?.completed || 0 }}</div>
+          <div class="text-3xl font-bold text-green-600">{{ data.today.completed || 0 }}</div>
           <p class="text-xs text-muted-foreground">Finished today</p>
         </CardContent>
       </Card>
@@ -107,9 +107,9 @@
           <TrendingUp class="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div class="text-3xl font-bold">{{ data?.week?.total || 0 }}</div>
+          <div class="text-3xl font-bold">{{ data.week.total || 0 }}</div>
           <p class="text-xs text-muted-foreground">
-            {{ data?.week?.completionRate || 0 }}% completion rate
+            {{ data.week.completionRate || 0 }}% completion rate
           </p>
         </CardContent>
       </Card>
@@ -132,7 +132,7 @@
           </div>
         </CardHeader>
         <CardContent>
-          <div v-if="!data?.today?.appointments?.length" class="py-8 text-center text-muted-foreground">
+          <div v-if="!data.today.appointments.length" class="py-8 text-center text-muted-foreground">
             <Calendar class="mx-auto h-12 w-12 mb-2 opacity-50" />
             <p>No appointments scheduled for today</p>
           </div>
@@ -189,7 +189,7 @@
           <CardDescription>Today's assignments</CardDescription>
         </CardHeader>
         <CardContent>
-          <div v-if="!data?.technicianWorkload?.length" class="py-8 text-center text-muted-foreground">
+          <div v-if="!data.technicianWorkload.length" class="py-8 text-center text-muted-foreground">
             <Users class="mx-auto h-12 w-12 mb-2 opacity-50" />
             <p>No technicians available</p>
           </div>
@@ -233,7 +233,7 @@
           </div>
         </CardHeader>
         <CardContent>
-          <div v-if="!data?.upcoming?.length" class="py-6 text-center text-muted-foreground">
+          <div v-if="!data.upcoming.length" class="py-6 text-center text-muted-foreground">
             <p>No upcoming appointments</p>
           </div>
           <div v-else class="space-y-3">
@@ -267,7 +267,7 @@
           <CardDescription>This month by type</CardDescription>
         </CardHeader>
         <CardContent>
-          <div v-if="!data?.serviceTypes?.length" class="py-6 text-center text-muted-foreground">
+          <div v-if="!data.serviceTypes.length" class="py-6 text-center text-muted-foreground">
             <p>No service data available</p>
           </div>
           <div v-else class="space-y-3">
@@ -316,9 +316,76 @@ definePageMeta({
   layout: 'admin',
 })
 
-const { data, pending, refresh } = await useFetch('/api/admin/service/dashboard', {
+type DashboardAppointment = {
+  id: string
+  time?: string | null
+  customer?: string | null
+  vehicle?: string | null
+  registration?: string | null
+  serviceType?: string | null
+  technician?: string | null
+  status: string
+  priority?: string | null
+  date?: string | Date
+}
+
+type TechnicianWorkload = {
+  id: string
+  name: string
+  todayCompleted: number
+  todayAssigned: number
+  weekTotal: number
+}
+
+type ServiceTypeSummary = {
+  type: string
+  completed: number
+  count: number
+}
+
+type ServiceDashboardResponse = {
+  overdueCount: number
+  pendingEnquiries: number
+  today: {
+    total: number
+    pending: number
+    inProgress: number
+    completed: number
+    appointments: DashboardAppointment[]
+  }
+  week: {
+    total: number
+    completionRate: number
+  }
+  technicianWorkload: TechnicianWorkload[]
+  upcoming: Array<DashboardAppointment & { date: string | Date }>
+  serviceTypes: ServiceTypeSummary[]
+}
+
+const emptyDashboard: ServiceDashboardResponse = {
+  overdueCount: 0,
+  pendingEnquiries: 0,
+  today: {
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    appointments: [],
+  },
+  week: {
+    total: 0,
+    completionRate: 0,
+  },
+  technicianWorkload: [],
+  upcoming: [],
+  serviceTypes: [],
+}
+
+const { data: dashboardData, pending, refresh } = await useFetch<ServiceDashboardResponse>('/api/admin/service/dashboard', {
   headers: useRequestHeaders(['cookie']),
+  default: () => emptyDashboard,
 })
+const data = computed(() => dashboardData.value || emptyDashboard)
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('en-AU', {

@@ -382,11 +382,13 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { getGravatarUrl } from '~/utils/gravatar';
-import { getInitials } from '~/utils/dashboardFormat';
+import { getDashboardInitials } from '~/utils/dashboardFormat';
 import { LIFECYCLE_STAGE_CONFIG } from '~~/shared/constants/salesFunnel';
 import type { DashboardData } from './types';
 
 const props = defineProps<{ data: DashboardData }>();
+
+const getInitials = getDashboardInitials;
 
 // Canonical lifecycle stages, ordered (replaces the retired list that
 // contained the invalid 'purchased' stage).

@@ -262,7 +262,7 @@ export async function batchCalculateRiskScores(
     }>;
     activities?: Array<any>;
   }>
-): Map<string, RiskScoreResult> {
+): Promise<Map<string, RiskScoreResult>> {
   const results = new Map<string, RiskScoreResult>();
   const now = Date.now();
 

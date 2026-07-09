@@ -265,6 +265,13 @@ export default defineEventHandler(async (event) => {
       })
       .returning();
 
+    if (!enquiry) {
+      throw createError({
+        statusCode: 500,
+        message: 'Failed to create enquiry',
+      });
+    }
+
     // 8. Log activity
     await db.insert(enquiryActivityLog).values({
       dealerId: dealer.id,

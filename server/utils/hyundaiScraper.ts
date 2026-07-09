@@ -196,7 +196,7 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
 
   // Extract title from page
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch) {
+  if (titleMatch?.[1]) {
     data.title = titleMatch[1]
       .replace(/\s*\|\s*Hyundai.*$/i, '')
       .replace(/\s*-\s*Hyundai.*$/i, '')
@@ -295,7 +295,7 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
   if (data.images.length === 0) {
     const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) ||
                          html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-    if (ogImageMatch) {
+    if (ogImageMatch?.[1]) {
       const ogImage = ogImageMatch[1];
       // Only add if it's not a generic social share image
       if (!ogImage.includes('social-share') && !ogImage.includes('family_range')) {
@@ -349,8 +349,9 @@ function extractVehicleData(html: string, slug: string): Partial<ScrapedVehicleD
   ];
   for (const pattern of rangePatterns) {
     const rangeMatch = html.match(pattern);
-    if (rangeMatch && parseInt(rangeMatch[1]) > 200) { // Sanity check for EV range
-      data.specs!['range'] = `${rangeMatch[1]}km`;
+    const rangeValue = rangeMatch?.[1];
+    if (rangeValue && parseInt(rangeValue) > 200) { // Sanity check for EV range
+      data.specs!['range'] = `${rangeValue}km`;
       break;
     }
   }
@@ -657,7 +658,7 @@ function deduplicateImages(images: string[], vehicleSlug?: string): string[] {
   const seen = new Set<string>();
   return images.filter(img => {
     // Normalize URL for comparison (remove query params)
-    const normalized = img.split('?')[0];
+    const normalized = img.split('?')[0] || img;
     if (seen.has(normalized)) return false;
 
     const lowerUrl = img.toLowerCase();

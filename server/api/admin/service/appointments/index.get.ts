@@ -58,10 +58,11 @@ export default defineEventHandler(async (event) => {
   }
 
   // Get total count
-  const [countResult] = await db
+  const [countResultRow] = await db
     .select({ count: sql<number>`count(*)` })
     .from(serviceAppointments)
     .where(and(...conditions));
+  const countResult = countResultRow ?? { count: 0 };
 
   // Build sort
   const sortColumn = sortBy === 'scheduledDate'

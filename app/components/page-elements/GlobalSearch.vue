@@ -223,6 +223,7 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js';
+import type { ModelSummariesResponse } from '~/composables/useModelSummaries';
 
 const eventBus = useEventBus();
 const mainStore = useMainStore();
@@ -330,11 +331,11 @@ const ensureModelSummaries = () => {
   if (mainStore.models.length) return Promise.resolve();
   if (modelSummaryPromise) return modelSummaryPromise;
 
-  modelSummaryPromise = $fetch<any>('/api/model-summaries')
+  modelSummaryPromise = $fetch<ModelSummariesResponse>('/api/model-summaries')
     .then((response) => {
       mainStore.models = response?.models || response?.variants || [];
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       console.error('Failed to load model summaries for search:', error);
     })
     .finally(() => {
@@ -455,8 +456,6 @@ onUnmounted(() => {
   animation: slideInFromTop 0.2s ease-out;
 }
 </style>
-
-
 
 
 

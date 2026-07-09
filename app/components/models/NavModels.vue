@@ -122,7 +122,7 @@
                     @click="closeModel"
                   >
                     <img
-                      :src="vehicle.image"
+                      :src="vehicle.image || undefined"
                       :alt="vehicle.name"
                       class="vehicle-thumbnail"
                       width="550"
@@ -221,6 +221,7 @@
 
 <script setup lang="ts">
 import { Settings } from 'lucide-vue-next';
+import type { VehicleModelSummary } from '~/composables/useModelSummaries';
 
 const { $uikit } = useNuxtApp();
 const eventBus = useEventBus();
@@ -240,9 +241,9 @@ const groupedVehicles = computed(() => {
   
   // When "All" is selected, show all grouped by category
   if (selectedCategory.value === 'All') {
-    const result: Record<string, any[]> = {};
-    Object.entries(grouped).forEach(([categoryName, categoryData]: [string, any]) => {
-      const models = categoryData.models || categoryData;
+    const result: Record<string, VehicleModelSummary[]> = {};
+    Object.entries(grouped).forEach(([categoryName, categoryData]) => {
+      const models = categoryData.models;
       if (Array.isArray(models) && models.length > 0) {
         result[categoryName] = models;
       }
@@ -251,9 +252,9 @@ const groupedVehicles = computed(() => {
   }
   
   // When a specific category is selected
-  if (grouped[selectedCategory.value]) {
-    const categoryData = grouped[selectedCategory.value];
-    const models = categoryData.models || categoryData;
+  const categoryData = grouped[selectedCategory.value];
+  if (categoryData) {
+    const models = categoryData.models;
     if (Array.isArray(models) && models.length > 0) {
       return { [selectedCategory.value]: models };
     }
@@ -433,6 +434,3 @@ const capitalizeFirstLetter = (str: string) => {
   border-top: 1px solid #e5e5e5;
 }
 </style>
-
-
-

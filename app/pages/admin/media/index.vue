@@ -78,11 +78,7 @@ async function fetchMedia() {
     const response = await $fetch('/api/admin/media');
     files.value = (response as any).files || [];
   } catch (error: any) {
-    toast({
-      title: 'Error',
-      description: error.data?.message || 'Failed to load media files',
-      variant: 'destructive',
-    });
+    toast.error(error.data?.message || 'Failed to load media files', 'Error');
   } finally {
     loading.value = false;
   }
@@ -142,17 +138,10 @@ async function handleUpload(event: Event) {
   uploading.value = false;
 
   if (uploadedCount.success > 0) {
-    toast({
-      title: 'Upload Complete',
-      description: `${uploadedCount.success} file(s) uploaded successfully${uploadedCount.failed > 0 ? `, ${uploadedCount.failed} failed` : ''}`,
-    });
+    toast.success(`${uploadedCount.success} file(s) uploaded successfully${uploadedCount.failed > 0 ? `, ${uploadedCount.failed} failed` : ''}`, 'Upload Complete');
     fetchMedia();
   } else {
-    toast({
-      title: 'Upload Failed',
-      description: 'All files failed to upload',
-      variant: 'destructive',
-    });
+    toast.error('All files failed to upload', 'Upload Failed');
   }
 
   // Reset input
@@ -177,19 +166,12 @@ async function handleDelete() {
       method: 'DELETE',
     });
 
-    toast({
-      title: 'Success',
-      description: 'File deleted successfully',
-    });
+    toast.success('File deleted successfully', 'Success');
 
     files.value = files.value.filter((f) => f.key !== fileToDelete.value?.key);
     selectedFiles.value.delete(fileToDelete.value.key);
   } catch (error: any) {
-    toast({
-      title: 'Delete Failed',
-      description: error.data?.message || 'Failed to delete file',
-      variant: 'destructive',
-    });
+    toast.error(error.data?.message || 'Failed to delete file', 'Delete Failed');
   } finally {
     deleting.value = false;
     deleteDialogOpen.value = false;
@@ -202,19 +184,12 @@ async function copyUrl(file: MediaFile) {
   try {
     await navigator.clipboard.writeText(file.url);
     copiedUrl.value = file.key;
-    toast({
-      title: 'Copied',
-      description: 'URL copied to clipboard',
-    });
+    toast.success('URL copied to clipboard', 'Copied');
     setTimeout(() => {
       copiedUrl.value = null;
     }, 2000);
   } catch {
-    toast({
-      title: 'Copy Failed',
-      description: 'Failed to copy URL to clipboard',
-      variant: 'destructive',
-    });
+    toast.error('Failed to copy URL to clipboard', 'Copy Failed');
   }
 }
 

@@ -234,9 +234,9 @@ function isOutsideBusinessHours(timestamp: Date, hoursRange: string): boolean {
   const currentTime = hours * 60 + minutes;
   
   // Parse range like "09:00-17:00"
-  const [start, end] = hoursRange.split('-');
-  const [startHour, startMin] = start.split(':').map(Number);
-  const [endHour, endMin] = end.split(':').map(Number);
+  const [start = '09:00', end = '17:00'] = hoursRange.split('-');
+  const [startHour = 0, startMin = 0] = start.split(':').map(Number);
+  const [endHour = 0, endMin = 0] = end.split(':').map(Number);
   
   const startTime = startHour * 60 + startMin;
   const endTime = endHour * 60 + endMin;
@@ -482,7 +482,6 @@ export function createDefaultRoutingRules(dealer: any): RoutingRule[] {
     },
   ];
 }
-
 
 
 

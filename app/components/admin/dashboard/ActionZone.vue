@@ -256,10 +256,13 @@ import { Separator } from '~/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 import { getGravatarUrl } from '~/utils/gravatar';
 import {
-  getInitials, getLeadScoreClass, formatCurrency, formatTimeAgo,
+  getDashboardInitials, getLeadScoreClass, formatDashboardCurrency, formatTimeAgo,
   getStatusVariant, formatStatus,
 } from '~/utils/dashboardFormat';
 import type { DashboardData } from './types';
 
 defineProps<{ data: DashboardData }>();
+
+const getInitials = getDashboardInitials;
+const formatCurrency = formatDashboardCurrency;
 </script>

@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const stripe = new Stripe(config.stripeSecretKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-02-24.acacia',
   });
 
   try {
@@ -26,10 +26,18 @@ export default defineEventHandler(async (event) => {
 
     const protocol = hostname.includes('localhost') ? 'http' : 'https';
 
+    const stripePriceId = String(process.env.NUXT_STRIPE_PRICE_ID || '');
+    if (!stripePriceId) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Stripe price ID is not configured',
+      });
+    }
+
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
-          price: config.stripePriceId || process.env.NUXT_STRIPE_PRICE_ID,
+          price: stripePriceId,
           quantity: 1,
         },
       ],
@@ -57,7 +65,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

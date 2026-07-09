@@ -44,7 +44,7 @@
             @click="$emit('tab-click', tab.id)"
           >
             {{ tab.label }}
-            <span v-if="tab.count > 0" class="ml-1 text-xs">({{ tab.count }})</span>
+            <span v-if="(tab.count ?? 0) > 0" class="ml-1 text-xs">({{ tab.count }})</span>
           </button>
         </div>
 
@@ -138,7 +138,6 @@ defineEmits<{
 
 const isDesktop = useMediaQuery('(min-width: 768px)');
 </script>
-
 
 
 

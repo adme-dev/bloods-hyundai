@@ -126,14 +126,17 @@ const config = useRuntimeConfig();
 const params = computed(() => {
   const p = route.params.params;
   if (Array.isArray(p) && p.length > 0) {
-    const parts = p[0].split('-');
+    const rawParam = p[0];
+    if (!rawParam) return null;
+    const parts = rawParam.split('-');
     if (parts.length >= 5) {
       return {
-        condition: parts[0],
-        year: parts[1],
-        make: parts[2],
-        model: parts[3],
+        condition: parts[0] || '',
+        year: parts[1] || '',
+        make: parts[2] || '',
+        model: parts[3] || '',
         stockId: parts.slice(4).join('-'),
+        price: '',
       };
     }
   }
@@ -234,7 +237,6 @@ useSiteMeta({
   min-height: 80vh;
 }
 </style>
-
 
 
 

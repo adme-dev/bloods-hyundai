@@ -1,4 +1,4 @@
-import { isDateInRangeAt } from './date.ts';
+import { isDateInRangeAt } from './date';
 
 export interface FrontSlide {
   desktop?: string;

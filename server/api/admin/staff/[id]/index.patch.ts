@@ -115,7 +115,7 @@ export default defineEventHandler(async (event) => {
   // For now, skip phone as it's not in the users table
 
   try {
-    let updatedUser;
+    let updatedUser: typeof users.$inferSelect | undefined;
     await withTenantContext(dealerId, async () => {
       // Check if email is being changed and if it already exists
       if (updateData.email) {
@@ -130,7 +130,8 @@ export default defineEventHandler(async (event) => {
           )
           .limit(1);
 
-        if (existing.length > 0 && existing[0].id !== staffId) {
+        const existingUser = existing[0];
+        if (existingUser && existingUser.id !== staffId) {
           throw createError({
             statusCode: 400,
             message: 'Email already in use by another staff member',
@@ -154,6 +155,13 @@ export default defineEventHandler(async (event) => {
 
       updatedUser = updated;
     });
+
+    if (!updatedUser) {
+      throw createError({
+        statusCode: 404,
+        message: 'Staff member not found',
+      });
+    }
 
     return {
       success: true,

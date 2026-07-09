@@ -6,8 +6,8 @@
           <meta itemprop="name" :content="siteName" />
         </div>
 
-        <meta itemprop="ratingValue" :content="rating" />
-        <meta itemprop="ratingCount" :content="totalReviews" />
+        <meta itemprop="ratingValue" :content="String(rating)" />
+        <meta itemprop="ratingCount" :content="String(totalReviews)" />
 
         <div class="uk-flex uk-flex-middle uk-grid-collapse uk-grid">
           <div>
@@ -126,7 +126,6 @@ const reviewUrl = computed(() => {
   color: #fff;
 }
 </style>
-
 
 
 

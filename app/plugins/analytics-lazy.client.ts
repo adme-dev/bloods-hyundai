@@ -1,11 +1,5 @@
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
 
-declare global {
-  interface Window {
-    dataLayer?: any[];
-  }
-}
-
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
   const { initialize } = useGtag();

@@ -37,6 +37,8 @@ interface ModelSummariesResponse {
   variants: ModelSummary[];
 }
 
+type RawModelSummary = Record<string, unknown>;
+
 const CATEGORY_ORDER = [
   'Electric',
   'Hybrid',
@@ -48,15 +50,16 @@ const CATEGORY_ORDER = [
   'Coming Soon',
 ];
 
-export function toModelSummaries(rawData: any): ModelSummariesResponse {
-  if (!rawData?.success || !Array.isArray(rawData.variants)) {
+export function toModelSummaries(rawData: unknown): ModelSummariesResponse {
+  if (!isRecord(rawData) || rawData.success !== true || !Array.isArray(rawData.variants)) {
     return emptyModelSummaries();
   }
 
   const seenModelKeys = new Set<string>();
-  const models = rawData.variants
+  const models: ModelSummary[] = rawData.variants
+    .filter(isRecord)
     .map(toModelSummary)
-    .filter((model) => {
+    .filter((model: ModelSummary) => {
       const key = model.slug || model.name.toLowerCase();
       if (!key || seenModelKeys.has(key)) {
         return false;
@@ -65,10 +68,10 @@ export function toModelSummaries(rawData: any): ModelSummariesResponse {
       return true;
     });
   const vehicleCategories = Array.isArray(rawData.vehicleCategories) && rawData.vehicleCategories.length
-    ? rawData.vehicleCategories
+    ? rawData.vehicleCategories.map(String)
     : getSortedCategories(models);
 
-  const groupedByCategory = models.reduce<ModelSummariesResponse['groupedByCategory']>((groups, model) => {
+  const groupedByCategory: ModelSummariesResponse['groupedByCategory'] = models.reduce((groups: ModelSummariesResponse['groupedByCategory'], model: ModelSummary) => {
     const category = model.category || 'Other';
     groups[category] ||= {
       name: category,
@@ -104,41 +107,65 @@ function emptyModelSummaries(): ModelSummariesResponse {
   };
 }
 
-function toModelSummary(model: any): ModelSummary {
-  const name = model.name || model.title?.rendered || '';
-  const image = model.image || model.desktopImage || model.mobileImage || null;
-  const category = model.category || model.vehiclecat || '';
-  const categoryDescription = model.categoryDescription || model.caption || '';
+function toModelSummary(model: RawModelSummary): ModelSummary {
+  const title = isRecord(model.title) ? optionalString(model.title.rendered) : undefined;
+  const name = optionalString(model.name) || title || '';
+  const image = optionalString(model.image) || optionalString(model.desktopImage) || optionalString(model.mobileImage) || null;
+  const category = optionalString(model.category) || optionalString(model.vehiclecat) || '';
+  const categoryDescription = optionalString(model.categoryDescription) || optionalString(model.caption) || '';
 
   return {
     id: String(model.id || model.modelId || model.slug || name),
     modelId: model.modelId ? String(model.modelId) : undefined,
     name,
-    slug: model.slug || slugify(name),
+    slug: optionalString(model.slug) || slugify(name),
     category,
     categoryDescription,
     image,
-    mobileImage: model.mobileImage || image,
-    desktopImage: model.desktopImage || image,
-    lowPrice: model.lowPrice ?? null,
-    highPrice: model.highPrice ?? null,
-    priceEnabled: model.priceEnabled,
-    modelUrl: model.modelUrl || null,
-    calculatorUrl: model.calculatorUrl || null,
-    isNPerformance: model.isNPerformance,
-    order: model.order,
-    fuelType: model.fuelType,
-    hasOffer: model.hasOffer,
-    isNew: model.isNew,
-    hideInListing: model.hideInListing,
-    isComingSoon: model.isComingSoon,
-    form: model.form,
-    tagline: model.tagline,
+    mobileImage: optionalString(model.mobileImage) || image,
+    desktopImage: optionalString(model.desktopImage) || image,
+    lowPrice: optionalNumber(model.lowPrice) ?? null,
+    highPrice: optionalNumber(model.highPrice) ?? null,
+    priceEnabled: optionalBoolean(model.priceEnabled),
+    modelUrl: optionalString(model.modelUrl) || null,
+    calculatorUrl: optionalString(model.calculatorUrl) || null,
+    isNPerformance: optionalBoolean(model.isNPerformance),
+    order: optionalNumber(model.order) ?? undefined,
+    fuelType: optionalString(model.fuelType),
+    hasOffer: optionalBoolean(model.hasOffer),
+    isNew: optionalBoolean(model.isNew),
+    hideInListing: optionalBoolean(model.hideInListing),
+    isComingSoon: optionalBoolean(model.isComingSoon),
+    form: optionalBoolean(model.form),
+    tagline: optionalString(model.tagline),
     title: { rendered: name },
     model_image: image,
     caption: categoryDescription,
     vehiclecat: category,
   };
+}
+
+function isRecord(value: unknown): value is RawModelSummary {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  return typeof value === 'string' ? value : String(value);
+}
+
+function optionalNumber(value: unknown): number | null | undefined {
+  if (value == null) return value as null | undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function getSortedCategories(models: ModelSummary[]) {

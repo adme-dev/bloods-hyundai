@@ -8,7 +8,7 @@
         </Button>
         <Avatar class="h-16 w-16">
           <AvatarImage :src="getGravatarUrl(customer?.email || '')" :alt="customerName" />
-          <AvatarFallback class="text-xl">{{ getInitials(customer?.firstName, customer?.lastName) }}</AvatarFallback>
+          <AvatarFallback class="text-xl">{{ getInitials(customer?.firstName || undefined, customer?.lastName || undefined) }}</AvatarFallback>
         </Avatar>
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">{{ customerName }}</h1>
@@ -236,10 +236,10 @@
               <Label class="text-xs text-muted-foreground">Marketing Consent</Label>
               <p class="text-sm">{{ customer?.retentionProfile?.marketingConsent ? 'Yes' : 'No' }}</p>
             </div>
-            <div v-if="customer?.retentionProfile?.tags?.length" class="space-y-1">
+            <div v-if="customerTags.length" class="space-y-1">
               <Label class="text-xs text-muted-foreground">Tags</Label>
               <div class="flex flex-wrap gap-1">
-                <Badge v-for="tag in customer.retentionProfile.tags" :key="tag" variant="outline" class="text-xs">
+                <Badge v-for="tag in customerTags" :key="tag" variant="outline" class="text-xs">
                   {{ tag }}
                 </Badge>
               </div>
@@ -612,6 +612,10 @@ const customer = computed(() => data.value?.customer);
 const customerName = computed(() =>
   customer.value ? `${customer.value.firstName} ${customer.value.lastName}` : 'Customer'
 );
+const customerTags = computed<string[]>(() => {
+  const tags = (customer.value?.retentionProfile as { tags?: unknown } | null | undefined)?.tags;
+  return Array.isArray(tags) ? tags.map(String) : [];
+});
 
 // Edit mode
 const editMode = ref(false);
@@ -622,7 +626,7 @@ const creatingTask = ref(false);
 const newTask = reactive({
   title: '',
   taskType: 'follow_up',
-  dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '',
   priority: 'normal',
   description: '',
 });
@@ -802,7 +806,8 @@ onMounted(() => {
 });
 
 // Formatting helpers
-const formatDate = (date: string) => {
+const formatDate = (date: string | Date | null | undefined) => {
+  if (!date) return '';
   return new Date(date).toLocaleDateString('en-AU', {
     year: 'numeric',
     month: 'short',
@@ -810,7 +815,8 @@ const formatDate = (date: string) => {
   });
 };
 
-const formatDateTime = (date: string) => {
+const formatDateTime = (date: string | Date | null | undefined) => {
+  if (!date) return '';
   return new Date(date).toLocaleDateString('en-AU', {
     year: 'numeric',
     month: 'short',
@@ -820,7 +826,8 @@ const formatDateTime = (date: string) => {
   });
 };
 
-const formatDistanceToNow = (date: string) => {
+const formatDistanceToNow = (date: string | Date | null | undefined) => {
+  if (!date) return '';
   const diff = Date.now() - new Date(date).getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   if (days === 0) return 'today';
@@ -830,12 +837,12 @@ const formatDistanceToNow = (date: string) => {
   return months === 1 ? '1 month' : `${months} months`;
 };
 
-const formatLifecycleStage = (stage?: string) => {
+const formatLifecycleStage = (stage?: string | null) => {
   if (!stage) return 'Prospect';
   return LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.label || stage;
 };
 
-const getLifecycleBadgeVariant = (stage?: string): 'default' | 'secondary' | 'outline' | 'destructive' => {
+const getLifecycleBadgeVariant = (stage?: string | null): 'default' | 'secondary' | 'outline' | 'destructive' => {
   const category = stage ? LIFECYCLE_STAGE_CONFIG[stage as LifecycleStage]?.category : undefined;
   const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
     acquisition: 'outline',
@@ -847,7 +854,7 @@ const getLifecycleBadgeVariant = (stage?: string): 'default' | 'secondary' | 'ou
   return (category && map[category]) || 'outline';
 };
 
-const formatRiskLevel = (level?: string) => {
+const formatRiskLevel = (level?: string | null) => {
   const levels: Record<string, string> = {
     low: 'Low',
     medium: 'Medium',
@@ -857,7 +864,7 @@ const formatRiskLevel = (level?: string) => {
   return levels[level || 'low'] || 'Low';
 };
 
-const getRiskDotClass = (level?: string) => {
+const getRiskDotClass = (level?: string | null) => {
   const classes: Record<string, string> = {
     low: 'bg-green-500',
     medium: 'bg-yellow-500',
@@ -867,7 +874,7 @@ const getRiskDotClass = (level?: string) => {
   return classes[level || 'low'] || 'bg-green-500';
 };
 
-const getRiskTextClass = (level?: string) => {
+const getRiskTextClass = (level?: string | null) => {
   const classes: Record<string, string> = {
     low: 'text-green-600',
     medium: 'text-yellow-600',
@@ -877,8 +884,8 @@ const getRiskTextClass = (level?: string) => {
   return classes[level || 'low'] || 'text-green-600';
 };
 
-const getRiskBarClass = (score?: string) => {
-  const numScore = parseInt(score || '0');
+const getRiskBarClass = (score?: string | number | null) => {
+  const numScore = typeof score === 'number' ? score : parseInt(score || '0');
   if (numScore < 30) return 'bg-green-500';
   if (numScore < 60) return 'bg-yellow-500';
   if (numScore < 80) return 'bg-orange-500';

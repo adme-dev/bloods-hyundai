@@ -25,7 +25,7 @@
             <CalendarDays class="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="outline" size="sm" @click="refresh">
+        <Button variant="outline" size="sm" @click="refresh()">
           <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': pending }" />
           Refresh
         </Button>
@@ -100,7 +100,7 @@
         :key="status"
         :variant="statusFilter === status ? 'default' : 'outline'"
         class="cursor-pointer capitalize"
-        @click="statusFilter = status as string"
+        @click="statusFilter = String(status)"
       >
         {{ status.replace('_', ' ') }}: {{ count }}
       </Badge>
@@ -279,6 +279,44 @@ definePageMeta({
   layout: 'admin',
 })
 
+type ServiceAppointmentListItem = {
+  id: string
+  scheduledDate: string | Date
+  scheduledTime?: string | null
+  customerName?: string | null
+  customerPhone?: string | null
+  vehicle?: string | null
+  vehicleRegistration?: string | null
+  serviceType?: string | null
+  technicianName?: string | null
+  status: string
+}
+
+type AppointmentsResponse = {
+  appointments: ServiceAppointmentListItem[]
+  statusCounts: Record<string, number>
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
+type CalendarAppointment = {
+  id: string
+  status: string
+  time?: string | null
+  customer?: string | null
+  registration?: string | null
+}
+
+type CalendarAppointmentsResponse = {
+  appointments: Record<string, CalendarAppointment[]>
+}
+
+const toIsoDate = (date: Date) => date.toISOString().split('T')[0] || ''
+
 const viewMode = ref<'list' | 'calendar'>('list')
 const searchQuery = ref('')
 const statusFilter = ref('all')
@@ -291,7 +329,7 @@ function getWeekStart(date: Date) {
   const d = new Date(date)
   const day = d.getDay()
   d.setDate(d.getDate() - day)
-  return d.toISOString().split('T')[0]
+  return toIsoDate(d)
 }
 
 const hasActiveFilters = computed(() => {
@@ -307,7 +345,7 @@ const clearFilters = () => {
 }
 
 // List view data
-const { data, pending, refresh } = await useFetch('/api/admin/service/appointments', {
+const { data, pending, refresh } = await useFetch<AppointmentsResponse>('/api/admin/service/appointments', {
   headers: useRequestHeaders(['cookie']),
   query: computed(() => ({
     page: page.value,
@@ -317,32 +355,34 @@ const { data, pending, refresh } = await useFetch('/api/admin/service/appointmen
     dateTo: dateTo.value || undefined,
   })),
   watch: [page, searchQuery, statusFilter, dateFrom, dateTo],
+  default: () => ({ appointments: [], statusCounts: {} }),
 })
 
 // Calendar view data
 const calendarEndDate = computed(() => {
   const d = new Date(calendarWeekStart.value)
   d.setDate(d.getDate() + 6)
-  return d.toISOString().split('T')[0]
+  return toIsoDate(d)
 })
 
-const { data: calendarData } = await useFetch('/api/admin/service/appointments/calendar', {
+const { data: calendarData } = await useFetch<CalendarAppointmentsResponse>('/api/admin/service/appointments/calendar', {
   headers: useRequestHeaders(['cookie']),
   query: computed(() => ({
     dateFrom: calendarWeekStart.value,
     dateTo: calendarEndDate.value,
   })),
   watch: [calendarWeekStart],
+  default: () => ({ appointments: {} }),
 })
 
-const weekDays = computed(() => {
-  const days = []
+const weekDays = computed<Array<{ date: string; dayName: string; dayNum: number }>>(() => {
+  const days: Array<{ date: string; dayName: string; dayNum: number }> = []
   const start = new Date(calendarWeekStart.value)
   for (let i = 0; i < 7; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
     days.push({
-      date: d.toISOString().split('T')[0],
+      date: toIsoDate(d),
       dayName: d.toLocaleDateString('en-AU', { weekday: 'short' }),
       dayNum: d.getDate(),
     })
@@ -351,19 +391,19 @@ const weekDays = computed(() => {
 })
 
 const isToday = (dateStr: string) => {
-  return dateStr === new Date().toISOString().split('T')[0]
+  return dateStr === toIsoDate(new Date())
 }
 
 const previousWeek = () => {
   const d = new Date(calendarWeekStart.value)
   d.setDate(d.getDate() - 7)
-  calendarWeekStart.value = d.toISOString().split('T')[0]
+  calendarWeekStart.value = toIsoDate(d)
 }
 
 const nextWeek = () => {
   const d = new Date(calendarWeekStart.value)
   d.setDate(d.getDate() + 7)
-  calendarWeekStart.value = d.toISOString().split('T')[0]
+  calendarWeekStart.value = toIsoDate(d)
 }
 
 const formatWeekRange = () => {
