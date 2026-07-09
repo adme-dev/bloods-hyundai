@@ -211,6 +211,22 @@ export const enquiries = pgTable('enquiries', {
   utmSource: varchar('utm_source', { length: 100 }),
   utmMedium: varchar('utm_medium', { length: 100 }),
   utmCampaign: varchar('utm_campaign', { length: 100 }),
+  utmTerm: varchar('utm_term', { length: 255 }),
+  utmContent: varchar('utm_content', { length: 255 }),
+  gclid: varchar('gclid', { length: 255 }),
+  gbraid: varchar('gbraid', { length: 255 }),
+  wbraid: varchar('wbraid', { length: 255 }),
+  fbclid: varchar('fbclid', { length: 255 }),
+  msclkid: varchar('msclkid', { length: 255 }),
+  landingPage: text('landing_page'),
+  referrer: text('referrer'),
+  attributedPlatform: varchar('attributed_platform', { length: 30 }),
+  attributedCampaignId: varchar('attributed_campaign_id', { length: 255 }),
+  attributedCampaignName: varchar('attributed_campaign_name', { length: 255 }),
+  attributionConfidence: integer('attribution_confidence'),
+  attributionMethod: varchar('attribution_method', { length: 50 }),
+  attributionMatchedAt: timestamp('attribution_matched_at', { withTimezone: true }),
+  attributionMeta: jsonb('attribution_meta'),
   ipAddress: inet('ip_address'),
   userAgent: text('user_agent'),
 }, (table) => ({
@@ -220,6 +236,7 @@ export const enquiries = pgTable('enquiries', {
   dealerCreatedIdx: index('idx_enquiries_dealer_created').on(table.dealerId, table.createdAt),
   assignedIdx: index('idx_enquiries_assigned').on(table.assignedTo),
   emailIdx: index('idx_enquiries_email').on(table.email),
+  attributionIdx: index('idx_enquiries_attribution').on(table.dealerId, table.attributedPlatform, table.attributedCampaignId),
 }));
 
 // ============================================================================
@@ -1159,7 +1176,6 @@ export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert
 
 export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
 export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
-
 
 
 

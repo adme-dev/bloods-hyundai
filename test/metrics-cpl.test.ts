@@ -95,4 +95,25 @@ describe('aggregateMarketingMetrics', () => {
     assert.equal(out.campaigns.find(c => c.campaignId === 'm1')!.crmLeads, 3);
     assert.equal(out.campaigns.find(c => c.campaignId === 'g1')!.crmLeads, 5);
   });
+
+  it('uses backfilled attribution fields before raw UTM campaign fields', () => {
+    const out = aggregateMarketingMetrics(
+      [
+        meta({ campaignName: 'Meta Lead Gen', campaignId: 'm1' }),
+        { ...meta({ platform: 'google_ads' as const, campaignName: 'Google Search', campaignId: 'g1', spend: 200 }) },
+      ],
+      [{
+        utmSource: null,
+        utmMedium: null,
+        utmCampaign: null,
+        attributedPlatform: 'google_ads',
+        attributedCampaignId: 'g1',
+        attributedCampaignName: 'Google Search',
+        count: 4,
+      }],
+    );
+    assert.equal(out.platforms.google_ads.crmLeads, 4);
+    assert.equal(out.campaigns.find(c => c.campaignId === 'g1')!.crmLeads, 4);
+    assert.equal(out.campaigns.find(c => c.campaignId === 'm1')!.crmLeads, 0);
+  });
 });

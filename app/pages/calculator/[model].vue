@@ -1405,7 +1405,10 @@ const handleTestDriveSubmit = async (formData: any) => {
     // Submit to API
     const response = await $fetch('/api/submit-enquiry', {
       method: 'POST',
-      body: testDrivePayload,
+      body: {
+        ...testDrivePayload,
+        ...useUtmParams().getUtmParams(),
+      },
     });
 
     console.log('✅ [Calculator] Test drive request submitted successfully:', response);
@@ -1508,7 +1511,10 @@ const handleEnquireSubmit = async (formData: any) => {
     // Submit to API
     const response = await $fetch('/api/submit-enquiry', {
       method: 'POST',
-      body: enquiryPayload,
+      body: {
+        ...enquiryPayload,
+        ...useUtmParams().getUtmParams(),
+      },
     });
 
     console.log('✅ [Calculator] Enquiry submitted successfully:', response);
@@ -3928,5 +3934,4 @@ $bg-white: #fff;
   }
 }
 </style>
-
 

@@ -198,6 +198,7 @@ const handleSubmit = async () => {
         } : undefined,
         testDrive: form.testDrive,
         source: `variant-page-${slug.value}`,
+        ...useUtmParams().getUtmParams(),
       },
     });
 
@@ -219,7 +220,6 @@ const handleSubmit = async () => {
   }
 };
 </script>
-
 
 
 

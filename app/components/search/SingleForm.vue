@@ -354,10 +354,8 @@ const submitForm = async () => {
         testDrive: form.testDrive,
         financeInterest: form.finance,
         source: 'vehicle-single-form',
-        // UTM tracking for marketing analytics
-        utmSource: utmParams.utmSource,
-        utmMedium: utmParams.utmMedium,
-        utmCampaign: utmParams.utmCampaign,
+        // Attribution tracking for marketing analytics
+        ...utmParams,
       }
     });
 
@@ -447,7 +445,6 @@ const resetForm = () => {
   }
 }
 </style>
-
 
 
 

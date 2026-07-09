@@ -756,6 +756,7 @@ const handleSubmit = async () => {
           price: offer.value?.offerAmount ? parseInt(offer.value.offerAmount.replace(/[^0-9]/g, '')) : undefined,
         },
         source: `offer-page-${offerId.value}`,
+        ...useUtmParams().getUtmParams(),
       },
     });
 
@@ -1797,7 +1798,6 @@ onUpdated(() => {
   }
 }
 </style>
-
 
 
 

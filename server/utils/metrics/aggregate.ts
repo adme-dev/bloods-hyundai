@@ -17,6 +17,9 @@ export interface CrmCampaignCount {
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
+  attributedPlatform?: 'meta_ads' | 'google_ads' | null;
+  attributedCampaignId?: string | null;
+  attributedCampaignName?: string | null;
   count: number;
 }
 
@@ -104,36 +107,48 @@ export function aggregateMarketingMetrics(rows: MetricInput[], crm: CrmCampaignC
   for (const row of crm) {
     const source = (row.utmSource || '').toLowerCase();
     const medium = (row.utmMedium || '').toLowerCase();
+    const attributedPlatform = row.attributedPlatform || null;
 
     // Platform-level attribution by source (+ paid medium for Google).
-    if (META_UTM_SOURCES.includes(source)) {
+    if (attributedPlatform === 'meta_ads' || META_UTM_SOURCES.includes(source)) {
       adTotals.meta_ads.crmLeads += row.count;
-    } else if (GOOGLE_UTM_SOURCES.includes(source) && PAID_UTM_MEDIUMS.includes(medium)) {
+    } else if (attributedPlatform === 'google_ads' || (GOOGLE_UTM_SOURCES.includes(source) && PAID_UTM_MEDIUMS.includes(medium))) {
       adTotals.google_ads.crmLeads += row.count;
     }
 
     // Derive a platform hint from source/medium before campaign matching.
     let hint: 'meta_ads' | 'google_ads' | null = null;
-    if (META_UTM_SOURCES.includes(source)) {
+    if (attributedPlatform === 'meta_ads' || META_UTM_SOURCES.includes(source)) {
       hint = 'meta_ads';
-    } else if (GOOGLE_UTM_SOURCES.includes(source) && PAID_UTM_MEDIUMS.includes(medium)) {
+    } else if (attributedPlatform === 'google_ads' || (GOOGLE_UTM_SOURCES.includes(source) && PAID_UTM_MEDIUMS.includes(medium))) {
       hint = 'google_ads';
     }
 
     // Campaign-level match.
-    const campaignKey = (row.utmCampaign || '').toLowerCase();
+    const campaignKeys = [
+      row.attributedCampaignId,
+      row.attributedCampaignName,
+      row.utmCampaign,
+    ].filter(Boolean).map(value => String(value).toLowerCase());
+    const campaignKey = campaignKeys[0] || '';
     if (!campaignKey) continue;
 
     if (hint) {
-      const match = byId.get(`${hint}:${campaignKey}`) || byName.get(`${hint}:${campaignKey}`);
+      const match = campaignKeys
+        .map(key => byId.get(`${hint}:${key}`) || byName.get(`${hint}:${key}`))
+        .find(Boolean);
       if (match) {
         match.crmLeads += row.count;
       } else {
         otherPaidLeads += row.count;
       }
     } else {
-      const metaMatch = byId.get(`meta_ads:${campaignKey}`) || byName.get(`meta_ads:${campaignKey}`);
-      const googleMatch = byId.get(`google_ads:${campaignKey}`) || byName.get(`google_ads:${campaignKey}`);
+      const metaMatch = campaignKeys
+        .map(key => byId.get(`meta_ads:${key}`) || byName.get(`meta_ads:${key}`))
+        .find(Boolean);
+      const googleMatch = campaignKeys
+        .map(key => byId.get(`google_ads:${key}`) || byName.get(`google_ads:${key}`))
+        .find(Boolean);
       if (metaMatch && !googleMatch) {
         metaMatch.crmLeads += row.count;
       } else if (googleMatch && !metaMatch) {

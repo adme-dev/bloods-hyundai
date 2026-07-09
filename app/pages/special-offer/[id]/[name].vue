@@ -768,9 +768,7 @@ const handleSubmit = async () => {
           vehicleUrl: route.fullPath,
         },
         source: `special-offer-${offer.value?.model?.toLowerCase().replace(/\s+/g, '-')}-${offerId.value}`,
-        utmSource: route.query.utm_source as string || undefined,
-        utmMedium: route.query.utm_medium as string || undefined,
-        utmCampaign: route.query.utm_campaign as string || undefined,
+        ...useUtmParams().getUtmParams(),
       },
     });
 
@@ -848,7 +846,7 @@ const handleTestDriveSubmit = async (formData: any) => {
       message: formData.purchaseTimeline 
         ? `Purchase timeline: ${formData.purchaseTimeline}` 
         : '',
-      utm: getUtmParams(),
+      ...getUtmParams(),
     };
 
     // Submit to the API
@@ -2017,7 +2015,6 @@ onUpdated(() => {
   }
 }
 </style>
-
 
 
 

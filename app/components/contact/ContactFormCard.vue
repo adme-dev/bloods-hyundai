@@ -343,6 +343,7 @@ const submitForm = async () => {
         message: form.message || undefined,
         vehicleInfo: form.registration ? { registration: form.registration } : undefined,
         source: `contact-page-${props.formType}`,
+        ...useUtmParams().getUtmParams(),
       },
     });
 

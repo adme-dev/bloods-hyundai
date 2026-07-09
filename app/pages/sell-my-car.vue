@@ -785,6 +785,7 @@ const handleStepSubmit = async () => {
         knownFaultsDetails: form.knownFaultsDetails,
         accessories: form.accessories,
         comments: form.comments,
+        ...useUtmParams().getUtmParams(),
       },
     })
 

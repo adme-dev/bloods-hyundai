@@ -756,6 +756,7 @@ const submitForm = async () => {
         },
         financeInterest: true,
         source: 'vehicle-finance-calculator',
+        ...useUtmParams().getUtmParams(),
       },
     });
 

@@ -346,10 +346,8 @@ const submitForm = async () => {
         message: form.message || undefined,
         vehicleInfo: form.registration ? { registration: form.registration } : undefined,
         source: route.path,
-        // UTM tracking for marketing analytics
-        utmSource: utmParams.utmSource,
-        utmMedium: utmParams.utmMedium,
-        utmCampaign: utmParams.utmCampaign,
+        // Attribution tracking for marketing analytics
+        ...utmParams,
       },
     });
 
@@ -393,7 +391,6 @@ const submitForm = async () => {
   border: 1px solid #ff002f;
 }
 </style>
-
 
 
 

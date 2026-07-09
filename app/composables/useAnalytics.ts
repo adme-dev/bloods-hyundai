@@ -59,6 +59,15 @@ interface BaseFormData {
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
+  utm_term?: string;
+  utm_content?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  fbclid?: string;
+  msclkid?: string;
+  landing_page?: string;
+  referrer?: string;
 }
 
 interface VehicleEnquiryData extends BaseFormData {
@@ -182,6 +191,7 @@ type FormEventData =
 export const useAnalytics = () => {
   const { gtag } = useGtag();
   const fbPixel = useFacebookPixel();
+  const { getUtmParams } = useUtmParams();
 
   /**
    * Track when enquiry modal is opened
@@ -377,21 +387,42 @@ export const useAnalytics = () => {
   const trackFormSubmission = (data: FormEventData) => {
     const pageUrl = data.page_url || (typeof window !== 'undefined' ? window.location.href : '');
     const conversionValue = getConversionValue(data.form_type, data);
+    const attribution = getUtmParams();
+    const eventData = {
+      ...data,
+      utm_source: data.utm_source || attribution.utmSource,
+      utm_medium: data.utm_medium || attribution.utmMedium,
+      utm_campaign: data.utm_campaign || attribution.utmCampaign,
+      utm_term: data.utm_term || attribution.utmTerm,
+      utm_content: data.utm_content || attribution.utmContent,
+      gclid: data.gclid || attribution.gclid,
+      gbraid: data.gbraid || attribution.gbraid,
+      wbraid: data.wbraid || attribution.wbraid,
+      fbclid: data.fbclid || attribution.fbclid,
+      msclkid: data.msclkid || attribution.msclkid,
+      landing_page: data.landing_page || attribution.landingPage,
+      referrer: data.referrer || attribution.referrer,
+    };
 
     // GA4 generate_lead event (standard conversion event)
     gtag('event', 'generate_lead', {
       event_category: 'conversion',
-      event_label: data.form_type,
-      form_type: data.form_type,
-      form_location: data.form_location || 'unknown',
-      enquiry_id: data.enquiry_id || undefined,
+      event_label: eventData.form_type,
+      form_type: eventData.form_type,
+      form_location: eventData.form_location || 'unknown',
+      enquiry_id: eventData.enquiry_id || undefined,
       currency: 'AUD',
       value: conversionValue,
       page_url: pageUrl,
+      utm_source: eventData.utm_source,
+      utm_medium: eventData.utm_medium,
+      utm_campaign: eventData.utm_campaign,
+      gclid: eventData.gclid,
+      fbclid: eventData.fbclid,
     });
 
     // Custom form_submission event with full data
-    const { form_type, form_location, enquiry_id, ...restData } = data;
+    const { form_type, form_location, enquiry_id, ...restData } = eventData;
     gtag('event', 'form_submission', {
       event_category: 'forms',
       form_type,
@@ -405,11 +436,20 @@ export const useAnalytics = () => {
       formLocation: data.form_location,
       enquiryId: data.enquiry_id,
       source: data.source || data.form_location || pageUrl,
-      utmSource: data.utm_source,
-      utmMedium: data.utm_medium,
-      utmCampaign: data.utm_campaign,
+      utmSource: eventData.utm_source,
+      utmMedium: eventData.utm_medium,
+      utmCampaign: eventData.utm_campaign,
+      utmTerm: eventData.utm_term,
+      utmContent: eventData.utm_content,
+      gclid: eventData.gclid,
+      gbraid: eventData.gbraid,
+      wbraid: eventData.wbraid,
+      fbclid: eventData.fbclid,
+      msclkid: eventData.msclkid,
+      landingPage: eventData.landing_page,
+      referrer: eventData.referrer,
       conversionValue,
-      ...data,
+      ...eventData,
     };
 
     // Push to dataLayer for GTM triggers. Keep the legacy capitalized event
@@ -809,7 +849,6 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
 
 
 

@@ -63,6 +63,15 @@ interface EnquiryFormData {
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  fbclid?: string;
+  msclkid?: string;
+  landingPage?: string;
+  referrer?: string;
 }
 
 interface SubmitResult {
@@ -114,6 +123,15 @@ export function useEnquiryForm() {
         ...(data.utmSource && { utmSource: data.utmSource }),
         ...(data.utmMedium && { utmMedium: data.utmMedium }),
         ...(data.utmCampaign && { utmCampaign: data.utmCampaign }),
+        ...(data.utmTerm && { utmTerm: data.utmTerm }),
+        ...(data.utmContent && { utmContent: data.utmContent }),
+        ...(data.gclid && { gclid: data.gclid }),
+        ...(data.gbraid && { gbraid: data.gbraid }),
+        ...(data.wbraid && { wbraid: data.wbraid }),
+        ...(data.fbclid && { fbclid: data.fbclid }),
+        ...(data.msclkid && { msclkid: data.msclkid }),
+        ...(data.landingPage && { landingPage: data.landingPage }),
+        ...(data.referrer && { referrer: data.referrer }),
       };
       
       // Submit to the new API
@@ -136,6 +154,15 @@ export function useEnquiryForm() {
           utmSource: data.utmSource || utmParams.utmSource,
           utmMedium: data.utmMedium || utmParams.utmMedium,
           utmCampaign: data.utmCampaign || utmParams.utmCampaign,
+          utmTerm: data.utmTerm || utmParams.utmTerm,
+          utmContent: data.utmContent || utmParams.utmContent,
+          gclid: data.gclid || utmParams.gclid,
+          gbraid: data.gbraid || utmParams.gbraid,
+          wbraid: data.wbraid || utmParams.wbraid,
+          fbclid: data.fbclid || utmParams.fbclid,
+          msclkid: data.msclkid || utmParams.msclkid,
+          landingPage: data.landingPage || utmParams.landingPage,
+          referrer: data.referrer || utmParams.referrer,
           vehicleStockId: data.vehicleInfo?.stockId,
           vehicleMake: data.vehicleInfo?.make,
           vehicleModel: data.vehicleInfo?.model,
@@ -187,7 +214,6 @@ export function useEnquiryForm() {
     resetState,
   };
 }
-
 
 
 

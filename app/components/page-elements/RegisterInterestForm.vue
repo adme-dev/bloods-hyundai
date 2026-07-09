@@ -324,9 +324,7 @@ const handleSubmit = async () => {
           thumbnail: props.vehicleImage || undefined,
         } : undefined,
         tradeIn: form.tradeIn ? { interested: true } : undefined,
-        utmSource: utmParams.utmSource,
-        utmMedium: utmParams.utmMedium,
-        utmCampaign: utmParams.utmCampaign,
+        ...utmParams,
       },
     });
 

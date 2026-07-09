@@ -16,6 +16,10 @@
           <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': pending }" />
           Refresh
         </Button>
+        <Button variant="outline" size="sm" :disabled="backfillPending" @click="runAttributionBackfill">
+          <GitBranch class="h-4 w-4" :class="{ 'animate-spin': backfillPending }" />
+          Backfill attribution
+        </Button>
       </div>
     </div>
 
@@ -180,6 +184,8 @@
                 <MetricCell label="Source coverage" :value="pct(data.summary.sourceCoverage)" />
                 <MetricCell label="Campaign coverage" :value="pct(data.summary.campaignCoverage)" />
                 <MetricCell label="Paid attribution" :value="pct(data.summary.paidAttributionCoverage)" />
+                <MetricCell label="Click ID coverage" :value="pct(data.summary.clickIdCoverage)" />
+                <MetricCell label="Backfilled" :value="pct(data.summary.backfilledAttributionCoverage)" />
               </div>
             </div>
             <div class="space-y-2">
@@ -319,6 +325,7 @@
                     <div class="flex flex-wrap justify-end gap-1">
                       <Badge v-if="lead.syncedToCrm" variant="outline">CRM</Badge>
                       <Badge v-if="lead.hasExternalRef" variant="outline">External</Badge>
+                      <Badge v-if="lead.attributedPlatform" variant="outline">{{ platformLabel(lead.attributedPlatform) }}</Badge>
                       <Badge v-if="lead.testDrive" variant="outline">Test drive</Badge>
                       <Badge v-if="lead.financeInterest" variant="outline">Finance</Badge>
                     </div>
@@ -405,6 +412,7 @@ import {
   Code2,
   Database,
   Gauge,
+  GitBranch,
   History,
   MousePointerClick,
   RefreshCw,
@@ -440,6 +448,8 @@ interface ReportResponse {
     campaignCoverage: number;
     paidAttributionCoverage: number;
     sourceCoverage: number;
+    clickIdCoverage: number;
+    backfilledAttributionCoverage: number;
   };
   platformMetrics: {
     ga4: { sessions: number; users: number; conversions: number };
@@ -488,6 +498,10 @@ interface ReportResponse {
       utmSource: string | null;
       utmMedium: string | null;
       utmCampaign: string | null;
+      attributedPlatform: string | null;
+      attributedCampaignId: string | null;
+      attributionMethod: string | null;
+      attributionConfidence: number | null;
       testDrive: boolean;
       financeInterest: boolean;
       syncedToCrm: boolean;
@@ -539,6 +553,7 @@ const query = computed(() => ({ from: from.value, to: to.value }));
 const { data, pending, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', {
   query,
 });
+const backfillPending = ref(false);
 
 const presets: { id: PresetId; label: string }[] = [
   { id: 'mtd', label: 'Month to date' },
@@ -625,6 +640,20 @@ const dataLayerLabel = computed(() => {
 });
 
 const dataLayerVariant = computed(() => data.value?.dataLayer.status === 'poor_coverage' ? 'destructive' : data.value?.dataLayer.status === 'healthy' ? 'default' : 'secondary');
+
+async function runAttributionBackfill() {
+  if (backfillPending.value) return;
+  backfillPending.value = true;
+  try {
+    await $fetch('/api/admin/analytics/attribution-backfill', {
+      method: 'POST',
+      body: { days: 180 },
+    });
+    await refresh();
+  } finally {
+    backfillPending.value = false;
+  }
+}
 
 function applyPreset(id: PresetId) {
   to.value = today;

@@ -91,9 +91,15 @@ if (process.client) {
 // Fetch site config during SSR - hidden from browser network tab
 // Uses host-scoped cache key with 10-min server cache
 const route = useRoute();
+const { initUtmTracking } = useUtmParams();
 const showPublicChatAssistant = computed(() => !route.path.startsWith('/admin'));
 const shouldRefreshSiteConfig = computed(() => route.query.refresh === 'true');
 const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data:v2');
+
+if (import.meta.client) {
+  onMounted(initUtmTracking);
+  watch(() => route.fullPath, initUtmTracking);
+}
 
 const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
   key: computed(() => shouldRefreshSiteConfig.value ? `${siteConfigCacheKey}:refresh` : siteConfigCacheKey),

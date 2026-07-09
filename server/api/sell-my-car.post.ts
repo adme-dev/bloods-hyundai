@@ -16,6 +16,7 @@ import { sendEnquiryNotification, sendCustomerConfirmation } from '../utils/emai
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 import { sanitizeIpAddress } from '../utils/intakeValidation';
 import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
+import { inferLeadAttribution } from '../utils/metrics/attribution';
 
 interface SellMyCarSubmission {
   // Personal details
@@ -54,6 +55,15 @@ interface SellMyCarSubmission {
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  fbclid?: string;
+  msclkid?: string;
+  landingPage?: string;
+  referrer?: string;
 }
 
 export default defineEventHandler(async (event) => {
@@ -126,6 +136,20 @@ export default defineEventHandler(async (event) => {
     // 4. Get request metadata
     const ipAddress = getRequestIP(event, { xForwardedFor: true });
     const userAgent = getHeader(event, 'user-agent');
+    const referer = getHeader(event, 'referer');
+    const attribution = inferLeadAttribution({
+      source: '/sell-my-car',
+      utmSource: body.utmSource,
+      utmMedium: body.utmMedium,
+      utmCampaign: body.utmCampaign,
+      gclid: body.gclid,
+      gbraid: body.gbraid,
+      wbraid: body.wbraid,
+      fbclid: body.fbclid,
+      msclkid: body.msclkid,
+      landingPage: body.landingPage,
+      referrer: body.referrer || referer,
+    });
 
     // 4b. Abuse controls (honeypot → rate limit → duplicate)
     if (isHoneypotTripped(body)) {
@@ -220,6 +244,22 @@ export default defineEventHandler(async (event) => {
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
+        utmTerm: body.utmTerm,
+        utmContent: body.utmContent,
+        gclid: body.gclid,
+        gbraid: body.gbraid,
+        wbraid: body.wbraid,
+        fbclid: body.fbclid,
+        msclkid: body.msclkid,
+        landingPage: body.landingPage,
+        referrer: body.referrer || referer || undefined,
+        attributedPlatform: attribution.platform,
+        attributedCampaignId: attribution.campaignId,
+        attributedCampaignName: attribution.campaignName || body.utmCampaign,
+        attributionConfidence: attribution.confidence,
+        attributionMethod: attribution.method,
+        attributionMatchedAt: attribution.platform ? new Date() : undefined,
+        attributionMeta: attribution.evidence,
         ipAddress: sanitizeIpAddress(ipAddress) || undefined,
         userAgent: userAgent || undefined,
       })

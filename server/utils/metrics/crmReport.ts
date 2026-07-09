@@ -5,6 +5,14 @@ export interface CrmLeadSignal {
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
+  gclid?: string | null;
+  gbraid?: string | null;
+  wbraid?: string | null;
+  fbclid?: string | null;
+  msclkid?: string | null;
+  attributedPlatform?: string | null;
+  attributedCampaignId?: string | null;
+  attributedCampaignName?: string | null;
   vehicleStockId: string | null;
   syncedToCrm: boolean;
   crmRef: string | null;
@@ -17,11 +25,12 @@ export interface LeadSourceBucket {
   category: 'paid' | 'external_marketplace' | 'owned' | 'organic' | 'direct' | 'unknown';
 }
 
-export function classifyCrmLeadSource(lead: Pick<CrmLeadSignal, 'source' | 'utmSource' | 'utmMedium' | 'externalRef'>): LeadSourceBucket {
+export function classifyCrmLeadSource(lead: Pick<CrmLeadSignal, 'source' | 'utmSource' | 'utmMedium' | 'externalRef' | 'gclid' | 'gbraid' | 'wbraid' | 'fbclid' | 'msclkid' | 'attributedPlatform'>): LeadSourceBucket {
   const source = normalize(lead.source);
   const utmSource = normalize(lead.utmSource);
   const utmMedium = normalize(lead.utmMedium);
   const externalRef = normalize(lead.externalRef);
+  const attributedPlatform = normalize(lead.attributedPlatform);
   const haystack = `${source} ${utmSource} ${utmMedium} ${externalRef}`;
 
   if (haystack.includes('carsales')) {
@@ -30,10 +39,16 @@ export function classifyCrmLeadSource(lead: Pick<CrmLeadSignal, 'source' | 'utmS
   if (haystack.includes('auto trader') || haystack.includes('autotrader') || haystack.includes('auto-trader')) {
     return { key: 'autotrader', label: 'Autotrader', category: 'external_marketplace' };
   }
-  if (['facebook', 'fb', 'meta', 'instagram', 'ig'].includes(utmSource)) {
+  if (attributedPlatform === 'meta_ads' || lead.fbclid || ['facebook', 'fb', 'meta', 'instagram', 'ig'].includes(utmSource)) {
     return { key: 'meta_paid', label: 'Meta paid', category: 'paid' };
   }
-  if (['google', 'googleads', 'google_ads'].includes(utmSource) && ['cpc', 'ppc', 'paid', 'paid_search'].includes(utmMedium)) {
+  if (
+    attributedPlatform === 'google_ads' ||
+    lead.gclid ||
+    lead.gbraid ||
+    lead.wbraid ||
+    (['google', 'googleads', 'google_ads'].includes(utmSource) && ['cpc', 'ppc', 'paid', 'paid_search'].includes(utmMedium))
+  ) {
     return { key: 'google_paid', label: 'Google paid', category: 'paid' };
   }
   if (utmMedium === 'email' || source.includes('mail') || utmSource.includes('newsletter')) {
@@ -56,8 +71,10 @@ export function calculateLeadSignalCoverage(leads: CrmLeadSignal[]) {
   const counts = leads.reduce((acc, lead) => {
     if (hasValue(lead.source)) acc.withSource += 1;
     if (hasValue(lead.utmSource) || hasValue(lead.utmMedium) || hasValue(lead.utmCampaign)) acc.withAnyUtm += 1;
-    if (hasValue(lead.utmCampaign)) acc.withCampaign += 1;
+    if (hasValue(lead.utmCampaign) || hasValue(lead.attributedCampaignId) || hasValue(lead.attributedCampaignName)) acc.withCampaign += 1;
     if (isPaidLead(lead)) acc.withPaidAttribution += 1;
+    if (lead.gclid || lead.gbraid || lead.wbraid || lead.fbclid || lead.msclkid) acc.withClickId += 1;
+    if (hasValue(lead.attributedPlatform)) acc.withBackfilledAttribution += 1;
     if (hasValue(lead.vehicleStockId)) acc.withVehicle += 1;
     if (lead.syncedToCrm) acc.syncedToCrm += 1;
     if (hasValue(lead.crmRef)) acc.withCrmRef += 1;
@@ -68,6 +85,8 @@ export function calculateLeadSignalCoverage(leads: CrmLeadSignal[]) {
     withAnyUtm: 0,
     withCampaign: 0,
     withPaidAttribution: 0,
+    withClickId: 0,
+    withBackfilledAttribution: 0,
     withVehicle: 0,
     syncedToCrm: 0,
     withCrmRef: 0,
@@ -101,7 +120,10 @@ export function summarizeLeadSources(leads: CrmLeadSignal[]) {
   return [...buckets.values()].sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
 }
 
-function isPaidLead(lead: Pick<CrmLeadSignal, 'utmSource' | 'utmMedium'>) {
+function isPaidLead(lead: Pick<CrmLeadSignal, 'utmSource' | 'utmMedium' | 'gclid' | 'gbraid' | 'wbraid' | 'fbclid' | 'msclkid' | 'attributedPlatform'>) {
+  const attributedPlatform = normalize(lead.attributedPlatform);
+  if (attributedPlatform === 'google_ads' || attributedPlatform === 'meta_ads') return true;
+  if (lead.gclid || lead.gbraid || lead.wbraid || lead.fbclid || lead.msclkid) return true;
   const source = normalize(lead.utmSource);
   const medium = normalize(lead.utmMedium);
   if (['facebook', 'fb', 'meta', 'instagram', 'ig'].includes(source)) return true;

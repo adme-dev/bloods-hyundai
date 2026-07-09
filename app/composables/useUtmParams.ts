@@ -11,6 +11,15 @@ interface UtmParams {
   utmCampaign?: string;
   utmTerm?: string;
   utmContent?: string;
+  gclid?: string;
+  gbraid?: string;
+  wbraid?: string;
+  fbclid?: string;
+  msclkid?: string;
+  landingPage?: string;
+  referrer?: string;
+  firstSeenAt?: string;
+  lastSeenAt?: string;
 }
 
 const UTM_STORAGE_KEY = 'sale_utm_params';
@@ -22,12 +31,21 @@ export function useUtmParams() {
    * Get UTM params from URL query string
    */
   const getUtmFromUrl = (): UtmParams => {
+    const now = new Date().toISOString();
     return {
       utmSource: (route.query.utm_source as string) || undefined,
       utmMedium: (route.query.utm_medium as string) || undefined,
       utmCampaign: (route.query.utm_campaign as string) || undefined,
       utmTerm: (route.query.utm_term as string) || undefined,
       utmContent: (route.query.utm_content as string) || undefined,
+      gclid: (route.query.gclid as string) || undefined,
+      gbraid: (route.query.gbraid as string) || undefined,
+      wbraid: (route.query.wbraid as string) || undefined,
+      fbclid: (route.query.fbclid as string) || undefined,
+      msclkid: (route.query.msclkid as string) || undefined,
+      landingPage: import.meta.client ? window.location.href : undefined,
+      referrer: import.meta.client ? document.referrer || undefined : undefined,
+      lastSeenAt: now,
     };
   };
 
@@ -50,9 +68,15 @@ export function useUtmParams() {
   const storeUtm = (params: UtmParams): void => {
     if (!import.meta.client) return;
     try {
-      // Only store if we have at least one UTM parameter
-      if (params.utmSource || params.utmMedium || params.utmCampaign) {
-        sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify(params));
+      if (hasAttributionSignal(params)) {
+        const existing = getStoredUtm() || {};
+        sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify({
+          ...existing,
+          ...params,
+          landingPage: existing.landingPage || params.landingPage,
+          referrer: existing.referrer || params.referrer,
+          firstSeenAt: existing.firstSeenAt || params.lastSeenAt || new Date().toISOString(),
+        }));
       }
     } catch {
       // sessionStorage not available
@@ -67,9 +91,9 @@ export function useUtmParams() {
     const urlParams = getUtmFromUrl();
 
     // If we have UTM params in the URL, store them and return
-    if (urlParams.utmSource || urlParams.utmMedium || urlParams.utmCampaign) {
+    if (hasAttributionSignal(urlParams)) {
       storeUtm(urlParams);
-      return urlParams;
+      return getStoredUtm() || urlParams;
     }
 
     // Otherwise, return stored params (from original landing)
@@ -82,7 +106,7 @@ export function useUtmParams() {
    */
   const initUtmTracking = (): void => {
     const urlParams = getUtmFromUrl();
-    if (urlParams.utmSource || urlParams.utmMedium || urlParams.utmCampaign) {
+    if (hasAttributionSignal(urlParams)) {
       storeUtm(urlParams);
     }
   };
@@ -111,4 +135,19 @@ export function useUtmParams() {
     initUtmTracking,
     clearUtm,
   };
+}
+
+function hasAttributionSignal(params: UtmParams) {
+  return Boolean(
+    params.utmSource ||
+    params.utmMedium ||
+    params.utmCampaign ||
+    params.utmTerm ||
+    params.utmContent ||
+    params.gclid ||
+    params.gbraid ||
+    params.wbraid ||
+    params.fbclid ||
+    params.msclkid,
+  );
 }

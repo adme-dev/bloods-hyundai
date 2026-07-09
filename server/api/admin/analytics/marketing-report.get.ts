@@ -9,6 +9,7 @@ import {
   type CrmLeadSignal,
 } from '../../../utils/metrics/crmReport';
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
+import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -42,6 +43,18 @@ export default defineEventHandler(async (event) => {
       utmSource: enquiries.utmSource,
       utmMedium: enquiries.utmMedium,
       utmCampaign: enquiries.utmCampaign,
+      gclid: enquiries.gclid,
+      gbraid: enquiries.gbraid,
+      wbraid: enquiries.wbraid,
+      fbclid: enquiries.fbclid,
+      msclkid: enquiries.msclkid,
+      landingPage: enquiries.landingPage,
+      referrer: enquiries.referrer,
+      attributedPlatform: enquiries.attributedPlatform,
+      attributedCampaignId: enquiries.attributedCampaignId,
+      attributedCampaignName: enquiries.attributedCampaignName,
+      attributionConfidence: enquiries.attributionConfidence,
+      attributionMethod: enquiries.attributionMethod,
       vehicleStockId: enquiries.vehicleStockId,
       testDrive: enquiries.testDrive,
       financeInterest: enquiries.financeInterest,
@@ -67,18 +80,32 @@ export default defineEventHandler(async (event) => {
       .limit(60),
   ]);
 
-  const crmSignals: CrmLeadSignal[] = leadRows.map((lead) => ({
+  const campaignCandidates = buildCampaignCandidates(metricRows);
+  const inferredByLeadId = new Map<string, ReturnType<typeof inferLeadAttribution>>();
+  const crmSignals: CrmLeadSignal[] = leadRows.map((lead) => {
+    const inferred = inferLeadAttribution(lead, campaignCandidates);
+    inferredByLeadId.set(lead.id, inferred);
+    return {
     source: lead.source,
     type: lead.type,
     status: lead.status,
     utmSource: lead.utmSource,
     utmMedium: lead.utmMedium,
     utmCampaign: lead.utmCampaign,
+    gclid: lead.gclid,
+    gbraid: lead.gbraid,
+    wbraid: lead.wbraid,
+    fbclid: lead.fbclid,
+    msclkid: lead.msclkid,
+    attributedPlatform: inferred.platform,
+    attributedCampaignId: inferred.campaignId,
+    attributedCampaignName: inferred.campaignName,
     vehicleStockId: lead.vehicleStockId,
     syncedToCrm: lead.syncedToCrm,
     crmRef: lead.crmRef,
     externalRef: lead.externalRef,
-  }));
+  };
+  });
 
   const crmCampaigns = summarizeCrmCampaigns(crmSignals);
   const metrics = aggregateMarketingMetrics(toMetricInputs(metricRows), crmCampaigns);
@@ -112,6 +139,8 @@ export default defineEventHandler(async (event) => {
       campaignCoverage: coverage.campaignCoverage,
       paidAttributionCoverage: coverage.paidAttributionCoverage,
       sourceCoverage: coverage.sourceCoverage,
+      clickIdCoverage: coverage.total ? Math.round((coverage.withClickId / coverage.total) * 1000) / 10 : 0,
+      backfilledAttributionCoverage: coverage.total ? Math.round((coverage.withBackfilledAttribution / coverage.total) * 1000) / 10 : 0,
     },
     platformMetrics: metrics.platforms,
     professionalMetrics: buildProfessionalMetrics(metricRows, metrics.platforms),
@@ -131,6 +160,12 @@ export default defineEventHandler(async (event) => {
         utmSource: lead.utmSource,
         utmMedium: lead.utmMedium,
         utmCampaign: lead.utmCampaign,
+        gclid: lead.gclid,
+        fbclid: lead.fbclid,
+        attributedPlatform: inferredByLeadId.get(lead.id)?.platform || null,
+        attributedCampaignId: inferredByLeadId.get(lead.id)?.campaignId || null,
+        attributionMethod: inferredByLeadId.get(lead.id)?.method || lead.attributionMethod,
+        attributionConfidence: inferredByLeadId.get(lead.id)?.confidence || lead.attributionConfidence,
         vehicleStockId: lead.vehicleStockId,
         testDrive: lead.testDrive,
         financeInterest: lead.financeInterest,
@@ -156,6 +191,17 @@ export default defineEventHandler(async (event) => {
         'utmSource',
         'utmMedium',
         'utmCampaign',
+        'utmTerm',
+        'utmContent',
+        'gclid',
+        'gbraid',
+        'wbraid',
+        'fbclid',
+        'msclkid',
+        'landingPage',
+        'referrer',
+        'attributedPlatform',
+        'attributedCampaignId',
         'vehicleStockId',
       ],
     },
@@ -177,17 +223,40 @@ function summarizeCrmCampaigns(leads: CrmLeadSignal[]): CrmCampaignCount[] {
       lead.utmSource || '',
       lead.utmMedium || '',
       lead.utmCampaign || '',
+      lead.attributedPlatform || '',
+      lead.attributedCampaignId || '',
+      lead.attributedCampaignName || '',
     ].join('\u0000');
     const existing = counts.get(key) || {
       utmSource: lead.utmSource,
       utmMedium: lead.utmMedium,
       utmCampaign: lead.utmCampaign,
+      attributedPlatform: lead.attributedPlatform === 'meta_ads' || lead.attributedPlatform === 'google_ads' ? lead.attributedPlatform : null,
+      attributedCampaignId: lead.attributedCampaignId,
+      attributedCampaignName: lead.attributedCampaignName,
       count: 0,
     };
     existing.count += 1;
     counts.set(key, existing);
   }
   return [...counts.values()];
+}
+
+function buildCampaignCandidates(rows: MarketingMetricsDaily[]): CampaignAttributionCandidate[] {
+  const seen = new Set<string>();
+  const candidates: CampaignAttributionCandidate[] = [];
+  for (const row of rows) {
+    if (row.platform !== 'google_ads' && row.platform !== 'meta_ads') continue;
+    const key = `${row.platform}:${row.campaignId}:${row.campaignName || ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    candidates.push({
+      platform: row.platform as CampaignAttributionCandidate['platform'],
+      campaignId: row.campaignId,
+      campaignName: row.campaignName,
+    });
+  }
+  return candidates;
 }
 
 function toMetricInputs(rows: MarketingMetricsDaily[]): MetricInput[] {
