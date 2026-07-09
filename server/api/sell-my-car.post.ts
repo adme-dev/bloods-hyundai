@@ -141,6 +141,7 @@ export default defineEventHandler(async (event) => {
     if (liveTestOverride) {
       console.log('[Sell My Car API] Live test email override enabled');
     }
+    const liveTestArchivedAt = liveTestOverride ? new Date() : undefined;
 
     // Validate at least one photo
     if (!body.photos || body.photos.length === 0 || !body.photos[0]) {
@@ -248,7 +249,7 @@ export default defineEventHandler(async (event) => {
       .values({
         dealerId: dealer.id,
         type: 'sell_car',
-        source: '/sell-my-car',
+        source: liveTestOverride ? 'live-smoke-test' : '/sell-my-car',
         department: 'used-cars',
         firstName: body.firstName,
         lastName: body.lastName,
@@ -258,6 +259,7 @@ export default defineEventHandler(async (event) => {
         sellCarDetails: sellCarDetails,
         status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
+        archivedAt: liveTestArchivedAt,
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
@@ -301,6 +303,7 @@ export default defineEventHandler(async (event) => {
         customer: `${enquiry.firstName} ${enquiry.lastName}`,
         vehicle: `${body.year} ${body.make} ${body.model}`,
         photosCount: sellCarDetails.photos.length,
+        liveTest: Boolean(liveTestOverride),
       },
     });
 
@@ -329,7 +332,7 @@ export default defineEventHandler(async (event) => {
       await sendCustomerConfirmation(enquiry, dealer, { liveTestOverride });
 
       // Auto-assign if specified
-      if (routingResult.assign_to) {
+      if (routingResult.assign_to && !liveTestOverride) {
         await db.update(enquiries)
           .set({
             assignedTo: routingResult.assign_to,

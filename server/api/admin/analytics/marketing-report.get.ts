@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lt, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lt, lte, sql } from 'drizzle-orm';
 import { db } from '../../../utils/db';
 import { dealers, enquiries, marketingMetricsDaily, marketingSyncRuns, type MarketingMetricsDaily } from '../../../database/schema';
 import { aggregateMarketingMetrics, type CrmCampaignCount, type MetricInput } from '../../../utils/metrics/aggregate';
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
       crmRef: enquiries.crmRef,
       externalRef: enquiries.externalRef,
     }).from(enquiries)
-      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo)))
+      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo), isNull(enquiries.archivedAt)))
       .orderBy(desc(enquiries.createdAt)),
     db.select({
       date: sql<string>`date_trunc('day', ${enquiries.createdAt})::date`,
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
       withCampaign: sql<number>`count(*) filter (where ${enquiries.utmCampaign} is not null and ${enquiries.utmCampaign} <> '')::int`,
       syncedToCrm: sql<number>`count(*) filter (where ${enquiries.syncedToCrm} = true)::int`,
     }).from(enquiries)
-      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo)))
+      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo), isNull(enquiries.archivedAt)))
       .groupBy(sql`date_trunc('day', ${enquiries.createdAt})::date`)
       .orderBy(sql`date_trunc('day', ${enquiries.createdAt})::date`),
     db.select().from(marketingSyncRuns)

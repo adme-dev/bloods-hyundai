@@ -130,7 +130,10 @@ export default defineEventHandler(async (event) => {
       lastWeek: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${lastWeekStart} and ${enquiries.createdAt} <= ${weekStart})`,
     })
     .from(enquiries)
-    .where(eq(enquiries.dealerId, dealerId));
+    .where(and(
+      eq(enquiries.dealerId, dealerId),
+      isNull(enquiries.archivedAt)
+    ));
 
   // ============================================================================
   // DEPARTMENT BREAKDOWN (by enquiry type)
@@ -186,7 +189,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, twoWeeksAgo)
+      gte(enquiries.createdAt, twoWeeksAgo),
+      isNull(enquiries.archivedAt)
     ))
     .groupBy(sql`date_trunc('day', ${enquiries.createdAt})::date`)
     .orderBy(sql`date_trunc('day', ${enquiries.createdAt})::date`);
@@ -224,7 +228,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ));
 
   // ============================================================================
@@ -249,7 +254,8 @@ export default defineEventHandler(async (event) => {
     .from(users)
     .leftJoin(enquiries, and(
       eq(enquiries.assignedTo, users.id),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ))
     .where(and(
       eq(users.dealerId, dealerId),
@@ -280,7 +286,10 @@ export default defineEventHandler(async (event) => {
       `,
     })
     .from(users)
-    .leftJoin(enquiries, eq(enquiries.assignedTo, users.id))
+    .leftJoin(enquiries, and(
+      eq(enquiries.assignedTo, users.id),
+      isNull(enquiries.archivedAt)
+    ))
     .where(and(
       eq(users.dealerId, dealerId),
       eq(users.isActive, true)
@@ -303,7 +312,10 @@ export default defineEventHandler(async (event) => {
       vehicleInfo: enquiries.vehicleInfo,
     })
     .from(enquiries)
-    .where(eq(enquiries.dealerId, dealerId))
+    .where(and(
+      eq(enquiries.dealerId, dealerId),
+      isNull(enquiries.archivedAt)
+    ))
     .orderBy(desc(enquiries.createdAt))
     .limit(10);
 
@@ -319,7 +331,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ))
     .groupBy(sql`coalesce(${enquiries.utmSource}, 'direct')`)
     .orderBy(desc(sql`count(*)`))
@@ -343,7 +356,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ))
     .groupBy(sql`1, 2`)
     .orderBy(desc(sql`count(*)`))
@@ -365,7 +379,8 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       gte(enquiries.createdAt, monthStart),
-      isNotNull(enquiries.utmCampaign)
+      isNotNull(enquiries.utmCampaign),
+      isNull(enquiries.archivedAt)
     ))
     .groupBy(sql`1, 2, 3`)
     .orderBy(desc(sql`count(*)`))
@@ -393,7 +408,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ));
 
   // ============================================================================
@@ -436,7 +452,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ));
 
   // Last month for comparison
@@ -449,7 +466,8 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       gte(enquiries.createdAt, lastMonthStart),
-      lte(enquiries.createdAt, monthStart)
+      lte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ));
 
   // ============================================================================
@@ -566,7 +584,8 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       gte(enquiries.createdAt, monthStart),
-      sql`${enquiries.vehicleInfo}->>'model' is not null`
+      sql`${enquiries.vehicleInfo}->>'model' is not null`,
+      isNull(enquiries.archivedAt)
     ))
     .groupBy(sql`${enquiries.vehicleInfo}->>'model'`)
     .orderBy(desc(sql`count(*)`))
@@ -585,7 +604,8 @@ export default defineEventHandler(async (event) => {
     .from(enquiries)
     .where(and(
       eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ));
 
   // ============================================================================
@@ -604,7 +624,8 @@ export default defineEventHandler(async (event) => {
     .where(and(
       eq(enquiries.dealerId, dealerId),
       eq(enquiries.testDrive, true),
-      gte(enquiries.createdAt, monthStart)
+      gte(enquiries.createdAt, monthStart),
+      isNull(enquiries.archivedAt)
     ));
 
   // Recent test drive requests with vehicle info

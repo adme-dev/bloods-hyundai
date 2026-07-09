@@ -158,6 +158,7 @@ export default defineEventHandler(async (event) => {
     if (liveTestOverride) {
       console.log(`[Enquiry API] Live test email override enabled for enquiry type ${body.type}`);
     }
+    const liveTestArchivedAt = liveTestOverride ? new Date() : undefined;
     
     // 4. Get request metadata
     const ipAddress = getRequestIP(event, { xForwardedFor: true });
@@ -195,7 +196,7 @@ export default defineEventHandler(async (event) => {
       .values({
         dealerId: dealer.id,
         type: normalizeEnquiryType(body.type),
-        source: body.source || event.path,
+        source: liveTestOverride ? 'live-smoke-test' : body.source || event.path,
         department: body.department,
         firstName: body.firstName,
         lastName: body.lastName,
@@ -211,6 +212,7 @@ export default defineEventHandler(async (event) => {
         accessoriesCart: body.accessoriesCart ? body.accessoriesCart : undefined,
         status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
+        archivedAt: liveTestArchivedAt,
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
@@ -252,13 +254,16 @@ export default defineEventHandler(async (event) => {
         type: enquiry.type,
         status: enquiry.status,
         customer: `${enquiry.firstName} ${enquiry.lastName}`,
+        liveTest: Boolean(liveTestOverride),
       },
     });
 
-    try {
-      await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'enquiry-api' });
-    } catch (realtimeError) {
-      console.error('[Enquiry API] Realtime event failed:', realtimeError);
+    if (!liveTestOverride) {
+      try {
+        await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'enquiry-api' });
+      } catch (realtimeError) {
+        console.error('[Enquiry API] Realtime event failed:', realtimeError);
+      }
     }
     
     // 7. Evaluate routing rules and send notifications
@@ -286,7 +291,7 @@ export default defineEventHandler(async (event) => {
       await sendCustomerConfirmation(enquiry, dealer, { liveTestOverride });
       
       // Auto-assign if specified
-      if (routingResult.assign_to) {
+      if (routingResult.assign_to && !liveTestOverride) {
         await db.update(enquiries)
           .set({ 
             assignedTo: routingResult.assign_to,
@@ -332,7 +337,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

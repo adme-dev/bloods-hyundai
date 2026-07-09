@@ -1,7 +1,7 @@
 // Date-bounded platform metrics + CRM CPL join. Reads only from Neon (no platform APIs).
 import { db } from '../../../utils/db';
 import { dealers, enquiries, marketingMetricsDaily, marketingSyncRuns } from '../../../database/schema';
-import { and, desc, eq, gte, lt, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lt, lte, sql } from 'drizzle-orm';
 import { aggregateMarketingMetrics, type CrmCampaignCount, type MetricInput } from '../../../utils/metrics/aggregate';
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
 
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
       utmCampaign: enquiries.utmCampaign,
       count: sql<number>`count(*)::int`,
     }).from(enquiries)
-      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo)))
+      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo), isNull(enquiries.archivedAt)))
       .groupBy(enquiries.utmSource, enquiries.utmMedium, enquiries.utmCampaign),
     db.select().from(marketingSyncRuns)
       .where(eq(marketingSyncRuns.dealerId, dealerId))

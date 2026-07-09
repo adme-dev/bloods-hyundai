@@ -218,6 +218,7 @@ export default defineEventHandler(async (event) => {
     if (liveTestOverride) {
       console.log(`[Submit Enquiry] Live test email override enabled for enquiry type ${body.type}`);
     }
+    const liveTestArchivedAt = liveTestOverride ? new Date() : undefined;
     
     // If lastName is not provided, use a placeholder
     const lastName = body.lastName || 'Not Provided';
@@ -278,7 +279,7 @@ export default defineEventHandler(async (event) => {
       .values({
         dealerId: dealer.id,
         type: normalizeEnquiryType(body.type),
-        source: body.source || referer || 'website',
+        source: liveTestOverride ? 'live-smoke-test' : body.source || referer || 'website',
         firstName: body.firstName,
         lastName: lastName,
         email: body.email,
@@ -296,6 +297,7 @@ export default defineEventHandler(async (event) => {
         financeInterest: body.financeInterest || false,
         status: ENQUIRY_STATUSES.NEW_LEAD,
         priority: 'normal',
+        archivedAt: liveTestArchivedAt,
         utmSource: body.utmSource,
         utmMedium: body.utmMedium,
         utmCampaign: body.utmCampaign,
@@ -339,13 +341,16 @@ export default defineEventHandler(async (event) => {
         type: enquiry.type,
         status: enquiry.status,
         customer: `${enquiry.firstName} ${enquiry.lastName}`,
+        liveTest: Boolean(liveTestOverride),
       },
     });
 
-    try {
-      await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'submit-enquiry' });
-    } catch (realtimeError) {
-      console.error('[Submit Enquiry] Realtime event failed:', realtimeError);
+    if (!liveTestOverride) {
+      try {
+        await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'submit-enquiry' });
+      } catch (realtimeError) {
+        console.error('[Submit Enquiry] Realtime event failed:', realtimeError);
+      }
     }
     
     // 6. Send notifications based on form configuration
@@ -377,7 +382,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 
