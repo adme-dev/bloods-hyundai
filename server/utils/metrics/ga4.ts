@@ -15,10 +15,28 @@ export const GA4_METRICS = [
 ] as const;
 
 interface Ga4RunReportResponse {
+  dimensionHeaders?: Array<{ name?: string }>;
+  metricHeaders?: Array<{ name?: string }>;
   rows?: Array<{
     dimensionValues?: Array<{ value?: string }>;
     metricValues?: Array<{ value?: string }>;
   }>;
+}
+
+export interface Ga4BreakdownRow {
+  dimensions: Record<string, string>;
+  metrics: Record<string, number>;
+}
+
+export interface Ga4WebsiteAnalytics {
+  status: 'connected' | 'not_configured' | 'error';
+  error: string | null;
+  topLandingPages: Ga4BreakdownRow[];
+  trafficChannels: Ga4BreakdownRow[];
+  sourceMedium: Ga4BreakdownRow[];
+  deviceCategories: Ga4BreakdownRow[];
+  topEvents: Ga4BreakdownRow[];
+  formEvents: Ga4BreakdownRow[];
 }
 
 export function normalizeGa4Response(resp: unknown): NormalizedRow[] {
@@ -46,6 +64,28 @@ export function normalizeGa4Response(resp: unknown): NormalizedRow[] {
   });
 }
 
+export function normalizeGa4BreakdownResponse(resp: unknown): Ga4BreakdownRow[] {
+  const response = resp as Ga4RunReportResponse;
+  const dimensionNames = response?.dimensionHeaders?.map(header => header.name || '') || [];
+  const metricNames = response?.metricHeaders?.map(header => header.name || '') || [];
+  return (response?.rows || []).map((row) => {
+    const dimensions: Record<string, string> = {};
+    const metrics: Record<string, number> = {};
+
+    dimensionNames.forEach((name, index) => {
+      if (!name) return;
+      dimensions[name] = row.dimensionValues?.[index]?.value || '';
+    });
+    metricNames.forEach((name, index) => {
+      if (!name) return;
+      const value = Number(row.metricValues?.[index]?.value || 0);
+      metrics[name] = Number.isFinite(value) ? value : 0;
+    });
+
+    return { dimensions, metrics };
+  });
+}
+
 function ga4Jwt(): JWT {
   const b64 = process.env.GA4_SERVICE_ACCOUNT_KEY;
   if (!b64) throw new Error('GA4_SERVICE_ACCOUNT_KEY not set');
@@ -60,6 +100,96 @@ function ga4Jwt(): JWT {
     key: key.private_key,
     scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
   });
+}
+
+async function runGa4Report(
+  propertyId: string,
+  range: DateRange,
+  options: {
+    dimensions: string[];
+    metrics: string[];
+    limit?: number;
+    orderByMetric?: string;
+  },
+): Promise<Ga4BreakdownRow[]> {
+  const prop = propertyId.startsWith('properties/') ? propertyId : `properties/${propertyId}`;
+  const { token } = await ga4Jwt().getAccessToken();
+  if (!token) throw new Error('GA4 auth failed: no access token');
+  const resp = await $fetch<unknown>(
+    `https://analyticsdata.googleapis.com/v1beta/${prop}:runReport`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 30_000,
+      body: {
+        dateRanges: [{ startDate: range.from, endDate: range.to }],
+        dimensions: options.dimensions.map((name) => ({ name })),
+        metrics: options.metrics.map((name) => ({ name })),
+        limit: options.limit || 10,
+        keepEmptyRows: false,
+        orderBys: options.orderByMetric
+          ? [{ metric: { metricName: options.orderByMetric }, desc: true }]
+          : undefined,
+      },
+    },
+  );
+  return normalizeGa4BreakdownResponse(resp);
+}
+
+export async function fetchGa4WebsiteAnalytics(propertyId: string, range: DateRange): Promise<Ga4WebsiteAnalytics> {
+  const [
+    topLandingPages,
+    trafficChannels,
+    sourceMedium,
+    deviceCategories,
+    topEvents,
+  ] = await Promise.all([
+    runGa4Report(propertyId, range, {
+      dimensions: ['landingPagePlusQueryString'],
+      metrics: ['sessions', 'totalUsers', 'screenPageViews', 'keyEvents', 'engagementRate', 'averageSessionDuration'],
+      orderByMetric: 'sessions',
+      limit: 12,
+    }),
+    runGa4Report(propertyId, range, {
+      dimensions: ['sessionDefaultChannelGroup'],
+      metrics: ['sessions', 'totalUsers', 'keyEvents', 'engagementRate'],
+      orderByMetric: 'sessions',
+      limit: 10,
+    }),
+    runGa4Report(propertyId, range, {
+      dimensions: ['sessionSourceMedium'],
+      metrics: ['sessions', 'totalUsers', 'keyEvents', 'engagementRate'],
+      orderByMetric: 'sessions',
+      limit: 12,
+    }),
+    runGa4Report(propertyId, range, {
+      dimensions: ['deviceCategory'],
+      metrics: ['sessions', 'totalUsers', 'keyEvents', 'engagementRate'],
+      orderByMetric: 'sessions',
+      limit: 8,
+    }),
+    runGa4Report(propertyId, range, {
+      dimensions: ['eventName'],
+      metrics: ['eventCount', 'totalUsers', 'keyEvents'],
+      orderByMetric: 'eventCount',
+      limit: 25,
+    }),
+  ]);
+
+  return {
+    status: 'connected',
+    error: null,
+    topLandingPages,
+    trafficChannels,
+    sourceMedium,
+    deviceCategories,
+    topEvents,
+    formEvents: topEvents.filter((row) => isLeadEvent(row.dimensions.eventName)).slice(0, 10),
+  };
+}
+
+function isLeadEvent(eventName = '') {
+  return /form|lead|enquir|enquiry|submit|contact|test_drive|finance|service|parts/i.test(eventName);
 }
 
 /** propertyId accepts '123456789' or 'properties/123456789'. */

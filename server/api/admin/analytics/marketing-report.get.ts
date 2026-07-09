@@ -10,6 +10,7 @@ import {
 } from '../../../utils/metrics/crmReport';
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
 import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
+import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics } from '../../../utils/metrics/ga4';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -113,20 +114,22 @@ export default defineEventHandler(async (event) => {
   const leadSources = summarizeLeadSources(crmSignals);
   const typeBreakdown = summarizeBy(crmSignals, lead => lead.type || 'unknown');
   const statusBreakdown = summarizeBy(crmSignals, lead => lead.status || 'unknown');
+  const connected = {
+    ga4: Boolean(integrations.ga4PropertyId && process.env.GA4_SERVICE_ACCOUNT_KEY),
+    meta_ads: Boolean(integrations.metaAdAccountId && process.env.META_SYSTEM_USER_TOKEN),
+    google_ads: Boolean(
+      integrations.googleAdsCustomerId &&
+      process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
+      process.env.GOOGLE_ADS_CLIENT_ID &&
+      process.env.GOOGLE_ADS_CLIENT_SECRET &&
+      process.env.GOOGLE_ADS_REFRESH_TOKEN,
+    ),
+  };
+  const websiteAnalytics = await buildWebsiteAnalytics(integrations, { from, to }, connected.ga4);
 
   return {
     period: { from, to },
-    connected: {
-      ga4: Boolean(integrations.ga4PropertyId && process.env.GA4_SERVICE_ACCOUNT_KEY),
-      meta_ads: Boolean(integrations.metaAdAccountId && process.env.META_SYSTEM_USER_TOKEN),
-      google_ads: Boolean(
-        integrations.googleAdsCustomerId &&
-        process.env.GOOGLE_ADS_DEVELOPER_TOKEN &&
-        process.env.GOOGLE_ADS_CLIENT_ID &&
-        process.env.GOOGLE_ADS_CLIENT_SECRET &&
-        process.env.GOOGLE_ADS_REFRESH_TOKEN,
-      ),
-    },
+    connected,
     summary: {
       totalCrmLeads: coverage.total,
       paidCrmLeads: metrics.platforms.meta_ads.crmLeads + metrics.platforms.google_ads.crmLeads,
@@ -144,6 +147,7 @@ export default defineEventHandler(async (event) => {
     },
     platformMetrics: metrics.platforms,
     professionalMetrics: buildProfessionalMetrics(metricRows, metrics.platforms),
+    websiteAnalytics,
     campaigns: metrics.campaigns,
     crm: {
       coverage,
@@ -215,6 +219,35 @@ export default defineEventHandler(async (event) => {
     })),
   };
 });
+
+async function buildWebsiteAnalytics(
+  integrations: MarketingIntegrations,
+  range: { from: string; to: string },
+  ga4Connected: boolean,
+): Promise<Ga4WebsiteAnalytics> {
+  if (!ga4Connected || !integrations.ga4PropertyId) {
+    return emptyWebsiteAnalytics('not_configured', null);
+  }
+
+  try {
+    return await fetchGa4WebsiteAnalytics(integrations.ga4PropertyId, range);
+  } catch (err) {
+    return emptyWebsiteAnalytics('error', err instanceof Error ? err.message : String(err));
+  }
+}
+
+function emptyWebsiteAnalytics(status: Ga4WebsiteAnalytics['status'], error: string | null): Ga4WebsiteAnalytics {
+  return {
+    status,
+    error,
+    topLandingPages: [],
+    trafficChannels: [],
+    sourceMedium: [],
+    deviceCategories: [],
+    topEvents: [],
+    formEvents: [],
+  };
+}
 
 function summarizeCrmCampaigns(leads: CrmLeadSignal[]): CrmCampaignCount[] {
   const counts = new Map<string, CrmCampaignCount>();

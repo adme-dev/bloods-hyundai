@@ -127,6 +127,149 @@
         </Card>
       </div>
 
+      <Card>
+        <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <Globe2 class="h-5 w-5 text-sky-600" />
+              Website Analytics
+            </CardTitle>
+            <CardDescription>GA4 traffic, landing page and behaviour breakdown for {{ rangeLabel }}.</CardDescription>
+          </div>
+          <Badge :variant="websiteAnalyticsBadgeVariant">{{ websiteAnalyticsStatusLabel }}</Badge>
+        </CardHeader>
+        <CardContent v-if="data.websiteAnalytics.status === 'connected'" class="space-y-6">
+          <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+            <div class="rounded-md border">
+              <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
+                <div>
+                  <div class="text-sm font-semibold">Top landing pages</div>
+                  <div class="text-xs text-muted-foreground">Pages that started website sessions.</div>
+                </div>
+                <Badge variant="outline">{{ n(totalWebsiteSessions) }} sessions</Badge>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Landing page</TableHead>
+                    <TableHead class="text-right">Sessions</TableHead>
+                    <TableHead class="text-right">Users</TableHead>
+                    <TableHead class="text-right">Engaged</TableHead>
+                    <TableHead class="text-right">Key events</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow v-for="row in data.websiteAnalytics.topLandingPages" :key="dimension(row, 'landingPagePlusQueryString')">
+                    <TableCell class="max-w-[420px] truncate font-medium">{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'sessions')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
+                    <TableCell class="text-right">{{ fractionPct(metric(row, 'engagementRate')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
+                  </TableRow>
+                  <TableRow v-if="!data.websiteAnalytics.topLandingPages.length">
+                    <TableCell colspan="5" class="py-8 text-center text-muted-foreground">No landing page rows returned by GA4.</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            <div class="space-y-4">
+              <div class="rounded-md border p-4">
+                <div class="mb-3 flex items-center gap-2">
+                  <Route class="h-4 w-4 text-emerald-600" />
+                  <div class="text-sm font-semibold">Traffic channels</div>
+                </div>
+                <div class="space-y-3">
+                  <BreakdownRow
+                    v-for="row in data.websiteAnalytics.trafficChannels"
+                    :key="dimension(row, 'sessionDefaultChannelGroup')"
+                    :label="dimension(row, 'sessionDefaultChannelGroup') || 'Unassigned'"
+                    :value="metric(row, 'sessions')"
+                    :max="maxChannelSessions"
+                  />
+                </div>
+              </div>
+
+              <div class="rounded-md border p-4">
+                <div class="mb-3 flex items-center gap-2">
+                  <MonitorSmartphone class="h-4 w-4 text-blue-600" />
+                  <div class="text-sm font-semibold">Devices</div>
+                </div>
+                <div class="space-y-3">
+                  <BreakdownRow
+                    v-for="row in data.websiteAnalytics.deviceCategories"
+                    :key="dimension(row, 'deviceCategory')"
+                    :label="formatLabel(dimension(row, 'deviceCategory') || 'unknown')"
+                    :value="metric(row, 'sessions')"
+                    :max="maxDeviceSessions"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-6 xl:grid-cols-2">
+            <div class="rounded-md border">
+              <div class="border-b px-4 py-3">
+                <div class="text-sm font-semibold">Source / medium</div>
+                <div class="text-xs text-muted-foreground">Where website sessions came from.</div>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Source / medium</TableHead>
+                    <TableHead class="text-right">Sessions</TableHead>
+                    <TableHead class="text-right">Users</TableHead>
+                    <TableHead class="text-right">Key events</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow v-for="row in data.websiteAnalytics.sourceMedium" :key="dimension(row, 'sessionSourceMedium')">
+                    <TableCell class="font-medium">{{ dimension(row, 'sessionSourceMedium') || 'Unassigned' }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'sessions')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            <div class="rounded-md border">
+              <div class="border-b px-4 py-3">
+                <div class="text-sm font-semibold">Form and key events</div>
+                <div class="text-xs text-muted-foreground">Lead-related GA4 events and conversion signals.</div>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Event</TableHead>
+                    <TableHead class="text-right">Count</TableHead>
+                    <TableHead class="text-right">Users</TableHead>
+                    <TableHead class="text-right">Key events</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow v-for="row in websiteEventRows" :key="dimension(row, 'eventName')">
+                    <TableCell class="font-medium">{{ formatEventName(dimension(row, 'eventName')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'eventCount')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
+                    <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
+                  </TableRow>
+                  <TableRow v-if="!websiteEventRows.length">
+                    <TableCell colspan="4" class="py-8 text-center text-muted-foreground">No lead or form GA4 events returned for this range.</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+        <CardContent v-else>
+          <div class="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+            {{ websiteAnalyticsUnavailableMessage }}
+          </div>
+        </CardContent>
+      </Card>
+
       <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <Card>
           <CardHeader>
@@ -413,9 +556,12 @@ import {
   Database,
   Gauge,
   GitBranch,
+  Globe2,
   History,
+  MonitorSmartphone,
   MousePointerClick,
   RefreshCw,
+  Route,
   Target,
   UserCheck,
   WalletCards,
@@ -472,6 +618,16 @@ interface ReportResponse {
     googleAds: ProfessionalAdMetrics;
     metaAds: ProfessionalAdMetrics;
   };
+  websiteAnalytics: {
+    status: 'connected' | 'not_configured' | 'error';
+    error: string | null;
+    topLandingPages: Ga4BreakdownRow[];
+    trafficChannels: Ga4BreakdownRow[];
+    sourceMedium: Ga4BreakdownRow[];
+    deviceCategories: Ga4BreakdownRow[];
+    topEvents: Ga4BreakdownRow[];
+    formEvents: Ga4BreakdownRow[];
+  };
   campaigns: Array<{
     platform: string;
     campaignId: string;
@@ -523,6 +679,11 @@ type SyncRun = {
   error: string | null;
   startedAt: string;
   finishedAt?: string | null;
+};
+
+type Ga4BreakdownRow = {
+  dimensions: Record<string, string>;
+  metrics: Record<string, number>;
 };
 
 type ProfessionalAdMetrics = {
@@ -632,6 +793,33 @@ const recentSyncRuns = computed(() => (data.value?.syncRuns || []).slice(0, 10))
 
 const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
 const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdown.map(row => row.total) || [1]), 1));
+const totalWebsiteSessions = computed(() => data.value?.professionalMetrics.ga4Website.sessions || 0);
+const maxChannelSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.trafficChannels.map(row => metric(row, 'sessions')) || [1]), 1));
+const maxDeviceSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.deviceCategories.map(row => metric(row, 'sessions')) || [1]), 1));
+const websiteEventRows = computed(() => {
+  const analytics = data.value?.websiteAnalytics;
+  if (!analytics) return [];
+  return analytics.formEvents.length ? analytics.formEvents : analytics.topEvents.slice(0, 8);
+});
+
+const websiteAnalyticsStatusLabel = computed(() => {
+  if (data.value?.websiteAnalytics.status === 'connected') return 'Connected';
+  if (data.value?.websiteAnalytics.status === 'error') return 'GA4 error';
+  return 'Not connected';
+});
+
+const websiteAnalyticsBadgeVariant = computed(() => {
+  if (data.value?.websiteAnalytics.status === 'connected') return 'default';
+  if (data.value?.websiteAnalytics.status === 'error') return 'destructive';
+  return 'outline';
+});
+
+const websiteAnalyticsUnavailableMessage = computed(() => {
+  if (data.value?.websiteAnalytics.status === 'error') {
+    return `GA4 website analytics could not be loaded: ${data.value.websiteAnalytics.error || 'Unknown GA4 error'}`;
+  }
+  return 'GA4 website analytics is not connected for this dealer.';
+});
 
 const dataLayerLabel = computed(() => {
   if (data.value?.dataLayer.status === 'healthy') return 'Healthy';
@@ -718,6 +906,24 @@ function syncHistoryRowClass(run: SyncRun) {
 
 function formatLabel(value: string) {
   return value.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function formatEventName(value: string) {
+  return formatLabel(value || 'unknown');
+}
+
+function cleanLandingPage(value: string) {
+  if (!value || value === '(not set)') return '/';
+  return value;
+}
+
+function dimension(row: Ga4BreakdownRow, key: string) {
+  return row.dimensions[key] || '';
+}
+
+function metric(row: Ga4BreakdownRow, key: string) {
+  const value = row.metrics[key];
+  return Number.isFinite(value) ? value : 0;
 }
 
 function daysAgo(days: number) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
+import { normalizeGa4BreakdownResponse, normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
 import { normalizeMetaInsights } from '../server/utils/metrics/metaAds.ts';
 import {
   normalizeGoogleAdsResults,
@@ -37,6 +37,33 @@ describe('normalizeGa4Response', () => {
   it('returns [] for empty/missing rows', () => {
     assert.deepEqual(normalizeGa4Response({}), []);
     assert.deepEqual(normalizeGa4Response({ rows: [] }), []);
+  });
+});
+
+describe('normalizeGa4BreakdownResponse', () => {
+  it('maps named GA4 dimensions and metrics into stable row objects', () => {
+    const rows = normalizeGa4BreakdownResponse({
+      dimensionHeaders: [{ name: 'landingPagePlusQueryString' }],
+      metricHeaders: [{ name: 'sessions' }, { name: 'engagementRate' }],
+      rows: [
+        {
+          dimensionValues: [{ value: '/new-cars' }],
+          metricValues: [{ value: '42' }, { value: '0.625' }],
+        },
+      ],
+    });
+
+    assert.deepEqual(rows, [
+      {
+        dimensions: { landingPagePlusQueryString: '/new-cars' },
+        metrics: { sessions: 42, engagementRate: 0.625 },
+      },
+    ]);
+  });
+
+  it('returns [] for empty/missing breakdown rows', () => {
+    assert.deepEqual(normalizeGa4BreakdownResponse({}), []);
+    assert.deepEqual(normalizeGa4BreakdownResponse({ rows: [] }), []);
   });
 });
 
