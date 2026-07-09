@@ -89,6 +89,8 @@ export function useEnquiryForm() {
     submitError.value = null;
     
     try {
+      const utmParams = getUtmParams();
+
       // Build the payload for the API
       const payload = {
         type: data.type,
@@ -107,7 +109,7 @@ export function useEnquiryForm() {
         financeInterest: data.financeInterest || false,
         source: data.source || route.path,
         // Use UTM params composable (gets from URL or sessionStorage)
-        ...getUtmParams(),
+        ...utmParams,
         // Allow explicit UTM overrides
         ...(data.utmSource && { utmSource: data.utmSource }),
         ...(data.utmMedium && { utmMedium: data.utmMedium }),
@@ -125,15 +127,25 @@ export function useEnquiryForm() {
       
       // Track in GTM/dataLayer
       if (process.client && (window as any).dataLayer) {
-        (window as any).dataLayer.push({
-          event: `FormSubmission`,
+        const trackingPayload = {
           formType: data.type,
+          formLocation: data.source || route.path,
           formStatus: 'submitted',
           enquiryId: response.enquiry.id,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-        });
+          source: data.source || route.path,
+          utmSource: data.utmSource || utmParams.utmSource,
+          utmMedium: data.utmMedium || utmParams.utmMedium,
+          utmCampaign: data.utmCampaign || utmParams.utmCampaign,
+          vehicleStockId: data.vehicleInfo?.stockId,
+          vehicleMake: data.vehicleInfo?.make,
+          vehicleModel: data.vehicleInfo?.model,
+          vehicleCondition: data.vehicleInfo?.condition,
+          wantsTestDrive: data.testDrive || false,
+          interestedInFinance: data.financeInterest || false,
+        };
+
+        (window as any).dataLayer.push({ event: 'formSubmission', ...trackingPayload });
+        (window as any).dataLayer.push({ event: 'FormSubmission', ...trackingPayload });
       }
       
       return {
@@ -146,7 +158,7 @@ export function useEnquiryForm() {
       
       return {
         success: false,
-        error: submitError.value,
+        error: submitError.value || undefined,
       };
     } finally {
       isSubmitting.value = false;
@@ -175,8 +187,6 @@ export function useEnquiryForm() {
     resetState,
   };
 }
-
-
 
 
 

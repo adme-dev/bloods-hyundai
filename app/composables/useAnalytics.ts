@@ -55,6 +55,10 @@ interface BaseFormData {
   form_location?: string;
   enquiry_id?: string;
   page_url?: string;
+  source?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
 
 interface VehicleEnquiryData extends BaseFormData {
@@ -396,14 +400,22 @@ export const useAnalytics = () => {
       ...restData,
     });
 
-    // Push to dataLayer for GTM triggers
-    pushToDataLayer('formSubmission', {
+    const dataLayerPayload = {
       formType: data.form_type,
       formLocation: data.form_location,
       enquiryId: data.enquiry_id,
+      source: data.source || data.form_location || pageUrl,
+      utmSource: data.utm_source,
+      utmMedium: data.utm_medium,
+      utmCampaign: data.utm_campaign,
       conversionValue,
       ...data,
-    });
+    };
+
+    // Push to dataLayer for GTM triggers. Keep the legacy capitalized event
+    // because existing GTM containers may still listen for it.
+    pushToDataLayer('formSubmission', dataLayerPayload);
+    pushToDataLayer('FormSubmission', dataLayerPayload);
 
     // Google Ads conversion tracking
     gtag('event', 'conversion', {
@@ -797,7 +809,6 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
 
 
 

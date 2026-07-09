@@ -141,6 +141,7 @@ const { siteName } = useSiteIdentity();
 const navLinks = [
   { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
   { label: 'Enquiries', href: '/admin/enquiries', icon: 'Inbox' },
+  { label: 'Marketing', href: '/admin/marketing-report', icon: 'ChartNoAxesCombined' },
   { label: 'Customers', href: '/admin/customers', icon: 'UserCheck' },
   { label: 'Tasks', href: '/admin/tasks', icon: 'ListTodo' },
   { label: 'Service', href: '/admin/service', icon: 'Wrench' },
@@ -196,7 +197,6 @@ const handleLogout = async () => {
   }
 };
 </script>
-
 
 
 

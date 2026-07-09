@@ -1,0 +1,528 @@
+<template>
+  <div class="space-y-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <p class="text-sm text-muted-foreground">CRM attribution, platform sync, and data-layer coverage</p>
+        <h1 class="text-3xl font-semibold tracking-tight">Marketing Report</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" as-child>
+          <NuxtLink to="/admin?tab=marketing">
+            <ArrowLeft class="h-4 w-4" />
+            Dashboard
+          </NuxtLink>
+        </Button>
+        <Button variant="outline" size="sm" :disabled="pending" @click="refresh">
+          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': pending }" />
+          Refresh
+        </Button>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-3 rounded-md border bg-background p-3 xl:flex-row xl:items-end xl:justify-between">
+      <div class="flex flex-wrap gap-2">
+        <Button
+          v-for="preset in presets"
+          :key="preset.id"
+          size="sm"
+          :variant="activePreset === preset.id ? 'default' : 'outline'"
+          @click="applyPreset(preset.id)"
+        >
+          {{ preset.label }}
+        </Button>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-[minmax(0,160px)_minmax(0,160px)]">
+        <label class="space-y-1 text-xs font-medium text-muted-foreground">
+          From
+          <Input v-model="from" type="date" :max="to" class="h-9" />
+        </label>
+        <label class="space-y-1 text-xs font-medium text-muted-foreground">
+          To
+          <Input v-model="to" type="date" :min="from" :max="today" class="h-9" />
+        </label>
+      </div>
+    </div>
+
+    <div v-if="pending" class="rounded-md border bg-background py-12 text-center text-sm text-muted-foreground">
+      Loading marketing report...
+    </div>
+
+    <template v-else-if="data">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Card v-for="item in summaryCards" :key="item.label">
+          <CardContent class="p-4">
+            <div class="mb-3 flex items-center justify-between gap-2">
+              <span class="text-xs font-medium uppercase text-muted-foreground">{{ item.label }}</span>
+              <component :is="item.icon" class="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div class="text-2xl font-semibold leading-tight">{{ item.value }}</div>
+            <p class="mt-1 text-xs text-muted-foreground">{{ item.caption }}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <Database class="h-5 w-5 text-sky-600" />
+              CRM Lead Sources
+            </CardTitle>
+            <CardDescription>{{ rangeLabel }}. Includes website forms and external marketplace/email leads stored in CRM.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead class="text-right">Leads</TableHead>
+                  <TableHead class="text-right">Synced</TableHead>
+                  <TableHead class="text-right">Campaign tagged</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="source in data.crm.leadSources" :key="source.key">
+                  <TableCell class="font-medium">{{ source.label }}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" class="capitalize">{{ source.category.replaceAll('_', ' ') }}</Badge>
+                  </TableCell>
+                  <TableCell class="text-right">{{ n(source.total) }}</TableCell>
+                  <TableCell class="text-right">{{ n(source.crmSynced) }}</TableCell>
+                  <TableCell class="text-right">{{ n(source.withCampaign) }}</TableCell>
+                </TableRow>
+                <TableRow v-if="!data.crm.leadSources.length">
+                  <TableCell colspan="5" class="py-8 text-center text-muted-foreground">No CRM leads in this range.</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <Code2 class="h-5 w-5 text-emerald-600" />
+              Data Layer Audit
+            </CardTitle>
+            <CardDescription>Lead tracking contract and CRM field coverage.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="rounded-md border p-3">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-sm font-medium">Coverage status</span>
+                <Badge :variant="dataLayerVariant">{{ dataLayerLabel }}</Badge>
+              </div>
+              <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <MetricCell label="UTM coverage" :value="pct(data.summary.utmCoverage)" />
+                <MetricCell label="Source coverage" :value="pct(data.summary.sourceCoverage)" />
+                <MetricCell label="Campaign coverage" :value="pct(data.summary.campaignCoverage)" />
+                <MetricCell label="Paid attribution" :value="pct(data.summary.paidAttributionCoverage)" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div v-for="event in data.dataLayer.expectedEvents" :key="event.event" class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                <div>
+                  <div class="font-mono text-xs font-semibold">{{ event.event }}</div>
+                  <div class="text-xs text-muted-foreground">{{ event.destination }}</div>
+                </div>
+                <Badge variant="outline">{{ event.status }}</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-xl">Connections</CardTitle>
+            <CardDescription>Configured platform and CRM sync state.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div v-for="connection in connections" :key="connection.label" class="flex items-center justify-between rounded-md border px-3 py-2">
+              <span class="text-sm font-medium">{{ connection.label }}</span>
+              <Badge :variant="connection.connected ? 'default' : 'outline'">{{ connection.connected ? 'Connected' : 'Not connected' }}</Badge>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+              <MetricCell label="CRM synced" :value="`${n(data.summary.syncedToCrm)} leads`" />
+              <MetricCell label="External feeds" :value="`${n(data.summary.externalMarketplaceLeads)} leads`" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-xl">Lead Types</CardTitle>
+            <CardDescription>CRM enquiry mix for the selected period.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-2">
+            <BreakdownRow v-for="row in data.crm.typeBreakdown.slice(0, 8)" :key="row.key" :label="formatLabel(row.key)" :value="row.total" :max="maxTypeTotal" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-xl">Lead Status</CardTitle>
+            <CardDescription>Pipeline state of report-period CRM leads.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-2">
+            <BreakdownRow v-for="row in data.crm.statusBreakdown.slice(0, 8)" :key="row.key" :label="formatLabel(row.key)" :value="row.total" :max="maxStatusTotal" />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2 text-xl">
+            <Target class="h-5 w-5 text-violet-600" />
+            Campaign CPL Reconciliation
+          </CardTitle>
+          <CardDescription>Ad-platform rows matched to CRM leads by UTM campaign, campaign ID, or campaign name.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Campaign</TableHead>
+                <TableHead>Platform</TableHead>
+                <TableHead class="text-right">Spend</TableHead>
+                <TableHead class="text-right">Clicks</TableHead>
+                <TableHead class="text-right">Platform leads</TableHead>
+                <TableHead class="text-right">CRM leads</TableHead>
+                <TableHead class="text-right">CPL</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="campaign in data.campaigns" :key="`${campaign.platform}:${campaign.campaignId}`">
+                <TableCell class="min-w-[260px] font-medium">{{ campaign.campaignName || campaign.campaignId }}</TableCell>
+                <TableCell><Badge variant="outline">{{ platformLabel(campaign.platform) }}</Badge></TableCell>
+                <TableCell class="text-right">{{ campaign.spend ? formatCurrency(campaign.spend, true) : '-' }}</TableCell>
+                <TableCell class="text-right">{{ n(campaign.clicks) }}</TableCell>
+                <TableCell class="text-right">{{ n(campaign.platformLeads) }}</TableCell>
+                <TableCell class="text-right font-medium">{{ n(campaign.crmLeads) }}</TableCell>
+                <TableCell class="text-right font-medium">{{ campaign.cpl == null ? '-' : formatCurrency(campaign.cpl, true) }}</TableCell>
+              </TableRow>
+              <TableRow v-if="!data.campaigns.length">
+                <TableCell colspan="7" class="py-8 text-center text-muted-foreground">No campaign rows in this range.</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-xl">Recent CRM Leads</CardTitle>
+            <CardDescription>Latest leads with source, UTM and sync indicators.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Campaign</TableHead>
+                  <TableHead class="text-right">Flags</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="lead in data.crm.recentLeads" :key="lead.id">
+                  <TableCell class="whitespace-nowrap">{{ shortDateTime(lead.createdAt) }}</TableCell>
+                  <TableCell>
+                    <NuxtLink :to="`/admin/enquiries/${lead.id}`" class="font-medium text-primary hover:underline">
+                      {{ formatLabel(lead.type) }}
+                    </NuxtLink>
+                    <div class="text-xs text-muted-foreground">{{ formatLabel(lead.status) }}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div class="font-medium">{{ lead.sourceBucket.label }}</div>
+                    <div class="max-w-[260px] truncate text-xs text-muted-foreground">{{ lead.source || '-' }}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div class="max-w-[240px] truncate">{{ lead.utmCampaign || '-' }}</div>
+                    <div class="text-xs text-muted-foreground">{{ [lead.utmSource, lead.utmMedium].filter(Boolean).join(' / ') || '-' }}</div>
+                  </TableCell>
+                  <TableCell class="text-right">
+                    <div class="flex flex-wrap justify-end gap-1">
+                      <Badge v-if="lead.syncedToCrm" variant="outline">CRM</Badge>
+                      <Badge v-if="lead.hasExternalRef" variant="outline">External</Badge>
+                      <Badge v-if="lead.testDrive" variant="outline">Test drive</Badge>
+                      <Badge v-if="lead.financeInterest" variant="outline">Finance</Badge>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="text-xl">Sync History</CardTitle>
+            <CardDescription>Latest platform ingestion runs.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-2">
+            <div v-for="run in data.syncRuns" :key="`${run.platform}:${run.startedAt}`" class="rounded-md border p-3">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-semibold">{{ platformLabel(run.platform) }}</span>
+                <Badge :variant="run.status === 'success' ? 'default' : 'destructive'">{{ run.status }}</Badge>
+              </div>
+              <div class="mt-1 text-xs text-muted-foreground">
+                {{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows
+              </div>
+              <p v-if="run.error" class="mt-2 text-xs text-destructive">{{ run.error }}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </template>
+
+    <div v-else class="rounded-md border bg-background py-12 text-center text-sm text-muted-foreground">
+      Could not load the marketing report.
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import {
+  ArrowLeft,
+  Code2,
+  Database,
+  RefreshCw,
+  Target,
+  UserCheck,
+  WalletCards,
+} from 'lucide-vue-next';
+import { defineComponent, h } from 'vue';
+import { Button } from '~/components/ui/button';
+import { Badge } from '~/components/ui/badge';
+import { Input } from '~/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { formatCurrency } from '~/utils';
+
+definePageMeta({
+  layout: 'admin',
+  middleware: 'auth',
+});
+
+type PresetId = 'mtd' | '7d' | '30d' | '90d';
+
+interface ReportResponse {
+  period: { from: string; to: string };
+  connected: Record<'ga4' | 'meta_ads' | 'google_ads', boolean>;
+  summary: {
+    totalCrmLeads: number;
+    paidCrmLeads: number;
+    syncedToCrm: number;
+    externalMarketplaceLeads: number;
+    crmSyncCoverage: number;
+    utmCoverage: number;
+    campaignCoverage: number;
+    paidAttributionCoverage: number;
+    sourceCoverage: number;
+  };
+  platformMetrics: {
+    ga4: { sessions: number; users: number; conversions: number };
+    meta_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null };
+    google_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null };
+  };
+  campaigns: Array<{
+    platform: string;
+    campaignId: string;
+    campaignName: string | null;
+    spend: number;
+    clicks: number;
+    platformLeads: number;
+    crmLeads: number;
+    cpl: number | null;
+  }>;
+  crm: {
+    leadSources: Array<{ key: string; label: string; category: string; total: number; crmSynced: number; withCampaign: number }>;
+    typeBreakdown: Array<{ key: string; total: number }>;
+    statusBreakdown: Array<{ key: string; total: number }>;
+    recentLeads: Array<{
+      id: string;
+      createdAt: string;
+      type: string;
+      status: string;
+      source: string | null;
+      utmSource: string | null;
+      utmMedium: string | null;
+      utmCampaign: string | null;
+      testDrive: boolean;
+      financeInterest: boolean;
+      syncedToCrm: boolean;
+      hasExternalRef: boolean;
+      sourceBucket: { label: string };
+    }>;
+  };
+  dataLayer: {
+    status: 'healthy' | 'needs_attention' | 'poor_coverage';
+    expectedEvents: Array<{ event: string; destination: string; status: string }>;
+  };
+  syncRuns: Array<{ platform: string; status: string; rowsUpserted: number | null; error: string | null; startedAt: string }>;
+}
+
+const today = isoDate(new Date());
+const from = ref(`${today.slice(0, 8)}01`);
+const to = ref(today);
+
+const query = computed(() => ({ from: from.value, to: to.value }));
+const { data, pending, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', {
+  query,
+});
+
+const presets: { id: PresetId; label: string }[] = [
+  { id: 'mtd', label: 'Month to date' },
+  { id: '7d', label: '7 days' },
+  { id: '30d', label: '30 days' },
+  { id: '90d', label: '90 days' },
+];
+
+const activePreset = computed<PresetId | null>(() => {
+  if (to.value !== today) return null;
+  if (from.value === `${today.slice(0, 8)}01`) return 'mtd';
+  if (from.value === daysAgo(6)) return '7d';
+  if (from.value === daysAgo(29)) return '30d';
+  if (from.value === daysAgo(89)) return '90d';
+  return null;
+});
+
+const rangeLabel = computed(() => data.value ? `${displayDate(data.value.period.from)} to ${displayDate(data.value.period.to)}` : '');
+
+const summaryCards = computed(() => {
+  const summary = data.value?.summary;
+  const platforms = data.value?.platformMetrics;
+  return [
+    {
+      label: 'CRM leads',
+      value: n(summary?.totalCrmLeads || 0),
+      caption: `${n(summary?.paidCrmLeads || 0)} matched to paid media`,
+      icon: UserCheck,
+    },
+    {
+      label: 'Ad spend',
+      value: formatCurrency((platforms?.meta_ads.spend || 0) + (platforms?.google_ads.spend || 0), true),
+      caption: `Blended CPL ${blendedCpl.value}`,
+      icon: WalletCards,
+    },
+    {
+      label: 'Website activity',
+      value: n(platforms?.ga4.sessions || 0),
+      caption: `${n(platforms?.ga4.conversions || 0)} GA4 key events`,
+      icon: Database,
+    },
+    {
+      label: 'UTM coverage',
+      value: pct(summary?.utmCoverage || 0),
+      caption: `${pct(summary?.campaignCoverage || 0)} campaign tagged`,
+      icon: Code2,
+    },
+  ];
+});
+
+const blendedCpl = computed(() => {
+  const summary = data.value?.summary;
+  const platforms = data.value?.platformMetrics;
+  if (!summary || !platforms || !summary.paidCrmLeads) return '-';
+  const spend = (platforms.meta_ads.spend || 0) + (platforms.google_ads.spend || 0);
+  return formatCurrency(spend / summary.paidCrmLeads, true);
+});
+
+const connections = computed(() => [
+  { label: 'GA4 Website', connected: Boolean(data.value?.connected.ga4) },
+  { label: 'Meta Ads', connected: Boolean(data.value?.connected.meta_ads) },
+  { label: 'Google Ads', connected: Boolean(data.value?.connected.google_ads) },
+]);
+
+const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
+const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdown.map(row => row.total) || [1]), 1));
+
+const dataLayerLabel = computed(() => {
+  if (data.value?.dataLayer.status === 'healthy') return 'Healthy';
+  if (data.value?.dataLayer.status === 'needs_attention') return 'Needs attention';
+  return 'Poor coverage';
+});
+
+const dataLayerVariant = computed(() => data.value?.dataLayer.status === 'poor_coverage' ? 'destructive' : data.value?.dataLayer.status === 'healthy' ? 'default' : 'secondary');
+
+function applyPreset(id: PresetId) {
+  to.value = today;
+  if (id === 'mtd') from.value = `${today.slice(0, 8)}01`;
+  if (id === '7d') from.value = daysAgo(6);
+  if (id === '30d') from.value = daysAgo(29);
+  if (id === '90d') from.value = daysAgo(89);
+}
+
+function platformLabel(platform: string) {
+  if (platform === 'meta_ads') return 'Meta';
+  if (platform === 'google_ads') return 'Google Ads';
+  if (platform === 'ga4') return 'GA4';
+  if (platform === 'crm') return 'CRM';
+  return platform;
+}
+
+function formatLabel(value: string) {
+  return value.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function daysAgo(days: number) {
+  const date = new Date(`${today}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - days);
+  return isoDate(date);
+}
+
+function isoDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function displayDate(value: string) {
+  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function shortDateTime(value: string) {
+  return new Intl.DateTimeFormat('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+}
+
+const n = (value: number) => new Intl.NumberFormat('en-AU').format(value || 0);
+const pct = (value: number) => `${new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value || 0)}%`;
+
+const MetricCell = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    value: { type: String, required: true },
+  },
+  setup(props) {
+    return () => h('div', { class: 'rounded-md bg-muted/40 p-2' }, [
+      h('div', { class: 'text-xs text-muted-foreground' }, props.label),
+      h('div', { class: 'mt-1 font-semibold' }, props.value),
+    ]);
+  },
+});
+
+const BreakdownRow = defineComponent({
+  props: {
+    label: { type: String, required: true },
+    value: { type: Number, required: true },
+    max: { type: Number, required: true },
+  },
+  setup(props) {
+    return () => h('div', { class: 'space-y-1' }, [
+      h('div', { class: 'flex items-center justify-between gap-3 text-sm' }, [
+        h('span', { class: 'truncate font-medium' }, props.label),
+        h('span', { class: 'text-muted-foreground' }, n(props.value)),
+      ]),
+      h('div', { class: 'h-1.5 overflow-hidden rounded-full bg-muted' }, [
+        h('div', {
+          class: 'h-full rounded-full bg-sky-600',
+          style: { width: `${Math.max(4, Math.min(100, (props.value / props.max) * 100))}%` },
+        }),
+      ]),
+    ]);
+  },
+});
+</script>

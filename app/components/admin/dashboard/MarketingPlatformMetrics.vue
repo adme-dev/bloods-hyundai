@@ -1,20 +1,30 @@
 <!-- app/components/admin/dashboard/MarketingPlatformMetrics.vue -->
 <template>
-  <Card>
+  <Card class="overflow-hidden shadow-sm">
     <CardHeader class="space-y-4">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <CardTitle class="flex items-center gap-2">
-            <BarChart3 class="h-5 w-5 text-sky-600" />
-            Platform Performance
-          </CardTitle>
-          <CardDescription>
-            Meta Ads, Google Ads and GA4 for {{ rangeLabel }}
-            <span v-if="lastSyncLabel" class="ml-1 text-xs">· last synced {{ lastSyncLabel }}</span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <CardTitle class="flex items-center gap-2 text-2xl">
+              <BarChart3 class="h-5 w-5 text-sky-600" />
+              Platform Performance
+            </CardTitle>
+            <span v-if="lastSyncLabel" class="rounded-full border bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              Live · synced {{ lastSyncLabel }}
+            </span>
+          </div>
+          <CardDescription class="mt-1">
+            Paid media, GA4 website signals and CRM lead matching for {{ rangeLabel }}
           </CardDescription>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" as-child>
+            <NuxtLink to="/admin/marketing-report">
+              <FileBarChart2 class="h-3.5 w-3.5" />
+              Detailed report
+            </NuxtLink>
+          </Button>
           <Button size="sm" variant="outline" :disabled="!data?.campaigns?.length" @click="downloadCsv">
             <Download class="h-3.5 w-3.5" />
             Export CSV
@@ -26,7 +36,7 @@
         </div>
       </div>
 
-      <div class="flex flex-col gap-3 rounded-md border bg-muted/20 p-3 xl:flex-row xl:items-end xl:justify-between">
+      <div class="flex flex-col gap-3 rounded-md border bg-slate-50 p-3 dark:bg-slate-950/30 xl:flex-row xl:items-end xl:justify-between">
         <div class="flex flex-wrap gap-2">
           <Button
             v-for="preset in presets"
@@ -56,71 +66,54 @@
       <div v-if="pending" class="py-8 text-center text-sm text-muted-foreground">Loading platform metrics...</div>
 
       <template v-else-if="data">
+        <div class="mb-4 grid gap-3 lg:grid-cols-4">
+          <div v-for="kpi in executiveKpis" :key="kpi.label" class="rounded-md border bg-background p-4">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <span class="text-xs font-medium uppercase text-muted-foreground">{{ kpi.label }}</span>
+              <component :is="kpi.icon" class="h-4 w-4" :class="kpi.iconClass" />
+            </div>
+            <div class="text-2xl font-semibold leading-tight text-slate-950 dark:text-slate-50">{{ kpi.value }}</div>
+            <div v-if="kpi.caption" class="mt-1 text-xs text-muted-foreground">{{ kpi.caption }}</div>
+          </div>
+        </div>
+
         <div class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <div v-for="kpi in paidKpis" :key="kpi.label" class="rounded-md border bg-background p-4">
+          <div v-for="kpi in paidKpis" :key="kpi.label" class="rounded-md border bg-muted/20 p-4">
             <div class="mb-2 flex items-center justify-between gap-2">
               <span class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{{ kpi.label }}</span>
               <component :is="kpi.icon" class="h-4 w-4 text-muted-foreground" />
             </div>
-            <div class="text-2xl font-semibold leading-tight">{{ kpi.value }}</div>
+            <div class="text-xl font-semibold leading-tight">{{ kpi.value }}</div>
             <div v-if="kpi.caption" class="mt-1 text-xs text-muted-foreground">{{ kpi.caption }}</div>
           </div>
         </div>
 
         <div class="mb-6 grid gap-3 lg:grid-cols-3">
-          <div class="rounded-md border p-4">
+          <div v-for="platform in platformCards" :key="platform.id" class="rounded-md border bg-background p-4">
             <div class="mb-3 flex items-center justify-between gap-2">
-              <span class="text-sm font-semibold">GA4 Website</span>
-              <span v-if="data.platforms.ga4.lastError" class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-900 dark:text-amber-300">sync failed</span>
+              <div class="flex items-center gap-2">
+                <component :is="platform.icon" class="h-4 w-4" :class="platform.iconClass" />
+                <span class="text-sm font-semibold">{{ platform.label }}</span>
+              </div>
+              <Badge :variant="platform.badgeVariant">{{ platform.badge }}</Badge>
             </div>
-            <template v-if="data.platforms.ga4.connected">
-              <div class="grid grid-cols-3 gap-2 text-center">
-                <div v-for="metric in ga4Cells" :key="metric.label">
+            <template v-if="platform.connected">
+              <div class="grid gap-2 text-center" :class="platform.id === 'ga4' ? 'grid-cols-3' : 'grid-cols-2'">
+                <div v-for="metric in platform.metrics" :key="metric.label" class="rounded-md bg-muted/30 p-2">
                   <div class="text-lg font-bold">{{ metric.value }}</div>
                   <div class="text-[10px] text-muted-foreground">{{ metric.label }}</div>
                 </div>
               </div>
+              <p v-if="platform.helper" class="mt-3 text-xs text-muted-foreground">{{ platform.helper }}</p>
             </template>
-            <p v-else class="text-xs text-muted-foreground">Not connected. GA4 needs the property ID and service account key.</p>
-          </div>
-
-          <div class="rounded-md border p-4">
-            <div class="mb-3 flex items-center justify-between gap-2">
-              <span class="text-sm font-semibold">Meta Ads</span>
-              <span v-if="data.platforms.meta_ads.lastError" class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-900 dark:text-amber-300">sync failed</span>
-            </div>
-            <template v-if="data.platforms.meta_ads.connected">
-              <div class="grid grid-cols-2 gap-2 text-center">
-                <div v-for="metric in metaAdsCells" :key="metric.label">
-                  <div class="text-lg font-bold">{{ metric.value }}</div>
-                  <div class="text-[10px] text-muted-foreground">{{ metric.label }}</div>
-                </div>
-              </div>
-            </template>
-            <p v-else class="text-xs text-muted-foreground">Not connected. Meta needs the ad account ID and system-user token.</p>
-          </div>
-
-          <div class="rounded-md border p-4">
-            <div class="mb-3 flex items-center justify-between gap-2">
-              <span class="text-sm font-semibold">Google Ads</span>
-              <span v-if="data.platforms.google_ads.lastError" class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700 dark:bg-amber-900 dark:text-amber-300">sync failed</span>
-            </div>
-            <template v-if="data.platforms.google_ads.connected">
-              <div class="grid grid-cols-2 gap-2 text-center">
-                <div v-for="metric in googleAdsCells" :key="metric.label">
-                  <div class="text-lg font-bold">{{ metric.value }}</div>
-                  <div class="text-[10px] text-muted-foreground">{{ metric.label }}</div>
-                </div>
-              </div>
-            </template>
-            <p v-else class="text-xs text-muted-foreground">Not connected. Google Ads needs the customer ID and API tokens.</p>
+            <p v-else class="text-xs text-muted-foreground">{{ platform.notConnectedText }}</p>
           </div>
         </div>
 
         <div v-if="data.campaigns.length" class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b text-left text-xs text-muted-foreground">
+              <tr class="border-b bg-muted/20 text-left text-xs text-muted-foreground">
                 <th class="min-w-[260px] py-2 pr-3 font-medium">Campaign</th>
                 <th class="py-2 pr-3 text-right font-medium">Spend</th>
                 <th class="hidden py-2 pr-3 text-right font-medium md:table-cell">Impressions</th>
@@ -128,11 +121,12 @@
                 <th class="hidden py-2 pr-3 text-right font-medium lg:table-cell">CTR</th>
                 <th class="py-2 pr-3 text-right font-medium">Platform leads</th>
                 <th class="py-2 pr-3 text-right font-medium">CRM leads</th>
+                <th class="hidden py-2 pr-3 font-medium xl:table-cell">Match</th>
                 <th class="py-2 text-right font-medium">CPL</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="campaign in data.campaigns" :key="`${campaign.platform}:${campaign.campaignId}`" class="border-b last:border-0">
+              <tr v-for="campaign in data.campaigns" :key="`${campaign.platform}:${campaign.campaignId}`" class="border-b transition-colors hover:bg-muted/20 last:border-0">
                 <td class="py-2 pr-3">
                   <span
                     class="mr-1.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium"
@@ -148,6 +142,11 @@
                 <td class="hidden py-2 pr-3 text-right lg:table-cell">{{ pct(campaign.ctr) }}</td>
                 <td class="py-2 pr-3 text-right">{{ n(campaign.platformLeads) }}</td>
                 <td class="py-2 pr-3 text-right font-medium">{{ n(campaign.crmLeads) }}</td>
+                <td class="hidden py-2 pr-3 xl:table-cell">
+                  <span class="rounded px-1.5 py-0.5 text-[10px] font-medium" :class="campaignMatchClass(campaign)">
+                    {{ campaignMatchLabel(campaign) }}
+                  </span>
+                </td>
                 <td class="py-2 text-right font-medium">{{ cpl(campaign.cpl) }}</td>
               </tr>
             </tbody>
@@ -165,18 +164,24 @@
 
 <script setup lang="ts">
 import {
+  Activity,
+  AlertCircle,
   BarChart3,
   CalendarDays,
+  CheckCircle2,
   Download,
   Eye,
+  FileBarChart2,
   MousePointerClick,
   RefreshCw,
   Target,
+  TrendingUp,
   WalletCards,
 } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';
 import { Input } from '~/components/ui/input';
+import { Badge } from '~/components/ui/badge';
 
 type PlatformId = 'ga4' | 'meta_ads' | 'google_ads' | 'crm';
 
@@ -228,6 +233,7 @@ interface MarketingMetricsResponse {
 }
 
 type PresetId = 'mtd' | '7d' | '30d' | '90d';
+type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
 
 const today = isoDate(new Date());
 const from = ref(`${today.slice(0, 8)}01`);
@@ -278,6 +284,50 @@ const paidTotals = computed(() => {
   };
 });
 
+const crmMatchRate = computed(() => ratioPercent(paidTotals.value.crmLeads, paidTotals.value.platformLeads));
+const websiteKeyEventRate = computed(() => ratioPercent(data.value?.platforms.ga4.conversions || 0, data.value?.platforms.ga4.sessions || 0));
+
+const executiveKpis = computed(() => [
+  {
+    label: 'Paid media',
+    value: formatCurrency(paidTotals.value.spend),
+    caption: `${n(paidTotals.value.clicks)} clicks · ${pct(paidTotals.value.ctr)} CTR`,
+    icon: WalletCards,
+    iconClass: 'text-sky-600',
+  },
+  {
+    label: 'CRM match',
+    value: n(paidTotals.value.crmLeads),
+    caption: `${pct(crmMatchRate.value)} of platform leads matched into CRM`,
+    icon: Target,
+    iconClass: 'text-violet-600',
+  },
+  {
+    label: 'Website signal',
+    value: n(data.value?.platforms.ga4.conversions || 0),
+    caption: `${n(data.value?.platforms.ga4.sessions || 0)} sessions · ${pct(websiteKeyEventRate.value)} key event rate`,
+    icon: Activity,
+    iconClass: 'text-emerald-600',
+  },
+  {
+    label: 'Data freshness',
+    value: lastSyncLabel.value || 'No sync',
+    caption: connectionCaption.value,
+    icon: TrendingUp,
+    iconClass: 'text-slate-600',
+  },
+]);
+
+const connectionCaption = computed(() => {
+  if (!data.value) return 'Waiting for platform status';
+  const connected = [
+    data.value.platforms.ga4.connected,
+    data.value.platforms.meta_ads.connected,
+    data.value.platforms.google_ads.connected,
+  ].filter(Boolean).length;
+  return `${connected} of 3 integrations connected`;
+});
+
 const paidKpis = computed(() => [
   { label: 'Ad spend', value: formatCurrency(paidTotals.value.spend), caption: 'Meta + Google', icon: WalletCards },
   { label: 'Impressions', value: n(paidTotals.value.impressions), caption: `${pct(paidTotals.value.ctr)} CTR`, icon: Eye },
@@ -299,6 +349,50 @@ const ga4Cells = computed(() => {
 
 const metaAdsCells = computed(() => paidPlatformCells(data.value?.platforms.meta_ads));
 const googleAdsCells = computed(() => paidPlatformCells(data.value?.platforms.google_ads));
+
+const platformCards = computed(() => {
+  const ga4 = data.value?.platforms.ga4;
+  const meta = data.value?.platforms.meta_ads;
+  const google = data.value?.platforms.google_ads;
+  return [
+    {
+      id: 'ga4',
+      label: 'GA4 Website',
+      connected: Boolean(ga4?.connected),
+      badge: ga4?.lastError ? 'Sync failed' : ga4?.connected ? 'Connected' : 'Setup needed',
+      badgeVariant: (ga4?.lastError ? 'destructive' : ga4?.connected ? 'default' : 'outline') as BadgeVariant,
+      icon: ga4?.lastError ? AlertCircle : CheckCircle2,
+      iconClass: ga4?.lastError ? 'text-amber-600' : ga4?.connected ? 'text-emerald-600' : 'text-muted-foreground',
+      metrics: ga4Cells.value,
+      helper: `${pct(websiteKeyEventRate.value)} key event rate across selected sessions`,
+      notConnectedText: 'Not connected. GA4 needs the property ID and service account key.',
+    },
+    {
+      id: 'meta_ads',
+      label: 'Meta Ads',
+      connected: Boolean(meta?.connected),
+      badge: meta?.lastError ? 'Sync failed' : meta?.connected ? 'Connected' : 'Setup needed',
+      badgeVariant: (meta?.lastError ? 'destructive' : meta?.connected ? 'default' : 'outline') as BadgeVariant,
+      icon: meta?.lastError ? AlertCircle : CheckCircle2,
+      iconClass: meta?.lastError ? 'text-amber-600' : meta?.connected ? 'text-emerald-600' : 'text-muted-foreground',
+      metrics: metaAdsCells.value,
+      helper: `${n(meta?.crmLeads || 0)} CRM leads from ${n(meta?.platformLeads || 0)} platform leads`,
+      notConnectedText: 'Not connected. Meta needs the ad account ID and system-user token.',
+    },
+    {
+      id: 'google_ads',
+      label: 'Google Ads',
+      connected: Boolean(google?.connected),
+      badge: google?.lastError ? 'Sync failed' : google?.connected ? 'Connected' : 'Setup needed',
+      badgeVariant: (google?.lastError ? 'destructive' : google?.connected ? 'default' : 'outline') as BadgeVariant,
+      icon: google?.lastError ? AlertCircle : CheckCircle2,
+      iconClass: google?.lastError ? 'text-amber-600' : google?.connected ? 'text-emerald-600' : 'text-muted-foreground',
+      metrics: googleAdsCells.value,
+      helper: `${n(google?.crmLeads || 0)} CRM leads from ${n(google?.platformLeads || 0)} platform leads`,
+      notConnectedText: 'Not connected. Google Ads needs the customer ID and API tokens.',
+    },
+  ];
+});
 
 const rangeLabel = computed(() => {
   if (data.value?.period) return `${displayDate(data.value.period.from)} to ${displayDate(data.value.period.to)}`;
@@ -395,6 +489,20 @@ function paidPlatformCells(platform?: PaidPlatformMetrics) {
     { label: 'CRM / platform leads', value: `${n(platform.crmLeads)} / ${n(platform.platformLeads)}` },
     { label: 'CPL', value: cpl(platform.cpl) },
   ];
+}
+
+function campaignMatchLabel(campaign: CampaignMetrics) {
+  if (campaign.crmLeads > 0 && campaign.platformLeads > 0) return 'Matched';
+  if (campaign.crmLeads > 0) return 'CRM only';
+  if (campaign.platformLeads > 0) return 'Platform only';
+  return 'No leads';
+}
+
+function campaignMatchClass(campaign: CampaignMetrics) {
+  if (campaign.crmLeads > 0 && campaign.platformLeads > 0) return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300';
+  if (campaign.crmLeads > 0) return 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300';
+  if (campaign.platformLeads > 0) return 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300';
+  return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
 }
 
 function daysAgo(days: number) {
