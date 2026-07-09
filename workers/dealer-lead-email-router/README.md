@@ -6,6 +6,9 @@ The Worker receives inbound mail from a Cloudflare Email Routing rule, converts 
 
 `POST /api/inbound-leads/email`
 
+For the full multi-tenant address pattern and dealer-prefix rules, see
+`docs/ops/inbound-lead-email-routing.md`.
+
 ## Required bindings
 
 - `INBOUND_LEAD_WEBHOOK_URL`: Full webhook URL, for example `https://bloodhyundai.com.au/api/inbound-leads/email`.
@@ -21,3 +24,14 @@ The Worker receives inbound mail from a Cloudflare Email Routing rule, converts 
 2. Route the subdomain/catch-all to this Worker.
 3. Set the Nuxt site env var `INBOUND_LEAD_EMAIL_DOMAIN` to the same subdomain.
 4. Set the same secret value in Cloudflare as `INBOUND_LEAD_WEBHOOK_SECRET` and in Nuxt as `INBOUND_LEAD_WEBHOOK_SECRET`.
+
+## Multi-tenant note
+
+`crm-leads.driveagent.io` is intended to be a shared inbound domain. Use dealer-prefixed
+local parts, for example `bloods-hyundai-carsales@crm-leads.driveagent.io`, so the CRM
+can match the incoming recipient to the correct dealer and source.
+
+The current Worker posts to one `INBOUND_LEAD_WEBHOOK_URL`. That is suitable when the
+receiving app is the shared multi-tenant CRM. If different dealers use separate CRMs or
+separate databases, route through a central ingestion endpoint or add Worker routing by
+dealer prefix to different webhook URLs and secrets.

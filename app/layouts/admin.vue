@@ -2,12 +2,12 @@
   <div class="min-h-screen bg-muted/20" data-layout="admin">
     <!-- Top Navigation -->
     <header class="border-b bg-background">
-      <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center gap-4">
+      <div class="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
           <!-- Mobile Nav -->
           <Sheet>
             <SheetTrigger as-child>
-              <Button variant="ghost" size="icon" class="sm:hidden">
+              <Button variant="ghost" size="icon" class="xl:hidden">
                 <Menu class="h-5 w-5" />
                 <span class="sr-only">Open navigation</span>
               </Button>
@@ -32,17 +32,23 @@
             </SheetContent>
           </Sheet>
 
-          <div class="flex items-center gap-2">
-            <Badge variant="outline" class="hidden sm:inline-flex">{{ siteName }}</Badge>
-            <div>
-              <p class="text-sm font-semibold leading-tight">Admin Console</p>
-              <p class="text-xs text-muted-foreground">Operations &amp; enquiries</p>
+          <div class="hidden min-w-0 flex-none items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 sm:flex">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-background text-[11px] font-semibold leading-none text-foreground">
+              {{ siteInitials }}
+            </div>
+            <div class="min-w-0">
+              <div class="flex min-w-0 items-center gap-2">
+                <p class="max-w-36 truncate text-sm font-semibold leading-tight text-foreground lg:max-w-44">{{ siteName }}</p>
+                <span class="hidden h-3 w-px bg-border lg:block" />
+                <p class="hidden whitespace-nowrap text-sm font-medium leading-tight text-muted-foreground lg:block">{{ currentSectionLabel }}</p>
+              </div>
+              <p class="hidden whitespace-nowrap text-xs leading-tight text-muted-foreground 2xl:block">Operations &amp; enquiries</p>
             </div>
           </div>
 
-          <Separator orientation="vertical" class="hidden h-8 sm:block" />
+          <Separator orientation="vertical" class="hidden h-8 xl:block" />
 
-          <nav class="hidden items-center gap-2 sm:flex">
+          <nav class="hidden min-w-0 items-center gap-1 xl:flex">
             <NuxtLink
               v-for="link in navItems"
               :key="link.href"
@@ -55,14 +61,14 @@
           </nav>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex shrink-0 items-center gap-2 sm:gap-3">
           <!-- Real-time notification bell -->
           <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
               <Button variant="ghost" class="flex items-center gap-3">
-                <div class="text-left">
+                <div class="hidden text-left lg:block">
                   <p class="text-sm font-semibold leading-tight">
                     {{ userState?.firstName || 'Admin' }} {{ userState?.lastName || '' }}
                   </p>
@@ -118,7 +124,6 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute } from '#imports';
 import { Menu, LogOut, Settings, GitBranch, Mail, MailPlus, Palette, Image } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
-import { Badge } from '~/components/ui/badge';
 import { Separator } from '~/components/ui/separator';
 import NotificationBell from '~/components/admin/NotificationBell.vue';
 import {
@@ -170,6 +175,22 @@ const isActive = (path: string) => {
   return route.path.startsWith(path);
 };
 
+const currentSectionLabel = computed(() => {
+  const active = [...navLinks]
+    .sort((a, b) => b.href.length - a.href.length)
+    .find(link => (link.href === '/admin' ? route.path === link.href : route.path.startsWith(link.href)));
+
+  return active?.label || 'Admin Console';
+});
+
+const siteInitials = computed(() => siteName.value
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map(word => word.charAt(0))
+  .join('')
+  .toUpperCase() || 'HD');
+
 const userInitials = computed(() => {
   if (!userState.value) return 'HD';
   const { firstName = '', lastName = '' } = userState.value;
@@ -200,7 +221,6 @@ const handleLogout = async () => {
   }
 };
 </script>
-
 
 
 
