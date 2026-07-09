@@ -69,6 +69,7 @@ const baseInput = () => ({
     { key: 'google_paid', label: 'Google paid search', category: 'paid_search', total: 4, crmSynced: 4, withCampaign: 4 },
     { key: 'carsales', label: 'Carsales', category: 'external_marketplace', total: 2, crmSynced: 1, withCampaign: 0 },
   ],
+  externalCrmSyncEnabled: true,
 });
 
 describe('buildMarketingReportInsights', () => {
@@ -80,9 +81,10 @@ describe('buildMarketingReportInsights', () => {
     assert.equal(out.executive.paidShareOfLeads, 40);
     assert.equal(out.executive.topLeadSource, 'Google paid search');
     assert.equal(out.executive.bestCampaign, 'Brand Search');
+    assert.equal(out.externalCrmSyncEnabled, true);
 
     assert.equal(out.funnel.find(step => step.key === 'paid_clicks')!.rateFromPrevious, 40);
-    assert.equal(out.funnel.find(step => step.key === 'crm_synced')!.rateFromPrevious, 90);
+    assert.equal(out.funnel.find(step => step.key === 'external_crm_synced')!.rateFromPrevious, 90);
 
     assert.equal(out.sourceDiagnostics[0]!.share, 40);
     assert.equal(out.sourceDiagnostics[1]!.crmSyncCoverage, 50);
@@ -101,6 +103,17 @@ describe('buildMarketingReportInsights', () => {
 
     assert.equal(out.executive.blendedCpl, null);
     assert.equal(out.recommendations[0]!.priority, 'high');
-    assert.match(out.recommendations[0]!.title, /not reconciling/i);
+    assert.match(out.recommendations[0]!.title, /no paid crm attribution/i);
+  });
+
+  it('omits external CRM sync checks when no external connector is enabled', () => {
+    const input = baseInput();
+    input.externalCrmSyncEnabled = false;
+
+    const out = buildMarketingReportInsights(input);
+
+    assert.equal(out.externalCrmSyncEnabled, false);
+    assert.equal(out.funnel.some(step => step.key === 'external_crm_synced'), false);
+    assert.equal(out.dataQuality.some(check => check.key === 'external_crm_sync'), false);
   });
 });

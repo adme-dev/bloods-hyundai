@@ -26,8 +26,10 @@ export default defineEventHandler(async (event) => {
   const { from, to, fromDate, dayAfterTo } = resolveRange(getQuery(event));
 
   const [dealer] = await db.select({ settings: dealers.settings }).from(dealers).where(eq(dealers.id, dealerId));
+  const dealerSettings = (dealer?.settings as Record<string, any>) || {};
   const integrations: MarketingIntegrations =
-    ((dealer?.settings as Record<string, any>)?.marketing?.integrations) || {};
+    dealerSettings?.marketing?.integrations || {};
+  const externalCrmSyncEnabled = hasExternalCrmSyncEnabled(dealerSettings);
 
   const [metricRows, leadRows, dailyLeadRows, syncRows] = await Promise.all([
     db.select().from(marketingMetricsDaily)
@@ -155,6 +157,7 @@ export default defineEventHandler(async (event) => {
     professionalMetrics,
     campaigns: metrics.campaigns,
     leadSources,
+    externalCrmSyncEnabled,
   });
 
   return {
@@ -534,6 +537,27 @@ function dataLayerStatus(utmCoverage: number, sourceCoverage: number) {
   if (utmCoverage >= 80 && sourceCoverage >= 95) return 'healthy';
   if (utmCoverage >= 50 && sourceCoverage >= 80) return 'needs_attention';
   return 'poor_coverage';
+}
+
+function hasExternalCrmSyncEnabled(settings: Record<string, any>) {
+  const candidates = [
+    settings?.crm,
+    settings?.externalCrm,
+    settings?.leadExport,
+    settings?.leadExports,
+    settings?.marketing?.crm,
+    settings?.marketing?.externalCrm,
+    settings?.marketing?.leadExport,
+    settings?.marketing?.integrations?.crm,
+    settings?.marketing?.integrations?.externalCrm,
+    settings?.marketing?.integrations?.leadExport,
+  ].filter(Boolean);
+
+  return candidates.some((candidate) => {
+    if (typeof candidate !== 'object') return false;
+    if (candidate.enabled === true || candidate.isActive === true || candidate.active === true) return true;
+    return Boolean(candidate.provider || candidate.endpoint || candidate.webhookUrl || candidate.apiUrl);
+  });
 }
 
 function resolveRange(query: Record<string, unknown>) {

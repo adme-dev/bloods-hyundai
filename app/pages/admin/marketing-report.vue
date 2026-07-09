@@ -182,7 +182,7 @@
                 <TableHead>Category</TableHead>
                 <TableHead class="text-right">Leads</TableHead>
                 <TableHead class="text-right">Share</TableHead>
-                <TableHead class="text-right">CRM sync</TableHead>
+                <TableHead v-if="data.insights.externalCrmSyncEnabled" class="text-right">External sync</TableHead>
                 <TableHead class="text-right">Campaign tagged</TableHead>
               </TableRow>
             </TableHeader>
@@ -192,11 +192,11 @@
                 <TableCell><Badge variant="outline" class="capitalize">{{ source.category.replaceAll('_', ' ') }}</Badge></TableCell>
                 <TableCell class="text-right">{{ n(source.total) }}</TableCell>
                 <TableCell class="text-right">{{ pct(source.share) }}</TableCell>
-                <TableCell class="text-right">{{ pct(source.crmSyncCoverage) }}</TableCell>
+                <TableCell v-if="data.insights.externalCrmSyncEnabled" class="text-right">{{ pct(source.crmSyncCoverage) }}</TableCell>
                 <TableCell class="text-right">{{ pct(source.campaignCoverage) }}</TableCell>
               </TableRow>
               <TableRow v-if="!data.insights.sourceDiagnostics.length">
-                <TableCell colspan="6" class="py-8 text-center text-muted-foreground">No lead source diagnostics for this range.</TableCell>
+                <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 6 : 5" class="py-8 text-center text-muted-foreground">No lead source diagnostics for this range.</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -491,7 +491,7 @@
                   <TableHead>Source</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead class="text-right">Leads</TableHead>
-                  <TableHead class="text-right">Synced</TableHead>
+                  <TableHead v-if="data.insights.externalCrmSyncEnabled" class="text-right">External sync</TableHead>
                   <TableHead class="text-right">Campaign tagged</TableHead>
                 </TableRow>
               </TableHeader>
@@ -502,11 +502,11 @@
                     <Badge variant="outline" class="capitalize">{{ source.category.replaceAll('_', ' ') }}</Badge>
                   </TableCell>
                   <TableCell class="text-right">{{ n(source.total) }}</TableCell>
-                  <TableCell class="text-right">{{ n(source.crmSynced) }}</TableCell>
+                  <TableCell v-if="data.insights.externalCrmSyncEnabled" class="text-right">{{ n(source.crmSynced) }}</TableCell>
                   <TableCell class="text-right">{{ n(source.withCampaign) }}</TableCell>
                 </TableRow>
                 <TableRow v-if="!data.crm.leadSources.length">
-                  <TableCell colspan="5" class="py-8 text-center text-muted-foreground">No CRM leads in this range.</TableCell>
+                  <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 5 : 4" class="py-8 text-center text-muted-foreground">No CRM leads in this range.</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -560,8 +560,8 @@
               <span class="text-sm font-medium">{{ connection.label }}</span>
               <Badge :variant="connection.connected ? 'default' : 'outline'">{{ connection.connected ? 'Connected' : 'Not connected' }}</Badge>
             </div>
-            <div class="grid grid-cols-2 gap-3 pt-2">
-              <MetricCell label="CRM synced" :value="`${n(data.summary.syncedToCrm)} leads`" />
+            <div class="grid gap-3 pt-2" :class="data.insights.externalCrmSyncEnabled ? 'grid-cols-2' : 'grid-cols-1'">
+              <MetricCell v-if="data.insights.externalCrmSyncEnabled" label="External CRM synced" :value="`${n(data.summary.syncedToCrm)} leads`" />
               <MetricCell label="External feeds" :value="`${n(data.summary.externalMarketplaceLeads)} leads`" />
             </div>
           </CardContent>
@@ -639,7 +639,7 @@
         <Card>
           <CardHeader>
             <CardTitle class="text-xl">Recent CRM Leads</CardTitle>
-            <CardDescription>Latest leads with source, UTM and sync indicators.</CardDescription>
+            <CardDescription>Latest leads with source, UTM and attribution indicators.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -671,7 +671,7 @@
                   </TableCell>
                   <TableCell class="text-right">
                     <div class="flex flex-wrap justify-end gap-1">
-                      <Badge v-if="lead.syncedToCrm" variant="outline">CRM</Badge>
+                      <Badge v-if="data.insights.externalCrmSyncEnabled && lead.syncedToCrm" variant="outline">External CRM</Badge>
                       <Badge v-if="lead.hasExternalRef" variant="outline">External</Badge>
                       <Badge v-if="lead.attributedPlatform" variant="outline">{{ platformLabel(lead.attributedPlatform) }}</Badge>
                       <Badge v-if="lead.testDrive" variant="outline">Test drive</Badge>
@@ -832,6 +832,7 @@ interface ReportResponse {
     metaAds: ProfessionalAdMetrics;
   };
   insights: {
+    externalCrmSyncEnabled: boolean;
     executive: {
       totalSpend: number;
       totalCrmLeads: number;
