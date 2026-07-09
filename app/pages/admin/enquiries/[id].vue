@@ -223,7 +223,7 @@
           </CardContent>
         </Card>
 
-        <Card v-if="vehicleFields.length || tradeInFields.length || financeFields.length">
+        <Card v-if="hasVehicleInterest">
           <CardHeader>
             <CardTitle>Vehicle & interest</CardTitle>
             <CardDescription>Everything the customer shared about their vehicle journey.</CardDescription>
@@ -285,6 +285,15 @@
                     <span v-if="vehicleConfiguration.optionPackPrice" class="text-muted-foreground">
                       (+{{ formatCurrency(vehicleConfiguration.optionPackPrice) }})
                     </span>
+                    <ul
+                      v-if="optionPackFeatures.length"
+                      class="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2"
+                    >
+                      <li v-for="feature in optionPackFeatures" :key="feature" class="flex gap-1.5">
+                        <span class="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary/60"></span>
+                        <span>{{ feature }}</span>
+                      </li>
+                    </ul>
                   </dd>
                 </div>
                 <div v-if="vehicleConfiguration.trim">
@@ -488,9 +497,9 @@
           <CardHeader class="pb-4">
             <CardTitle class="flex items-center gap-2">
               <ShoppingCart class="h-5 w-5" />
-              Accessories Quote Request
+              {{ accessoriesCardTitle }}
             </CardTitle>
-            <CardDescription>Items the customer is interested in purchasing.</CardDescription>
+            <CardDescription>{{ accessoriesCardDescription }}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-6">
             <!-- Model Info -->
@@ -1093,6 +1102,7 @@ interface VehicleConfiguration {
   trimPrice?: number;
   optionPack?: string;
   optionPackPrice?: number;
+  optionPackFeatures?: string[];
   prepaidService?: string;
   prepaidServicePrice?: number;
   basePrice?: number;
@@ -1104,6 +1114,12 @@ const vehicleConfiguration = computed<VehicleConfiguration | undefined>(() => {
   const info = vehicleInfo.value;
   if (!info) return undefined;
   return info.configuration as VehicleConfiguration | undefined;
+});
+
+const optionPackFeatures = computed(() => {
+  const features = vehicleConfiguration.value?.optionPackFeatures;
+  if (!Array.isArray(features)) return [];
+  return features.filter((feature): feature is string => typeof feature === 'string' && feature.trim().length > 0);
 });
 
 // Applied offers from vehicle builder
@@ -1131,6 +1147,10 @@ const vehicleFieldsFiltered = computed(() => {
   });
 });
 
+const hasVehicleInterest = computed(() =>
+  Boolean(vehicleFields.value.length || tradeInFields.value.length || financeFields.value.length || vehicleConfiguration.value || appliedOffers.value.length)
+);
+
 // Accessories cart
 interface AccessoriesCartData {
   model?: string | null;
@@ -1150,7 +1170,6 @@ interface AccessoriesCartData {
 }
 
 const accessoriesCart = computed<AccessoriesCartData | null>(() => {
-  if (enquiry.value?.type !== 'accessories') return null;
   const cart = enquiry.value?.accessoriesCart as AccessoriesCartData | undefined;
   if (!cart || !Array.isArray(cart.items) || cart.items.length === 0) return null;
   return cart;
@@ -1159,6 +1178,18 @@ const accessoriesCart = computed<AccessoriesCartData | null>(() => {
 const accessoriesItems = computed(() => {
   return accessoriesCart.value?.items || [];
 });
+
+const isStandaloneAccessoriesLead = computed(() => enquiry.value?.type === 'accessories');
+
+const accessoriesCardTitle = computed(() =>
+  isStandaloneAccessoriesLead.value ? 'Accessories Quote Request' : 'Selected accessories'
+);
+
+const accessoriesCardDescription = computed(() =>
+  isStandaloneAccessoriesLead.value
+    ? 'Items the customer is interested in purchasing.'
+    : 'Accessories selected with the calculator or showroom enquiry.'
+);
 
 // Sell My Car details
 interface SellCarDetails {

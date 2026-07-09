@@ -1120,8 +1120,9 @@ const currentVehicleConfiguration = computed(() => {
     colourPrice: selectedColour.value?.price || 0,
     trim: selectedTrim.value?.name,
     trimPrice: selectedTrim.value?.price || 0,
-    optionPack: selectedOptionPack.value?.name,
+    optionPack: selectedOptionPack.value?.title || selectedOptionPack.value?.name,
     optionPackPrice: selectedOptionPack.value?.price || 0,
+    optionPackFeatures: selectedOptionPack.value?.features || [],
     prepaidService: selectedPrepaidPlan.value ? `${selectedPrepaidPlan.value.year} Year Plan` : undefined,
     prepaidServicePrice: selectedPrepaidPlan.value?.price || 0,
     basePrice: variantPricing.value?.finalDriveAwayPrice || selectedVariant.value?.price || 0,
@@ -1129,6 +1130,34 @@ const currentVehicleConfiguration = computed(() => {
     thumbnail: selectedVariant.value?.image || calculatorData.value?.modelImage,
   };
 });
+
+const buildAccessoriesCart = (items: any[] = selectedAccessories.value, configuration: any = currentVehicleConfiguration.value) => {
+  if (!Array.isArray(items) || items.length === 0) return undefined;
+
+  const cartItems = items.map((acc: any) => {
+    const quantity = acc.quantity || 1;
+    const price = acc.price || 0;
+
+    return {
+      id: acc.id,
+      name: acc.name,
+      partNumber: acc.partNumber || acc.part_number,
+      price,
+      quantity,
+      type: acc.isPack ? 'pack' : 'accessory',
+      subtotal: price * quantity,
+      image: acc.image,
+      thumbnail: acc.thumbnail,
+    };
+  });
+
+  return {
+    model: configuration?.model || modelSlug.value,
+    items: cartItems,
+    itemCount: cartItems.length,
+    total: cartItems.reduce((sum: number, item: any) => sum + item.subtotal, 0),
+  };
+};
 
 // Accessories computed properties
 const featuredAccessories = computed(() => {
@@ -1362,14 +1391,33 @@ const openTestDriveModal = () => {
 
 const handleTestDriveSubmit = async (formData: any) => {
   try {
+    const vehicleConfiguration = {
+      model: calculatorData.value?.modelName || calculatorData.value?.model || modelSlug.value,
+      variant: selectedVariant.value?.name,
+      variantId: selectedVariant.value?.id,
+      colour: selectedColour.value?.name,
+      colourPrice: selectedColour.value?.price,
+      trim: selectedTrim.value?.name,
+      trimPrice: selectedTrim.value?.price,
+      optionPack: selectedOptionPack.value?.title || selectedOptionPack.value?.name,
+      optionPackPrice: selectedOptionPack.value?.price,
+      optionPackFeatures: selectedOptionPack.value?.features || [],
+      prepaidService: selectedPrepaidPlan.value ? `${selectedPrepaidPlan.value.year} Year Plan` : undefined,
+      prepaidServicePrice: selectedPrepaidPlan.value?.price || 0,
+      basePrice: selectedVariant.value?.price,
+      totalPrice: totalPrice.value,
+      thumbnail: selectedColourImage.value,
+    };
+    const accessoriesCart = buildAccessoriesCart(selectedAccessories.value, vehicleConfiguration);
+
     // Build vehicle info from current selection
     const vehicleInfo = {
       make: 'Hyundai',
-      model: calculatorData.value?.model || modelSlug.value,
-      variant: selectedVariant.value?.name,
-      colour: selectedColour.value?.name,
-      price: totalPrice.value,
-      thumbnail: selectedColourImage.value,
+      model: vehicleConfiguration.model,
+      variant: vehicleConfiguration.variant,
+      colour: vehicleConfiguration.colour,
+      price: vehicleConfiguration.totalPrice,
+      thumbnail: vehicleConfiguration.thumbnail,
       condition: 'new',
     };
 
@@ -1382,25 +1430,13 @@ const handleTestDriveSubmit = async (formData: any) => {
       phone: formData.phone,
       source: 'calculator-test-drive',
       vehicleInfo,
+      accessoriesCart,
       testDrive: true,
       message: formData.purchaseTimeline 
         ? `Purchase timeline: ${formData.purchaseTimeline}` 
         : undefined,
       // Include detailed configuration for reference
-      vehicleConfiguration: {
-        model: calculatorData.value?.model,
-        variant: selectedVariant.value?.name,
-        variantId: selectedVariant.value?.id,
-        colour: selectedColour.value?.name,
-        colourPrice: selectedColour.value?.price,
-        trim: selectedTrim.value?.name,
-        trimPrice: selectedTrim.value?.price,
-        optionPack: selectedOptionPack.value?.name,
-        optionPackPrice: selectedOptionPack.value?.price,
-        basePrice: selectedVariant.value?.price,
-        totalPrice: totalPrice.value,
-        thumbnail: selectedColourImage.value,
-      },
+      vehicleConfiguration,
     };
 
     // Submit to API
@@ -1473,26 +1509,7 @@ const handleEnquireSubmit = async (formData: any) => {
     };
 
     // Build accessories cart if there are selected accessories
-    let accessoriesCart = undefined;
-    if (formData.selectedAccessories && formData.selectedAccessories.length > 0) {
-      const items = formData.selectedAccessories.map((acc: any) => ({
-        id: acc.id,
-        name: acc.name,
-        price: acc.price || 0,
-        quantity: acc.quantity || 1,
-        type: acc.isPack ? 'pack' : 'accessory',
-        subtotal: (acc.price || 0) * (acc.quantity || 1),
-        image: acc.image,
-        thumbnail: acc.thumbnail,
-      }));
-
-      accessoriesCart = {
-        model: formData.vehicleConfiguration?.model || modelSlug.value,
-        items,
-        itemCount: items.length,
-        total: items.reduce((sum: number, item: any) => sum + item.subtotal, 0),
-      };
-    }
+    const accessoriesCart = buildAccessoriesCart(formData.selectedAccessories, formData.vehicleConfiguration);
 
     // Build the enquiry submission payload
     const enquiryPayload = {
