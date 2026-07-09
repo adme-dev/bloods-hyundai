@@ -7,6 +7,7 @@
  * - Vehicle interactions
  * - Conversion tracking for Google Ads and Facebook Ads
  */
+import { buildAccessoryCommerceEvent } from '~/utils/accessoriesCommerceTracking';
 
 interface VehicleData {
   stockid?: string | number;
@@ -694,6 +695,29 @@ export const useAnalytics = () => {
       items_count: data.items_count,
     });
 
+    if (data.accessories?.length) {
+      const { event, ...payload } = buildAccessoryCommerceEvent('accessories_quote_submit', {
+        items: data.accessories.map(item => ({
+          accessory: {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+          },
+          quantity: item.quantity,
+          type: item.type === 'pack' ? 'pack' : 'accessory',
+        })),
+        selectedModel: data.vehicle_model ? { name: data.vehicle_model } : null,
+        source: data.form_location || 'accessories_enquiry',
+      });
+
+      pushToDataLayer(event, {
+        ...payload,
+        formType: 'accessories',
+        formLocation: data.form_location,
+        enquiryId: data.enquiry_id,
+      });
+    }
+
     // Facebook Pixel - Accessories enquiry
     fbPixel.trackAccessoriesEnquiry({
       totalValue: data.total_value,
@@ -849,7 +873,6 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
 
 
 

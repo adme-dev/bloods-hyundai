@@ -680,6 +680,7 @@ const closeDetailModal = () => {
 };
 
 const handleEnquire = () => {
+  accessoriesStore.trackQuoteRequest('accessories_cart_modal');
   // Close cart and show enquiry modal
   accessoriesStore.toggleCart(false);
   showEnquiryModal.value = true;

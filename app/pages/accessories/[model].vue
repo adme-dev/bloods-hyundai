@@ -441,6 +441,7 @@ const closeDetailModal = () => {
 };
 
 const handleEnquire = () => {
+  accessoriesStore.trackQuoteRequest('accessories_model_cart');
   navigateTo({
     path: '/contact',
     query: {

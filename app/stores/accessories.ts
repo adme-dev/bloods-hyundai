@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { slugify } from '~/utils';
 import hyundaiModelsData from '~/data/hyundai-models.json';
+import { pushAccessoryCommerceEvent } from '~/utils/accessoriesCommerceTracking';
 
 /**
  * Accessories store - handles Hyundai Genuine Accessories data and cart functionality
@@ -222,6 +223,19 @@ export const useAccessoriesStore = defineStore('accessories', () => {
   const getAccessoryById = (accessoryId: string): Accessory | undefined => {
     return accessories.value.find(acc => acc.id === accessoryId);
   };
+
+  const trackCartEvent = (
+    event: Parameters<typeof pushAccessoryCommerceEvent>[0],
+    items: CartItem[],
+    options: { source?: string; reason?: string } = {},
+  ) => {
+    pushAccessoryCommerceEvent(event, {
+      items,
+      selectedModel: selectedModel.value,
+      source: options.source,
+      reason: options.reason,
+    });
+  };
   
   // Actions
   const selectModel = async (model: HyundaiModel) => {
@@ -277,6 +291,8 @@ export const useAccessoriesStore = defineStore('accessories', () => {
         type,
       });
     }
+
+    trackCartEvent('add_to_cart', [{ accessory, quantity: 1, type }], { source: 'accessories_store' });
     
     // Show cart notification
     if (process.client) {
@@ -288,7 +304,9 @@ export const useAccessoriesStore = defineStore('accessories', () => {
   const removeFromCart = (accessoryId: string) => {
     const index = cartItems.value.findIndex(item => item.accessory.id === accessoryId);
     if (index !== -1) {
+      const removedItem = { ...cartItems.value[index] };
       cartItems.value.splice(index, 1);
+      trackCartEvent('remove_from_cart', [removedItem], { source: 'accessories_cart' });
     }
   };
   
@@ -298,17 +316,46 @@ export const useAccessoriesStore = defineStore('accessories', () => {
       if (quantity <= 0) {
         removeFromCart(accessoryId);
       } else {
+        const previousQuantity = item.quantity;
         item.quantity = quantity;
+
+        const quantityDelta = quantity - previousQuantity;
+        if (quantityDelta > 0) {
+          trackCartEvent('add_to_cart', [{ ...item, quantity: quantityDelta }], { source: 'accessories_cart' });
+        } else if (quantityDelta < 0) {
+          trackCartEvent('remove_from_cart', [{ ...item, quantity: Math.abs(quantityDelta) }], { source: 'accessories_cart' });
+        }
       }
     }
   };
   
-  const clearCart = () => {
+  const clearCart = (options: { track?: boolean; reason?: string } = {}) => {
+    const shouldTrack = options.track !== false;
+    const removedItems = [...cartItems.value];
     cartItems.value = [];
+
+    if (shouldTrack && removedItems.length > 0) {
+      trackCartEvent('clear_cart', removedItems, {
+        source: 'accessories_cart',
+        reason: options.reason || 'user_clear',
+      });
+    }
   };
   
   const toggleCart = (show?: boolean) => {
-    showCart.value = show !== undefined ? show : !showCart.value;
+    const nextShow = show !== undefined ? show : !showCart.value;
+    const wasShown = showCart.value;
+    showCart.value = nextShow;
+
+    if (nextShow && !wasShown) {
+      trackCartEvent('view_cart', cartItems.value, { source: 'accessories_cart' });
+    }
+  };
+
+  const trackQuoteRequest = (source = 'accessories_cart') => {
+    if (cartItems.value.length === 0) return;
+
+    trackCartEvent('accessories_quote_start', cartItems.value, { source });
   };
   
   const setCategory = (category: string | null) => {
@@ -368,6 +415,7 @@ export const useAccessoriesStore = defineStore('accessories', () => {
     updateCartQuantity,
     clearCart,
     toggleCart,
+    trackQuoteRequest,
     setCategory,
     setSearchQuery,
     setSortBy,
@@ -382,4 +430,3 @@ export const useAccessoriesStore = defineStore('accessories', () => {
     paths: ['cartItems', 'selectedModel'],
   },
 });
-

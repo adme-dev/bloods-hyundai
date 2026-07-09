@@ -412,8 +412,8 @@ const handleSubmit = async () => {
     submitted.value = true;
     emit('submitted');
 
-    // Clear cart
-    accessoriesStore.clearCart();
+    // Clear cart after conversion without counting it as cart abandonment/removal.
+    accessoriesStore.clearCart({ track: false, reason: 'enquiry_submitted' });
 
   } catch (error: any) {
     console.error('Accessories enquiry submission failed:', error);
