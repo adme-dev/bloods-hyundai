@@ -1,6 +1,39 @@
 import { db } from '../../../utils/db';
 import { enquiries, users, dealers, customerRetentionProfiles, customerTasks, customers } from '../../../database/schema';
-import { eq, and, gte, lte, sql, desc, isNull, isNotNull, count, or } from 'drizzle-orm';
+import { eq, and, gte, lte, sql, desc, isNull, isNotNull } from 'drizzle-orm';
+
+type MemoryCache<T> = {
+  value: T | null;
+  expiresAt: number;
+  pending: Promise<T | null> | null;
+};
+
+const VEHICLE_CATALOG_CACHE_TTL_MS = 60 * 60 * 1000;
+const CURRENT_OFFERS_CACHE_TTL_MS = 15 * 60 * 1000;
+const vehicleCatalogCache: MemoryCache<any> = { value: null, expiresAt: 0, pending: null };
+const currentOffersCache: MemoryCache<any> = { value: null, expiresAt: 0, pending: null };
+
+async function getCachedValue<T>(
+  cache: MemoryCache<T>,
+  ttlMs: number,
+  loader: () => Promise<T | null>
+): Promise<T | null> {
+  const now = Date.now();
+  if (cache.expiresAt > now) return cache.value;
+  if (cache.pending) return cache.pending;
+
+  cache.pending = loader()
+    .then((value) => {
+      cache.value = value;
+      cache.expiresAt = Date.now() + ttlMs;
+      return value;
+    })
+    .finally(() => {
+      cache.pending = null;
+    });
+
+  return cache.pending;
+}
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -89,42 +122,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'Failed to compute dashboard stats' });
   }
 
-  // Today's count
-  const [todayStats] = await db
-    .select({ count: sql<number>`count(*)` })
+  const [periodStats] = await db
+    .select({
+      today: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${todayStart})`,
+      yesterday: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${yesterdayStart} and ${enquiries.createdAt} <= ${todayStart})`,
+      thisWeek: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${weekStart})`,
+      lastWeek: sql<number>`count(*) filter (where ${enquiries.createdAt} >= ${lastWeekStart} and ${enquiries.createdAt} <= ${weekStart})`,
+    })
     .from(enquiries)
-    .where(and(
-      eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, todayStart)
-    ));
-
-  // Yesterday's count for comparison
-  const [yesterdayStats] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enquiries)
-    .where(and(
-      eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, yesterdayStart),
-      lte(enquiries.createdAt, todayStart)
-    ));
-
-  // This week vs last week
-  const [thisWeekStats] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enquiries)
-    .where(and(
-      eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, weekStart)
-    ));
-
-  const [lastWeekStats] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(enquiries)
-    .where(and(
-      eq(enquiries.dealerId, dealerId),
-      gte(enquiries.createdAt, lastWeekStart),
-      lte(enquiries.createdAt, weekStart)
-    ));
+    .where(eq(enquiries.dealerId, dealerId));
 
   // ============================================================================
   // DEPARTMENT BREAKDOWN (by enquiry type)
@@ -420,6 +426,12 @@ export default defineEventHandler(async (event) => {
       withTestDrive: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
       withAccessories: sql<number>`count(*) filter (where ${enquiries.accessoriesCart} is not null)`,
       totalAccessoriesValue: sql<number>`sum((${enquiries.accessoriesCart}->>'total')::numeric)`,
+      funnelTotalLeads: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive', 'finance'))`,
+      funnelContacted: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive', 'finance') and ${enquiries.contactedAt} is not null)`,
+      funnelQualified: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive', 'finance') and ${enquiries.status} not in ('new_lead'))`,
+      funnelTestDriveBooked: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive', 'finance') and ${enquiries.testDrive} = true)`,
+      funnelFinanceApplied: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive', 'finance') and ${enquiries.financeInterest} = true)`,
+      funnelConverted: sql<number>`count(*) filter (where ${enquiries.type} in ('vehicle', 'test_drive', 'finance') and ${enquiries.status} = 'sold')`,
     })
     .from(enquiries)
     .where(and(
@@ -540,26 +552,6 @@ export default defineEventHandler(async (event) => {
     .limit(5);
 
   // ============================================================================
-  // CONVERSION FUNNEL
-  // ============================================================================
-
-  const [conversionFunnel] = await db
-    .select({
-      totalLeads: sql<number>`count(*)`,
-      contacted: sql<number>`count(*) filter (where ${enquiries.contactedAt} is not null)`,
-      qualified: sql<number>`count(*) filter (where ${enquiries.status} not in ('new_lead'))`,
-      testDriveBooked: sql<number>`count(*) filter (where ${enquiries.testDrive} = true)`,
-      financeApplied: sql<number>`count(*) filter (where ${enquiries.financeInterest} = true)`,
-      converted: sql<number>`count(*) filter (where ${enquiries.status} = 'sold')`,
-    })
-    .from(enquiries)
-    .where(and(
-      eq(enquiries.dealerId, dealerId),
-      sql`${enquiries.type} in ('vehicle', 'test_drive', 'finance')`,
-      gte(enquiries.createdAt, monthStart)
-    ));
-
-  // ============================================================================
   // VEHICLE MODEL INTEREST (from enquiries)
   // ============================================================================
 
@@ -651,24 +643,16 @@ export default defineEventHandler(async (event) => {
     .from(customers)
     .where(eq(customers.dealerId, dealerId));
 
-  // At-risk customers (risk level = high or critical)
-  const [atRiskStats] = await db
-    .select({
-      atRisk: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} in ('high', 'critical'))`,
-      critical: sql<number>`count(*) filter (where ${customerRetentionProfiles.riskLevel} = 'critical')`,
-    })
-    .from(customerRetentionProfiles)
-    .where(and(
-      eq(customerRetentionProfiles.dealerId, dealerId),
-      eq(customerRetentionProfiles.isActive, true)
-    ));
-
   // Due follow-ups (tasks due today or overdue)
   const [taskStats] = await db
     .select({
       overdue: sql<number>`count(*) filter (where ${customerTasks.dueDate} < ${todayStart} and ${customerTasks.status} not in ('completed', 'cancelled'))`,
       dueToday: sql<number>`count(*) filter (where ${customerTasks.dueDate} >= ${todayStart} and ${customerTasks.dueDate} < ${new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)} and ${customerTasks.status} not in ('completed', 'cancelled'))`,
       pending: sql<number>`count(*) filter (where ${customerTasks.status} = 'pending')`,
+      urgent: sql<number>`count(*) filter (where ${customerTasks.priority} = 'urgent' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      high: sql<number>`count(*) filter (where ${customerTasks.priority} = 'high' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      medium: sql<number>`count(*) filter (where ${customerTasks.priority} = 'medium' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
+      low: sql<number>`count(*) filter (where ${customerTasks.priority} = 'low' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
     })
     .from(customerTasks)
     .where(eq(customerTasks.dealerId, dealerId));
@@ -690,20 +674,6 @@ export default defineEventHandler(async (event) => {
   const thirtyDaysAgo = new Date(todayStart);
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const [noContactStats] = await db
-    .select({
-      count: sql<number>`count(*)`,
-    })
-    .from(customerRetentionProfiles)
-    .where(and(
-      eq(customerRetentionProfiles.dealerId, dealerId),
-      eq(customerRetentionProfiles.isActive, true),
-      or(
-        lte(customerRetentionProfiles.lastContactDate, thirtyDaysAgo),
-        isNull(customerRetentionProfiles.lastContactDate)
-      )
-    ));
-
   // ============================================================================
   // ENHANCED RETENTION ANALYTICS
   // ============================================================================
@@ -717,6 +687,7 @@ export default defineEventHandler(async (event) => {
   const [riskSegmentation] = await db
     .select({
       // Contact gap segments
+      noContact30Plus: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} <= ${thirtyDaysAgo} or ${customerRetentionProfiles.lastContactDate} is null)`,
       noContact90Plus: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} < ${ninetyDaysAgo} or ${customerRetentionProfiles.lastContactDate} is null)`,
       noContact60to90: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} >= ${ninetyDaysAgo} and ${customerRetentionProfiles.lastContactDate} < ${sixtyDaysAgo})`,
       noContact30to60: sql<number>`count(*) filter (where ${customerRetentionProfiles.lastContactDate} >= ${sixtyDaysAgo} and ${customerRetentionProfiles.lastContactDate} < ${thirtyDaysAgo})`,
@@ -752,17 +723,6 @@ export default defineEventHandler(async (event) => {
     .from(customerTasks)
     .where(eq(customerTasks.dealerId, dealerId))
     .groupBy(customerTasks.taskType);
-
-  // Task priority breakdown
-  const [taskPriorityStats] = await db
-    .select({
-      urgent: sql<number>`count(*) filter (where ${customerTasks.priority} = 'urgent' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
-      high: sql<number>`count(*) filter (where ${customerTasks.priority} = 'high' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
-      medium: sql<number>`count(*) filter (where ${customerTasks.priority} = 'medium' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
-      low: sql<number>`count(*) filter (where ${customerTasks.priority} = 'low' and ${customerTasks.status} not in ('completed', 'cancelled'))`,
-    })
-    .from(customerTasks)
-    .where(eq(customerTasks.dealerId, dealerId));
 
   // Retention strategy distribution
   const retentionStrategyStats = await db
@@ -833,10 +793,10 @@ export default defineEventHandler(async (event) => {
   // Wait for catalog data
   const [catalogData, offersData] = await Promise.all([catalogPromise, offersPromise]);
 
-  const todayCount = Number(todayStats?.count || 0);
-  const yesterdayCount = Number(yesterdayStats?.count || 0);
-  const thisWeekCount = Number(thisWeekStats?.count || 0);
-  const lastWeekCount = Number(lastWeekStats?.count || 0);
+  const todayCount = Number(periodStats?.today || 0);
+  const yesterdayCount = Number(periodStats?.yesterday || 0);
+  const thisWeekCount = Number(periodStats?.thisWeek || 0);
+  const lastWeekCount = Number(periodStats?.lastWeek || 0);
   const safeResponseMetrics = responseMetrics ?? {
     avgResponseHours: 0,
     medianResponseHours: 0,
@@ -863,18 +823,24 @@ export default defineEventHandler(async (event) => {
     withTestDrive: 0,
     withAccessories: 0,
     totalAccessoriesValue: 0,
+    funnelTotalLeads: 0,
+    funnelContacted: 0,
+    funnelQualified: 0,
+    funnelTestDriveBooked: 0,
+    funnelFinanceApplied: 0,
+    funnelConverted: 0,
   };
   const safeLastMonthSalesMetrics = lastMonthSalesMetrics ?? {
     totalVehicleEnquiries: 0,
     convertedSales: 0,
   };
-  const safeConversionFunnel = conversionFunnel ?? {
-    totalLeads: 0,
-    contacted: 0,
-    qualified: 0,
-    testDriveBooked: 0,
-    financeApplied: 0,
-    converted: 0,
+  const safeConversionFunnel = {
+    totalLeads: Number(safeMonthlySalesMetrics.funnelTotalLeads || 0),
+    contacted: Number(safeMonthlySalesMetrics.funnelContacted || 0),
+    qualified: Number(safeMonthlySalesMetrics.funnelQualified || 0),
+    testDriveBooked: Number(safeMonthlySalesMetrics.funnelTestDriveBooked || 0),
+    financeApplied: Number(safeMonthlySalesMetrics.funnelFinanceApplied || 0),
+    converted: Number(safeMonthlySalesMetrics.funnelConverted || 0),
   };
 
   // Calculate week-over-week change
@@ -1195,12 +1161,12 @@ export default defineEventHandler(async (event) => {
       totalCustomers: Number(customerStats?.total || 0),
       activeCustomers: Number(customerStats?.active || 0),
       newThisMonth: Number(customerStats?.newThisMonth || 0),
-      atRisk: Number(atRiskStats?.atRisk || 0),
-      critical: Number(atRiskStats?.critical || 0),
+      atRisk: Number(riskSegmentation?.highRisk || 0) + Number(riskSegmentation?.criticalRisk || 0),
+      critical: Number(riskSegmentation?.criticalRisk || 0),
       overdueTasks: Number(taskStats?.overdue || 0),
       tasksDueToday: Number(taskStats?.dueToday || 0),
       pendingTasks: Number(taskStats?.pending || 0),
-      noContactIn30Days: Number(noContactStats?.count || 0),
+      noContactIn30Days: Number(riskSegmentation?.noContact30Plus || 0),
       lifecycleDistribution: lifecycleDistribution.map(l => ({
         stage: l.stage,
         count: Number(l.count),
@@ -1239,10 +1205,10 @@ export default defineEventHandler(async (event) => {
           overdue: Number(t.overdue),
         })),
         byPriority: {
-          urgent: Number(taskPriorityStats?.urgent || 0),
-          high: Number(taskPriorityStats?.high || 0),
-          medium: Number(taskPriorityStats?.medium || 0),
-          low: Number(taskPriorityStats?.low || 0),
+          urgent: Number(taskStats?.urgent || 0),
+          high: Number(taskStats?.high || 0),
+          medium: Number(taskStats?.medium || 0),
+          low: Number(taskStats?.low || 0),
         },
       },
       retentionStrategies: retentionStrategyStats.map(s => ({
@@ -1318,6 +1284,10 @@ function getDepartmentColor(type: string): string {
 // ============================================================================
 
 async function fetchVehicleCatalog() {
+  return getCachedValue(vehicleCatalogCache, VEHICLE_CATALOG_CACHE_TTL_MS, fetchVehicleCatalogFresh);
+}
+
+async function fetchVehicleCatalogFresh() {
   try {
     const response = await fetch('https://www.hyundai.com/content/api/au/hyundai/pcm1/v1/modeladditional');
     if (!response.ok) return null;
@@ -1393,6 +1363,10 @@ async function fetchVehicleCatalog() {
 }
 
 async function fetchCurrentOffers() {
+  return getCachedValue(currentOffersCache, CURRENT_OFFERS_CACHE_TTL_MS, fetchCurrentOffersFresh);
+}
+
+async function fetchCurrentOffersFresh() {
   try {
     // Use the same parsing logic as /api/hyundai-offers
     const response = await fetch('https://www.hyundai.com/au/en/offers', {

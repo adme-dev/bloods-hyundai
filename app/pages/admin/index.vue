@@ -102,10 +102,12 @@ const { data, pending, refresh } = await useFetch('/api/admin/analytics/dashboar
 
 const alerts = computed(() => data.value?.followUpAlerts);
 
-// Auto-refresh every 30 seconds
+// Auto-refresh active dashboards without waking hidden browser tabs.
 let refreshInterval: ReturnType<typeof setInterval>;
 onMounted(() => {
-  refreshInterval = setInterval(() => refresh(), 30000);
+  refreshInterval = setInterval(() => {
+    if (document.visibilityState === 'visible') refresh();
+  }, 60000);
 });
 onUnmounted(() => {
   if (refreshInterval) clearInterval(refreshInterval);
