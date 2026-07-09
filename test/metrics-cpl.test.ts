@@ -16,11 +16,19 @@ describe('aggregateMarketingMetrics', () => {
     );
     const c = out.campaigns.find(c => c.campaignId === '111')!;
     assert.equal(c.spend, 150);
+    assert.equal(c.impressions, 10000);
+    assert.equal(c.clicks, 300);
     assert.equal(c.platformLeads, 15);
     assert.equal(c.crmLeads, 6);
     assert.equal(c.cpl, 25);
+    assert.equal(c.ctr, 3);
+    assert.equal(c.platformLeadRate, 5);
     assert.equal(out.platforms.meta_ads.spend, 150);
+    assert.equal(out.platforms.meta_ads.impressions, 10000);
+    assert.equal(out.platforms.meta_ads.clicks, 300);
     assert.equal(out.platforms.meta_ads.crmLeads, 6);
+    assert.equal(out.platforms.meta_ads.ctr, 3);
+    assert.equal(out.platforms.meta_ads.platformLeadRate, 5);
   });
 
   it('matches CRM campaign by campaignId too, case-insensitive names', () => {

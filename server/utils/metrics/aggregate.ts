@@ -29,17 +29,38 @@ interface CampaignAgg {
   campaignId: string;
   campaignName: string | null;
   spend: number;
+  impressions: number;
   clicks: number;
   platformLeads: number;
   crmLeads: number;
   cpl: number | null;
+  ctr: number | null;
+  platformLeadRate: number | null;
 }
 
 export function aggregateMarketingMetrics(rows: MetricInput[], crm: CrmCampaignCount[]) {
   const ga4 = { sessions: 0, users: 0, conversions: 0 };
   const adTotals = {
-    meta_ads: { spend: 0, impressions: 0, clicks: 0, platformLeads: 0, crmLeads: 0, cpl: null as number | null },
-    google_ads: { spend: 0, impressions: 0, clicks: 0, platformLeads: 0, crmLeads: 0, cpl: null as number | null },
+    meta_ads: {
+      spend: 0,
+      impressions: 0,
+      clicks: 0,
+      platformLeads: 0,
+      crmLeads: 0,
+      cpl: null as number | null,
+      ctr: null as number | null,
+      platformLeadRate: null as number | null,
+    },
+    google_ads: {
+      spend: 0,
+      impressions: 0,
+      clicks: 0,
+      platformLeads: 0,
+      crmLeads: 0,
+      cpl: null as number | null,
+      ctr: null as number | null,
+      platformLeadRate: null as number | null,
+    },
   };
   const campaignMap = new Map<string, CampaignAgg>();
 
@@ -59,9 +80,11 @@ export function aggregateMarketingMetrics(rows: MetricInput[], crm: CrmCampaignC
     const key = `${r.platform}:${r.campaignId}`;
     const c = campaignMap.get(key) || {
       platform: r.platform, campaignId: r.campaignId, campaignName: r.campaignName,
-      spend: 0, clicks: 0, platformLeads: 0, crmLeads: 0, cpl: null,
+      spend: 0, impressions: 0, clicks: 0, platformLeads: 0, crmLeads: 0,
+      cpl: null, ctr: null, platformLeadRate: null,
     };
     c.spend += r.spend;
+    c.impressions += r.impressions;
     c.clicks += r.clicks;
     c.platformLeads += r.platformLeads;
     if (r.campaignName) c.campaignName = r.campaignName;
@@ -122,10 +145,14 @@ export function aggregateMarketingMetrics(rows: MetricInput[], crm: CrmCampaignC
 
   for (const c of campaignMap.values()) {
     c.cpl = c.crmLeads > 0 ? Math.round((c.spend / c.crmLeads) * 100) / 100 : null;
+    c.ctr = percent(c.clicks, c.impressions);
+    c.platformLeadRate = percent(c.platformLeads, c.clicks);
   }
   for (const t of [adTotals.meta_ads, adTotals.google_ads]) {
     t.spend = Math.round(t.spend * 100) / 100;
     t.cpl = t.crmLeads > 0 ? Math.round((t.spend / t.crmLeads) * 100) / 100 : null;
+    t.ctr = percent(t.clicks, t.impressions);
+    t.platformLeadRate = percent(t.platformLeads, t.clicks);
   }
 
   const campaigns = [...campaignMap.values()]
@@ -136,9 +163,15 @@ export function aggregateMarketingMetrics(rows: MetricInput[], crm: CrmCampaignC
   if (otherPaidLeads > 0) {
     campaigns.push({
       platform: 'crm', campaignId: '__other__', campaignName: 'Other / untagged',
-      spend: 0, clicks: 0, platformLeads: 0, crmLeads: otherPaidLeads, cpl: null,
+      spend: 0, impressions: 0, clicks: 0, platformLeads: 0, crmLeads: otherPaidLeads,
+      cpl: null, ctr: null, platformLeadRate: null,
     });
   }
 
   return { platforms: { ga4, ...adTotals }, campaigns };
+}
+
+function percent(numerator: number, denominator: number): number | null {
+  if (!denominator) return null;
+  return Math.round((numerator / denominator) * 10000) / 100;
 }
