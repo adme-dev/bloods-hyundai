@@ -8,6 +8,7 @@ import { sanitizeIpAddress } from '../utils/intakeValidation';
 import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 import { inferLeadAttribution } from '../utils/metrics/attribution';
 import { emitEnquiryCreatedRealtimeEvent } from '../utils/realtime/events';
+import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
 
 /**
  * Internal Enquiry Submission Endpoint
@@ -202,6 +203,21 @@ export default defineEventHandler(async (event) => {
         message: 'Missing required fields: type, firstName, email',
       });
     }
+
+    const liveTestResult = resolveLiveTestEmailOverride({
+      configuredSecret: config.enquiryLiveTestSecret || process.env.ENQUIRY_LIVE_TEST_SECRET,
+      configuredRecipient: config.enquiryLiveTestRecipient || process.env.ENQUIRY_LIVE_TEST_RECIPIENT,
+      providedSecret: getHeader(event, LIVE_TEST_EMAIL_SECRET_HEADER),
+    });
+
+    if (!liveTestResult.ok) {
+      throw createError({ statusCode: 403, message: liveTestResult.message });
+    }
+
+    const liveTestOverride = liveTestResult.override;
+    if (liveTestOverride) {
+      console.log(`[Submit Enquiry] Live test email override enabled for enquiry type ${body.type}`);
+    }
     
     // If lastName is not provided, use a placeholder
     const lastName = body.lastName || 'Not Provided';
@@ -334,7 +350,7 @@ export default defineEventHandler(async (event) => {
     
     // 6. Send notifications based on form configuration
     try {
-      await sendFormNotifications(enquiry, dealer);
+      await sendFormNotifications(enquiry, dealer, { liveTestOverride });
     } catch (emailError) {
       console.error('[Submit Enquiry] Email notification failed:', emailError);
     }
@@ -361,7 +377,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

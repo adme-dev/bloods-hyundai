@@ -9,6 +9,7 @@ import { emailLogs, enquiries } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { evaluateRoutingRules } from './routing';
 import { DEFAULT_DEALER_NAME, escapeHtml, getDealerName, getAdminEnquiryUrl, replaceMergeTags } from './emailTemplate';
+import type { LiveTestEmailOverride } from './liveTestEmail';
 
 const DEFAULT_FROM_EMAIL = 'noreply@hyundai-dealer.com.au';
 
@@ -23,6 +24,16 @@ export interface EmailOptions {
     email: string;
     name: string;
   };
+}
+
+export interface NotificationDeliveryOptions {
+  liveTestOverride?: LiveTestEmailOverride | null;
+}
+
+export interface EnquiryNotificationOptions extends NotificationDeliveryOptions {
+  cc?: string[];
+  bcc?: string[];
+  priority?: string;
 }
 
 function getDealerEmail(dealer: any): string {
@@ -113,7 +124,8 @@ function getNestedValue(obj: any, path: string): any {
  */
 export async function sendFormNotifications(
   enquiry: any,
-  dealer: any
+  dealer: any,
+  deliveryOptions: NotificationDeliveryOptions = {}
 ): Promise<void> {
   const formType = enquiry.type;
   const notifications = getFormNotifications(dealer, formType);
@@ -124,7 +136,7 @@ export async function sendFormNotifications(
   // If no custom notifications configured, use defaults
   if (notifications.length === 0) {
     console.log('📧 [Email] No custom notifications - using defaults');
-    await sendDefaultNotifications(enquiry, dealer);
+    await sendDefaultNotifications(enquiry, dealer, deliveryOptions);
     return;
   }
 
@@ -143,9 +155,9 @@ export async function sendFormNotifications(
 
     try {
       if (notification.type === 'admin') {
-        await sendAdminNotification(enquiry, dealer, notification);
+        await sendAdminNotification(enquiry, dealer, notification, deliveryOptions);
       } else if (notification.type === 'customer') {
-        await sendCustomerNotification(enquiry, dealer, notification);
+        await sendCustomerNotification(enquiry, dealer, notification, deliveryOptions);
       }
     } catch (error) {
       console.error(`📧 [Email] Failed to send notification "${notification.name}":`, error);
@@ -159,7 +171,8 @@ export async function sendFormNotifications(
 async function sendAdminNotification(
   enquiry: any,
   dealer: any,
-  notification: FormNotification
+  notification: FormNotification,
+  deliveryOptions: NotificationDeliveryOptions = {}
 ): Promise<void> {
   const recipients = notification.sendTo?.filter(e => e.trim()) || [dealer.email];
   
@@ -192,7 +205,7 @@ async function sendAdminNotification(
   };
 
   console.log(`📧 [Email] Sending admin notification "${notification.name}" to: ${recipients.join(', ')} from: ${fromEmail}`);
-  await sendEmail(emailOptions, enquiry.id, dealer.id, 'admin-notification', 'staff');
+  await sendEmail(emailOptions, enquiry.id, dealer.id, 'admin-notification', 'staff', deliveryOptions);
 }
 
 /**
@@ -201,7 +214,8 @@ async function sendAdminNotification(
 async function sendCustomerNotification(
   enquiry: any,
   dealer: any,
-  notification: FormNotification
+  notification: FormNotification,
+  deliveryOptions: NotificationDeliveryOptions = {}
 ): Promise<void> {
   const subject = replaceMergeTags(notification.subject || `Thank you for your enquiry - ${dealer.name}`, enquiry, dealer);
   const bodyText = notification.bodyText
@@ -225,13 +239,17 @@ async function sendCustomerNotification(
   };
 
   console.log(`📧 [Email] Sending customer notification "${notification.name}" to: ${enquiry.email} from: ${fromEmail}`);
-  await sendEmail(emailOptions, enquiry.id, dealer.id, 'customer-notification', 'customer');
+  await sendEmail(emailOptions, enquiry.id, dealer.id, 'customer-notification', 'customer', deliveryOptions);
 }
 
 /**
  * Send default notifications when no form-specific ones are configured
  */
-async function sendDefaultNotifications(enquiry: any, dealer: any): Promise<void> {
+async function sendDefaultNotifications(
+  enquiry: any,
+  dealer: any,
+  deliveryOptions: NotificationDeliveryOptions = {},
+): Promise<void> {
   // Route the staff notification through the department table / routing rules
   // (previously every type collapsed to a single dealer.email inbox).
   const routing = await evaluateRoutingRules(enquiry, dealer);
@@ -243,10 +261,11 @@ async function sendDefaultNotifications(enquiry: any, dealer: any): Promise<void
     cc: routing.cc,
     bcc: routing.bcc,
     priority: routing.priority,
+    liveTestOverride: deliveryOptions.liveTestOverride,
   });
 
   // Send to customer
-  await sendCustomerConfirmation(enquiry, dealer);
+  await sendCustomerConfirmation(enquiry, dealer, deliveryOptions);
 
   // Auto-assign if a rule specified an owner.
   if (routing.assign_to) {
@@ -267,11 +286,7 @@ export async function sendEnquiryNotification(
   enquiry: any,
   dealer: any,
   recipients: string[],
-  options?: {
-    cc?: string[];
-    bcc?: string[];
-    priority?: string;
-  }
+  options: EnquiryNotificationOptions = {}
 ): Promise<void> {
   const subject = getEnquirySubject(enquiry, dealer);
   const html = generateEnquiryEmailHTML(enquiry, dealer);
@@ -279,8 +294,8 @@ export async function sendEnquiryNotification(
   
   const emailOptions: EmailOptions = {
     to: recipients,
-    cc: options?.cc,
-    bcc: options?.bcc,
+    cc: options.cc,
+    bcc: options.bcc,
     subject,
     html,
     text,
@@ -290,7 +305,7 @@ export async function sendEnquiryNotification(
     },
   };
   
-  await sendEmail(emailOptions, enquiry.id, dealer.id, 'staff-notification', 'staff');
+  await sendEmail(emailOptions, enquiry.id, dealer.id, 'staff-notification', 'staff', options);
 }
 
 /**
@@ -298,7 +313,8 @@ export async function sendEnquiryNotification(
  */
 export async function sendCustomerConfirmation(
   enquiry: any,
-  dealer: any
+  dealer: any,
+  deliveryOptions: NotificationDeliveryOptions = {},
 ): Promise<void> {
   const subject = `Thank you for your enquiry - ${dealer.name}`;
   const html = generateCustomerConfirmationHTML(enquiry, dealer);
@@ -315,7 +331,7 @@ export async function sendCustomerConfirmation(
     },
   };
 
-  await sendEmail(emailOptions, enquiry.id, dealer.id, 'customer-confirmation', 'customer');
+  await sendEmail(emailOptions, enquiry.id, dealer.id, 'customer-confirmation', 'customer', deliveryOptions);
 }
 
 /**
@@ -326,10 +342,13 @@ async function sendEmail(
   enquiryId: string,
   dealerId: string,
   templateId: string = 'enquiry-notification',
-  recipientType: string = 'staff'
+  recipientType: string = 'staff',
+  deliveryOptions: NotificationDeliveryOptions = {},
 ): Promise<void> {
   const startTime = Date.now();
   const isSendGridAvailable = initSendGrid();
+  const originalOptions = options;
+  options = applyLiveTestEmailOverride(options, deliveryOptions.liveTestOverride);
   const recipientEmail = options.to[0];
   if (!recipientEmail) {
     throw new Error('Email recipient is required');
@@ -389,6 +408,7 @@ async function sendEmail(
           cc: options.cc,
           bcc: options.bcc,
           from: options.from,
+          ...getLiveTestTemplateData(deliveryOptions.liveTestOverride, originalOptions),
           sendgrid_status_code: response.statusCode,
         },
       });
@@ -410,6 +430,7 @@ async function sendEmail(
           cc: options.cc,
           bcc: options.bcc,
           from: options.from,
+          ...getLiveTestTemplateData(deliveryOptions.liveTestOverride, originalOptions),
           note: 'SendGrid not configured - email was not sent',
         },
       });
@@ -437,6 +458,7 @@ async function sendEmail(
         templateData: { 
           error: String(error),
           sendgrid_response: error?.response?.body,
+          ...getLiveTestTemplateData(deliveryOptions.liveTestOverride, originalOptions),
         },
       });
     } catch (logError) {
@@ -445,6 +467,59 @@ async function sendEmail(
     
     throw error;
   }
+}
+
+function applyLiveTestEmailOverride(options: EmailOptions, override?: LiveTestEmailOverride | null): EmailOptions {
+  if (!override) return options;
+
+  const originalRecipients = formatOriginalRecipients(options);
+  const subject = options.subject.startsWith('[SMOKE TEST]')
+    ? options.subject
+    : `[SMOKE TEST] ${options.subject}`;
+  const bannerHtml = `
+    <div style="margin:0 0 20px 0;padding:14px 16px;border:2px solid #0f766e;background:#ecfdf5;color:#064e3b;border-radius:8px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;">
+      <strong>Live smoke test email.</strong><br>
+      Dealer/customer recipients were suppressed and this message was redirected to ${escapeHtml(override.recipient)}.<br>
+      Original recipients: ${escapeHtml(originalRecipients || 'none')}.
+    </div>
+  `;
+  const textPrefix = [
+    'LIVE SMOKE TEST EMAIL',
+    `Redirected to: ${override.recipient}`,
+    `Original recipients: ${originalRecipients || 'none'}`,
+    '',
+  ].join('\n');
+
+  return {
+    ...options,
+    to: [override.recipient],
+    cc: undefined,
+    bcc: undefined,
+    subject,
+    html: `${bannerHtml}${options.html}`,
+    text: `${textPrefix}${options.text || stripHtml(options.html)}`,
+  };
+}
+
+function formatOriginalRecipients(options: EmailOptions): string {
+  return [
+    ...options.to.map(email => `to:${email}`),
+    ...(options.cc || []).map(email => `cc:${email}`),
+    ...(options.bcc || []).map(email => `bcc:${email}`),
+  ].join(', ');
+}
+
+function getLiveTestTemplateData(override: LiveTestEmailOverride | null | undefined, originalOptions: EmailOptions) {
+  if (!override) return {};
+  return {
+    live_test_override: {
+      redirected_to: override.recipient,
+      requested_at: override.requestedAt,
+      original_to: originalOptions.to,
+      original_cc: originalOptions.cc || [],
+      original_bcc: originalOptions.bcc || [],
+    },
+  };
 }
 
 /**
@@ -1344,7 +1419,6 @@ ${dealer.phone || ''} | ${dealer.email || ''}
 ${dealer.websiteUrl || ''}
   `.trim();
 }
-
 
 
 

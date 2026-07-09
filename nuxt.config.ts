@@ -138,6 +138,8 @@ export default {
     realtimePublishUrl: process.env.REALTIME_PUBLISH_URL || '',
     realtimePublishSecret: process.env.REALTIME_PUBLISH_SECRET || '',
     realtimeClientSecret: process.env.REALTIME_CLIENT_SECRET || process.env.ADMIN_REALTIME_CLIENT_SECRET || '',
+    enquiryLiveTestSecret: process.env.ENQUIRY_LIVE_TEST_SECRET || '',
+    enquiryLiveTestRecipient: process.env.ENQUIRY_LIVE_TEST_RECIPIENT || '',
 
     // Cloudflare R2 Storage
     cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',

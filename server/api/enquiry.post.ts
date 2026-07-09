@@ -9,6 +9,7 @@ import { sanitizeIpAddress } from '../utils/intakeValidation';
 import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 import { inferLeadAttribution } from '../utils/metrics/attribution';
 import { emitEnquiryCreatedRealtimeEvent } from '../utils/realtime/events';
+import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
 
 /**
  * Public Enquiry Submission Endpoint
@@ -101,6 +102,7 @@ interface EnquirySubmission {
 
 export default defineEventHandler(async (event) => {
   try {
+    const config = useRuntimeConfig();
     // 1. Validate API key from header
     const apiKey = getHeader(event, 'x-dealer-key');
     
@@ -140,6 +142,21 @@ export default defineEventHandler(async (event) => {
         statusCode: 400,
         message: 'Missing required fields: type, firstName, lastName, email',
       });
+    }
+
+    const liveTestResult = resolveLiveTestEmailOverride({
+      configuredSecret: config.enquiryLiveTestSecret || process.env.ENQUIRY_LIVE_TEST_SECRET,
+      configuredRecipient: config.enquiryLiveTestRecipient || process.env.ENQUIRY_LIVE_TEST_RECIPIENT,
+      providedSecret: getHeader(event, LIVE_TEST_EMAIL_SECRET_HEADER),
+    });
+
+    if (!liveTestResult.ok) {
+      throw createError({ statusCode: 403, message: liveTestResult.message });
+    }
+
+    const liveTestOverride = liveTestResult.override;
+    if (liveTestOverride) {
+      console.log(`[Enquiry API] Live test email override enabled for enquiry type ${body.type}`);
     }
     
     // 4. Get request metadata
@@ -261,11 +278,12 @@ export default defineEventHandler(async (event) => {
           cc: routingResult.cc,
           bcc: routingResult.bcc,
           priority: routingResult.priority,
+          liveTestOverride,
         });
       }
       
       // Send confirmation to customer
-      await sendCustomerConfirmation(enquiry, dealer);
+      await sendCustomerConfirmation(enquiry, dealer, { liveTestOverride });
       
       // Auto-assign if specified
       if (routingResult.assign_to) {
@@ -314,7 +332,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

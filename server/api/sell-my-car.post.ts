@@ -17,6 +17,7 @@ import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 import { sanitizeIpAddress } from '../utils/intakeValidation';
 import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 import { inferLeadAttribution } from '../utils/metrics/attribution';
+import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
 
 interface SellMyCarSubmission {
   // Personal details
@@ -68,6 +69,7 @@ interface SellMyCarSubmission {
 
 export default defineEventHandler(async (event) => {
   try {
+    const config = useRuntimeConfig();
     // 1. Resolve dealer from header first, then server-side config.
     const apiKey = getHeader(event, 'x-dealer-key') ||
       process.env.DEALER_API_KEY ||
@@ -123,6 +125,21 @@ export default defineEventHandler(async (event) => {
         statusCode: 400,
         message: `Missing required fields: ${missingFields.join(', ')}`,
       });
+    }
+
+    const liveTestResult = resolveLiveTestEmailOverride({
+      configuredSecret: config.enquiryLiveTestSecret || process.env.ENQUIRY_LIVE_TEST_SECRET,
+      configuredRecipient: config.enquiryLiveTestRecipient || process.env.ENQUIRY_LIVE_TEST_RECIPIENT,
+      providedSecret: getHeader(event, LIVE_TEST_EMAIL_SECRET_HEADER),
+    });
+
+    if (!liveTestResult.ok) {
+      throw createError({ statusCode: 403, message: liveTestResult.message });
+    }
+
+    const liveTestOverride = liveTestResult.override;
+    if (liveTestOverride) {
+      console.log('[Sell My Car API] Live test email override enabled');
     }
 
     // Validate at least one photo
@@ -304,11 +321,12 @@ export default defineEventHandler(async (event) => {
           cc: routingResult.cc,
           bcc: routingResult.bcc,
           priority: routingResult.priority,
+          liveTestOverride,
         });
       }
 
       // Send confirmation to customer
-      await sendCustomerConfirmation(enquiry, dealer);
+      await sendCustomerConfirmation(enquiry, dealer, { liveTestOverride });
 
       // Auto-assign if specified
       if (routingResult.assign_to) {
