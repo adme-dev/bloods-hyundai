@@ -200,7 +200,7 @@ export async function fetchGa4WebsiteAnalytics(propertyId: string, range: DateRa
 }
 
 function isLeadEvent(eventName = '') {
-  return /form|lead|enquir|enquiry|submit|contact|test_drive|finance|service|parts/i.test(eventName);
+  return /form|lead|enquir|enquiry|submit|contact|test_drive|finance|service|parts|accessor|add_to_cart|remove_from_cart|view_cart|clear_cart/i.test(eventName);
 }
 
 /** propertyId accepts '123456789' or 'properties/123456789'. */

@@ -192,6 +192,12 @@ export default defineEventHandler(async (event) => {
         { event: 'FormSubmission', destination: 'GTM dataLayer compatibility', status: 'implemented' },
         { event: 'generate_lead', destination: 'GA4', status: 'implemented' },
         { event: 'Lead', destination: 'Meta Pixel', status: 'implemented' },
+        { event: 'add_to_cart', destination: 'GTM dataLayer / GA4 ecommerce', status: 'implemented' },
+        { event: 'remove_from_cart', destination: 'GTM dataLayer / GA4 ecommerce', status: 'implemented' },
+        { event: 'view_cart', destination: 'GTM dataLayer / GA4 ecommerce', status: 'implemented' },
+        { event: 'clear_cart', destination: 'GTM dataLayer', status: 'implemented' },
+        { event: 'accessories_quote_start', destination: 'GTM dataLayer / GA4 ecommerce', status: 'implemented' },
+        { event: 'accessories_quote_submit', destination: 'GTM dataLayer / GA4 ecommerce', status: 'implemented' },
       ],
       requiredLeadFields: [
         'enquiryId',
