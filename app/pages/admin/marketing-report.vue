@@ -65,6 +65,144 @@
         </Card>
       </div>
 
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+        <Card>
+          <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <CardTitle class="flex items-center gap-2 text-xl">
+                <Gauge class="h-5 w-5 text-sky-600" />
+                Executive Readout
+              </CardTitle>
+              <CardDescription>Commercial view of spend, lead quality, attribution and CRM flow.</CardDescription>
+            </div>
+            <Badge :variant="data.insights.executive.dataQualityScore >= 80 ? 'default' : data.insights.executive.dataQualityScore >= 60 ? 'secondary' : 'destructive'">
+              {{ data.insights.executive.dataQualityScore }}% data quality
+            </Badge>
+          </CardHeader>
+          <CardContent class="space-y-5">
+            <div class="rounded-md border bg-muted/30 p-4">
+              <div class="text-sm font-semibold">{{ data.insights.executive.primaryRecommendation }}</div>
+              <div class="mt-2 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+                <MetricCell label="Blended CPL" :value="moneyOrDash(data.insights.executive.blendedCpl)" />
+                <MetricCell label="Paid lead share" :value="pctOrDash(data.insights.executive.paidShareOfLeads)" />
+                <MetricCell label="Top lead source" :value="data.insights.executive.topLeadSource || '-'" />
+                <MetricCell label="Best campaign" :value="data.insights.executive.bestCampaign || '-'" />
+              </div>
+            </div>
+
+            <div>
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-sm font-semibold">Marketing funnel</div>
+                  <div class="text-xs text-muted-foreground">Website, paid media, GA4 key events and CRM sync in one flow.</div>
+                </div>
+              </div>
+              <div class="grid gap-3 md:grid-cols-5">
+                <div v-for="step in data.insights.funnel" :key="step.key" class="rounded-md border p-3">
+                  <div class="text-xs font-medium uppercase text-muted-foreground">{{ step.label }}</div>
+                  <div class="mt-2 text-xl font-semibold">{{ n(step.value) }}</div>
+                  <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div class="h-full rounded-full bg-sky-600" :style="{ width: `${barPercent(step.value, maxInsightFunnelValue)}%` }" />
+                  </div>
+                  <div class="mt-2 text-xs text-muted-foreground">
+                    {{ step.rateFromPrevious == null ? step.caption : `${pct(step.rateFromPrevious)} from previous signal` }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid gap-3 lg:grid-cols-2">
+              <div class="rounded-md border p-4">
+                <div class="mb-3 text-sm font-semibold">Data health</div>
+                <div class="space-y-3">
+                  <div v-for="check in data.insights.dataQuality" :key="check.key" class="space-y-1.5">
+                    <div class="flex items-center justify-between gap-3 text-sm">
+                      <span class="font-medium">{{ check.label }}</span>
+                      <Badge :variant="qualityBadgeVariant(check.status)">{{ pct(check.value) }}</Badge>
+                    </div>
+                    <div class="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div class="h-full rounded-full" :class="qualityBarClass(check.status)" :style="{ width: `${Math.min(100, check.value)}%` }" />
+                    </div>
+                    <div class="text-xs text-muted-foreground">Target {{ pct(check.target) }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-md border p-4">
+                <div class="mb-3 text-sm font-semibold">Campaign opportunities</div>
+                <div v-if="data.insights.campaignDiagnostics.opportunities.length" class="space-y-3">
+                  <div v-for="item in data.insights.campaignDiagnostics.opportunities" :key="`${item.platform}:${item.campaignName}`" class="rounded-md bg-muted/40 p-3">
+                    <div class="truncate text-sm font-medium">{{ item.campaignName }}</div>
+                    <div class="mt-1 text-xs text-muted-foreground">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} CRM leads</div>
+                    <Badge variant="outline" class="mt-2">{{ item.issue }}</Badge>
+                  </div>
+                </div>
+                <div v-else class="rounded-md bg-muted/30 p-3 text-sm text-muted-foreground">
+                  No high-spend campaign issues detected for this period.
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <Target class="h-5 w-5 text-emerald-600" />
+              Priority Actions
+            </CardTitle>
+            <CardDescription>Ordered actions for campaign optimisation and reporting confidence.</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-3">
+            <div v-for="item in data.insights.recommendations" :key="`${item.priority}:${item.title}`" class="rounded-md border p-3">
+              <div class="mb-2 flex items-start justify-between gap-3">
+                <div class="text-sm font-semibold">{{ item.title }}</div>
+                <Badge :variant="priorityBadgeVariant(item.priority)" class="capitalize">{{ item.priority }}</Badge>
+              </div>
+              <p class="text-sm text-muted-foreground">{{ item.detail }}</p>
+              <p class="mt-2 text-sm font-medium">{{ item.action }}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle class="flex items-center gap-2 text-xl">
+            <Database class="h-5 w-5 text-blue-600" />
+            Dealer Lead Diagnostics
+          </CardTitle>
+          <CardDescription>Source mix, CRM sync and campaign tagging coverage by lead channel.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Source</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead class="text-right">Leads</TableHead>
+                <TableHead class="text-right">Share</TableHead>
+                <TableHead class="text-right">CRM sync</TableHead>
+                <TableHead class="text-right">Campaign tagged</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="source in data.insights.sourceDiagnostics" :key="source.key">
+                <TableCell class="font-medium">{{ source.label }}</TableCell>
+                <TableCell><Badge variant="outline" class="capitalize">{{ source.category.replaceAll('_', ' ') }}</Badge></TableCell>
+                <TableCell class="text-right">{{ n(source.total) }}</TableCell>
+                <TableCell class="text-right">{{ pct(source.share) }}</TableCell>
+                <TableCell class="text-right">{{ pct(source.crmSyncCoverage) }}</TableCell>
+                <TableCell class="text-right">{{ pct(source.campaignCoverage) }}</TableCell>
+              </TableRow>
+              <TableRow v-if="!data.insights.sourceDiagnostics.length">
+                <TableCell colspan="6" class="py-8 text-center text-muted-foreground">No lead source diagnostics for this range.</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <div class="grid gap-6 xl:grid-cols-3">
         <Card>
           <CardHeader>
@@ -670,6 +808,7 @@ interface ReportResponse {
     sourceCoverage: number;
     clickIdCoverage: number;
     backfilledAttributionCoverage: number;
+    vehicleCoverage: number;
   };
   platformMetrics: {
     ga4: { sessions: number; users: number; conversions: number };
@@ -692,6 +831,61 @@ interface ReportResponse {
     googleAds: ProfessionalAdMetrics;
     metaAds: ProfessionalAdMetrics;
   };
+  insights: {
+    executive: {
+      totalSpend: number;
+      totalCrmLeads: number;
+      blendedCpl: number | null;
+      paidShareOfLeads: number | null;
+      topLeadSource: string | null;
+      bestCampaign: string | null;
+      dataQualityScore: number;
+      primaryRecommendation: string;
+    };
+    funnel: Array<{
+      key: string;
+      label: string;
+      value: number;
+      rateFromPrevious: number | null;
+      caption: string;
+    }>;
+    recommendations: Array<{
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      detail: string;
+      action: string;
+    }>;
+    sourceDiagnostics: Array<{
+      key: string;
+      label: string;
+      category: string;
+      total: number;
+      crmSynced: number;
+      withCampaign: number;
+      share: number;
+      crmSyncCoverage: number;
+      campaignCoverage: number;
+    }>;
+    campaignDiagnostics: {
+      bestByCpl: ReportCampaign | null;
+      highestSpendNoCrmLead: ReportCampaign | null;
+      opportunities: Array<{
+        campaignName: string;
+        platform: string;
+        spend: number;
+        clicks: number;
+        crmLeads: number;
+        issue: string;
+      }>;
+    };
+    dataQuality: Array<{
+      key: string;
+      label: string;
+      value: number;
+      target: number;
+      status: 'good' | 'watch' | 'poor';
+    }>;
+  };
   websiteAnalytics: {
     status: 'connected' | 'not_configured' | 'error';
     error: string | null;
@@ -703,19 +897,7 @@ interface ReportResponse {
     topEvents: Ga4BreakdownRow[];
     formEvents: Ga4BreakdownRow[];
   };
-  campaigns: Array<{
-    platform: string;
-    campaignId: string;
-    campaignName: string | null;
-    spend: number;
-    impressions: number;
-    clicks: number;
-    platformLeads: number;
-    crmLeads: number;
-    cpl: number | null;
-    ctr: number | null;
-    platformLeadRate: number | null;
-  }>;
+  campaigns: ReportCampaign[];
   crm: {
     leadSources: Array<{ key: string; label: string; category: string; total: number; crmSynced: number; withCampaign: number }>;
     typeBreakdown: Array<{ key: string; total: number }>;
@@ -771,6 +953,20 @@ type WebsiteTrendRow = {
 };
 
 type TrendMetricKey = 'sessions' | 'keyEvents' | 'crmLeads';
+
+type ReportCampaign = {
+  platform: string;
+  campaignId: string;
+  campaignName: string | null;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  platformLeads: number;
+  crmLeads: number;
+  cpl: number | null;
+  ctr: number | null;
+  platformLeadRate: number | null;
+};
 
 type ProfessionalAdMetrics = {
   spend: number;
@@ -879,6 +1075,7 @@ const recentSyncRuns = computed(() => (data.value?.syncRuns || []).slice(0, 10))
 
 const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
 const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdown.map(row => row.total) || [1]), 1));
+const maxInsightFunnelValue = computed(() => Math.max(...(data.value?.insights.funnel.map(step => step.value) || [1]), 1));
 const totalWebsiteSessions = computed(() => data.value?.professionalMetrics.ga4Website.sessions || 0);
 const maxChannelSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.trafficChannels.map(row => metric(row, 'sessions')) || [1]), 1));
 const maxDeviceSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.deviceCategories.map(row => metric(row, 'sessions')) || [1]), 1));
@@ -963,6 +1160,24 @@ const dataLayerLabel = computed(() => {
 });
 
 const dataLayerVariant = computed(() => data.value?.dataLayer.status === 'poor_coverage' ? 'destructive' : data.value?.dataLayer.status === 'healthy' ? 'default' : 'secondary');
+
+function priorityBadgeVariant(priority: 'high' | 'medium' | 'low') {
+  if (priority === 'high') return 'destructive';
+  if (priority === 'medium') return 'secondary';
+  return 'outline';
+}
+
+function qualityBadgeVariant(status: 'good' | 'watch' | 'poor') {
+  if (status === 'good') return 'default';
+  if (status === 'watch') return 'secondary';
+  return 'destructive';
+}
+
+function qualityBarClass(status: 'good' | 'watch' | 'poor') {
+  if (status === 'good') return 'bg-emerald-600';
+  if (status === 'watch') return 'bg-amber-500';
+  return 'bg-destructive';
+}
 
 async function runAttributionBackfill() {
   if (backfillPending.value) return;

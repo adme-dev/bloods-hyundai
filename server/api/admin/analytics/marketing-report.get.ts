@@ -11,6 +11,7 @@ import {
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
 import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
 import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
+import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsights';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -132,27 +133,37 @@ export default defineEventHandler(async (event) => {
     metricRows,
     dailyLeadRows,
   );
+  const summary = {
+    totalCrmLeads: coverage.total,
+    paidCrmLeads: metrics.platforms.meta_ads.crmLeads + metrics.platforms.google_ads.crmLeads,
+    syncedToCrm: coverage.syncedToCrm,
+    externalMarketplaceLeads: leadSources
+      .filter(source => source.category === 'external_marketplace')
+      .reduce((sum, source) => sum + source.total, 0),
+    crmSyncCoverage: coverage.crmSyncCoverage,
+    utmCoverage: coverage.utmCoverage,
+    campaignCoverage: coverage.campaignCoverage,
+    paidAttributionCoverage: coverage.paidAttributionCoverage,
+    sourceCoverage: coverage.sourceCoverage,
+    clickIdCoverage: coverage.total ? Math.round((coverage.withClickId / coverage.total) * 1000) / 10 : 0,
+    backfilledAttributionCoverage: coverage.total ? Math.round((coverage.withBackfilledAttribution / coverage.total) * 1000) / 10 : 0,
+    vehicleCoverage: coverage.vehicleCoverage,
+  };
+  const professionalMetrics = buildProfessionalMetrics(metricRows, metrics.platforms);
+  const insights = buildMarketingReportInsights({
+    summary,
+    professionalMetrics,
+    campaigns: metrics.campaigns,
+    leadSources,
+  });
 
   return {
     period: { from, to },
     connected,
-    summary: {
-      totalCrmLeads: coverage.total,
-      paidCrmLeads: metrics.platforms.meta_ads.crmLeads + metrics.platforms.google_ads.crmLeads,
-      syncedToCrm: coverage.syncedToCrm,
-      externalMarketplaceLeads: leadSources
-        .filter(source => source.category === 'external_marketplace')
-        .reduce((sum, source) => sum + source.total, 0),
-      crmSyncCoverage: coverage.crmSyncCoverage,
-      utmCoverage: coverage.utmCoverage,
-      campaignCoverage: coverage.campaignCoverage,
-      paidAttributionCoverage: coverage.paidAttributionCoverage,
-      sourceCoverage: coverage.sourceCoverage,
-      clickIdCoverage: coverage.total ? Math.round((coverage.withClickId / coverage.total) * 1000) / 10 : 0,
-      backfilledAttributionCoverage: coverage.total ? Math.round((coverage.withBackfilledAttribution / coverage.total) * 1000) / 10 : 0,
-    },
+    summary,
     platformMetrics: metrics.platforms,
-    professionalMetrics: buildProfessionalMetrics(metricRows, metrics.platforms),
+    professionalMetrics,
+    insights,
     websiteAnalytics,
     campaigns: metrics.campaigns,
     crm: {
