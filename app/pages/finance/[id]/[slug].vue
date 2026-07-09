@@ -434,6 +434,7 @@ import { Button } from '~/components/ui/button'
 const route = useRoute();
 const mainStore = useMainStore();
 const { siteName } = useSiteIdentity();
+const { trackFinanceEnquiry } = useAnalytics();
 
 const vehicleId = computed(() => route.params.id as string);
 
@@ -761,6 +762,24 @@ const submitForm = async () => {
     });
 
     isSubmitted.value = true;
+
+    trackFinanceEnquiry({
+      form_location: 'vehicle_finance_calculator',
+      enquiry_id: response.enquiry.id,
+      source: 'vehicle-finance-calculator',
+      vehicle: {
+        stockid: vehicleId.value,
+        make: getDisplay(vehicle.value?.make),
+        model: getDisplay(vehicle.value?.model),
+        variant: getDisplay(vehicle.value?.variant) || getDisplay(vehicle.value?.badge),
+        year: getDisplay(vehicle.value?.year),
+        price: priceNumber.value,
+        condition: getDisplay(vehicle.value?.condition),
+      },
+      loan_amount: loanAmount.value,
+      deposit_amount: downPayment.value,
+      loan_term_months: length.value,
+    });
 
     // GTM tracking
     if (typeof window !== 'undefined' && (window as any).dataLayer) {

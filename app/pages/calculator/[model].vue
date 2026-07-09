@@ -756,6 +756,7 @@
 // SEO
 const route = useRoute();
 const nuxtApp = useNuxtApp();
+const { trackTestDriveBooking, trackVehicleEnquiry } = useAnalytics();
 const modelSlug = computed(() => route.params.model as string || '');
 
 const formatModelSlugForDisplay = (value: string) => value
@@ -1412,6 +1413,13 @@ const handleTestDriveSubmit = async (formData: any) => {
     });
 
     console.log('✅ [Calculator] Test drive request submitted successfully:', response);
+
+    trackTestDriveBooking({
+      form_location: 'calculator_test_drive',
+      enquiry_id: (response as any)?.enquiry?.id,
+      source: 'calculator-test-drive',
+      vehicle: vehicleInfo,
+    });
   } catch (error) {
     console.error('❌ [Calculator] Error submitting test drive request:', error);
     // The modal already shows success - in production you might want error handling
@@ -1518,6 +1526,25 @@ const handleEnquireSubmit = async (formData: any) => {
     });
 
     console.log('✅ [Calculator] Enquiry submitted successfully:', response);
+
+    trackVehicleEnquiry({
+      form_type: 'calculator_enquiry',
+      form_location: 'calculator',
+      enquiry_id: (response as any)?.enquiry?.id,
+      source: 'calculator',
+      vehicle: vehicleInfo,
+      has_applied_offers: Boolean(enquiryPayload.appliedOffers?.length),
+      applied_offers_count: enquiryPayload.appliedOffers?.length || 0,
+      has_accessories: Boolean(accessoriesCart?.items?.length),
+      accessories_count: accessoriesCart?.itemCount || 0,
+      accessories_value: accessoriesCart?.total || 0,
+      configuration: {
+        has_option_pack: Boolean(formData.vehicleConfiguration?.optionPack),
+        has_colour_upgrade: Boolean(formData.vehicleConfiguration?.colourPrice),
+        has_prepaid_service: Boolean(formData.vehicleConfiguration?.prepaidService),
+        total_configured_price: formData.vehicleConfiguration?.totalPrice,
+      },
+    });
   } catch (error) {
     console.error('❌ [Calculator] Error submitting enquiry:', error);
     // The modal already shows success - in production you might want error handling
@@ -3934,4 +3961,3 @@ $bg-white: #fff;
   }
 }
 </style>
-

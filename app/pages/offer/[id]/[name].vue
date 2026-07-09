@@ -300,6 +300,7 @@
 const route = useRoute();
 const config = useRuntimeConfig();
 const mainStore = useMainStore();
+const { trackSpecialOfferEnquiry } = useAnalytics();
 
 // Site config for dynamic SEO (vendor-agnostic)
 const siteName = computed(() => mainStore.site?.name || config.public.siteName || 'Dealership');
@@ -761,6 +762,25 @@ const handleSubmit = async () => {
     });
 
     submitted.value = true;
+
+    trackSpecialOfferEnquiry({
+      form_location: `offer_page_${offerId.value}`,
+      enquiry_id: response.enquiry.id,
+      source: `offer-page-${offerId.value}`,
+      page_url: route.fullPath,
+      vehicle: {
+        make: 'Hyundai',
+        model: offer.value?.model,
+        variant: offer.value?.variantName,
+        price: offer.value?.offerAmount ? parseInt(offer.value.offerAmount.replace(/[^0-9]/g, '')) : undefined,
+        condition: 'new',
+      },
+      offer_model: offer.value?.model,
+      offer_variant: offer.value?.variantName,
+      offer_amount: offer.value?.offerAmount,
+      offer_type: offer.value?.offerType,
+      offer_category: offer.value?.category,
+    });
 
     if (import.meta.client && (window as any).dataLayer) {
       (window as any).dataLayer.push({
@@ -1798,7 +1818,6 @@ onUpdated(() => {
   }
 }
 </style>
-
 
 
 

@@ -145,6 +145,7 @@
 const route = useRoute();
 const slug = computed(() => route.params.slug as string);
 const { siteName } = useSiteIdentity();
+const { trackVehicleEnquiry } = useAnalytics();
 
 // Fetch variant
 const { data: variant, pending } = await useFetch('/api/variant-details', {
@@ -204,6 +205,20 @@ const handleSubmit = async () => {
 
     submitted.value = true;
 
+    trackVehicleEnquiry({
+      form_location: `variant_page_${slug.value}`,
+      enquiry_id: response.enquiry.id,
+      source: `variant-page-${slug.value}`,
+      vehicle: variant.value ? {
+        make: 'Hyundai',
+        model: variant.value.name,
+        variant: variant.value.variant,
+        condition: 'new',
+      } : undefined,
+      wants_test_drive: form.testDrive,
+      has_message: Boolean(form.comments),
+    });
+
     if (process.client && (window as any).dataLayer) {
       (window as any).dataLayer.push({
         event: 'FormSubmission',
@@ -220,7 +235,6 @@ const handleSubmit = async () => {
   }
 };
 </script>
-
 
 
 
