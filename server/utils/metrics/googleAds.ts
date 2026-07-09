@@ -52,7 +52,7 @@ export function normalizeGoogleAdsResults(results: unknown[]): NormalizedRow[] {
   }));
 }
 
-const GOOGLE_ADS_BASE = 'https://googleads.googleapis.com/v20';
+const GOOGLE_ADS_BASE = 'https://googleads.googleapis.com/v23';
 
 async function googleAdsAccessToken(): Promise<string> {
   const clientId = process.env.GOOGLE_ADS_CLIENT_ID;
