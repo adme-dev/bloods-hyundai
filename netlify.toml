@@ -11,6 +11,7 @@
 
 # Functions config
 [functions]
+  directory = "netlify/functions"
   node_bundler = "esbuild"
 
 # Scheduled functions (e.g. metrics-sync-cron) declare their cron schedule
@@ -91,4 +92,3 @@
     "https://www.hyundai.com/.*",
     "https://carsales.pxcrush.net/.*"
   ]
-
