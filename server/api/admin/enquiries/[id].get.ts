@@ -1,6 +1,7 @@
 import { db } from '../../../utils/db';
 import { enquiries } from '../../../database/schema';
 import { eq, and } from 'drizzle-orm';
+import { autoBackfillEnquiryOptionPack } from '../../../utils/enquiries/optionPackBackfill';
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id');
@@ -36,7 +37,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Enquiry not found' });
   }
   
-  const { notes = [], activityLogs = [], ...enquiryData } = enquiry;
+  const enrichedEnquiry = await autoBackfillEnquiryOptionPack(enquiry);
+  const { notes = [], activityLogs = [], ...enquiryData } = enrichedEnquiry;
   
   return {
     enquiry: enquiryData,
@@ -44,4 +46,3 @@ export default defineEventHandler(async (event) => {
     activityLog: activityLogs,
   };
 });
-
