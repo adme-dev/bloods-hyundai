@@ -9,6 +9,12 @@ Scope reviewed:
 - Nuxt/Nitro config in `nuxt.config.ts`.
 - Official Nuxt/Nitro guidance for data fetching, lazy hydration, images, and cache rules.
 
+Execution status:
+
+- Applied `scripts/migrations/2026-07-09-admin-performance-indexes.sql` to the configured Neon database on 2026-07-09.
+- Verified 16 live-schema indexes as valid and ready in Postgres.
+- Deferred `idx_service_appointments_dealer_technician_scheduled` because production `service_appointments` does not currently include `assigned_technician_id`; add it with the technician-assignment column migration.
+
 ## Executive summary
 
 The platform has a solid first layer of tenant indexes: most admin tables already have `dealer_id` indexes, and the enquiries table has basic `dealer_id + status`, `dealer_id + type`, and `dealer_id + created_at` coverage.
@@ -105,9 +111,10 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_service_appointments_dealer_schedule
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_service_appointments_dealer_status_scheduled
   ON service_appointments (dealer_id, status, scheduled_date);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_service_appointments_dealer_technician_scheduled
-  ON service_appointments (dealer_id, assigned_technician_id, scheduled_date)
-  WHERE assigned_technician_id IS NOT NULL;
+-- Deferred until production has assigned_technician_id:
+-- CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_service_appointments_dealer_technician_scheduled
+--   ON service_appointments (dealer_id, assigned_technician_id, scheduled_date)
+--   WHERE assigned_technician_id IS NOT NULL;
 ```
 
 Why:

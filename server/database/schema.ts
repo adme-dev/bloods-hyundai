@@ -237,6 +237,27 @@ export const enquiries = pgTable('enquiries', {
   assignedIdx: index('idx_enquiries_assigned').on(table.assignedTo),
   emailIdx: index('idx_enquiries_email').on(table.email),
   attributionIdx: index('idx_enquiries_attribution').on(table.dealerId, table.attributedPlatform, table.attributedCampaignId),
+  activeDealerCreatedIdx: index('idx_enquiries_active_dealer_created_desc')
+    .on(table.dealerId, table.createdAt.desc())
+    .where(sql`archived_at IS NULL`),
+  activeDealerStatusCreatedIdx: index('idx_enquiries_active_dealer_status_created_desc')
+    .on(table.dealerId, table.status, table.createdAt.desc())
+    .where(sql`archived_at IS NULL`),
+  activeDealerTypeCreatedIdx: index('idx_enquiries_active_dealer_type_created_desc')
+    .on(table.dealerId, table.type, table.createdAt.desc())
+    .where(sql`archived_at IS NULL`),
+  activeDealerAssignedCreatedIdx: index('idx_enquiries_active_dealer_assigned_created_desc')
+    .on(table.dealerId, table.assignedTo, table.createdAt.desc())
+    .where(sql`archived_at IS NULL`),
+  activeDealerAssignedUpdatedIdx: index('idx_enquiries_active_dealer_assigned_updated_desc')
+    .on(table.dealerId, table.assignedTo, table.updatedAt.desc())
+    .where(sql`archived_at IS NULL AND assigned_to IS NOT NULL`),
+  activeDealerSnoozedIdx: index('idx_enquiries_active_dealer_snoozed_desc')
+    .on(table.dealerId, table.snoozedUntil.desc())
+    .where(sql`archived_at IS NULL AND snoozed_until IS NOT NULL`),
+  archivedDealerCreatedIdx: index('idx_enquiries_archived_dealer_created_desc')
+    .on(table.dealerId, table.createdAt.desc())
+    .where(sql`archived_at IS NOT NULL`),
 }));
 
 // ============================================================================
@@ -432,6 +453,9 @@ export const customers = pgTable('customers', {
   dealerIdx: index('idx_customers_dealer').on(table.dealerId),
   emailIdx: index('idx_customers_email').on(table.email),
   uniqueDealerEmail: uniqueIndex('customers_dealer_id_email_key').on(table.dealerId, table.email),
+  activeDealerCreatedIdx: index('idx_customers_active_dealer_created_desc')
+    .on(table.dealerId, table.createdAt.desc())
+    .where(sql`is_active = true`),
 }));
 
 // ============================================================================
@@ -473,6 +497,9 @@ export const customerVehicles = pgTable('customer_vehicles', {
   dealerIdx: index('idx_customer_vehicles_dealer').on(table.dealerId),
   customerIdx: index('idx_customer_vehicles_customer').on(table.customerId),
   regoIdx: index('idx_customer_vehicles_rego').on(table.registration),
+  activeDealerCustomerCreatedIdx: index('idx_customer_vehicles_active_dealer_customer_created_desc')
+    .on(table.dealerId, table.customerId, table.createdAt.desc())
+    .where(sql`is_active = true`),
 }));
 
 // ============================================================================
@@ -565,6 +592,10 @@ export const serviceAppointments = pgTable('service_appointments', {
   scheduledDateIdx: index('idx_service_appointments_scheduled').on(table.scheduledDate),
   statusIdx: index('idx_service_appointments_status').on(table.status),
   technicianIdx: index('idx_service_appointments_technician').on(table.assignedTechnicianId),
+  dealerScheduledTimeIdx: index('idx_service_appointments_dealer_scheduled_time')
+    .on(table.dealerId, table.scheduledDate, table.scheduledTime),
+  dealerStatusScheduledIdx: index('idx_service_appointments_dealer_status_scheduled')
+    .on(table.dealerId, table.status, table.scheduledDate),
 }));
 
 // ============================================================================
@@ -861,6 +892,9 @@ export const customerRetentionProfiles = pgTable('customer_retention_profiles', 
   customerIdx: uniqueIndex('idx_retention_profiles_customer').on(table.customerId),
   riskLevelIdx: index('idx_retention_profiles_risk_level').on(table.riskLevel),
   lifecycleIdx: index('idx_retention_profiles_lifecycle').on(table.lifecycleStage),
+  dealerCustomerIdx: index('idx_retention_profiles_dealer_customer').on(table.dealerId, table.customerId),
+  dealerRiskContactIdx: index('idx_retention_profiles_dealer_risk_contact').on(table.dealerId, table.riskLevel, table.lastContactDate),
+  dealerLifecycleIdx: index('idx_retention_profiles_dealer_lifecycle').on(table.dealerId, table.lifecycleStage),
 }));
 
 // ============================================================================
@@ -1155,6 +1189,7 @@ export const marketingMetricsDaily = pgTable('marketing_metrics_daily', {
 }, (t) => ({
   metricsUniq: uniqueIndex('marketing_metrics_daily_uniq').on(t.dealerId, t.platform, t.date, t.campaignId),
   metricsDealeDate: index('marketing_metrics_daily_dealer_date').on(t.dealerId, t.date),
+  metricsDealerPlatformDate: index('idx_marketing_metrics_dealer_platform_date').on(t.dealerId, t.platform, t.date),
 }));
 
 export const marketingSyncRuns = pgTable('marketing_sync_runs', {
@@ -1169,6 +1204,7 @@ export const marketingSyncRuns = pgTable('marketing_sync_runs', {
 }, (t) => ({
   syncRunsDealerPlatform: index('marketing_sync_runs_dealer_platform').on(t.dealerId, t.platform, t.startedAt),
   oneRunning: uniqueIndex('marketing_sync_runs_one_running').on(t.dealerId, t.platform).where(sql`status = 'running'`),
+  syncRunsDealerStarted: index('idx_marketing_sync_runs_dealer_started_desc').on(t.dealerId, t.startedAt.desc()),
 }));
 
 export type MarketingMetricsDaily = typeof marketingMetricsDaily.$inferSelect;
@@ -1176,9 +1212,6 @@ export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert
 
 export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
 export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
-
-
-
 
 
 
