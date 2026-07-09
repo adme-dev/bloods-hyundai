@@ -27,14 +27,56 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const limit = Math.min(Number(query.limit) || 20, 50);
 
-  // Get user's last seen timestamp + individually-dismissed notification ids
-  const userRecord = await db.query.users.findFirst({
-    where: eq(users.id, user.userId),
-    columns: {
-      lastSeenNotificationsAt: true,
-      readNotificationIds: true,
-    },
-  });
+  const now = new Date();
+
+  // Calculate cutoff date (7 days ago for notifications)
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 7);
+
+  const notifications: Notification[] = [];
+
+  const [userRecord, newEnquiries, assignedEnquiries, expiredSnoozedEnquiries] = await Promise.all([
+    // Get user's last seen timestamp + individually-dismissed notification ids.
+    db.query.users.findFirst({
+      where: eq(users.id, user.userId),
+      columns: {
+        lastSeenNotificationsAt: true,
+        readNotificationIds: true,
+      },
+    }),
+    // 1. Get new enquiries (created in last 7 days).
+    db.query.enquiries.findMany({
+      where: and(
+        eq(enquiries.dealerId, user.dealerId),
+        gt(enquiries.createdAt, cutoffDate),
+        isNull(enquiries.archivedAt)
+      ),
+      orderBy: [desc(enquiries.createdAt)],
+      limit: limit,
+    }),
+    // 2. Get enquiries assigned to this user (notify about assignments).
+    db.query.enquiries.findMany({
+      where: and(
+        eq(enquiries.dealerId, user.dealerId),
+        eq(enquiries.assignedTo, user.userId),
+        gt(enquiries.updatedAt, cutoffDate),
+        isNull(enquiries.archivedAt)
+      ),
+      orderBy: [desc(enquiries.updatedAt)],
+      limit: 10,
+    }),
+    // 3. Get snoozed enquiries that have expired.
+    db.query.enquiries.findMany({
+      where: and(
+        eq(enquiries.dealerId, user.dealerId),
+        lte(enquiries.snoozedUntil, now),
+        gt(enquiries.snoozedUntil, cutoffDate),
+        isNull(enquiries.archivedAt)
+      ),
+      orderBy: [desc(enquiries.snoozedUntil)],
+      limit: 10,
+    }),
+  ]);
 
   const lastSeenAt = userRecord?.lastSeenNotificationsAt || new Date(0);
   const readSet = new Set(
@@ -44,24 +86,6 @@ export default defineEventHandler(async (event) => {
   // or it was individually dismissed. The latter survives later edits, so an
   // assignment no longer re-appears as unread every time the enquiry changes.
   const isRead = (id: string, ts: Date) => readSet.has(id) || new Date(ts) <= lastSeenAt;
-  const now = new Date();
-
-  // Calculate cutoff date (7 days ago for notifications)
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 7);
-
-  const notifications: Notification[] = [];
-
-  // 1. Get new enquiries (created in last 7 days)
-  const newEnquiries = await db.query.enquiries.findMany({
-    where: and(
-      eq(enquiries.dealerId, user.dealerId),
-      gt(enquiries.createdAt, cutoffDate),
-      isNull(enquiries.archivedAt)
-    ),
-    orderBy: [desc(enquiries.createdAt)],
-    limit: limit,
-  });
 
   const enquiryTypeTitles: Record<string, string> = {
     contact: 'New contact enquiry',
@@ -86,18 +110,6 @@ export default defineEventHandler(async (event) => {
     });
   });
 
-  // 2. Get enquiries assigned to this user (notify about assignments)
-  const assignedEnquiries = await db.query.enquiries.findMany({
-    where: and(
-      eq(enquiries.dealerId, user.dealerId),
-      eq(enquiries.assignedTo, user.userId),
-      gt(enquiries.updatedAt, cutoffDate),
-      isNull(enquiries.archivedAt)
-    ),
-    orderBy: [desc(enquiries.updatedAt)],
-    limit: 10,
-  });
-
   assignedEnquiries.forEach(enquiry => {
     // Only add if it's not already in the list and was assigned (updatedAt > createdAt)
     const alreadyAdded = notifications.some(n => n.id === enquiry.id);
@@ -116,18 +128,6 @@ export default defineEventHandler(async (event) => {
         metadata: { enquiryId: enquiry.id },
       });
     }
-  });
-
-  // 3. Get snoozed enquiries that have expired
-  const expiredSnoozedEnquiries = await db.query.enquiries.findMany({
-    where: and(
-      eq(enquiries.dealerId, user.dealerId),
-      lte(enquiries.snoozedUntil, now),
-      gt(enquiries.snoozedUntil, cutoffDate),
-      isNull(enquiries.archivedAt)
-    ),
-    orderBy: [desc(enquiries.snoozedUntil)],
-    limit: 10,
   });
 
   expiredSnoozedEnquiries.forEach(enquiry => {

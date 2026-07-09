@@ -21,21 +21,21 @@
         />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" class="w-80 overflow-hidden p-0">
-      <div class="flex items-center justify-between border-b px-3 py-2">
-        <DropdownMenuLabel class="p-0 font-semibold">Notifications</DropdownMenuLabel>
+    <DropdownMenuContent align="end" class="w-[22rem] overflow-hidden p-0 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+        <DropdownMenuLabel class="p-0 text-sm font-semibold">Notifications</DropdownMenuLabel>
         <Button
           v-if="totalCount > 0"
           variant="ghost"
           size="sm"
-          class="h-7 text-xs"
+          class="h-7 px-2 text-xs"
           @click.stop="markAllAsRead"
         >
           Mark all read
         </Button>
       </div>
 
-      <div class="max-h-96 overflow-y-auto">
+      <div class="max-h-[22rem] overflow-y-auto">
         <!-- Loading state -->
         <div v-if="loading" class="flex items-center justify-center py-8">
           <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
@@ -49,33 +49,33 @@
         </div>
 
         <!-- Notifications list -->
-        <div v-else class="divide-y">
+        <div v-else class="divide-y divide-slate-200">
           <button
             v-for="notification in notifications"
             :key="notification.id"
             type="button"
-            class="flex w-full items-start gap-3 px-3 py-2 text-left outline-none transition-colors hover:bg-muted/50 focus:bg-muted/50"
-            :class="{ 'bg-blue-50/50 dark:bg-blue-950/20': !notification.read }"
+            class="grid w-full grid-cols-[1.75rem_minmax(0,1fr)_0.5rem] items-center gap-2 border-0 bg-white px-3 py-2 text-left outline-none transition-colors hover:bg-slate-50 focus:bg-slate-50 dark:bg-background dark:hover:bg-muted/50 dark:focus:bg-muted/50"
+            :class="{ 'bg-blue-50/60 dark:bg-blue-950/20': !notification.read }"
             @click="handleNotificationClick(notification)"
           >
             <div
-              class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
               :class="getNotificationIconClass(notification.subType || notification.type)"
             >
               <component :is="getNotificationIcon(notification.subType || notification.type)" class="h-3.5 w-3.5" />
             </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium leading-snug" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
+            <div class="min-w-0">
+              <p class="truncate text-[13px] font-semibold leading-4" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
                 {{ notification.title }}
               </p>
-              <p class="mt-0.5 truncate text-xs leading-snug text-muted-foreground">
+              <p class="mt-0.5 truncate text-xs leading-4 text-muted-foreground">
                 {{ notification.message }}
               </p>
-              <p class="mt-1 text-[11px] leading-none text-muted-foreground/70">
+              <p class="mt-0.5 text-[11px] leading-3 text-muted-foreground/70">
                 {{ formatRelativeTime(notification.createdAt) }}
               </p>
             </div>
-            <div v-if="!notification.read" class="mt-2">
+            <div v-if="!notification.read" class="justify-self-end">
               <span class="block h-1.5 w-1.5 rounded-full bg-blue-500" />
             </div>
           </button>
@@ -87,7 +87,7 @@
       <button
         v-if="notifications.length > 0"
         type="button"
-        class="flex w-full items-center justify-center gap-1 px-3 py-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-muted/50 hover:text-foreground focus:bg-muted/50 focus:text-foreground"
+        class="flex w-full items-center justify-center gap-1 border-0 bg-white px-3 py-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-slate-50 hover:text-foreground focus:bg-slate-50 focus:text-foreground dark:bg-background dark:hover:bg-muted/50 dark:focus:bg-muted/50"
         @click="viewAllNotifications"
       >
         View all enquiries
