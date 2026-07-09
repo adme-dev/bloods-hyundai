@@ -207,65 +207,33 @@
         <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <CardTitle class="flex items-center gap-2 text-xl">
-              <MailPlus class="h-5 w-5 text-sky-600" />
-              Inbound Lead Email Sources
+              <Route class="h-5 w-5 text-sky-600" />
+              Lead Source Setup
             </CardTitle>
-            <CardDescription>Platform-specific addresses for Carsales, Autotrader, Hyundai OEM and other lead providers to send into this admin CRM.</CardDescription>
+            <CardDescription>External lead inboxes are configured in Settings. This report uses those sources for attribution and lead quality checks.</CardDescription>
           </div>
           <Badge :variant="inboundEmailData?.configured ? 'default' : 'secondary'">
             {{ inboundEmailData?.configured ? 'Email domain active' : 'Domain not configured' }}
           </Badge>
         </CardHeader>
-        <CardContent class="space-y-4">
-          <div v-if="!inboundEmailData?.configured" class="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-            Set <code>INBOUND_LEAD_EMAIL_DOMAIN</code> and <code>INBOUND_LEAD_WEBHOOK_SECRET</code> before using these addresses with external platforms.
+        <CardContent>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <MetricCell label="Configured sources" :value="String(inboundEmailData?.addresses?.length || 0)" />
+            <MetricCell label="Active sources" :value="String(activeInboundLeadSourceCount)" />
+            <MetricCell label="Inbound domain" :value="inboundEmailData?.domain || '-'" />
           </div>
-
-          <div class="flex flex-wrap gap-2">
-            <Button
-              v-for="source in inboundLeadSources"
-              :key="source.source"
-              size="sm"
-              variant="outline"
-              :disabled="creatingInboundSource === source.source"
-              @click="createInboundAddress(source.source, source.label)"
-            >
-              <MailPlus class="h-4 w-4" />
-              {{ existingInboundAddress(source.source) ? `Update ${source.label}` : `Create ${source.label}` }}
+          <div class="mt-4 flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="text-sm font-medium">Manage provider addresses and source mapping</div>
+              <div class="text-xs text-muted-foreground">Carsales, Autotrader, Hyundai OEM, Meta Lead Ads and other inbound sources.</div>
+            </div>
+            <Button size="sm" as-child>
+              <NuxtLink to="/admin/settings/lead-sources">
+                <Route class="h-4 w-4" />
+                Open lead sources
+              </NuxtLink>
             </Button>
           </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Source</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead class="text-right">Status</TableHead>
-                <TableHead class="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="address in inboundEmailData?.addresses || []" :key="address.id">
-                <TableCell class="font-medium">{{ address.label }}</TableCell>
-                <TableCell>
-                  <div class="font-mono text-xs">{{ address.email || address.localPart }}</div>
-                  <div v-if="!address.email" class="text-xs text-muted-foreground">Local part ready; email domain not configured.</div>
-                </TableCell>
-                <TableCell class="text-right">
-                  <Badge :variant="address.enabled ? 'default' : 'secondary'">{{ address.enabled ? 'Active' : 'Disabled' }}</Badge>
-                </TableCell>
-                <TableCell class="text-right">
-                  <Button size="sm" variant="outline" :disabled="!address.email" @click="copyInboundAddress(address.email)">
-                    <Copy class="h-4 w-4" />
-                    Copy
-                  </Button>
-                </TableCell>
-              </TableRow>
-              <TableRow v-if="!(inboundEmailData?.addresses || []).length">
-                <TableCell colspan="4" class="py-8 text-center text-muted-foreground">No inbound lead email sources have been created yet.</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
 
@@ -830,13 +798,11 @@ import {
   CheckCircle2,
   ChevronDown,
   Code2,
-  Copy,
   Database,
   Gauge,
   GitBranch,
   Globe2,
   History,
-  MailPlus,
   MonitorSmartphone,
   MousePointerClick,
   RefreshCw,
@@ -1083,23 +1049,14 @@ const query = computed(() => ({ from: from.value, to: to.value }));
 const { data, pending, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', {
   query,
 });
-const { data: inboundEmailData, refresh: refreshInboundEmailData } = await useFetch<InboundLeadEmailResponse>('/api/admin/lead-ingestion/email-addresses');
+const { data: inboundEmailData } = await useFetch<InboundLeadEmailResponse>('/api/admin/lead-ingestion/email-addresses');
 const backfillPending = ref(false);
-const creatingInboundSource = ref<InboundLeadSource | null>(null);
 
 const presets: { id: PresetId; label: string }[] = [
   { id: 'mtd', label: 'Month to date' },
   { id: '7d', label: '7 days' },
   { id: '30d', label: '30 days' },
   { id: '90d', label: '90 days' },
-];
-
-const inboundLeadSources: { source: InboundLeadSource; label: string }[] = [
-  { source: 'carsales', label: 'Carsales' },
-  { source: 'autotrader', label: 'Autotrader' },
-  { source: 'hyundai_oem', label: 'Hyundai OEM' },
-  { source: 'meta_lead_ads', label: 'Meta Lead Ads' },
-  { source: 'other', label: 'Other Source' },
 ];
 
 const activePreset = computed<PresetId | null>(() => {
@@ -1173,6 +1130,7 @@ const recentSyncRuns = computed(() => (data.value?.syncRuns || []).slice(0, 10))
 const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
 const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdown.map(row => row.total) || [1]), 1));
 const maxInsightFunnelValue = computed(() => Math.max(...(data.value?.insights.funnel.map(step => step.value) || [1]), 1));
+const activeInboundLeadSourceCount = computed(() => (inboundEmailData.value?.addresses || []).filter(address => address.enabled).length);
 const totalWebsiteSessions = computed(() => data.value?.professionalMetrics.ga4Website.sessions || 0);
 const maxChannelSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.trafficChannels.map(row => metric(row, 'sessions')) || [1]), 1));
 const maxDeviceSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.deviceCategories.map(row => metric(row, 'sessions')) || [1]), 1));
@@ -1288,29 +1246,6 @@ async function runAttributionBackfill() {
   } finally {
     backfillPending.value = false;
   }
-}
-
-async function createInboundAddress(source: InboundLeadSource, label: string) {
-  if (creatingInboundSource.value) return;
-  creatingInboundSource.value = source;
-  try {
-    await $fetch('/api/admin/lead-ingestion/email-addresses', {
-      method: 'POST',
-      body: { source, label },
-    });
-    await refreshInboundEmailData();
-  } finally {
-    creatingInboundSource.value = null;
-  }
-}
-
-function existingInboundAddress(source: InboundLeadSource) {
-  return inboundEmailData.value?.addresses.find(address => address.source === source) || null;
-}
-
-async function copyInboundAddress(email: string | null) {
-  if (!email || typeof navigator === 'undefined' || !navigator.clipboard) return;
-  await navigator.clipboard.writeText(email);
 }
 
 function applyPreset(id: PresetId) {

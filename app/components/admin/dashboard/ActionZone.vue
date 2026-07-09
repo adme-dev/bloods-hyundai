@@ -165,6 +165,11 @@
             <GitBranch class="mr-2 h-4 w-4" /> Routing rules
           </NuxtLink>
         </Button>
+        <Button variant="secondary" class="w-full justify-start" as-child>
+          <NuxtLink to="/admin/settings/lead-sources">
+            <MailPlus class="mr-2 h-4 w-4" /> Lead source setup
+          </NuxtLink>
+        </Button>
         <Separator class="my-2" />
         <Button variant="outline" class="w-full justify-start" as-child>
           <NuxtLink to="/admin/settings">
@@ -242,7 +247,7 @@
 <script setup lang="ts">
 import {
   Flame, CalendarCheck, DollarSign, Package, Phone, Clock, Inbox, UserPlus,
-  HeartCrack, Users, GitBranch, Settings, Target, Mail, ArrowRight,
+  HeartCrack, Users, GitBranch, Settings, Target, Mail, MailPlus, ArrowRight,
 } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';

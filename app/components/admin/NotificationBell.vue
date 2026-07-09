@@ -21,8 +21,8 @@
         />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" class="w-80 p-0">
-      <div class="flex items-center justify-between border-b px-4 py-3">
+    <DropdownMenuContent align="end" class="w-80 overflow-hidden p-0">
+      <div class="flex items-center justify-between border-b px-3 py-2">
         <DropdownMenuLabel class="p-0 font-semibold">Notifications</DropdownMenuLabel>
         <Button
           v-if="totalCount > 0"
@@ -50,47 +50,49 @@
 
         <!-- Notifications list -->
         <div v-else class="divide-y">
-          <DropdownMenuItem
+          <button
             v-for="notification in notifications"
             :key="notification.id"
-            class="flex items-start gap-3 px-4 py-3 cursor-pointer focus:bg-muted/50"
+            type="button"
+            class="flex w-full items-start gap-3 px-3 py-2 text-left outline-none transition-colors hover:bg-muted/50 focus:bg-muted/50"
             :class="{ 'bg-blue-50/50 dark:bg-blue-950/20': !notification.read }"
             @click="handleNotificationClick(notification)"
           >
             <div
-              class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+              class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
               :class="getNotificationIconClass(notification.subType || notification.type)"
             >
-              <component :is="getNotificationIcon(notification.subType || notification.type)" class="h-4 w-4" />
+              <component :is="getNotificationIcon(notification.subType || notification.type)" class="h-3.5 w-3.5" />
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium leading-tight" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium leading-snug" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
                 {{ notification.title }}
               </p>
-              <p class="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+              <p class="mt-0.5 truncate text-xs leading-snug text-muted-foreground">
                 {{ notification.message }}
               </p>
-              <p class="text-xs text-muted-foreground/70 mt-1">
+              <p class="mt-1 text-[11px] leading-none text-muted-foreground/70">
                 {{ formatRelativeTime(notification.createdAt) }}
               </p>
             </div>
             <div v-if="!notification.read" class="mt-2">
-              <span class="h-2 w-2 rounded-full bg-blue-500 block" />
+              <span class="block h-1.5 w-1.5 rounded-full bg-blue-500" />
             </div>
-          </DropdownMenuItem>
+          </button>
         </div>
       </div>
 
       <!-- Footer -->
       <DropdownMenuSeparator v-if="notifications.length > 0" class="m-0" />
-      <DropdownMenuItem
+      <button
         v-if="notifications.length > 0"
-        class="justify-center py-2 text-xs cursor-pointer"
+        type="button"
+        class="flex w-full items-center justify-center gap-1 px-3 py-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-muted/50 hover:text-foreground focus:bg-muted/50 focus:text-foreground"
         @click="viewAllNotifications"
       >
         View all enquiries
-        <ArrowRight class="ml-1 h-3 w-3" />
-      </DropdownMenuItem>
+        <ArrowRight class="h-3 w-3" />
+      </button>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>
@@ -115,7 +117,6 @@ import { Button } from '~/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,

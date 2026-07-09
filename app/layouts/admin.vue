@@ -90,6 +90,9 @@
               <DropdownMenuItem @click="navigateTo('/admin/settings/email')">
                 <Mail class="mr-2 h-4 w-4" /> Email Settings
               </DropdownMenuItem>
+              <DropdownMenuItem @click="navigateTo('/admin/settings/lead-sources')">
+                <MailPlus class="mr-2 h-4 w-4" /> Lead Sources
+              </DropdownMenuItem>
               <DropdownMenuItem @click="navigateTo('/admin/settings/routing')">
                 <GitBranch class="mr-2 h-4 w-4" /> Routing rules
               </DropdownMenuItem>
@@ -113,7 +116,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from '#imports';
-import { Menu, LogOut, Settings, GitBranch, Mail, Palette, Image } from 'lucide-vue-next';
+import { Menu, LogOut, Settings, GitBranch, Mail, MailPlus, Palette, Image } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Separator } from '~/components/ui/separator';
@@ -197,7 +200,6 @@ const handleLogout = async () => {
   }
 };
 </script>
-
 
 
 
