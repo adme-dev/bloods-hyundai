@@ -61,6 +61,68 @@
         </Card>
       </div>
 
+      <div class="grid gap-6 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <Activity class="h-5 w-5 text-sky-600" />
+              GA4 Website
+            </CardTitle>
+            <CardDescription>Engagement quality for the selected period.</CardDescription>
+          </CardHeader>
+          <CardContent class="grid grid-cols-2 gap-3">
+            <MetricCell label="Sessions" :value="n(data.professionalMetrics.ga4Website.sessions)" />
+            <MetricCell label="Users" :value="n(data.professionalMetrics.ga4Website.users)" />
+            <MetricCell label="Engagement rate" :value="fractionPct(data.professionalMetrics.ga4Website.engagementRate)" />
+            <MetricCell label="Avg session" :value="duration(data.professionalMetrics.ga4Website.averageSessionDuration)" />
+            <MetricCell label="Page views" :value="n(data.professionalMetrics.ga4Website.screenPageViews)" />
+            <MetricCell label="Events" :value="n(data.professionalMetrics.ga4Website.eventCount)" />
+            <MetricCell label="Events/session" :value="decimal(data.professionalMetrics.ga4Website.eventsPerSession)" />
+            <MetricCell label="Key event rate" :value="pctOrDash(data.professionalMetrics.ga4Website.conversionRate)" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <Gauge class="h-5 w-5 text-emerald-600" />
+              Paid Media Efficiency
+            </CardTitle>
+            <CardDescription>Meta and Google Ads blended delivery.</CardDescription>
+          </CardHeader>
+          <CardContent class="grid grid-cols-2 gap-3">
+            <MetricCell label="Spend" :value="money(data.professionalMetrics.paidMedia.spend)" />
+            <MetricCell label="CPM" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpm)" />
+            <MetricCell label="Impressions" :value="n(data.professionalMetrics.paidMedia.impressions)" />
+            <MetricCell label="CTR" :value="pctOrDash(data.professionalMetrics.paidMedia.ctr)" />
+            <MetricCell label="Clicks" :value="n(data.professionalMetrics.paidMedia.clicks)" />
+            <MetricCell label="Avg CPC" :value="moneyOrDash(data.professionalMetrics.paidMedia.averageCpc)" />
+            <MetricCell label="Platform lead rate" :value="pctOrDash(data.professionalMetrics.paidMedia.platformLeadRate)" />
+            <MetricCell label="CRM CPL" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpl)" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2 text-xl">
+              <MousePointerClick class="h-5 w-5 text-blue-600" />
+              Google Ads Depth
+            </CardTitle>
+            <CardDescription>Campaign-level metrics from Google Ads API sync.</CardDescription>
+          </CardHeader>
+          <CardContent class="grid grid-cols-2 gap-3">
+            <MetricCell label="Conversions" :value="n(data.professionalMetrics.googleAds.platformLeads)" />
+            <MetricCell label="Conv. rate" :value="pctOrDash(data.professionalMetrics.googleAds.conversionRate)" />
+            <MetricCell label="Cost / conv." :value="moneyOrDash(data.professionalMetrics.googleAds.costPerConversion)" />
+            <MetricCell label="All conversions" :value="decimal(data.professionalMetrics.googleAds.allConversions)" />
+            <MetricCell label="Conv. value" :value="moneyOrDash(data.professionalMetrics.googleAds.conversionsValue)" />
+            <MetricCell label="Interactions" :value="data.professionalMetrics.googleAds.interactions == null ? '-' : n(data.professionalMetrics.googleAds.interactions)" />
+            <MetricCell label="Interaction rate" :value="pctOrDash(data.professionalMetrics.googleAds.interactionRate)" />
+            <MetricCell label="Search impr. share" :value="fractionPct(data.professionalMetrics.googleAds.searchImpressionShare)" />
+          </CardContent>
+        </Card>
+      </div>
+
       <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
         <Card>
           <CardHeader>
@@ -187,8 +249,12 @@
                 <TableHead>Campaign</TableHead>
                 <TableHead>Platform</TableHead>
                 <TableHead class="text-right">Spend</TableHead>
+                <TableHead class="text-right">Impr.</TableHead>
                 <TableHead class="text-right">Clicks</TableHead>
+                <TableHead class="text-right">CTR</TableHead>
+                <TableHead class="text-right">CPC</TableHead>
                 <TableHead class="text-right">Platform leads</TableHead>
+                <TableHead class="text-right">Lead rate</TableHead>
                 <TableHead class="text-right">CRM leads</TableHead>
                 <TableHead class="text-right">CPL</TableHead>
               </TableRow>
@@ -198,13 +264,17 @@
                 <TableCell class="min-w-[260px] font-medium">{{ campaign.campaignName || campaign.campaignId }}</TableCell>
                 <TableCell><Badge variant="outline">{{ platformLabel(campaign.platform) }}</Badge></TableCell>
                 <TableCell class="text-right">{{ campaign.spend ? formatCurrency(campaign.spend, true) : '-' }}</TableCell>
+                <TableCell class="text-right">{{ n(campaign.impressions) }}</TableCell>
                 <TableCell class="text-right">{{ n(campaign.clicks) }}</TableCell>
+                <TableCell class="text-right">{{ pctOrDash(campaign.ctr) }}</TableCell>
+                <TableCell class="text-right">{{ campaign.clicks ? money(campaign.spend / campaign.clicks) : '-' }}</TableCell>
                 <TableCell class="text-right">{{ n(campaign.platformLeads) }}</TableCell>
+                <TableCell class="text-right">{{ pctOrDash(campaign.platformLeadRate) }}</TableCell>
                 <TableCell class="text-right font-medium">{{ n(campaign.crmLeads) }}</TableCell>
                 <TableCell class="text-right font-medium">{{ campaign.cpl == null ? '-' : formatCurrency(campaign.cpl, true) }}</TableCell>
               </TableRow>
               <TableRow v-if="!data.campaigns.length">
-                <TableCell colspan="7" class="py-8 text-center text-muted-foreground">No campaign rows in this range.</TableCell>
+                <TableCell colspan="11" class="py-8 text-center text-muted-foreground">No campaign rows in this range.</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -329,11 +399,14 @@
 <script setup lang="ts">
 import {
   AlertCircle,
+  Activity,
   ArrowLeft,
   CheckCircle2,
   Code2,
   Database,
+  Gauge,
   History,
+  MousePointerClick,
   RefreshCw,
   Target,
   UserCheck,
@@ -370,18 +443,37 @@ interface ReportResponse {
   };
   platformMetrics: {
     ga4: { sessions: number; users: number; conversions: number };
-    meta_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null };
-    google_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null };
+    meta_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null };
+    google_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null };
+  };
+  professionalMetrics: {
+    ga4Website: {
+      sessions: number;
+      users: number;
+      keyEvents: number;
+      engagementRate: number | null;
+      averageSessionDuration: number | null;
+      screenPageViews: number;
+      eventCount: number;
+      eventsPerSession: number | null;
+      conversionRate: number | null;
+    };
+    paidMedia: ProfessionalAdMetrics;
+    googleAds: ProfessionalAdMetrics;
+    metaAds: ProfessionalAdMetrics;
   };
   campaigns: Array<{
     platform: string;
     campaignId: string;
     campaignName: string | null;
     spend: number;
+    impressions: number;
     clicks: number;
     platformLeads: number;
     crmLeads: number;
     cpl: number | null;
+    ctr: number | null;
+    platformLeadRate: number | null;
   }>;
   crm: {
     leadSources: Array<{ key: string; label: string; category: string; total: number; crmSynced: number; withCampaign: number }>;
@@ -417,6 +509,26 @@ type SyncRun = {
   error: string | null;
   startedAt: string;
   finishedAt?: string | null;
+};
+
+type ProfessionalAdMetrics = {
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number | null;
+  averageCpc: number | null;
+  cpm: number | null;
+  platformLeads: number;
+  platformLeadRate?: number | null;
+  conversionRate?: number | null;
+  costPerConversion?: number | null;
+  crmLeads: number;
+  cpl: number | null;
+  conversionsValue?: number | null;
+  allConversions?: number | null;
+  interactions?: number | null;
+  interactionRate?: number | null;
+  searchImpressionShare?: number | null;
 };
 
 const today = isoDate(new Date());
@@ -599,6 +711,18 @@ function shortDateTime(value: string) {
 
 const n = (value: number) => new Intl.NumberFormat('en-AU').format(value || 0);
 const pct = (value: number) => `${new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value || 0)}%`;
+const money = (value: number) => formatCurrency(value || 0, true);
+const moneyOrDash = (value: number | null | undefined) => value == null ? '-' : money(value);
+const pctOrDash = (value: number | null | undefined) => value == null ? '-' : pct(value);
+const fractionPct = (value: number | null | undefined) => value == null ? '-' : pct(value * 100);
+const decimal = (value: number | null | undefined) => value == null ? '-' : new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value);
+
+function duration(value: number | null | undefined) {
+  if (value == null) return '-';
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.round(value % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
 
 const MetricCell = defineComponent({
   props: {

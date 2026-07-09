@@ -1,9 +1,18 @@
-// GA4 Data API runReport. Metric order is the request<->parse contract
-// (pattern ported from XeroFlow dashboard ga4Client.ts).
+// GA4 Data API runReport. Metric order is the request<->parse contract.
+// Metric names source: https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
 import { JWT } from 'google-auth-library';
 import type { DateRange, NormalizedRow } from './types';
 
-export const GA4_METRICS = ['sessions', 'totalUsers', 'keyEvents'] as const;
+export const GA4_METRICS = [
+  'sessions',
+  'totalUsers',
+  'keyEvents',
+  'engagementRate',
+  'averageSessionDuration',
+  'screenPageViews',
+  'eventCount',
+  'eventsPerSession',
+] as const;
 
 interface Ga4RunReportResponse {
   rows?: Array<{

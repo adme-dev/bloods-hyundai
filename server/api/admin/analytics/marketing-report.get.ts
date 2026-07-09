@@ -114,6 +114,7 @@ export default defineEventHandler(async (event) => {
       sourceCoverage: coverage.sourceCoverage,
     },
     platformMetrics: metrics.platforms,
+    professionalMetrics: buildProfessionalMetrics(metricRows, metrics.platforms),
     campaigns: metrics.campaigns,
     crm: {
       coverage,
@@ -202,6 +203,139 @@ function toMetricInputs(rows: MarketingMetricsDaily[]): MetricInput[] {
     users: r.users || 0,
     conversions: r.conversions || 0,
   }));
+}
+
+function buildProfessionalMetrics(
+  rows: MarketingMetricsDaily[],
+  platforms: ReturnType<typeof aggregateMarketingMetrics>['platforms'],
+) {
+  const ga4Rows = rows.filter(row => row.platform === 'ga4');
+  const metaRows = rows.filter(row => row.platform === 'meta_ads');
+  const googleRows = rows.filter(row => row.platform === 'google_ads');
+
+  const paid = [...metaRows, ...googleRows];
+  const paidSpend = sum(paid, row => Number(row.spend || 0));
+  const paidImpressions = sum(paid, row => row.impressions || 0);
+  const paidClicks = sum(paid, row => row.clicks || 0);
+  const paidLeads = sum(paid, row => row.platformLeads || 0);
+  const paidCrmLeads = platforms.meta_ads.crmLeads + platforms.google_ads.crmLeads;
+
+  return {
+    ga4Website: {
+      sessions: platforms.ga4.sessions,
+      users: platforms.ga4.users,
+      keyEvents: platforms.ga4.conversions,
+      engagementRate: weightedGa4Metric(ga4Rows, 3, 0),
+      averageSessionDuration: weightedGa4Metric(ga4Rows, 4, 0),
+      screenPageViews: sum(ga4Rows, row => ga4Metric(row, 5)),
+      eventCount: sum(ga4Rows, row => ga4Metric(row, 6)),
+      eventsPerSession: weightedGa4Metric(ga4Rows, 7, 0),
+      conversionRate: percent(platforms.ga4.conversions, platforms.ga4.sessions),
+    },
+    paidMedia: {
+      spend: roundMoney(paidSpend),
+      impressions: paidImpressions,
+      clicks: paidClicks,
+      ctr: percent(paidClicks, paidImpressions),
+      averageCpc: paidClicks ? roundMoney(paidSpend / paidClicks) : null,
+      cpm: paidImpressions ? roundMoney((paidSpend / paidImpressions) * 1000) : null,
+      platformLeads: paidLeads,
+      platformLeadRate: percent(paidLeads, paidClicks),
+      crmLeads: paidCrmLeads,
+      cpl: paidCrmLeads ? roundMoney(paidSpend / paidCrmLeads) : null,
+    },
+    googleAds: buildAdPlatformMetrics(googleRows, platforms.google_ads),
+    metaAds: buildAdPlatformMetrics(metaRows, platforms.meta_ads),
+  };
+}
+
+function buildAdPlatformMetrics(
+  rows: MarketingMetricsDaily[],
+  totals: {
+    spend: number;
+    impressions: number;
+    clicks: number;
+    platformLeads: number;
+    crmLeads: number;
+    cpl: number | null;
+    ctr: number | null;
+    platformLeadRate: number | null;
+  },
+) {
+  const conversionsValue = sum(rows, row => adsMetric(row, 'conversionsValue'));
+  const allConversions = sum(rows, row => adsMetric(row, 'allConversions'));
+  const interactions = sum(rows, row => adsMetric(row, 'interactions'));
+  return {
+    spend: totals.spend,
+    impressions: totals.impressions,
+    clicks: totals.clicks,
+    ctr: totals.ctr,
+    averageCpc: totals.clicks ? roundMoney(totals.spend / totals.clicks) : null,
+    cpm: totals.impressions ? roundMoney((totals.spend / totals.impressions) * 1000) : null,
+    platformLeads: totals.platformLeads,
+    conversionRate: percent(totals.platformLeads, totals.clicks),
+    costPerConversion: totals.platformLeads ? roundMoney(totals.spend / totals.platformLeads) : null,
+    crmLeads: totals.crmLeads,
+    cpl: totals.cpl,
+    conversionsValue: conversionsValue ? roundMoney(conversionsValue) : null,
+    allConversions: allConversions || null,
+    interactions: interactions || null,
+    interactionRate: percent(interactions, totals.impressions),
+    searchImpressionShare: weightedAdsMetric(rows, 'searchImpressionShare', 'impressions'),
+  };
+}
+
+function ga4Metric(row: MarketingMetricsDaily, index: number) {
+  const metric = (row.raw as any)?.metricValues?.[index]?.value;
+  return metric == null ? 0 : Number(metric) || 0;
+}
+
+function weightedGa4Metric(rows: MarketingMetricsDaily[], metricIndex: number, weightIndex: number) {
+  let weighted = 0;
+  let totalWeight = 0;
+  for (const row of rows) {
+    const value = ga4Metric(row, metricIndex);
+    const weight = ga4Metric(row, weightIndex);
+    if (!Number.isFinite(value) || !Number.isFinite(weight) || weight <= 0) continue;
+    weighted += value * weight;
+    totalWeight += weight;
+  }
+  return totalWeight ? roundRate(weighted / totalWeight) : null;
+}
+
+function adsMetric(row: MarketingMetricsDaily, key: string) {
+  const value = (row.raw as any)?.metrics?.[key];
+  return value == null ? 0 : Number(value) || 0;
+}
+
+function weightedAdsMetric(rows: MarketingMetricsDaily[], metricKey: string, weightKey: keyof MarketingMetricsDaily) {
+  let weighted = 0;
+  let totalWeight = 0;
+  for (const row of rows) {
+    const value = adsMetric(row, metricKey);
+    const weight = Number(row[weightKey] || 0);
+    if (!Number.isFinite(value) || !Number.isFinite(weight) || weight <= 0) continue;
+    weighted += value * weight;
+    totalWeight += weight;
+  }
+  return totalWeight ? roundRate(weighted / totalWeight) : null;
+}
+
+function sum<T>(rows: T[], selector: (row: T) => number) {
+  return rows.reduce((total, row) => total + selector(row), 0);
+}
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function roundRate(value: number) {
+  return Math.round(value * 10000) / 10000;
+}
+
+function percent(numerator: number, denominator: number): number | null {
+  if (!denominator) return null;
+  return Math.round((numerator / denominator) * 10000) / 100;
 }
 
 function summarizeBy(leads: CrmLeadSignal[], keyFn: (lead: CrmLeadSignal) => string) {

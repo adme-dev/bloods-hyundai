@@ -122,5 +122,8 @@ describe('googleAds helpers', () => {
     assert.match(q, /FROM campaign/);
     assert.match(q, /segments\.date BETWEEN '2026-07-01' AND '2026-07-09'/);
     assert.match(q, /metrics\.cost_micros/);
+    assert.match(q, /metrics\.average_cpc/);
+    assert.match(q, /metrics\.cost_per_conversion/);
+    assert.match(q, /metrics\.search_impression_share/);
   });
 });

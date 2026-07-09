@@ -3,6 +3,7 @@
 import type { DateRange, NormalizedRow } from './types';
 
 export function buildCampaignGaql(range: DateRange): string {
+  // Field names source: https://developers.google.com/google-ads/api/fields/v23/metrics
   return `
     SELECT
       campaign.id,
@@ -11,7 +12,15 @@ export function buildCampaignGaql(range: DateRange): string {
       metrics.cost_micros,
       metrics.impressions,
       metrics.clicks,
-      metrics.conversions
+      metrics.ctr,
+      metrics.average_cpc,
+      metrics.conversions,
+      metrics.conversions_value,
+      metrics.cost_per_conversion,
+      metrics.all_conversions,
+      metrics.interactions,
+      metrics.interaction_rate,
+      metrics.search_impression_share
     FROM campaign
     WHERE segments.date BETWEEN '${range.from}' AND '${range.to}'
   `;
@@ -29,7 +38,20 @@ export function flattenSearchStream(batches: unknown): unknown[] {
 
 interface GoogleAdsResult {
   campaign?: { id?: string | number; name?: string };
-  metrics?: { costMicros?: string | number; impressions?: string | number; clicks?: string | number; conversions?: number };
+  metrics?: {
+    costMicros?: string | number;
+    impressions?: string | number;
+    clicks?: string | number;
+    conversions?: number;
+    ctr?: string | number;
+    averageCpc?: string | number;
+    conversionsValue?: string | number;
+    costPerConversion?: string | number;
+    allConversions?: string | number;
+    interactions?: string | number;
+    interactionRate?: string | number;
+    searchImpressionShare?: string | number;
+  };
   segments?: { date?: string };
 }
 
