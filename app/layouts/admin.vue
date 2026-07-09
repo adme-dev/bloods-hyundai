@@ -32,17 +32,12 @@
             </SheetContent>
           </Sheet>
 
-          <div class="hidden min-w-0 flex-none items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 sm:flex">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-background text-[11px] font-semibold leading-none text-foreground">
-              {{ siteInitials }}
-            </div>
-            <div class="min-w-0">
-              <div class="flex min-w-0 items-center gap-2">
-                <p class="max-w-36 truncate text-sm font-semibold leading-tight text-foreground lg:max-w-44">{{ siteName }}</p>
-                <span class="hidden h-3 w-px bg-border lg:block" />
-                <p class="hidden whitespace-nowrap text-sm font-medium leading-tight text-muted-foreground lg:block">{{ currentSectionLabel }}</p>
-              </div>
-              <p class="hidden whitespace-nowrap text-xs leading-tight text-muted-foreground 2xl:block">Operations &amp; enquiries</p>
+          <div class="hidden min-w-[178px] flex-none flex-col justify-center sm:flex">
+            <p class="whitespace-nowrap text-sm font-semibold leading-tight text-foreground">{{ siteName }}</p>
+            <div class="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-xs leading-none text-muted-foreground">
+              <span>Admin Console</span>
+              <span class="hidden text-muted-foreground/60 lg:inline">/</span>
+              <span class="hidden lg:inline">{{ currentSectionLabel }}</span>
             </div>
           </div>
 
@@ -183,14 +178,6 @@ const currentSectionLabel = computed(() => {
   return active?.label || 'Admin Console';
 });
 
-const siteInitials = computed(() => siteName.value
-  .split(/\s+/)
-  .filter(Boolean)
-  .slice(0, 2)
-  .map(word => word.charAt(0))
-  .join('')
-  .toUpperCase() || 'HD');
-
 const userInitials = computed(() => {
   if (!userState.value) return 'HD';
   const { firstName = '', lastName = '' } = userState.value;
@@ -221,7 +208,6 @@ const handleLogout = async () => {
   }
 };
 </script>
-
 
 
 
