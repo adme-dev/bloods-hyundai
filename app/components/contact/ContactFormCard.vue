@@ -241,6 +241,12 @@ const props = withDefaults(defineProps<Props>(), {
 const route = useRoute();
 const mainStore = useMainStore();
 const config = useRuntimeConfig();
+const {
+  trackContactForm,
+  trackFinanceEnquiry,
+  trackPartsEnquiry,
+  trackServiceBooking,
+} = useAnalytics();
 
 // Form state
 const form = reactive({
@@ -350,18 +356,31 @@ const submitForm = async () => {
     isSending.value = false;
     isSent.value = true;
 
-    // Track in GTM
-    if (process.client && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: `FormSubmission`,
-        formType: props.formType,
-        formStatus: 'submitted',
-        enquiryId: response.enquiry.id,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        phone: form.phone,
-        message: form.message,
+    const formLocation = `contact_page_${props.formType}`;
+    if (props.formType === 'parts') {
+      trackPartsEnquiry({
+        form_location: formLocation,
+        enquiry_id: response.enquiry.id,
+        has_registration: Boolean(form.registration),
+        has_message: Boolean(form.message),
+      });
+    } else if (props.formType === 'service') {
+      trackServiceBooking({
+        form_location: formLocation,
+        enquiry_id: response.enquiry.id,
+        service_type: 'contact_page_service_enquiry',
+      });
+    } else if (props.formType === 'finance') {
+      trackFinanceEnquiry({
+        form_location: formLocation,
+        enquiry_id: response.enquiry.id,
+      });
+    } else {
+      trackContactForm({
+        form_location: formLocation,
+        enquiry_id: response.enquiry.id,
+        department: props.formType,
+        has_message: Boolean(form.message),
       });
     }
   } catch (error: any) {
