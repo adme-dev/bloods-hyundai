@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="fixed top-0 right-0 z-[9999] flex max-h-screen w-full flex-col-reverse gap-3 p-4 sm:right-0 sm:top-0 sm:flex-col sm:items-end md:max-w-[420px]">
+    <div class="pointer-events-none fixed top-0 right-0 z-[9999] flex max-h-screen w-full flex-col-reverse gap-3 p-4 sm:right-0 sm:top-0 sm:flex-col sm:items-end md:max-w-[420px]">
       <TransitionGroup
         name="toast"
         tag="div"
@@ -140,7 +140,6 @@ const iconBgClasses = (type?: string) => {
   transition: transform 0.3s ease;
 }
 </style>
-
 
 
 
