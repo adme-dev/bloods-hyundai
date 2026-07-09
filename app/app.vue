@@ -6,7 +6,7 @@
     <ClientOnly>
       <ToastContainer />
       <AutoPopup />
-      <LazyHyundaiChatAssistant />
+      <LazyHyundaiChatAssistant v-if="showPublicChatAssistant" />
     </ClientOnly>
   </div>
 </template>
@@ -91,6 +91,7 @@ if (process.client) {
 // Fetch site config during SSR - hidden from browser network tab
 // Uses host-scoped cache key with 10-min server cache
 const route = useRoute();
+const showPublicChatAssistant = computed(() => !route.path.startsWith('/admin'));
 const shouldRefreshSiteConfig = computed(() => route.query.refresh === 'true');
 const siteConfigCacheKey = getRuntimeTenantCacheKey('site-config-data:v2');
 
