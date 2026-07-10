@@ -341,7 +341,11 @@ export default {
     '/api/service-booking-settings': { swr: 300 },
     '/api/popup-settings':           { swr: 300 },
     '/api/header-settings':          { swr: 600 },
-    '/api/site-config':              { swr: 600 },
+    // NOTE: no swr rule for /api/site-config — the handler manages its own
+    // caching (defineCachedFunction protects the DB/CDN, and it sets
+    // Cache-Control per-response: edge-cacheable when healthy, no-store for
+    // degraded results and ?refresh=true). An outer route cache here would
+    // cache degraded 200s for 10 min and clobber those no-store headers.
     '/api/homepage-filters':         { swr: 600 },
     '/api/all-variants':             { swr: 1800 },
     '/api/model-summaries':          { swr: 1800 },

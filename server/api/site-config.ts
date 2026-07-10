@@ -11,6 +11,10 @@
  *   itself is sent with `Cache-Control: no-store` so Netlify's edge (which
  *   varies /api/site-config by query string) never caches it for its own
  *   10-minute TTL.
+ * - Edge caching is decided per-response by this handler (there is no swr
+ *   route rule for this path): healthy responses get
+ *   `public, s-maxage=300, stale-while-revalidate=600`; degraded and
+ *   ?refresh=true responses get `no-store`.
  * - CDN fallback for dealer-specific config files
  * - Local fallback for development when CDN is unreachable
  */
@@ -314,6 +318,13 @@ export default defineEventHandler(async (event) => {
       // ?refresh=true response itself could otherwise get frozen for 10
       // minutes. Force it to always hit origin.
       setResponseHeader(event, 'Cache-Control', 'no-store');
+    } else {
+      // Healthy, non-refresh responses stay edge-cacheable. This replaces
+      // the removed `swr: 600` route rule in nuxt.config.ts, which cached
+      // whole 200 responses blindly (including degraded ones) and clobbered
+      // the no-store headers on the refresh/degraded paths. Only this
+      // success path opts in to edge caching.
+      setResponseHeader(event, 'Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     }
 
     return {
