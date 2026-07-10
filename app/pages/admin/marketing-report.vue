@@ -501,6 +501,44 @@
               </Table>
             </div>
           </div>
+
+          <div class="rounded-md border">
+            <div class="border-b px-4 py-3">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div class="text-sm font-semibold">Chatbot activity</div>
+                  <div class="text-xs text-muted-foreground">Public assistant events tracked in GA4.</div>
+                </div>
+                <Badge variant="outline">{{ n(totalChatEventCount) }} events</Badge>
+              </div>
+            </div>
+            <div class="grid gap-3 p-4 md:grid-cols-3">
+              <MetricCell label="Chat opened" :value="n(chatMetricCount('chat_opened'))" />
+              <MetricCell label="Messages sent" :value="n(chatMetricCount('chat_message_sent'))" />
+              <MetricCell label="Lead handoffs" :value="n(chatMetricCount('chat_lead_handoff', 'chat_human_handoff'))" />
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Event</TableHead>
+                  <TableHead class="text-right">Count</TableHead>
+                  <TableHead class="text-right">Users</TableHead>
+                  <TableHead class="text-right">Key events</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="row in chatEventRows" :key="dimension(row, 'eventName')">
+                  <TableCell class="font-medium">{{ formatEventName(dimension(row, 'eventName')) }}</TableCell>
+                  <TableCell class="text-right">{{ n(metric(row, 'eventCount')) }}</TableCell>
+                  <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
+                  <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
+                </TableRow>
+                <TableRow v-if="!chatEventRows.length">
+                  <TableCell colspan="4" class="py-8 text-center text-muted-foreground">No chatbot GA4 events returned for this range.</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
         <CardContent v-else>
           <div class="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -1155,6 +1193,12 @@ const websiteEventRows = computed(() => {
   return analytics.formEvents.length ? analytics.formEvents : analytics.topEvents.slice(0, 8);
 });
 const totalFormEventCount = computed(() => websiteEventRows.value.reduce((sum, row) => sum + metric(row, 'eventCount'), 0));
+const chatEventRows = computed(() => {
+  const analytics = data.value?.websiteAnalytics;
+  if (!analytics) return [];
+  return analytics.topEvents.filter((row) => /^chat_/i.test(dimension(row, 'eventName')));
+});
+const totalChatEventCount = computed(() => chatEventRows.value.reduce((sum, row) => sum + metric(row, 'eventCount'), 0));
 const websiteFunnelRows = computed(() => {
   const sessions = data.value?.professionalMetrics.ga4Website.sessions || 0;
   const keyEvents = data.value?.professionalMetrics.ga4Website.keyEvents || 0;
@@ -1349,6 +1393,13 @@ function dimension(row: Ga4BreakdownRow, key: string) {
 function metric(row: Ga4BreakdownRow, key: string) {
   const value = row.metrics[key];
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function chatMetricCount(...eventNames: string[]) {
+  const wanted = new Set(eventNames.map(name => name.toLowerCase()));
+  return chatEventRows.value
+    .filter((row) => wanted.has(dimension(row, 'eventName').toLowerCase()))
+    .reduce((sum, row) => sum + metric(row, 'eventCount'), 0);
 }
 
 function barPercent(value: number, max: number) {

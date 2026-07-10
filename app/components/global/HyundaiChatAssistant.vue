@@ -214,6 +214,7 @@ const CHAT_NUDGE_DURATION_MS = 900;
 const mainStore = useMainStore();
 const vehiclesStore = useVehiclesStore();
 const route = useRoute();
+const { gtag } = useGtag();
 
 const isOpen = ref(false);
 const isTyping = ref(false);
@@ -843,12 +844,21 @@ const classifyIntent = (input: string) => {
 };
 
 const trackChatEvent = (event: string, label = '') => {
-  if (!import.meta.client || !window.dataLayer) return;
-  window.dataLayer.push({
+  if (!import.meta.client) return;
+
+  const payload = {
     event,
     event_category: 'engagement',
     event_label: label || (isVehiclePage.value ? 'vehicle_page' : 'sitewide'),
-  });
+    chat_intent: label || 'general',
+  };
+
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push(payload);
+
+  if (typeof gtag === 'function') {
+    gtag('event', event, payload);
+  }
 };
 
 const isMobileChatViewport = () => {
