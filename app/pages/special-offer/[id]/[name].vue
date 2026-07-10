@@ -735,7 +735,7 @@ const updateCarouselArrows = () => {
 };
 
 // Analytics composable for proper tracking
-const analytics = useAnalytics();
+const { trackEnquiryModalOpen, trackTestDriveModalOpen, trackTestDriveBooking, trackSpecialOfferEnquiry, trackFormError } = useAnalytics();
 
 const handleSubmit = async () => {
   if (submitting.value) return;
@@ -775,7 +775,7 @@ const handleSubmit = async () => {
     submitted.value = true;
 
     // Track with analytics composable (GA4 + Facebook Pixel + GTM dataLayer)
-    analytics.trackSpecialOfferEnquiry({
+    trackSpecialOfferEnquiry({
       form_location: `special_offer_${offer.value?.model?.toLowerCase().replace(/\s+/g, '_')}`,
       enquiry_id: response.enquiry.id,
       page_url: route.fullPath,
@@ -808,10 +808,10 @@ const handleSubmit = async () => {
         vehiclePrice: vehiclePrice,
       });
     }
-  } catch (err) {
-    console.error('Form submission error:', err);
-    // Track form error
-    analytics.trackFormError('vehicle_enquiry', 'submission', 'api_error');
+    } catch (err) {
+      console.error('Form submission error:', err);
+      // Track form error
+      trackFormError('vehicle_enquiry', 'submission', 'api_error');
   } finally {
     submitting.value = false;
   }
@@ -858,7 +858,7 @@ const handleTestDriveSubmit = async (formData: any) => {
     console.log('[Special Offer] Test drive request submitted successfully:', response);
     
     // Track the test drive booking
-    analytics.trackTestDriveBooking({
+    trackTestDriveBooking({
       vehicle: vehicleInfo,
       source: 'special-offer-test-drive',
       page_url: route.fullPath,
@@ -877,7 +877,7 @@ const openEnquiryModal = () => {
   showEnquiryModal.value = true;
   
   // Track modal open event
-  analytics.trackEnquiryModalOpen({
+  trackEnquiryModalOpen({
     source: 'special_offer_page',
     page_url: route.fullPath,
     vehicle: {
@@ -894,14 +894,17 @@ const openTestDriveModal = () => {
   showTestDriveModal.value = true;
   
   // Track modal open event for test drive
-  if (import.meta.client && (window as any).dataLayer) {
-    (window as any).dataLayer.push({
-      event: 'test_drive_modal_open',
-      source: 'special_offer_page',
-      offerModel: offer.value?.model,
-      offerVariant: offer.value?.variantName,
-    });
-  }
+  trackTestDriveModalOpen({
+    source: 'special_offer_page',
+    page_url: route.fullPath,
+    vehicle: {
+      make: 'Hyundai',
+      model: offer.value?.model,
+      variant: offer.value?.variantName,
+      price: offer.value?.price,
+      condition: 'new',
+    },
+  });
 };
 
 // SEO Meta - Optimized for Google Search with dynamic content
@@ -2015,6 +2018,5 @@ onUpdated(() => {
   }
 }
 </style>
-
 
 

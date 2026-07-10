@@ -28,6 +28,12 @@ interface EnquiryEventData {
   page_url?: string;
 }
 
+interface ModalOpenEventData {
+  vehicle?: VehicleData;
+  source: 'stock_param' | 'card_click' | 'detail_page' | 'gallery' | 'calculator' | 'homepage' | 'special_offer_page';
+  page_url?: string;
+}
+
 interface FormSubmissionData {
   vehicle?: VehicleData;
   form_type: 'enquiry' | 'test_drive' | 'finance' | 'trade_in';
@@ -247,6 +253,35 @@ export const useAnalytics = () => {
         content_category: vehicle.condition || 'used',
         value: vehicle.price || 0,
         currency: 'AUD',
+      });
+    }
+  };
+
+  /**
+   * Track when test drive modal is opened
+   */
+  const trackTestDriveModalOpen = (data: ModalOpenEventData) => {
+    const vehicle = data.vehicle;
+    const pageUrl = data.page_url || (typeof window !== 'undefined' ? window.location.href : '');
+    const modalEventData = {
+      ...data,
+      event_category: 'engagement',
+      event_label: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : 'unknown',
+      stock_id: vehicle?.stockid || vehicle?.identifier || 'unknown',
+      vehicle_make: vehicle?.make || 'unknown',
+      vehicle_model: vehicle?.model || 'unknown',
+      vehicle_year: vehicle?.year || 'unknown',
+      vehicle_price: vehicle?.price || 0,
+      vehicle_condition: vehicle?.condition || 'unknown',
+      page_url: pageUrl,
+    };
+
+    pushToDataLayer('test_drive_modal_open', modalEventData);
+    pushToDataLayer('TestDriveModalOpen', modalEventData);
+
+    if (typeof gtag === 'function') {
+      gtag('event', 'test_drive_modal_open', {
+        ...modalEventData,
       });
     }
   };
@@ -868,6 +903,7 @@ export const useAnalytics = () => {
   return {
     // Existing functions
     trackEnquiryModalOpen,
+    trackTestDriveModalOpen,
     trackEnquirySubmit,
     trackVehicleView,
     trackVehicleSearch,
@@ -892,4 +928,3 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
