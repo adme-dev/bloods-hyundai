@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../../../utils/db';
 import { dealers } from '../../../database/schema';
+import { parseAvgSaleValue } from '../../../utils/metrics/avgSaleValue';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -54,9 +55,17 @@ export default defineEventHandler(async (event) => {
 
     // Merge with existing settings
     const currentSettings = dealer.settings as Record<string, any> || {};
+    const currentMarketing = (currentSettings.marketing as Record<string, any>) || {};
+    // Only touch marketing.avgSaleValue when the key is present in the body — this
+    // preserves marketing.integrations (GA4/Meta/Google config) untouched, and avoids
+    // clearing a previously-saved avgSaleValue when the caller omits the field.
+    const updatedMarketing = Object.prototype.hasOwnProperty.call(body, 'avgSaleValue')
+      ? { ...currentMarketing, avgSaleValue: parseAvgSaleValue(body.avgSaleValue) }
+      : currentMarketing;
     const updatedSettings = {
       ...currentSettings,
       salesTargets: validatedTargets,
+      marketing: updatedMarketing,
     };
 
     // Update dealer settings
@@ -71,6 +80,7 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       targets: validatedTargets,
+      avgSaleValue: updatedMarketing.avgSaleValue ?? null,
     };
   } catch (error: any) {
     console.error('Error updating sales targets:', error);

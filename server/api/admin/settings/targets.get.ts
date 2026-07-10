@@ -41,8 +41,9 @@ export default defineEventHandler(async (event) => {
       monthlyTestDrives: 25,
       testDriveConversionTarget: 50,
     };
+    const avgSaleValue: number | null = settings.marketing?.avgSaleValue ?? null;
 
-    return { targets };
+    return { targets, avgSaleValue };
   } catch (error: any) {
     console.error('Error fetching sales targets:', error);
     if (error.statusCode) throw error;

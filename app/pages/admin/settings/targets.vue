@@ -155,6 +155,37 @@
           </CardContent>
         </Card>
 
+        <!-- Marketing ROI -->
+        <Card>
+          <CardHeader>
+            <CardTitle class="flex items-center gap-2">
+              <Banknote class="h-5 w-5" />
+              Marketing ROI
+            </CardTitle>
+            <CardDescription>
+              Used to estimate return on ad spend on the Marketing report.
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-6">
+            <div class="grid gap-6 sm:grid-cols-2">
+              <div class="space-y-2">
+                <Label for="avgSaleValue">Average Sale Value ($)</Label>
+                <Input
+                  id="avgSaleValue"
+                  v-model.number="avgSaleValue"
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="40000"
+                />
+                <p class="text-xs text-muted-foreground">
+                  Used to estimate ROAS on the Marketing report. Leave blank to hide ROAS.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <!-- Test Drive Targets -->
         <Card>
           <CardHeader>
@@ -247,6 +278,7 @@ import {
   Target,
   Clock,
   Car,
+  Banknote,
   Save,
   RotateCcw,
   CheckCircle,
@@ -275,13 +307,17 @@ const defaultTargets = {
 
 type TargetsResponse = {
   targets?: Partial<typeof defaultTargets>;
+  avgSaleValue?: number | null;
 };
 
 const { data, pending, error, refresh } = await useFetch<TargetsResponse>('/api/admin/settings/targets', {
-  default: () => ({ targets: defaultTargets }),
+  default: () => ({ targets: defaultTargets, avgSaleValue: null }),
 });
 
 const targets = ref({ ...defaultTargets });
+// undefined (not null) so it binds cleanly to the Input component's modelValue type;
+// the API treats a missing/empty value the same as null (see parseAvgSaleValue).
+const avgSaleValue = ref<number | undefined>(undefined);
 const saving = ref(false);
 const saveSuccess = ref(false);
 const saveError = ref('');
@@ -294,6 +330,7 @@ watch(data, (newData) => {
       ...newData.targets,
     };
   }
+  avgSaleValue.value = newData?.avgSaleValue ?? undefined;
 }, { immediate: true });
 
 const resetToDefaults = () => {
@@ -308,7 +345,12 @@ const saveTargets = async () => {
   try {
     await $fetch('/api/admin/settings/targets', {
       method: 'PUT',
-      body: { targets: targets.value },
+      // Server normalizes '' / non-numeric / <=0 to null via parseAvgSaleValue, so an
+      // emptied input clears avgSaleValue and hides ROAS again.
+      body: {
+        targets: targets.value,
+        avgSaleValue: avgSaleValue.value,
+      },
     });
     saveSuccess.value = true;
     setTimeout(() => {
