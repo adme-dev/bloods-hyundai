@@ -213,27 +213,30 @@ export const useAnalytics = () => {
       page_url: pageUrl,
     };
 
-    gtag('event', 'enquiry_modal_open', {
-      ...modalEventData,
-    });
-
     // Mirror the modal open in GTM so the event still exists when the
     // Google tag wrapper is not present in the runtime.
     pushToDataLayer('enquiryModalOpen', modalEventData);
     pushToDataLayer('EnquiryModalOpen', modalEventData);
 
     // Also track as a conversion event for Google Ads
-    gtag('event', 'conversion', {
-      send_to: 'enquiry_start',
-      value: vehicle?.price || 0,
-      currency: 'AUD',
-    });
     pushToDataLayer('enquiryModalConversion', {
       ...modalEventData,
       send_to: 'enquiry_start',
       value: vehicle?.price || 0,
       currency: 'AUD',
     });
+
+    if (typeof gtag === 'function') {
+      gtag('event', 'enquiry_modal_open', {
+        ...modalEventData,
+      });
+
+      gtag('event', 'conversion', {
+        send_to: 'enquiry_start',
+        value: vehicle?.price || 0,
+        currency: 'AUD',
+      });
+    }
 
     // Facebook Pixel - AddToCart equivalent for modal open
     if (vehicle) {
@@ -388,12 +391,13 @@ export const useAnalytics = () => {
    * Push to dataLayer for GTM
    */
   const pushToDataLayer = (eventName: string, data: Record<string, any>) => {
-    if (typeof window !== 'undefined' && (window as any).dataLayer) {
-      (window as any).dataLayer.push({
-        event: eventName,
-        ...data,
-      });
-    }
+    if (typeof window === 'undefined') return;
+
+    const dataLayer = ((window as any).dataLayer = (window as any).dataLayer || []);
+    dataLayer.push({
+      event: eventName,
+      ...data,
+    });
   };
 
   /**
@@ -888,6 +892,4 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
-
 
