@@ -74,13 +74,7 @@ export function useUtmParams() {
     try {
       if (hasAttributionSignal(params)) {
         const existing = getStoredUtm() || {};
-        sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify({
-          ...existing,
-          ...params,
-          landingPage: existing.landingPage || params.landingPage,
-          referrer: existing.referrer || params.referrer,
-          firstSeenAt: existing.firstSeenAt || params.lastSeenAt || new Date().toISOString(),
-        }));
+        sessionStorage.setItem(UTM_STORAGE_KEY, JSON.stringify(mergeUtm(existing, params)));
       }
     } catch {
       // sessionStorage not available
@@ -141,7 +135,17 @@ export function useUtmParams() {
   };
 }
 
-function hasAttributionSignal(params: UtmParams) {
+export function mergeUtm(existing: UtmParams, incoming: UtmParams): UtmParams {
+  return {
+    ...existing,
+    ...incoming,
+    landingPage: existing.landingPage || incoming.landingPage,
+    referrer: existing.referrer || incoming.referrer,
+    firstSeenAt: existing.firstSeenAt || incoming.lastSeenAt || new Date().toISOString(),
+  };
+}
+
+export function hasAttributionSignal(params: UtmParams) {
   return Boolean(
     params.utmSource ||
     params.utmMedium ||
