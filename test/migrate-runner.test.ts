@@ -18,4 +18,8 @@ describe('migrate runner helpers', () => {
     const applied = new Set(['2026-07-08-a.sql']);
     assert.deepEqual(pendingMigrations(all, applied), ['2026-07-09-b.sql', '2026-07-10-c.sql']);
   });
+  it('drops standalone transaction-control statements (the runner owns the transaction)', () => {
+    const sql = 'BEGIN;\nUPDATE a SET x = 1;\nCOMMIT;\n';
+    assert.deepEqual(parseStatements(sql), ['UPDATE a SET x = 1']);
+  });
 });

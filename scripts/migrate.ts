@@ -11,12 +11,15 @@ import { fileURLToPath } from 'node:url';
 const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), 'migrations');
 
 /** Split a SQL file into individual statements (naive `;` split — safe for this
- * repo's DDL/UPDATE migrations, which contain no dollar-quoted bodies). */
+ * repo's DDL/UPDATE migrations, which contain no dollar-quoted bodies). Standalone
+ * transaction-control statements are dropped: the runner owns the transaction. */
 export function parseStatements(sql: string): string[] {
+  const TXN_CONTROL = /^(begin|start\s+transaction|commit|rollback)$/i;
   return sql
     .split(/;\s*(?:\n|$)/)
     .map(s => s.replace(/^\s*--.*$/gm, '').trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter(s => !TXN_CONTROL.test(s));
 }
 
 /** True when the file must NOT be wrapped in a transaction (CONCURRENTLY, or an
@@ -50,19 +53,27 @@ async function main() {
     for (const file of pending) {
       const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
       console.log(`[migrate] applying ${file}`);
+      const statements = parseStatements(sql);
+      const record = 'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING';
       if (isNonTransactional(sql)) {
-        for (const stmt of parseStatements(sql)) await pool.query(stmt);
+        // Must run OUTSIDE a transaction (e.g. CREATE INDEX CONCURRENTLY). One
+        // dedicated connection so session-level SETs apply to later statements.
+        const client = await pool.connect();
+        try {
+          for (const stmt of statements) await client.query(stmt);
+          await client.query(record, [file]);
+        } finally { client.release(); }
       } else {
-        // wrap in an explicit transaction for atomicity
         const client = await pool.connect();
         try {
           await client.query('BEGIN');
-          for (const stmt of parseStatements(sql)) await client.query(stmt);
+          for (const stmt of statements) await client.query(stmt);
+          // Ledger row commits atomically with the migration it records.
+          await client.query(record, [file]);
           await client.query('COMMIT');
         } catch (e) { await client.query('ROLLBACK'); throw e; }
         finally { client.release(); }
       }
-      await pool.query('INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING', [file]);
       console.log(`[migrate] ✓ ${file}`);
     }
   } finally { await pool.end(); }
