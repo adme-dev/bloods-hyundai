@@ -210,10 +210,10 @@ async function fetchNotifications() {
       notifications: Notification[];
       lastSeenAt: string | null;
     }>('/api/admin/notifications', {
-      query: { limit: 20 },
+      query: { limit: 50 },
     });
 
-    notifications.value = response.notifications;
+    notifications.value = sortNotifications(response.notifications);
     lastSeenAt.value = response.lastSeenAt;
     isConnected.value = true;
   } catch (error) {
@@ -256,7 +256,7 @@ async function fetchLatestNotifications() {
       // Prepend new notifications and dedupe
       const existingIds = new Set(notifications.value.map(n => n.id));
       const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
-      notifications.value = [...uniqueNew, ...notifications.value].slice(0, 50);
+      notifications.value = sortNotifications([...uniqueNew, ...notifications.value]).slice(0, 50);
 
       // Show browser notification if tab is hidden
       if (document.visibilityState !== 'visible') {
@@ -310,10 +310,10 @@ function handleRealtimeEvent(event: Event) {
     metadata: { enquiryId: detail.entity.id },
   };
 
-  notifications.value = [
+  notifications.value = sortNotifications([
     notification,
     ...notifications.value.filter(existing => existing.id !== notification.id && existing.metadata?.enquiryId !== notification.id),
-  ].slice(0, 50);
+  ]).slice(0, 50);
 
   isConnected.value = true;
   if (document.visibilityState !== 'visible') {
@@ -358,6 +358,14 @@ function handleNotificationClick(notification: Notification) {
   } else if (notification.metadata?.enquiryId) {
     navigateTo(`/admin/enquiries/${notification.metadata.enquiryId}`);
   }
+}
+
+function sortNotifications(items: Notification[]) {
+  return [...items].sort((a, b) => {
+    const bTime = new Date(b.createdAt).getTime();
+    const aTime = new Date(a.createdAt).getTime();
+    return bTime - aTime;
+  });
 }
 
 function viewAllNotifications() {
