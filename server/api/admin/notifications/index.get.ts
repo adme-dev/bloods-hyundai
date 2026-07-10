@@ -35,15 +35,9 @@ export default defineEventHandler(async (event) => {
 
   const notifications: Notification[] = [];
 
-  const [userRecord, newEnquiries, assignedEnquiries, expiredSnoozedEnquiries] = await Promise.all([
-    // Get user's last seen timestamp + individually-dismissed notification ids.
-    db.query.users.findFirst({
-      where: eq(users.id, user.userId),
-      columns: {
-        lastSeenNotificationsAt: true,
-        readNotificationIds: true,
-      },
-    }),
+  const userRecord = await loadNotificationState(user.userId);
+
+  const [newEnquiries, assignedEnquiries, expiredSnoozedEnquiries] = await Promise.all([
     // 1. Get new enquiries (created in last 7 days).
     db.query.enquiries.findMany({
       where: and(
@@ -161,3 +155,26 @@ export default defineEventHandler(async (event) => {
     totalUnread: notifications.filter(n => !n.read).length,
   };
 });
+
+async function loadNotificationState(userId: string): Promise<{
+  lastSeenNotificationsAt: Date | null;
+  readNotificationIds?: unknown;
+} | null> {
+  try {
+    return await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: {
+        lastSeenNotificationsAt: true,
+        readNotificationIds: true,
+      },
+    }) as { lastSeenNotificationsAt: Date | null; readNotificationIds?: unknown } | null;
+  } catch (error) {
+    console.warn('[Notifications] readNotificationIds fallback engaged:', error);
+    return await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: {
+        lastSeenNotificationsAt: true,
+      },
+    }) as { lastSeenNotificationsAt: Date | null; readNotificationIds?: unknown } | null;
+  }
+}
