@@ -12,6 +12,7 @@ import type { MarketingIntegrations } from '../../../utils/metrics/types';
 import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
 import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
 import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsights';
+import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -30,6 +31,9 @@ export default defineEventHandler(async (event) => {
   const integrations: MarketingIntegrations =
     dealerSettings?.marketing?.integrations || {};
   const externalCrmSyncEnabled = hasExternalCrmSyncEnabled(dealerSettings);
+  const avgSaleValue: number | null = typeof dealerSettings?.marketing?.avgSaleValue === 'number'
+    ? dealerSettings.marketing.avgSaleValue
+    : null;
 
   const [metricRows, leadRows, dailyLeadRows, syncRows] = await Promise.all([
     db.select().from(marketingMetricsDaily)
@@ -154,7 +158,7 @@ export default defineEventHandler(async (event) => {
     backfilledAttributionCoverage: coverage.total ? Math.round((coverage.withBackfilledAttribution / coverage.total) * 1000) / 10 : 0,
     vehicleCoverage: coverage.vehicleCoverage,
   };
-  const professionalMetrics = buildProfessionalMetrics(metricRows, metrics.platforms);
+  const professionalMetrics = buildProfessionalMetrics(metricRows, metrics.platforms, avgSaleValue);
   const insights = buildMarketingReportInsights({
     summary,
     professionalMetrics,
@@ -166,6 +170,7 @@ export default defineEventHandler(async (event) => {
   return {
     period: { from, to },
     connected,
+    avgSaleValue,
     summary,
     platformMetrics: metrics.platforms,
     professionalMetrics,
@@ -395,6 +400,7 @@ function toMetricInputs(rows: MarketingMetricsDaily[]): MetricInput[] {
 function buildProfessionalMetrics(
   rows: MarketingMetricsDaily[],
   platforms: ReturnType<typeof aggregateMarketingMetrics>['platforms'],
+  avgSaleValue: number | null,
 ) {
   const ga4Rows = rows.filter(row => row.platform === 'ga4');
   const metaRows = rows.filter(row => row.platform === 'meta_ads');
@@ -406,6 +412,7 @@ function buildProfessionalMetrics(
   const paidClicks = sum(paid, row => row.clicks || 0);
   const paidLeads = sum(paid, row => row.platformLeads || 0);
   const paidCrmLeads = platforms.meta_ads.crmLeads + platforms.google_ads.crmLeads;
+  const paidConversionsValue = sum(paid, row => adsMetric(row, 'conversionsValue'));
 
   return {
     ga4Website: {
@@ -430,9 +437,13 @@ function buildProfessionalMetrics(
       platformLeadRate: percent(paidLeads, paidClicks),
       crmLeads: paidCrmLeads,
       cpl: paidCrmLeads ? roundMoney(paidSpend / paidCrmLeads) : null,
+      roas: computeRoas(
+        roasBasis({ conversionsValue: paidConversionsValue, crmLeads: paidCrmLeads, avgSaleValue }),
+        paidSpend,
+      ),
     },
-    googleAds: buildAdPlatformMetrics(googleRows, platforms.google_ads),
-    metaAds: buildAdPlatformMetrics(metaRows, platforms.meta_ads),
+    googleAds: buildAdPlatformMetrics(googleRows, platforms.google_ads, avgSaleValue),
+    metaAds: buildAdPlatformMetrics(metaRows, platforms.meta_ads, avgSaleValue),
   };
 }
 
@@ -448,6 +459,7 @@ function buildAdPlatformMetrics(
     ctr: number | null;
     platformLeadRate: number | null;
   },
+  avgSaleValue: number | null,
 ) {
   const conversionsValue = sum(rows, row => adsMetric(row, 'conversionsValue'));
   const allConversions = sum(rows, row => adsMetric(row, 'allConversions'));
@@ -469,6 +481,10 @@ function buildAdPlatformMetrics(
     interactions: interactions || null,
     interactionRate: percent(interactions, totals.impressions),
     searchImpressionShare: weightedAdsMetric(rows, 'searchImpressionShare', 'impressions'),
+    roas: computeRoas(
+      roasBasis({ conversionsValue, crmLeads: totals.crmLeads, avgSaleValue }),
+      totals.spend,
+    ),
   };
 }
 

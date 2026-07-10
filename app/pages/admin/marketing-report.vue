@@ -84,6 +84,7 @@
               <div class="text-sm font-semibold">{{ data.insights.executive.primaryRecommendation }}</div>
               <div class="mt-2 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
                 <MetricCell label="Blended CPL" :value="moneyOrDash(data.insights.executive.blendedCpl)" />
+                <MetricCell label="Blended ROAS" :value="roas(data.professionalMetrics.paidMedia.roas)" />
                 <MetricCell label="Paid lead share" :value="pctOrDash(data.insights.executive.paidShareOfLeads)" />
                 <MetricCell label="Top lead source" :value="data.insights.executive.topLeadSource || '-'" />
                 <MetricCell label="Best campaign" :value="data.insights.executive.bestCampaign || '-'" />
@@ -275,6 +276,12 @@
             <MetricCell label="Avg CPC" :value="moneyOrDash(data.professionalMetrics.paidMedia.averageCpc)" />
             <MetricCell label="Platform lead rate" :value="pctOrDash(data.professionalMetrics.paidMedia.platformLeadRate)" />
             <MetricCell label="Admin CRM CPL" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpl)" />
+            <MetricCell v-if="data.professionalMetrics.paidMedia.roas != null || avgSaleValueSet" label="ROAS" :value="roas(data.professionalMetrics.paidMedia.roas)" />
+            <div v-else class="col-span-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+              Set an average sale value in
+              <NuxtLink to="/admin/settings/targets" class="font-medium text-primary hover:underline">Settings</NuxtLink>
+              to see ROAS.
+            </div>
           </CardContent>
         </Card>
 
@@ -295,6 +302,12 @@
             <MetricCell label="Interactions" :value="data.professionalMetrics.googleAds.interactions == null ? '-' : n(data.professionalMetrics.googleAds.interactions)" />
             <MetricCell label="Interaction rate" :value="pctOrDash(data.professionalMetrics.googleAds.interactionRate)" />
             <MetricCell label="Search impr. share" :value="fractionPct(data.professionalMetrics.googleAds.searchImpressionShare)" />
+            <MetricCell v-if="data.professionalMetrics.googleAds.roas != null || avgSaleValueSet" label="ROAS" :value="roas(data.professionalMetrics.googleAds.roas)" />
+            <div v-else class="col-span-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+              Set an average sale value in
+              <NuxtLink to="/admin/settings/targets" class="font-medium text-primary hover:underline">Settings</NuxtLink>
+              to see ROAS.
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -871,6 +884,7 @@ type InboundLeadSource = 'carsales' | 'autotrader' | 'hyundai_oem' | 'meta_lead_
 interface ReportResponse {
   period: { from: string; to: string };
   connected: Record<'ga4' | 'meta_ads' | 'google_ads', boolean>;
+  avgSaleValue: number | null;
   summary: {
     totalCrmLeads: number;
     paidCrmLeads: number;
@@ -1080,6 +1094,7 @@ type ProfessionalAdMetrics = {
   interactions?: number | null;
   interactionRate?: number | null;
   searchImpressionShare?: number | null;
+  roas: number | null;
 };
 
 const today = isoDate(new Date());
@@ -1149,6 +1164,8 @@ const blendedCpl = computed(() => {
   const spend = (platforms.meta_ads.spend || 0) + (platforms.google_ads.spend || 0);
   return formatCurrency(spend / summary.paidCrmLeads, true);
 });
+
+const avgSaleValueSet = computed(() => data.value?.avgSaleValue != null);
 
 const connections = computed(() => [
   { label: 'GA4 Website', connected: Boolean(data.value?.connected.ga4) },
@@ -1456,6 +1473,7 @@ const money = (value: number) => formatCurrency(value || 0, true);
 const moneyOrDash = (value: number | null | undefined) => value == null ? '-' : money(value);
 const pctOrDash = (value: number | null | undefined) => value == null ? '-' : pct(value);
 const fractionPct = (value: number | null | undefined) => value == null ? '-' : pct(value * 100);
+const roas = (value: number | null | undefined) => value == null ? '-' : `${new Intl.NumberFormat('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}×`;
 const decimal = (value: number | null | undefined) => value == null ? '-' : new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value);
 
 function duration(value: number | null | undefined) {
