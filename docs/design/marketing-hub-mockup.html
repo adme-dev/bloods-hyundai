@@ -1,0 +1,555 @@
+<style>
+  :root{
+    --ground:#eaeef3; --surface:#ffffff; --surface-2:#f5f8fb; --surface-3:#eef3f8;
+    --ink:#0b1a2b; --ink-2:#39506a; --muted:#6b7d90; --line:#dfe6ee; --line-2:#eaf0f6;
+    --brand:#001E50; --brand-ink:#ffffff;
+    --accent:#0091b8; --accent-strong:#00aad2; --accent-soft:rgba(0,145,184,.10);
+    --good:#1a9e5c; --good-soft:rgba(26,158,92,.12);
+    --warn:#c47d1f; --warn-soft:rgba(196,125,31,.13);
+    --crit:#d13b22; --crit-soft:rgba(209,59,34,.11);
+    --meta:#1877f2; --google:#188038; --ga4:#e8710a; --series3:#7c5cff;
+    --shadow:0 1px 2px rgba(11,26,43,.05), 0 8px 24px -14px rgba(11,26,43,.18);
+    --radius:14px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --ground:#080f18; --surface:#101b28; --surface-2:#152232; --surface-3:#1b2a3b;
+      --ink:#e7eef6; --ink-2:#aebdce; --muted:#7c8ea0; --line:#213042; --line-2:#1a2836;
+      --brand:#4d88cc; --brand-ink:#07101b;
+      --accent:#37c4e6; --accent-strong:#37c4e6; --accent-soft:rgba(55,196,230,.13);
+      --good:#39c682; --good-soft:rgba(57,198,130,.15);
+      --warn:#eab255; --warn-soft:rgba(234,178,85,.15);
+      --crit:#f4674c; --crit-soft:rgba(244,103,76,.15);
+      --meta:#4a9bff; --google:#4dbf72; --ga4:#f5924a; --series3:#a58cff;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"]{
+    --ground:#eaeef3; --surface:#ffffff; --surface-2:#f5f8fb; --surface-3:#eef3f8;
+    --ink:#0b1a2b; --ink-2:#39506a; --muted:#6b7d90; --line:#dfe6ee; --line-2:#eaf0f6;
+    --brand:#001E50; --brand-ink:#ffffff;
+    --accent:#0091b8; --accent-strong:#00aad2; --accent-soft:rgba(0,145,184,.10);
+    --good:#1a9e5c; --good-soft:rgba(26,158,92,.12);
+    --warn:#c47d1f; --warn-soft:rgba(196,125,31,.13);
+    --crit:#d13b22; --crit-soft:rgba(209,59,34,.11);
+    --meta:#1877f2; --google:#188038; --ga4:#e8710a; --series3:#7c5cff;
+    --shadow:0 1px 2px rgba(11,26,43,.05), 0 8px 24px -14px rgba(11,26,43,.18);
+  }
+  :root[data-theme="dark"]{
+    --ground:#080f18; --surface:#101b28; --surface-2:#152232; --surface-3:#1b2a3b;
+    --ink:#e7eef6; --ink-2:#aebdce; --muted:#7c8ea0; --line:#213042; --line-2:#1a2836;
+    --brand:#4d88cc; --brand-ink:#07101b;
+    --accent:#37c4e6; --accent-strong:#37c4e6; --accent-soft:rgba(55,196,230,.13);
+    --good:#39c682; --good-soft:rgba(57,198,130,.15);
+    --warn:#eab255; --warn-soft:rgba(234,178,85,.15);
+    --crit:#f4674c; --crit-soft:rgba(244,103,76,.15);
+    --meta:#4a9bff; --google:#4dbf72; --ga4:#f5924a; --series3:#a58cff;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{margin:0}
+  .app{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--ground); color:var(--ink); -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh; padding:0 0 64px}
+  .num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+  .wrap{max-width:1200px; margin:0 auto; padding:0 22px}
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--muted)}
+  a{color:var(--accent); text-decoration:none}
+  h2,h3,h4{letter-spacing:-.01em}
+
+  .ribbon{background:var(--brand); color:var(--brand-ink); font-size:12px}
+  .ribbon .wrap{display:flex; align-items:center; gap:10px; height:34px}
+  .ribbon b{font-weight:700}
+  .ribbon .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-strong);box-shadow:0 0 0 3px rgba(255,255,255,.15)}
+  .ribbon span{opacity:.85}
+
+  header.hub{padding:24px 0 6px}
+  .hub-top{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap}
+  .hub-title h1{margin:6px 0 4px; font-size:29px; font-weight:750; letter-spacing:-.02em; line-height:1.05}
+  .hub-title .sub{color:var(--ink-2); font-size:14px}
+  .daterange{display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:4px; gap:2px; box-shadow:var(--shadow)}
+  .daterange button{border:0; background:transparent; color:var(--ink-2); font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:8px; cursor:pointer}
+  .daterange button.on{background:var(--brand); color:var(--brand-ink)}
+  .synced{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;margin-top:9px;justify-content:flex-end}
+  .synced .live{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px var(--good-soft)}
+
+  .insight{display:flex; gap:14px; align-items:flex-start; margin-top:18px; padding:15px 18px;
+    background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--crit); border-radius:12px; box-shadow:var(--shadow)}
+  .insight .ico{flex:0 0 auto;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--crit-soft);color:var(--crit)}
+  .insight .ico svg{width:18px;height:18px}
+  .insight h3{margin:0 0 3px;font-size:14.5px;font-weight:700}
+  .insight p{margin:0;color:var(--ink-2);font-size:13.5px;max-width:80ch}
+  .insight .act{margin-left:auto;flex:0 0 auto}
+  .link-btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-weight:600;font-size:12.5px;cursor:pointer;white-space:nowrap}
+
+  section{margin-top:26px}
+  .sec-head{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+  .sec-head h2{margin:0;font-size:15px;font-weight:700}
+  .sec-head .rule{flex:1;height:1px;background:var(--line)}
+  .sec-head .note{font-size:12px;color:var(--muted)}
+  .phase-tag{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    background:var(--accent-soft);padding:3px 8px;border-radius:999px;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)}
+  .phase-tag.p3{color:var(--series3);background:color-mix(in srgb,var(--series3) 12%,transparent);border-color:color-mix(in srgb,var(--series3) 30%,transparent)}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:16px}
+  .panel-head{padding:15px 16px 0}
+  .panel-head h3{margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .panel-head p{margin:3px 0 0;font-size:12px;color:var(--muted)}
+  .ic{width:16px;height:16px;color:var(--accent)}
+
+  /* KPI strip */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px;box-shadow:var(--shadow)}
+  .kpi .lab{display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .kpi .lab svg{width:15px;height:15px;color:var(--muted);opacity:.7}
+  .kpi .val{font-size:26px;font-weight:750;letter-spacing:-.02em;margin-top:9px;line-height:1}
+  .kpi .foot{font-size:11.5px;color:var(--muted);margin-top:7px}
+  .kpi.alert .val{color:var(--crit)}
+
+  .split{display:grid;grid-template-columns:1.45fr 1fr;gap:14px}
+  .split3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .split2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  .qpill{margin-left:auto;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .qpill.bad{color:var(--crit);background:var(--crit-soft)}
+  .qpill.ok{color:var(--good);background:var(--good-soft)}
+  .qpill.mid{color:var(--warn);background:var(--warn-soft)}
+
+  /* funnel */
+  .funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+  .fstage{border:1px solid var(--line);border-radius:11px;padding:12px;background:var(--surface-2)}
+  .fstage .k{font-size:11px;color:var(--muted);font-weight:600}
+  .fstage .v{font-size:22px;font-weight:750;margin:6px 0 8px;letter-spacing:-.02em}
+  .fbar{height:5px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+  .fbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+
+  /* data health */
+  .health .hrow{margin-bottom:13px}
+  .health .hrow:last-child{margin-bottom:0}
+  .health .htop{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:650;margin-bottom:6px}
+  .health .chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .health .chip.g{color:var(--good);background:var(--good-soft)} .health .chip.r{color:var(--crit);background:var(--crit-soft)}
+  .track{height:7px;border-radius:5px;background:var(--surface-3);overflow:hidden;position:relative}
+  .track i{display:block;height:100%;border-radius:5px}
+  .track .tgt{position:absolute;top:-2px;width:2px;height:11px;background:var(--ink-2);opacity:.45}
+  .health .sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+  /* opportunities / priority actions */
+  .opp{border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:10px;background:var(--surface-2)}
+  .opp:last-child{margin-bottom:0}
+  .opp .t{font-size:13px;font-weight:650}
+  .opp .m{font-size:11.5px;color:var(--muted);margin:3px 0 8px}
+  .tagline{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:650;padding:4px 9px;border-radius:8px;border:1px solid var(--line);color:var(--ink-2);background:var(--surface)}
+  .pa{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:11px;padding:13px 14px;margin-bottom:11px}
+  .pa:last-child{margin-bottom:0}
+  .pa .h{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+  .pa .h .t{font-size:13px;font-weight:700}
+  .sev{margin-left:auto;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;color:var(--warn);background:var(--warn-soft)}
+  .pa p{margin:0;font-size:12px;color:var(--ink-2);line-height:1.5}
+  .pa p b{color:var(--ink)}
+
+  /* connections / lead type / status */
+  .conn-row{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:9px;font-size:13.5px;font-weight:600}
+  .conn-row:last-child{margin-bottom:0}
+  .pill{font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px}
+  .pill.dark{background:var(--brand);color:var(--brand-ink)}
+  .pill.ok{color:var(--good);background:var(--good-soft)}
+  .extfeed{margin-top:12px;border:1px dashed var(--line);border-radius:10px;padding:11px 13px;background:var(--surface-2)}
+  .extfeed .k{font-size:11px;color:var(--muted);font-weight:600}
+  .extfeed .v{font-size:17px;font-weight:750;margin-top:2px}
+  .barone{margin-top:6px}
+  .barone .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:7px}
+  .barone .full{height:6px;border-radius:4px;background:var(--accent)}
+
+  /* tables */
+  .tscroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);
+    padding:12px 13px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+  thead th:first-child{text-align:left}
+  tbody td{padding:12px 13px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap}
+  tbody td:first-child{text-align:left}
+  tbody tr:last-child td{border-bottom:0}
+  .cbadge{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink)}
+  .cbadge .sw{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+  .platpill{font-size:11px;font-weight:650;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2)}
+  .zero{color:var(--crit);font-weight:700}
+  .muted{color:var(--muted)}
+  .campname{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:600}
+
+  /* metric grid cards */
+  .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px 18px;margin-top:12px}
+  .metric .m-lab{font-size:11px;color:var(--muted);font-weight:600}
+  .metric .m-val{font-size:17px;font-weight:700;margin-top:2px}
+  .metric .m-val .s{font-size:12px;color:var(--muted);font-weight:600}
+
+  /* trend chart */
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);font-weight:600}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:10px;height:3px;border-radius:2px;display:inline-block}
+  .chartbox svg{display:block;width:100%;height:190px}
+  .axis{font-size:10px;fill:var(--muted)}
+
+  /* bar lists */
+  .blist .row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:11px}
+  .blist .row:last-child{margin-bottom:0}
+  .blist .name{font-size:12.5px;color:var(--ink-2);font-weight:600}
+  .blist .track{grid-column:1/-1;margin-top:-4px}
+  .blist .v{font-size:12.5px;font-weight:700;text-align:right}
+
+  /* funnel-vertical (website to lead) */
+  .wfun .st{margin-bottom:14px}
+  .wfun .st:last-child{margin-bottom:0}
+  .wfun .top{display:flex;justify-content:space-between;font-size:13px;font-weight:650;margin-bottom:6px}
+  .wfun .sub{font-size:11px;color:var(--muted);margin-top:5px}
+
+  /* coverage grid */
+  .cov{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cov .c{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--surface-2)}
+  .cov .c .k{font-size:11px;color:var(--muted);font-weight:600}
+  .cov .c .v{font-size:20px;font-weight:750;margin-top:3px}
+  .cov .c.bad .v{color:var(--crit)} .cov .c.ok .v{color:var(--good)}
+
+  /* creatives */
+  .creatives{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .cre{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .cre .thumb{aspect-ratio:1.5/1;display:grid;place-items:center;position:relative;color:#fff;font-weight:700}
+  .cre .thumb .plat{position:absolute;top:9px;left:9px;font-size:10.5px;font-weight:700;background:rgba(0,0,0,.35);padding:3px 8px;border-radius:999px}
+  .cre .thumb .play{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.9);display:grid;place-items:center;color:#111}
+  .cre .m{padding:11px 13px}
+  .cre .m .t{font-size:12px;font-weight:650;margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cre .m .r{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+  .cre .m .r b{color:var(--ink)}
+  .preview-note{font-size:12px;color:var(--muted);background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:10px 13px;margin-bottom:13px}
+
+  /* pivot */
+  .pivot-body{display:grid;grid-template-columns:230px 1fr;min-height:250px}
+  .pivot-side{border-right:1px solid var(--line);padding:15px;background:var(--surface-2)}
+  .pivot-side .grp{margin-bottom:15px}
+  .pivot-side .grp .eyebrow{margin-bottom:8px;display:block}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .tk{font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:grab}
+  .tk.on{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 40%,transparent);color:var(--ink)}
+  .tk .x{color:var(--muted);margin-left:2px}
+  .pivot-main{padding:15px}
+  .drop{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+  .well{flex:1;min-width:150px;border:1px dashed var(--line);border-radius:10px;padding:9px 11px;background:var(--surface-2)}
+  .well .eyebrow{margin-bottom:7px;display:block}
+
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.65}
+  footer b{color:var(--ink-2)}
+
+  @media (max-width:960px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .split,.split3,.split2{grid-template-columns:1fr}
+    .creatives{grid-template-columns:repeat(2,1fr)}
+    .funnel{grid-template-columns:repeat(2,1fr)}
+    .pivot-body{grid-template-columns:1fr}
+    .pivot-side{border-right:0;border-bottom:1px solid var(--line)}
+  }
+  @media (prefers-reduced-motion:no-preference){ .fbar i,.track i,.full{transition:width .6s cubic-bezier(.2,.7,.2,1)} }
+</style>
+
+<div class="app">
+  <div class="ribbon"><div class="wrap"><span class="dot"></span><b>Design proof</b><span>· mirrors your live report · real figures, month-to-date 1–10 Jul 2026</span></div></div>
+
+  <div class="wrap">
+    <header class="hub">
+      <div class="hub-top">
+        <div class="hub-title">
+          <div class="eyebrow">Bloods Hyundai · Admin</div>
+          <h1>Marketing Hub</h1>
+          <div class="sub">Spend, website, attribution and CRM capture — one commercial view.</div>
+        </div>
+        <div>
+          <div class="daterange">
+            <button class="on">Month to date</button><button>7 days</button><button>30 days</button><button>90 days</button>
+            <button>1 Jul – 10 Jul ▾</button>
+          </div>
+          <div class="synced"><span class="live"></span>All platforms synced · 10 Jul 04:35</div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+        <div>
+          <h3>Attribution isn’t connected yet — the report is running on empty</h3>
+          <p>$442.95 spent this period, but <b>0% of leads carry a campaign tag</b> and <b>0 CRM leads are matched to paid media</b>. Every panel below is built and working; they’re just starved of data until the ad URLs are tagged. Fixing that (Phase 1) lights up this entire hub.</p>
+        </div>
+        <div class="act"><button class="link-btn">Fix ad tracking →</button></div>
+      </div>
+    </header>
+
+    <!-- KPI STRIP -->
+    <section aria-label="Headline">
+      <div class="kpis num">
+        <div class="kpi"><div class="lab">Admin CRM leads<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-8 0v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></div><div class="val">2</div><div class="foot">0 matched to paid media</div></div>
+        <div class="kpi"><div class="lab">Ad spend<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="val">$442.95</div><div class="foot">blended CPL —</div></div>
+        <div class="kpi"><div class="lab">Website activity<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="4"/><path d="M2 12a10 4 0 0 0 20 0"/></svg></div><div class="val">1,089</div><div class="foot">84 GA4 key events</div></div>
+        <div class="kpi alert"><div class="lab">UTM coverage<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div><div class="val">0%</div><div class="foot">0% campaign tagged</div></div>
+      </div>
+    </section>
+
+    <!-- EXECUTIVE READOUT + PRIORITY ACTIONS -->
+    <section aria-label="Executive readout">
+      <div>
+        <div class="card">
+          <div class="panel-head"><h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>Executive Readout<span class="qpill bad">25% data quality</span></h3><p>Commercial view of spend, lead quality, attribution and CRM capture.</p></div>
+          <div class="pad">
+            <div class="funnel num">
+              <div class="fstage"><div class="k">Website sessions</div><div class="v">1,089</div><div class="fbar"><i style="width:100%"></i></div></div>
+              <div class="fstage"><div class="k">Paid clicks</div><div class="v">346</div><div class="fbar"><i style="width:32%"></i></div></div>
+              <div class="fstage"><div class="k">GA4 key events</div><div class="v">84</div><div class="fbar"><i style="width:8%"></i></div></div>
+              <div class="fstage"><div class="k">CRM leads</div><div class="v">2</div><div class="fbar"><i style="width:2%;background:var(--crit)"></i></div></div>
+            </div>
+            <div class="split2" style="margin-top:4px">
+              <div>
+                <div class="eyebrow" style="margin-bottom:12px">Data health</div>
+                <div class="health num">
+                  <div class="hrow"><div class="htop">Source coverage<span class="chip g">100%</span></div><div class="track"><i style="width:100%;background:var(--good)"></i><span class="tgt" style="left:95%"></span></div><div class="sub">Target 95%</div></div>
+                  <div class="hrow"><div class="htop">Campaign coverage<span class="chip r">0%</span></div><div class="track"><i style="width:0%;background:var(--crit)"></i><span class="tgt" style="left:80%"></span></div><div class="sub">Target 80%</div></div>
+                  <div class="hrow"><div class="htop">Paid attribution<span class="chip r">0%</span></div><div class="track"><i style="width:0%;background:var(--crit)"></i><span class="tgt" style="left:80%"></span></div><div class="sub">Target 80%</div></div>
+                  <div class="hrow"><div class="htop">Vehicle-linked leads<span class="chip r">0%</span></div><div class="track"><i style="width:0%;background:var(--crit)"></i><span class="tgt" style="left:70%"></span></div><div class="sub">Target 70%</div></div>
+                </div>
+              </div>
+              <div>
+                <div class="eyebrow" style="margin-bottom:12px">Campaign opportunities</div>
+                <div class="opp"><div class="t">Search — IONIQ 9</div><div class="m num">Google · $266.32 · 251 clicks · 0 CRM leads</div><span class="tagline">Spend without CRM lead match</span></div>
+                <div class="opp"><div class="t">PMax — New &amp; Demo</div><div class="m num">Google · $166.80 · 80 clicks · 0 CRM leads</div><span class="tagline">Spend without CRM lead match</span></div>
+                <div class="opp"><div class="t">Meta Traffic — Offers</div><div class="m num">Meta · $9.83 · 15 clicks · 0 CRM leads</div><span class="tagline">Spend without CRM lead match</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONNECTIONS / LEAD TYPES / LEAD STATUS -->
+    <section aria-label="Connections">
+      <div class="split3">
+        <div class="card"><div class="panel-head"><h3>Connections</h3><p>Platform ingestion &amp; sync state.</p></div><div class="pad">
+          <div class="conn-row">GA4 Website<span class="pill dark">Connected</span></div>
+          <div class="conn-row">Meta Ads<span class="pill dark">Connected</span></div>
+          <div class="conn-row">Google Ads<span class="pill dark">Connected</span></div>
+          <div class="extfeed"><div class="k">External feeds (marketplace / email)</div><div class="v num">0 leads</div></div>
+        </div></div>
+        <div class="card"><div class="panel-head"><h3>Lead Types</h3><p>CRM enquiry mix for the period.</p></div><div class="pad"><div class="barone"><div class="row"><span>Test Drive</span><span class="num">2</span></div><div class="full" style="width:100%"></div></div></div></div>
+        <div class="card"><div class="panel-head"><h3>Lead Status</h3><p>Pipeline state of period leads.</p></div><div class="pad"><div class="barone"><div class="row"><span>New Lead</span><span class="num">2</span></div><div class="full" style="width:100%"></div></div></div></div>
+      </div>
+    </section>
+
+    <!-- CAMPAIGN CPL RECONCILIATION -->
+    <section aria-label="CPL reconciliation">
+      <div class="sec-head"><h2>Campaign CPL Reconciliation</h2><span class="rule"></span><span class="note">Ad rows matched to CRM leads by UTM campaign, ID or name</span></div>
+      <div class="card"><div class="tscroll"><table class="num">
+        <thead><tr><th>Campaign</th><th>Platform</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>Plat. leads</th><th>Lead rate</th><th>CRM leads</th><th>CPL</th></tr></thead>
+        <tbody>
+          <tr><td><span class="campname">Convert_Rolling_Google_Search…IONIQ_9</span></td><td style="text-align:left"><span class="platpill" style="border-color:color-mix(in srgb,var(--google) 45%,transparent)">Google Ads</span></td><td>$266.32</td><td>1,182</td><td>251</td><td>21.2%</td><td>$1.06</td><td>0</td><td>0%</td><td class="zero">0</td><td class="muted">—</td></tr>
+          <tr><td><span class="campname">Convert_Rolling_Google_PMaxInventory…New_Demo</span></td><td style="text-align:left"><span class="platpill" style="border-color:color-mix(in srgb,var(--google) 45%,transparent)">Google Ads</span></td><td>$166.80</td><td>7,193</td><td>80</td><td>1.1%</td><td>$2.09</td><td>0</td><td>0%</td><td class="zero">0</td><td class="muted">—</td></tr>
+          <tr><td><span class="campname">Capture_Fixed_Meta_Traffic…Hyundai_Offers</span></td><td style="text-align:left"><span class="platpill" style="border-color:color-mix(in srgb,var(--meta) 45%,transparent)">Meta</span></td><td>$9.83</td><td>1,314</td><td>15</td><td>1.1%</td><td>$0.66</td><td>0</td><td>0%</td><td class="zero">0</td><td class="muted">—</td></tr>
+        </tbody>
+      </table></div></div>
+    </section>
+
+    <!-- DEPTH CARDS -->
+    <section aria-label="Depth">
+      <div class="split3">
+        <div class="card"><div class="panel-head"><h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>GA4 Website</h3><p>Engagement quality for the period.</p></div><div class="pad"><div class="mgrid num">
+          <div class="metric"><div class="m-lab">Sessions</div><div class="m-val">1,089</div></div>
+          <div class="metric"><div class="m-lab">Users</div><div class="m-val">926</div></div>
+          <div class="metric"><div class="m-lab">Engagement</div><div class="m-val">18.2<span class="s">%</span></div></div>
+          <div class="metric"><div class="m-lab">Avg session</div><div class="m-val">3:15</div></div>
+          <div class="metric"><div class="m-lab">Page views</div><div class="m-val">1,903</div></div>
+          <div class="metric"><div class="m-lab">Events</div><div class="m-val">3,169</div></div>
+          <div class="metric"><div class="m-lab">Events / session</div><div class="m-val">2.9</div></div>
+          <div class="metric"><div class="m-lab">Key event rate</div><div class="m-val">7.7<span class="s">%</span></div></div>
+        </div></div></div>
+        <div class="card"><div class="panel-head"><h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12l4-2"/></svg>Paid Media Efficiency</h3><p>Meta &amp; Google blended delivery.</p></div><div class="pad"><div class="mgrid num">
+          <div class="metric"><div class="m-lab">Spend</div><div class="m-val">$442.95</div></div>
+          <div class="metric"><div class="m-lab">CPM</div><div class="m-val">$45.72</div></div>
+          <div class="metric"><div class="m-lab">Impressions</div><div class="m-val">9,689</div></div>
+          <div class="metric"><div class="m-lab">CTR</div><div class="m-val">3.6<span class="s">%</span></div></div>
+          <div class="metric"><div class="m-lab">Clicks</div><div class="m-val">346</div></div>
+          <div class="metric"><div class="m-lab">Avg CPC</div><div class="m-val">$1.28</div></div>
+          <div class="metric"><div class="m-lab">Platform lead rate</div><div class="m-val zero" style="color:var(--crit)">0%</div></div>
+          <div class="metric"><div class="m-lab">CRM CPL</div><div class="m-val muted">—</div></div>
+        </div></div></div>
+        <div class="card"><div class="panel-head"><h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>Google Ads Depth</h3><p>Campaign-level metrics from API sync.</p></div><div class="pad"><div class="mgrid num">
+          <div class="metric"><div class="m-lab">Conversions</div><div class="m-val">0</div></div>
+          <div class="metric"><div class="m-lab">Conv. rate</div><div class="m-val">0%</div></div>
+          <div class="metric"><div class="m-lab">Cost / conv.</div><div class="m-val muted">—</div></div>
+          <div class="metric"><div class="m-lab">Conv. value</div><div class="m-val muted">—</div></div>
+          <div class="metric"><div class="m-lab">Interactions</div><div class="m-val">180</div></div>
+          <div class="metric"><div class="m-lab">Interaction rate</div><div class="m-val">2.2<span class="s">%</span></div></div>
+          <div class="metric"><div class="m-lab">Search impr. share</div><div class="m-val">11.8<span class="s">%</span></div></div>
+          <div class="metric"><div class="m-lab">All conversions</div><div class="m-val muted">—</div></div>
+        </div></div></div>
+      </div>
+    </section>
+
+    <!-- WEBSITE ANALYTICS -->
+    <section aria-label="Website analytics">
+      <div class="sec-head"><h2>Website Analytics</h2><span class="rule"></span><span class="pill ok">GA4 connected</span></div>
+      <div class="split">
+        <div class="card">
+          <div class="panel-head"><h3>Website performance trend</h3><p>Sessions, key events &amp; CRM leads, indexed to peak.</p></div>
+          <div class="pad">
+            <div class="legend" style="margin-bottom:10px"><span><i style="background:var(--accent)"></i>Sessions</span><span><i style="background:var(--ga4)"></i>Key events</span><span><i style="background:var(--series3)"></i>CRM leads</span></div>
+            <div class="chartbox"><svg viewBox="0 0 560 180" preserveAspectRatio="none" aria-hidden="true">
+              <line x1="0" y1="45" x2="560" y2="45" stroke="var(--line)" stroke-width="1"/><line x1="0" y1="90" x2="560" y2="90" stroke="var(--line)" stroke-width="1"/><line x1="0" y1="135" x2="560" y2="135" stroke="var(--line)" stroke-width="1"/>
+              <polyline points="10,40 70,44 130,20 190,72 250,78 310,58 370,60 430,52 490,54 550,150" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+              <polyline points="10,150 70,148 130,20 190,120 250,150 310,96 370,140 430,104 490,132 550,150" fill="none" stroke="var(--ga4)" stroke-width="2.5"/>
+              <polyline points="10,150 70,150 130,20 190,20 250,150 310,150 370,150 430,150 490,150 550,150" fill="none" stroke="var(--series3)" stroke-width="2.5"/>
+              <circle cx="550" cy="150" r="4" fill="var(--series3)"/>
+            </svg></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>1 Jul</span><span>10 Jul</span></div>
+          </div>
+        </div>
+        <div class="card"><div class="panel-head"><h3>Website → lead funnel</h3><p>Path from visits to CRM.</p></div><div class="pad wfun num">
+          <div class="st"><div class="top">Sessions<span>1,089</span></div><div class="track"><i style="width:100%;background:var(--accent)"></i></div><div class="sub">Website visits (GA4)</div></div>
+          <div class="st"><div class="top">Form events<span>15</span></div><div class="track"><i style="width:6%;background:var(--accent)"></i></div><div class="sub">GA4 form activity</div></div>
+          <div class="st"><div class="top">Key events<span>84</span></div><div class="track"><i style="width:14%;background:var(--ga4)"></i></div><div class="sub">GA4 conversions</div></div>
+          <div class="st"><div class="top">CRM leads<span>2</span></div><div class="track"><i style="width:2%;background:var(--crit)"></i></div><div class="sub">Stored enquiries</div></div>
+        </div></div>
+      </div>
+
+      <div class="split" style="margin-top:14px">
+        <div class="card"><div class="panel-head"><h3>Top landing pages</h3><p>Pages that started sessions.</p></div><div class="tscroll"><table class="num" style="margin-top:8px">
+          <thead><tr><th>Landing page</th><th>Sessions</th><th>Users</th><th>Engaged</th><th>Key events</th></tr></thead>
+          <tbody>
+            <tr><td>/</td><td>413</td><td>332</td><td>77.2%</td><td>57</td></tr>
+            <tr><td>/special-offers/</td><td>128</td><td>122</td><td>81.3%</td><td>7</td></tr>
+            <tr><td>/car-sales?condition=used</td><td>57</td><td>48</td><td>84.2%</td><td>0</td></tr>
+            <tr><td>/service</td><td>52</td><td>48</td><td>65.4%</td><td>3</td></tr>
+            <tr><td>/service-booking</td><td>49</td><td>43</td><td>44.9%</td><td>1</td></tr>
+            <tr><td>/car-sales?condition=new,demo</td><td>45</td><td>39</td><td>57.8%</td><td>3</td></tr>
+          </tbody>
+        </table></div></div>
+        <div>
+          <div class="card"><div class="panel-head"><h3>Traffic channels</h3></div><div class="pad blist num">
+            <div class="row"><span class="name">Organic Search</span><span class="v">527</span><span class="track"><i style="width:100%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Direct</span><span class="v">293</span><span class="track"><i style="width:56%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Paid Search</span><span class="v">194</span><span class="track"><i style="width:37%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Unassigned</span><span class="v">82</span><span class="track"><i style="width:16%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Cross-network</span><span class="v">69</span><span class="track"><i style="width:13%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Paid Social</span><span class="v">12</span><span class="track"><i style="width:3%;background:var(--accent)"></i></span></div>
+          </div></div>
+          <div class="card" style="margin-top:14px"><div class="panel-head"><h3>Devices</h3></div><div class="pad blist num">
+            <div class="row"><span class="name">Mobile</span><span class="v">595</span><span class="track"><i style="width:100%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Desktop</span><span class="v">515</span><span class="track"><i style="width:87%;background:var(--accent)"></i></span></div>
+            <div class="row"><span class="name">Tablet</span><span class="v">16</span><span class="track"><i style="width:3%;background:var(--accent)"></i></span></div>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SOURCE/MEDIUM + DATA LAYER AUDIT -->
+    <section aria-label="Sources and audit">
+      <div class="split">
+        <div class="card"><div class="panel-head"><h3>Source / medium</h3><p>Where website sessions came from.</p></div><div class="tscroll"><table class="num" style="margin-top:8px">
+          <thead><tr><th>Source / medium</th><th>Sessions</th><th>Users</th><th>Key events</th></tr></thead>
+          <tbody>
+            <tr><td>google / organic</td><td>468</td><td>342</td><td>10</td></tr>
+            <tr><td>(direct) / (none)</td><td>293</td><td>220</td><td>37</td></tr>
+            <tr><td>google / cpc</td><td>251</td><td>207</td><td>14</td></tr>
+            <tr><td>bing / organic</td><td>50</td><td>37</td><td>22</td></tr>
+            <tr><td>fb / paid_social</td><td>9</td><td>9</td><td>0</td></tr>
+            <tr><td>ig / paid_social</td><td>3</td><td>3</td><td>0</td></tr>
+          </tbody>
+        </table></div></div>
+        <div class="card"><div class="panel-head"><h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--good)"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>Data Layer Audit<span class="qpill mid">Limited sample</span></h3><p>Lead-tracking contract &amp; CRM field coverage.</p></div><div class="pad">
+          <div class="cov num">
+            <div class="c bad"><div class="k">UTM coverage</div><div class="v">0%</div></div>
+            <div class="c ok"><div class="k">Source coverage</div><div class="v">100%</div></div>
+            <div class="c bad"><div class="k">Campaign coverage</div><div class="v">0%</div></div>
+            <div class="c bad"><div class="k">Paid attribution</div><div class="v">0%</div></div>
+            <div class="c bad"><div class="k">Click-ID coverage</div><div class="v">0%</div></div>
+            <div class="c bad"><div class="k">Backfilled</div><div class="v">0%</div></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin:12px 0 0">Only 2 CRM leads in range, so percentages can look severe from a small sample.</p>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- LEAD SOURCE SETUP -->
+    <section aria-label="Lead source setup">
+      <div class="card"><div class="panel-head"><h3><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Lead Source Setup<span class="pill ok" style="margin-left:auto">Email domain active</span></h3><p>External lead inboxes used for attribution &amp; lead-quality checks.</p></div>
+        <div class="pad"><div class="split3">
+          <div class="extfeed" style="margin:0"><div class="k">Configured sources</div><div class="v num">5</div></div>
+          <div class="extfeed" style="margin:0"><div class="k">Active sources</div><div class="v num">5</div></div>
+          <div class="extfeed" style="margin:0"><div class="k">Inbound domain</div><div class="v" style="font-size:14px;font-family:ui-monospace,Menlo,monospace">crm-leads.driveagent.io</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink-2);margin:13px 0 0">Carsales · Autotrader · Hyundai OEM · Meta Lead Ads · email — currently <b>0 leads</b> ingested this period.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PHASE 2: BREAKDOWNS -->
+    <section aria-label="Breakdowns">
+      <div class="sec-head"><h2>Audience &amp; delivery breakdowns</h2><span class="phase-tag">Phase 2 · new</span><span class="rule"></span></div>
+      <div class="preview-note">Not in the report yet. Meta &amp; Google expose age, gender, area and device per campaign — we’ll ingest these into a breakdown table so ad <b>spend</b> can be sliced the way GA4 traffic already is. Figures below are illustrative until the first breakdown sync runs.</div>
+      <div class="split3">
+        <div class="card pad"><h4 style="margin:0 0 13px;font-size:12.5px">Spend by age</h4><div class="blist num">
+          <div class="row"><span class="name">25–34</span><span class="v">$164</span><span class="track"><i style="width:100%"></i></span></div>
+          <div class="row"><span class="name">35–44</span><span class="v">$118</span><span class="track"><i style="width:72%"></i></span></div>
+          <div class="row"><span class="name">45–54</span><span class="v">$82</span><span class="track"><i style="width:50%"></i></span></div>
+          <div class="row"><span class="name">18–24</span><span class="v">$49</span><span class="track"><i style="width:30%"></i></span></div>
+          <div class="row"><span class="name">55+</span><span class="v">$30</span><span class="track"><i style="width:18%"></i></span></div>
+        </div></div>
+        <div class="card pad"><h4 style="margin:0 0 13px;font-size:12.5px">Spend by device</h4><div class="blist num">
+          <div class="row"><span class="name">Mobile</span><span class="v">71%</span><span class="track"><i style="width:100%"></i></span></div>
+          <div class="row"><span class="name">Desktop</span><span class="v">24%</span><span class="track"><i style="width:34%"></i></span></div>
+          <div class="row"><span class="name">Tablet</span><span class="v">5%</span><span class="track"><i style="width:7%"></i></span></div>
+        </div></div>
+        <div class="card pad"><h4 style="margin:0 0 13px;font-size:12.5px">Spend by area</h4><div class="blist num">
+          <div class="row"><span class="name">Werribee</span><span class="v">$142</span><span class="track"><i style="width:100%"></i></span></div>
+          <div class="row"><span class="name">Point Cook</span><span class="v">$94</span><span class="track"><i style="width:66%"></i></span></div>
+          <div class="row"><span class="name">Hoppers Cr.</span><span class="v">$66</span><span class="track"><i style="width:46%"></i></span></div>
+          <div class="row"><span class="name">Tarneit</span><span class="v">$47</span><span class="track"><i style="width:33%"></i></span></div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- PHASE 2: CREATIVES -->
+    <section aria-label="Creatives">
+      <div class="sec-head"><h2>Ad creative</h2><span class="phase-tag">Phase 2 · new</span><span class="rule"></span></div>
+      <div class="preview-note">The actual ad images/video pulled from Meta &amp; Google, shown beside their spend and CTR — so you see <b>what</b> ran, not just the numbers.</div>
+      <div class="creatives">
+        <div class="cre"><div class="thumb" style="background:linear-gradient(135deg,#8a4b00,#e8710a)"><span class="plat">Google</span>IONIQ 9</div><div class="m"><div class="t">Search — IONIQ 9</div><div class="r"><span>Spend <b class="num">$266</b></span><span>CTR <b class="num">21.2%</b></span></div></div></div>
+        <div class="cre"><div class="thumb" style="background:linear-gradient(135deg,#334155,#64748b)"><span class="plat">Google</span>PMAX</div><div class="m"><div class="t">PMax — New &amp; Demo</div><div class="r"><span>Spend <b class="num">$167</b></span><span>CTR <b class="num">1.1%</b></span></div></div></div>
+        <div class="cre"><div class="thumb" style="background:linear-gradient(135deg,#0b3d91,#1877f2)"><div class="play">▶</div><span class="plat">Meta</span></div><div class="m"><div class="t">Meta Traffic — Offers</div><div class="r"><span>Spend <b class="num">$10</b></span><span>CTR <b class="num">1.1%</b></span></div></div></div>
+        <div class="cre"><div class="thumb" style="background:linear-gradient(135deg,#0f5a2e,#188038)"><span class="plat">Google</span>SERVICE</div><div class="m"><div class="t">Service &amp; Trade-in</div><div class="r"><span>Spend <b class="num">—</b></span><span>CTR <b class="num">—</b></span></div></div></div>
+      </div>
+    </section>
+
+    <!-- PHASE 3: PIVOT -->
+    <section aria-label="Report builder">
+      <div class="sec-head"><h2>Report builder</h2><span class="phase-tag p3">Phase 3 · new</span><span class="rule"></span><span class="note">Slice any metric by any dimension</span></div>
+      <div class="card pivot"><div class="pivot-body">
+        <div class="pivot-side">
+          <div class="grp"><span class="eyebrow">Dimensions</span><div class="chips"><span class="tk on">Campaign</span><span class="tk on">Platform</span><span class="tk">Age</span><span class="tk">Area</span><span class="tk">Device</span><span class="tk">Time of day</span><span class="tk">Landing page</span><span class="tk">Source / medium</span></div></div>
+          <div class="grp"><span class="eyebrow">Metrics</span><div class="chips"><span class="tk on">Spend</span><span class="tk on">CRM leads</span><span class="tk on">CPL</span><span class="tk">Clicks</span><span class="tk">CTR</span><span class="tk">ROAS</span><span class="tk">Impr.</span><span class="tk">Sessions</span></div></div>
+        </div>
+        <div class="pivot-main">
+          <div class="drop">
+            <div class="well"><span class="eyebrow">Rows</span><span class="tk on">Platform <span class="x">×</span></span> <span class="tk on">Campaign <span class="x">×</span></span></div>
+            <div class="well"><span class="eyebrow">Values</span><span class="tk on">Spend <span class="x">×</span></span> <span class="tk on">CRM leads <span class="x">×</span></span> <span class="tk on">CPL <span class="x">×</span></span></div>
+          </div>
+          <div class="card"><div class="tscroll"><table class="num" style="font-size:12.5px">
+            <thead><tr><th>Platform · Campaign</th><th>Spend</th><th>CRM leads</th><th>CPL</th></tr></thead>
+            <tbody>
+              <tr><td><span class="cbadge"><span class="sw" style="background:var(--google)"></span>Google · Search — IONIQ 9</span></td><td>$266.32</td><td>13</td><td>$20.49</td></tr>
+              <tr><td><span class="cbadge"><span class="sw" style="background:var(--google)"></span>Google · PMax — New &amp; Demo</span></td><td>$166.80</td><td>6</td><td>$27.80</td></tr>
+              <tr><td><span class="cbadge"><span class="sw" style="background:var(--meta)"></span>Meta · Traffic — Offers</span></td><td>$9.83</td><td>2</td><td>$4.92</td></tr>
+            </tbody>
+          </table></div></div>
+          <p style="font-size:11.5px;color:var(--muted);margin:10px 0 0">Example output — CRM leads/CPL shown as they’ll read once attribution is live.</p>
+        </div>
+      </div></div>
+    </section>
+
+    <footer>
+      <b>About this proof.</b> Layout mirrors your live Marketing Hub with your <b>real month-to-date figures (1–10 Jul 2026)</b> — including the honest 0% attribution state the report already surfaces. Sections tagged <b>Phase 2 / Phase 3 · new</b> don’t exist yet; their numbers are illustrative. The whole hub stays near-empty until ad-URL tagging (Phase 1) connects spend to leads. Toggle light/dark with the viewer control — both themes are designed.
+    </footer>
+  </div>
+</div>
