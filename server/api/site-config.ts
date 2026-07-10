@@ -5,7 +5,12 @@
  * Features:
  * - Host-based dealer resolution for multi-tenant deployments
  * - 10-minute server-side cache, keyed per tenant host
- * - Automatic cache invalidation with ?refresh=true
+ * - `?refresh=true` evicts the cached entry, rebuilds it, and re-stores the
+ *   fresh result — so subsequent normal requests see the update too, not
+ *   just the one request that passed ?refresh=true. The refresh response
+ *   itself is sent with `Cache-Control: no-store` so Netlify's edge (which
+ *   varies /api/site-config by query string) never caches it for its own
+ *   10-minute TTL.
  * - CDN fallback for dealer-specific config files
  * - Local fallback for development when CDN is unreachable
  */
@@ -245,6 +250,38 @@ const getCachedSiteConfig = defineCachedFunction(
   },
 );
 
+/**
+ * Evict the stale cached entry for `cacheKey` so a forced rebuild
+ * (?refresh=true) is actually persisted — otherwise every subsequent
+ * *non*-refresh request keeps serving the old cached value until it
+ * naturally expires up to 40 minutes later (CACHE_MAX_AGE + CACHE_STALE_MAX_AGE).
+ *
+ * Storage key derivation mirrors nitropack's `defineCachedFunction` exactly
+ * (node_modules/nitropack/dist/runtime/internal/cache.mjs:29):
+ *   [opts.base, group, name, key + ".json"].filter(Boolean).join(":")
+ * For our `getCachedSiteConfig` call above: base defaults to "/cache"
+ * (defaultCacheOptions in the same file), group defaults to
+ * "nitro/functions" (opts.group is not set), name is the explicit
+ * "site-config", and key is the `cacheKey` argument (getKey returns it
+ * unchanged). That raw key is passed to `useStorage().getItem/setItem`,
+ * which run it through unstorage's `normalizeKey` (node_modules/unstorage/
+ * dist/shared/unstorage.*.mjs, function normalizeKey) — replacing "/" with
+ * ":" and stripping the leading colon left by the "/cache" prefix, i.e.
+ * `useStorage('cache').removeItem('nitro:functions:site-config:<key>.json')`
+ * is exactly equivalent. This is the same established pattern already used
+ * for the sibling carsales-feed cache in server/api/carsales-feed.ts.
+ */
+async function invalidateSiteConfigCache(cacheKey: string) {
+  try {
+    const storage = useStorage('cache');
+    await storage.removeItem(`nitro:functions:site-config:${cacheKey}.json`);
+  } catch (error: any) {
+    // Invalidation failing must never break the response — the rebuild
+    // below still returns fresh data even if the delete failed.
+    console.warn('[Site Config] Cache invalidation failed:', error?.message);
+  }
+}
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   const requestUrl = getRequestURL(event);
@@ -265,9 +302,20 @@ export default defineEventHandler(async (event) => {
   const forceRefresh = getQuery(event).refresh === 'true';
 
   try {
-    const siteConfig = forceRefresh
-      ? await buildFullSiteConfig(ctx)
-      : await getCachedSiteConfig(cacheKey, ctx);
+    if (forceRefresh) {
+      // Evict the stale entry first so the rebuild below is REBUILT AND
+      // STORED — not just returned once and discarded like before.
+      await invalidateSiteConfigCache(cacheKey);
+    }
+    const siteConfig = await getCachedSiteConfig(cacheKey, ctx);
+
+    if (forceRefresh) {
+      // Netlify edge-caches /api/site-config per query string, so even the
+      // ?refresh=true response itself could otherwise get frozen for 10
+      // minutes. Force it to always hit origin.
+      setResponseHeader(event, 'Cache-Control', 'no-store');
+    }
+
     return {
       config: siteConfig,
       _cached: !forceRefresh,

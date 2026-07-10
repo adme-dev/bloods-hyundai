@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import { setResponseHeader } from 'h3';
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
 import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 
@@ -101,7 +102,7 @@ if (import.meta.client) {
   watch(() => route.fullPath, initUtmTracking);
 }
 
-const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-config', {
+const { data: siteConfigData } = await useFetch<{ config: any; _degraded?: boolean }>('/api/site-config', {
   key: computed(() => shouldRefreshSiteConfig.value ? `${siteConfigCacheKey}:refresh` : siteConfigCacheKey),
   query: computed(() => shouldRefreshSiteConfig.value ? { refresh: 'true' } : {}),
   dedupe: 'defer',
@@ -110,6 +111,19 @@ const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-conf
     return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
   },
 });
+
+// A degraded site-config response (DB/CDN unreachable, no navigation) must
+// never be frozen at the edge for up to an hour. Override the document
+// cache headers server/middleware/cache-control.ts already set for this
+// request so the edge always revalidates instead of storing this render.
+if (import.meta.server && (siteConfigData.value as any)?._degraded) {
+  const event = useRequestEvent();
+  if (event) {
+    setResponseHeader(event, 'Cache-Control', 'no-cache, no-store, must-revalidate');
+    setResponseHeader(event, 'Netlify-CDN-Cache-Control', 'no-store');
+    setResponseHeader(event, 'CDN-Cache-Control', 'no-store');
+  }
+}
 
 // Populate Pinia store with site config from SSR data
 if (siteConfigData.value?.config) {
