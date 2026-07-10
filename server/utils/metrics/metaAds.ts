@@ -55,7 +55,7 @@ export async function fetchMetaDaily(adAccountId: string, range: DateRange): Pro
     level: 'campaign',
     time_increment: '1',
     time_range: JSON.stringify({ since: range.from, until: range.to }),
-    fields: 'campaign_id,campaign_name,spend,impressions,clicks,actions',
+    fields: 'campaign_id,campaign_name,spend,impressions,clicks,reach,frequency,cpm,ctr,cpc,inline_link_clicks,actions,action_values',
     limit: '100',
   }).toString();
 
