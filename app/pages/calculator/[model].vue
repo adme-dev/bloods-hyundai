@@ -756,7 +756,7 @@
 // SEO
 const route = useRoute();
 const nuxtApp = useNuxtApp();
-const { trackTestDriveBooking, trackVehicleEnquiry } = useAnalytics();
+const { trackEnquiryModalOpen, trackTestDriveBooking, trackVehicleEnquiry } = useAnalytics();
 const modelSlug = computed(() => route.params.model as string || '');
 
 const formatModelSlugForDisplay = (value: string) => value
@@ -1387,6 +1387,18 @@ const togglePriceBreakdown = () => {
 };
 
 const openTestDriveModal = () => {
+  trackEnquiryModalOpen({
+    source: 'calculator',
+    vehicle: {
+      stockid: modelSlug.value,
+      make: 'Hyundai',
+      model: calculatorData.value?.modelName || calculatorData.value?.model || modelSlug.value,
+      year: selectedVariant.value?.year || calculatorData.value?.year || 'unknown',
+      price: totalPrice.value || 0,
+      condition: 'new',
+    },
+    page_url: route.fullPath,
+  });
   showTestDriveModal.value = true;
 };
 
@@ -1492,6 +1504,18 @@ const formatServiceInterval = (interval: string | number) => {
 };
 
 const enquireNow = () => {
+  trackEnquiryModalOpen({
+    source: 'calculator',
+    vehicle: {
+      stockid: modelSlug.value,
+      make: 'Hyundai',
+      model: calculatorData.value?.modelName || calculatorData.value?.model || modelSlug.value,
+      year: selectedVariant.value?.year || calculatorData.value?.year || 'unknown',
+      price: totalPrice.value || 0,
+      condition: 'new',
+    },
+    page_url: route.fullPath,
+  });
   // Open Enquire Modal
   showEnquireModal.value = true;
 };
