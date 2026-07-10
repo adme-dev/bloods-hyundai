@@ -5,6 +5,10 @@ Building a **Multi-Tenant Enquiry Management System** to centralize form submiss
 
 Additionally, developing an **Accessories Store R&D App** to showcase Hyundai Genuine Accessories with shopping cart functionality.
 
+## Deployment Reference
+- Netlify site/project ID for this repository: `5188455b-0ee6-4a34-8b79-3b054ed9d899`
+- Site URL: `https://bloodhyundai.com.au`
+
 ## Recent Changes
 - **Added Cloudflare Pages deployment support** (January 2026)
   - Auto-detection of deployment platform (`CF_PAGES=1` for Cloudflare, `NETLIFY=true` for Netlify)

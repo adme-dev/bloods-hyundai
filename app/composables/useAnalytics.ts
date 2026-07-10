@@ -199,22 +199,37 @@ export const useAnalytics = () => {
    */
   const trackEnquiryModalOpen = (data: EnquiryEventData) => {
     const vehicle = data.vehicle;
-
-    gtag('event', 'enquiry_modal_open', {
+    const pageUrl = data.page_url || (typeof window !== 'undefined' ? window.location.href : '');
+    const modalEventData = {
+      ...data,
       event_category: 'engagement',
       event_label: vehicle ? `${vehicle.year} ${vehicle.make} ${vehicle.model}` : 'unknown',
-      source: data.source,
       stock_id: vehicle?.stockid || vehicle?.identifier || 'unknown',
       vehicle_make: vehicle?.make || 'unknown',
       vehicle_model: vehicle?.model || 'unknown',
       vehicle_year: vehicle?.year || 'unknown',
       vehicle_price: vehicle?.price || 0,
       vehicle_condition: vehicle?.condition || 'unknown',
-      page_url: data.page_url || window.location.href,
+      page_url: pageUrl,
+    };
+
+    gtag('event', 'enquiry_modal_open', {
+      ...modalEventData,
     });
+
+    // Mirror the modal open in GTM so the event still exists when the
+    // Google tag wrapper is not present in the runtime.
+    pushToDataLayer('enquiryModalOpen', modalEventData);
+    pushToDataLayer('EnquiryModalOpen', modalEventData);
 
     // Also track as a conversion event for Google Ads
     gtag('event', 'conversion', {
+      send_to: 'enquiry_start',
+      value: vehicle?.price || 0,
+      currency: 'AUD',
+    });
+    pushToDataLayer('enquiryModalConversion', {
+      ...modalEventData,
       send_to: 'enquiry_start',
       value: vehicle?.price || 0,
       currency: 'AUD',
@@ -873,8 +888,6 @@ export const useAnalytics = () => {
     pushToDataLayer,
   };
 };
-
-
 
 
 
