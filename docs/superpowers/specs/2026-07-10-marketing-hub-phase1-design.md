@@ -75,8 +75,8 @@ deploy process that stops shipping code ahead of its database migrations.
 - **Retire** `MarketingPlatformMetrics.vue` and its Marketing-tab mount, and
   `/api/admin/analytics/marketing-metrics.get.ts`. Leave the shared, still-used utils
   (`ga4.ts`, `metaAds.ts`, `googleAds.ts`, `sync.ts`, `aggregate.ts`, `types.ts`).
-- One entry point: the admin Marketing tab links to `/admin/marketing-report` (or the
-  section is replaced by a link/summary that opens the full report).
+- One entry point: **replace** the Marketing-tab section with a compact summary card
+  (spend / CRM leads / true CPL headline) that links to the full `/admin/marketing-report`.
 
 ### 2. Activate + verify attribution (do NOT rebuild it)
 
@@ -158,10 +158,14 @@ canonical report endpoint: marketing_metrics_daily ⋈ enquiries (attribution/UT
 - New ad platforms (Microsoft/Bing, GBP) — the attribution engine already anticipates
   `microsoft_ads`, but ingestion is out of scope here.
 
-## Open decisions
+## Resolved decisions (2026-07-10, owner)
 
-1. Confirm retiring the Marketing-tab section in favour of the standalone report page
-   (vs. keeping a compact summary in the tab that links out).
-2. ROAS value basis: fixed `avgSaleValue` in settings vs. real per-deal CRM sale value
-   (if the CRM captures closed-deal value) — pick during spec review.
-3. Migration-on-deploy mechanism: Netlify predeploy runner (preferred) vs. CI guard.
+1. **Marketing-tab section → compact summary card that links out** to the full
+   `/admin/marketing-report`. The tab keeps at-a-glance value; the standalone page is
+   the one canonical deep report.
+2. **ROAS basis: configurable `settings.marketing.avgSaleValue`**, ROAS hidden until
+   set (never faked). If/when the CRM captures real closed-deal value per enquiry, swap
+   it in — not a Phase 1 dependency.
+3. **Migration-on-deploy: Netlify predeploy runner + `schema_migrations` ledger table**
+   (each file runs once, before new code serves). The CI-guard alternative is rejected
+   as insufficient (it blocks but doesn't apply).
