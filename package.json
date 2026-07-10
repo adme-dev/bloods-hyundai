@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
+    "build": "tsx scripts/migrate.ts && NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' nuxt dev",
+    "migrate": "tsx scripts/migrate.ts",
     "dev:minimal": "NODE_OPTIONS='--max-old-space-size=8192' NUXT_MINIMAL=1 nuxt dev",
     "generate": "NODE_OPTIONS='--max-old-space-size=8192' nuxt generate",
     "preview": "nuxt preview",
