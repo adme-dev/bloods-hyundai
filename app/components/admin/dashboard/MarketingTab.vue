@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <MarketingSummaryCard />
+    <MarketingPlatformMetrics />
     <div v-if="data?.marketingPerformance" class="grid gap-6 lg:grid-cols-3">
       <!-- Channel Summary Cards -->
       <Card class="lg:col-span-2">
@@ -174,7 +174,7 @@ import {
 } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
-import MarketingSummaryCard from './MarketingSummaryCard.vue';
+import MarketingPlatformMetrics from './MarketingPlatformMetrics.vue';
 import type { DashboardData } from './types';
 
 const props = defineProps<{ data: DashboardData }>();
