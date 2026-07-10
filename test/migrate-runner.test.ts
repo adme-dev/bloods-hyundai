@@ -1,7 +1,7 @@
 // test/migrate-runner.test.ts
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { parseStatements, isNonTransactional, pendingMigrations } from '../scripts/migrate.ts';
+import { parseStatements, isNonTransactional, pendingMigrations, shouldRunMigrations } from '../scripts/migrate.ts';
 
 describe('migrate runner helpers', () => {
   it('splits SQL into statements, ignoring comments and blank lines', () => {
@@ -21,5 +21,30 @@ describe('migrate runner helpers', () => {
   it('drops standalone transaction-control statements (the runner owns the transaction)', () => {
     const sql = 'BEGIN;\nUPDATE a SET x = 1;\nCOMMIT;\n';
     assert.deepEqual(parseStatements(sql), ['UPDATE a SET x = 1']);
+  });
+  it('refuses to run in deploy-preview builds even when a database URL is present', () => {
+    const decision = shouldRunMigrations({ CONTEXT: 'deploy-preview', NEON_DATABASE_URL: 'postgres://x' });
+    assert.equal(decision.run, false);
+    assert.match(decision.reason, /deploy-preview/);
+  });
+  it('refuses to run in branch-deploy builds even when a database URL is present', () => {
+    const decision = shouldRunMigrations({ CONTEXT: 'branch-deploy', NEON_DATABASE_URL: 'postgres://x' });
+    assert.equal(decision.run, false);
+  });
+  it('runs in production builds with a database URL', () => {
+    const decision = shouldRunMigrations({ CONTEXT: 'production', NEON_DATABASE_URL: 'postgres://x' });
+    assert.equal(decision.run, true);
+  });
+  it('refuses to run in production builds without a database URL', () => {
+    const decision = shouldRunMigrations({ CONTEXT: 'production' });
+    assert.equal(decision.run, false);
+  });
+  it('refuses to run locally with no CONTEXT and no database URL', () => {
+    const decision = shouldRunMigrations({});
+    assert.equal(decision.run, false);
+  });
+  it('runs locally with no CONTEXT when a database URL is deliberately provided', () => {
+    const decision = shouldRunMigrations({ NEON_DATABASE_URL: 'postgres://x' });
+    assert.equal(decision.run, true);
   });
 });

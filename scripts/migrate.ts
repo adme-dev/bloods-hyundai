@@ -32,12 +32,26 @@ export function pendingMigrations(allFiles: string[], applied: Set<string>): str
   return allFiles.filter(f => f.endsWith('.sql') && !applied.has(f)).sort();
 }
 
+/** Decide whether migrations should run in this build environment.
+ * Netlify sets CONTEXT to 'production' | 'deploy-preview' | 'branch-deploy' | 'dev';
+ * deploy previews receive production env vars, so gating on the DB URL alone is not enough. */
+export function shouldRunMigrations(env: { CONTEXT?: string; NEON_DATABASE_URL?: string }): { run: boolean; reason: string } {
+  if (env.CONTEXT && env.CONTEXT !== 'production') {
+    return { run: false, reason: `CONTEXT=${env.CONTEXT} — migrations only run in production builds` };
+  }
+  if (!env.NEON_DATABASE_URL) {
+    return { run: false, reason: 'NEON_DATABASE_URL not set — skipping (local build)' };
+  }
+  return { run: true, reason: 'production build with database URL' };
+}
+
 async function main() {
-  const connectionString = process.env.NEON_DATABASE_URL;
-  if (!connectionString) {
-    console.log('[migrate] NEON_DATABASE_URL not set — skipping (local build).');
+  const decision = shouldRunMigrations(process.env);
+  if (!decision.run) {
+    console.log(`[migrate] ${decision.reason}`);
     return;
   }
+  const connectionString = process.env.NEON_DATABASE_URL!;
   const { Pool, neonConfig } = await import('@neondatabase/serverless');
   const ws = (await import('ws')).default;
   neonConfig.webSocketConstructor = ws;
