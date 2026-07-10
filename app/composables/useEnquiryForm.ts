@@ -65,6 +65,8 @@ interface EnquiryFormData {
   utmCampaign?: string;
   utmTerm?: string;
   utmContent?: string;
+  chatSource?: string;
+  chatIntent?: string;
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
@@ -125,6 +127,8 @@ export function useEnquiryForm() {
         ...(data.utmCampaign && { utmCampaign: data.utmCampaign }),
         ...(data.utmTerm && { utmTerm: data.utmTerm }),
         ...(data.utmContent && { utmContent: data.utmContent }),
+        ...(data.chatSource && { chatSource: data.chatSource }),
+        ...(data.chatIntent && { chatIntent: data.chatIntent }),
         ...(data.gclid && { gclid: data.gclid }),
         ...(data.gbraid && { gbraid: data.gbraid }),
         ...(data.wbraid && { wbraid: data.wbraid }),
@@ -156,6 +160,8 @@ export function useEnquiryForm() {
           utmCampaign: data.utmCampaign || utmParams.utmCampaign,
           utmTerm: data.utmTerm || utmParams.utmTerm,
           utmContent: data.utmContent || utmParams.utmContent,
+          chatSource: data.chatSource || utmParams.chatSource,
+          chatIntent: data.chatIntent || utmParams.chatIntent,
           gclid: data.gclid || utmParams.gclid,
           gbraid: data.gbraid || utmParams.gbraid,
           wbraid: data.wbraid || utmParams.wbraid,
@@ -214,7 +220,6 @@ export function useEnquiryForm() {
     resetState,
   };
 }
-
 
 
 

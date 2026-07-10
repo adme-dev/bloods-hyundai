@@ -681,7 +681,7 @@ const formatKilometres = (value: any) => {
 
 const withChatSource = (path: string, intent: string) => {
   const separator = path.includes('?') ? '&' : '?';
-  return `${path}${separator}source=chat&intent=${encodeURIComponent(intent)}`;
+  return `${path}${separator}source=chat&intent=${encodeURIComponent(intent)}&chat_source=chat&chat_intent=${encodeURIComponent(intent)}`;
 };
 
 const storeLeadContext = (intent: string, destination: string) => {

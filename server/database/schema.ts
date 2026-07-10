@@ -220,6 +220,8 @@ export const enquiries = pgTable('enquiries', {
   msclkid: varchar('msclkid', { length: 255 }),
   landingPage: text('landing_page'),
   referrer: text('referrer'),
+  chatSource: varchar('chat_source', { length: 100 }),
+  chatIntent: varchar('chat_intent', { length: 100 }),
   attributedPlatform: varchar('attributed_platform', { length: 30 }),
   attributedCampaignId: varchar('attributed_campaign_id', { length: 255 }),
   attributedCampaignName: varchar('attributed_campaign_name', { length: 255 }),
@@ -1238,7 +1240,6 @@ export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert
 
 export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
 export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
-
 
 
 

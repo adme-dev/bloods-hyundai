@@ -602,6 +602,7 @@
               <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
                 <MetricCell label="UTM coverage" :value="pct(data.summary.utmCoverage)" />
                 <MetricCell label="Source coverage" :value="pct(data.summary.sourceCoverage)" />
+                <MetricCell v-if="typeof data.summary.chatCoverage === 'number'" label="Chat coverage" :value="pct(data.summary.chatCoverage)" />
                 <MetricCell label="Campaign coverage" :value="pct(data.summary.campaignCoverage)" />
                 <MetricCell label="Paid attribution" :value="pct(data.summary.paidAttributionCoverage)" />
                 <MetricCell label="Click ID coverage" :value="pct(data.summary.clickIdCoverage)" />
@@ -880,6 +881,7 @@ interface ReportResponse {
     campaignCoverage: number;
     paidAttributionCoverage: number;
     sourceCoverage: number;
+    chatCoverage?: number;
     clickIdCoverage: number;
     backfilledAttributionCoverage: number;
     vehicleCoverage: number;

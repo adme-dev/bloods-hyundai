@@ -12,6 +12,8 @@ ALTER TABLE enquiries
   ADD COLUMN IF NOT EXISTS msclkid varchar(255),
   ADD COLUMN IF NOT EXISTS landing_page text,
   ADD COLUMN IF NOT EXISTS referrer text,
+  ADD COLUMN IF NOT EXISTS chat_source varchar(100),
+  ADD COLUMN IF NOT EXISTS chat_intent varchar(100),
   ADD COLUMN IF NOT EXISTS attributed_platform varchar(30),
   ADD COLUMN IF NOT EXISTS attributed_campaign_id varchar(255),
   ADD COLUMN IF NOT EXISTS attributed_campaign_name varchar(255),

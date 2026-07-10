@@ -14,6 +14,8 @@ export interface AttributionInput {
   msclkid?: string | null;
   landingPage?: string | null;
   referrer?: string | null;
+  chatSource?: string | null;
+  chatIntent?: string | null;
   attributedPlatform?: string | null;
   attributedCampaignId?: string | null;
   attributedCampaignName?: string | null;

@@ -9,6 +9,7 @@ export interface MarketingReportSummaryInput {
   externalMarketplaceLeads: number;
   crmSyncCoverage: number;
   utmCoverage: number;
+  chatCoverage?: number;
   campaignCoverage: number;
   paidAttributionCoverage: number;
   sourceCoverage: number;

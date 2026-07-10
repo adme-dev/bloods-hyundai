@@ -155,6 +155,8 @@ interface EnquirySubmission {
   msclkid?: string;
   landingPage?: string;
   referrer?: string;
+  chatSource?: string;
+  chatIntent?: string;
 }
 
 export default defineEventHandler(async (event) => {
@@ -239,6 +241,8 @@ export default defineEventHandler(async (event) => {
       msclkid: body.msclkid,
       landingPage: body.landingPage,
       referrer: body.referrer || referer,
+      chatSource: body.chatSource,
+      chatIntent: body.chatIntent,
     });
     
     // 4. Build enhanced vehicle info with configuration and offers
@@ -310,6 +314,8 @@ export default defineEventHandler(async (event) => {
         msclkid: body.msclkid,
         landingPage: body.landingPage,
         referrer: body.referrer || referer || undefined,
+        chatSource: body.chatSource,
+        chatIntent: body.chatIntent,
         attributedPlatform: attribution.platform,
         attributedCampaignId: attribution.campaignId,
         attributedCampaignName: attribution.campaignName || body.utmCampaign,
@@ -382,7 +388,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

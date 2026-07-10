@@ -11,6 +11,8 @@ interface UtmParams {
   utmCampaign?: string;
   utmTerm?: string;
   utmContent?: string;
+  chatSource?: string;
+  chatIntent?: string;
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
@@ -38,6 +40,8 @@ export function useUtmParams() {
       utmCampaign: (route.query.utm_campaign as string) || undefined,
       utmTerm: (route.query.utm_term as string) || undefined,
       utmContent: (route.query.utm_content as string) || undefined,
+      chatSource: (route.query.chat_source as string) || undefined,
+      chatIntent: (route.query.chat_intent as string) || undefined,
       gclid: (route.query.gclid as string) || undefined,
       gbraid: (route.query.gbraid as string) || undefined,
       wbraid: (route.query.wbraid as string) || undefined,
@@ -144,6 +148,8 @@ function hasAttributionSignal(params: UtmParams) {
     params.utmCampaign ||
     params.utmTerm ||
     params.utmContent ||
+    params.chatSource ||
+    params.chatIntent ||
     params.gclid ||
     params.gbraid ||
     params.wbraid ||

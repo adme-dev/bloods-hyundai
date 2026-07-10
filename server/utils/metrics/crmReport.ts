@@ -13,6 +13,8 @@ export interface CrmLeadSignal {
   attributedPlatform?: string | null;
   attributedCampaignId?: string | null;
   attributedCampaignName?: string | null;
+  chatSource?: string | null;
+  chatIntent?: string | null;
   vehicleStockId: string | null;
   syncedToCrm: boolean;
   crmRef: string | null;
@@ -25,13 +27,19 @@ export interface LeadSourceBucket {
   category: 'paid' | 'external_marketplace' | 'owned' | 'organic' | 'direct' | 'unknown';
 }
 
-export function classifyCrmLeadSource(lead: Pick<CrmLeadSignal, 'source' | 'utmSource' | 'utmMedium' | 'externalRef' | 'gclid' | 'gbraid' | 'wbraid' | 'fbclid' | 'msclkid' | 'attributedPlatform'>): LeadSourceBucket {
+export function classifyCrmLeadSource(lead: Pick<CrmLeadSignal, 'source' | 'utmSource' | 'utmMedium' | 'externalRef' | 'gclid' | 'gbraid' | 'wbraid' | 'fbclid' | 'msclkid' | 'attributedPlatform' | 'chatSource' | 'chatIntent'>): LeadSourceBucket {
   const source = normalize(lead.source);
   const utmSource = normalize(lead.utmSource);
   const utmMedium = normalize(lead.utmMedium);
   const externalRef = normalize(lead.externalRef);
   const attributedPlatform = normalize(lead.attributedPlatform);
+  const chatSource = normalize(lead.chatSource);
+  const chatIntent = normalize(lead.chatIntent);
   const haystack = `${source} ${utmSource} ${utmMedium} ${externalRef}`;
+
+  if (chatSource === 'chat' || chatIntent) {
+    return { key: 'chatbot', label: 'Chatbot', category: 'owned' };
+  }
 
   if (haystack.includes('carsales')) {
     return { key: 'carsales', label: 'Carsales', category: 'external_marketplace' };
@@ -77,6 +85,7 @@ export function calculateLeadSignalCoverage(leads: CrmLeadSignal[]) {
   const counts = leads.reduce((acc, lead) => {
     if (hasValue(lead.source)) acc.withSource += 1;
     if (hasValue(lead.utmSource) || hasValue(lead.utmMedium) || hasValue(lead.utmCampaign)) acc.withAnyUtm += 1;
+    if (hasValue(lead.chatSource) || hasValue(lead.chatIntent)) acc.withChat += 1;
     if (hasValue(lead.utmCampaign) || hasValue(lead.attributedCampaignId) || hasValue(lead.attributedCampaignName)) acc.withCampaign += 1;
     if (isPaidLead(lead)) acc.withPaidAttribution += 1;
     if (lead.gclid || lead.gbraid || lead.wbraid || lead.fbclid || lead.msclkid) acc.withClickId += 1;
@@ -89,6 +98,7 @@ export function calculateLeadSignalCoverage(leads: CrmLeadSignal[]) {
   }, {
     withSource: 0,
     withAnyUtm: 0,
+    withChat: 0,
     withCampaign: 0,
     withPaidAttribution: 0,
     withClickId: 0,
@@ -104,6 +114,7 @@ export function calculateLeadSignalCoverage(leads: CrmLeadSignal[]) {
     ...counts,
     sourceCoverage: percent(counts.withSource, total),
     utmCoverage: percent(counts.withAnyUtm, total),
+    chatCoverage: percent(counts.withChat, total),
     campaignCoverage: percent(counts.withCampaign, total),
     paidAttributionCoverage: percent(counts.withPaidAttribution, total),
     vehicleCoverage: percent(counts.withVehicle, total),

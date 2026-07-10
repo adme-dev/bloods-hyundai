@@ -68,6 +68,8 @@ interface BaseFormData {
   utm_campaign?: string;
   utm_term?: string;
   utm_content?: string;
+  chatSource?: string;
+  chatIntent?: string;
   gclid?: string;
   gbraid?: string;
   wbraid?: string;
@@ -450,6 +452,8 @@ export const useAnalytics = () => {
       utm_campaign: data.utm_campaign || attribution.utmCampaign,
       utm_term: data.utm_term || attribution.utmTerm,
       utm_content: data.utm_content || attribution.utmContent,
+      chatSource: data.chatSource || attribution.chatSource,
+      chatIntent: data.chatIntent || attribution.chatIntent,
       gclid: data.gclid || attribution.gclid,
       gbraid: data.gbraid || attribution.gbraid,
       wbraid: data.wbraid || attribution.wbraid,
@@ -497,6 +501,8 @@ export const useAnalytics = () => {
       utmCampaign: eventData.utm_campaign,
       utmTerm: eventData.utm_term,
       utmContent: eventData.utm_content,
+      chatSource: eventData.chatSource,
+      chatIntent: eventData.chatIntent,
       gclid: eventData.gclid,
       gbraid: eventData.gbraid,
       wbraid: eventData.wbraid,
