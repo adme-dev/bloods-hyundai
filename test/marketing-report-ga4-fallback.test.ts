@@ -19,6 +19,11 @@ describe('Marketing report GA4 fallback', () => {
     assert.match(pageSource, /Live landing-page, channel and event breakdowns require the GA4 reporting credential/);
   });
 
+  it('uses production-synced GA4 breakdowns when localhost has no reporting credential', () => {
+    assert.match(endpointSource, /aggregateStoredGa4Breakdowns/);
+    assert.match(pageSource, /acquisition breakdowns are available from the production sync cache/);
+  });
+
   it('reads the GA4 user metric by the name returned from the endpoint', () => {
     assert.match(pageSource, /metric\(row, 'totalUsers'\)/);
     assert.doesNotMatch(pageSource, /metric\(row, 'activeUsers'\)/);

@@ -28,6 +28,8 @@ export interface Ga4BreakdownRow {
   metrics: Record<string, number>;
 }
 
+type CachedGa4Breakdowns = Pick<Ga4WebsiteAnalytics, 'topLandingPages' | 'trafficChannels' | 'sourceMedium'>;
+
 export interface Ga4WebsiteAnalytics {
   status: 'connected' | 'stored_data' | 'not_configured' | 'error';
   error: string | null;
@@ -98,6 +100,61 @@ export function normalizeGa4BreakdownResponse(resp: unknown): Ga4BreakdownRow[] 
 
     return { dimensions, metrics };
   });
+}
+
+export function attachGa4Breakdowns(rows: NormalizedRow[], breakdowns: CachedGa4Breakdowns): NormalizedRow[] {
+  return rows.map(row => ({
+    ...row,
+    raw: {
+      daily: row.raw,
+      ga4Breakdowns: Object.fromEntries(Object.entries(breakdowns).map(([key, values]) => [
+        key,
+        values.filter(value => ga4Date(value.dimensions.date) === row.date).map(stripDateDimension),
+      ])),
+    },
+  }));
+}
+
+export function aggregateStoredGa4Breakdowns(rows: Array<{ raw: unknown }>): CachedGa4Breakdowns {
+  return {
+    topLandingPages: aggregateCachedRows(rows, 'topLandingPages', 'landingPagePlusQueryString', 12),
+    trafficChannels: aggregateCachedRows(rows, 'trafficChannels', 'sessionDefaultChannelGroup', 10),
+    sourceMedium: aggregateCachedRows(rows, 'sourceMedium', 'sessionSourceMedium', 12),
+  };
+}
+
+function aggregateCachedRows(rows: Array<{ raw: unknown }>, key: keyof CachedGa4Breakdowns, dimension: string, limit: number) {
+  const totals = new Map<string, Ga4BreakdownRow>();
+  for (const row of rows) {
+    const cached = (row.raw as { ga4Breakdowns?: CachedGa4Breakdowns } | null)?.ga4Breakdowns?.[key] || [];
+    for (const item of cached) {
+      const value = item.dimensions[dimension] || '(not set)';
+      const total = totals.get(value) || { dimensions: { [dimension]: value }, metrics: {} };
+      const previousSessions = total.metrics.sessions || 0;
+      const currentSessions = item.metrics.sessions || 0;
+      for (const [metric, amount] of Object.entries(item.metrics)) {
+        if (metric === 'engagementRate') {
+          const sessions = previousSessions + currentSessions;
+          total.metrics[metric] = sessions
+            ? (((total.metrics[metric] || 0) * previousSessions) + (amount * currentSessions)) / sessions
+            : 0;
+        } else {
+          total.metrics[metric] = (total.metrics[metric] || 0) + amount;
+        }
+      }
+      totals.set(value, total);
+    }
+  }
+  return [...totals.values()].sort((a, b) => (b.metrics.sessions || 0) - (a.metrics.sessions || 0)).slice(0, limit);
+}
+
+function stripDateDimension(row: Ga4BreakdownRow): Ga4BreakdownRow {
+  const { date: _date, ...dimensions } = row.dimensions;
+  return { dimensions, metrics: row.metrics };
+}
+
+function ga4Date(value = '') {
+  return value.length === 8 ? `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}` : value;
 }
 
 function ga4Jwt(): JWT {
@@ -201,6 +258,16 @@ export async function fetchGa4WebsiteAnalytics(propertyId: string, range: DateRa
     topEvents,
     formEvents: topEvents.filter((row) => isLeadEvent(row.dimensions.eventName)).slice(0, 10),
   };
+}
+
+export async function fetchGa4DailyWithBreakdowns(propertyId: string, range: DateRange): Promise<NormalizedRow[]> {
+  const [daily, topLandingPages, trafficChannels, sourceMedium] = await Promise.all([
+    fetchGa4Daily(propertyId, range),
+    runGa4Report(propertyId, range, { dimensions: ['date', 'landingPagePlusQueryString'], metrics: ['sessions', 'totalUsers', 'screenPageViews', 'keyEvents', 'engagementRate'], limit: 100_000 }),
+    runGa4Report(propertyId, range, { dimensions: ['date', 'sessionDefaultChannelGroup'], metrics: ['sessions', 'totalUsers', 'keyEvents'], limit: 100_000 }),
+    runGa4Report(propertyId, range, { dimensions: ['date', 'sessionSourceMedium'], metrics: ['sessions', 'totalUsers', 'keyEvents'], limit: 100_000 }),
+  ]);
+  return attachGa4Breakdowns(daily, { topLandingPages, trafficChannels, sourceMedium });
 }
 
 function isLeadEvent(eventName = '') {

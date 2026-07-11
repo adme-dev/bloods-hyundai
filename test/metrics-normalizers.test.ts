@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { normalizeGa4BreakdownResponse, normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
+import { aggregateStoredGa4Breakdowns, attachGa4Breakdowns, normalizeGa4BreakdownResponse, normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
 import { normalizeMetaInsights } from '../server/utils/metrics/metaAds.ts';
 import {
   normalizeGoogleAdsResults,
@@ -64,6 +64,25 @@ describe('normalizeGa4BreakdownResponse', () => {
   it('returns [] for empty/missing breakdown rows', () => {
     assert.deepEqual(normalizeGa4BreakdownResponse({}), []);
     assert.deepEqual(normalizeGa4BreakdownResponse({ rows: [] }), []);
+  });
+});
+
+describe('GA4 stored breakdown cache', () => {
+  it('attaches daily dimension rows and aggregates them across the report range', () => {
+    const daily = [
+      { platform: 'ga4' as const, date: '2026-07-01', campaignId: '', campaignName: null, spend: null, impressions: null, clicks: null, platformLeads: null, sessions: 10, users: 8, conversions: 2, raw: {} },
+      { platform: 'ga4' as const, date: '2026-07-02', campaignId: '', campaignName: null, spend: null, impressions: null, clicks: null, platformLeads: null, sessions: 20, users: 16, conversions: 3, raw: {} },
+    ];
+    const landing = [
+      { dimensions: { date: '20260701', landingPagePlusQueryString: '/offers' }, metrics: { sessions: 4, totalUsers: 3, keyEvents: 1 } },
+      { dimensions: { date: '20260702', landingPagePlusQueryString: '/offers' }, metrics: { sessions: 6, totalUsers: 5, keyEvents: 2 } },
+    ];
+    const cached = attachGa4Breakdowns(daily, { topLandingPages: landing, trafficChannels: [], sourceMedium: [] });
+    const result = aggregateStoredGa4Breakdowns(cached);
+
+    assert.equal(result.topLandingPages[0]?.dimensions.landingPagePlusQueryString, '/offers');
+    assert.equal(result.topLandingPages[0]?.metrics.sessions, 10);
+    assert.equal(result.topLandingPages[0]?.metrics.keyEvents, 3);
   });
 });
 

@@ -63,7 +63,7 @@ export async function syncPlatforms(
 export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]> {
   const { db } = await import('../db');
   const { dealers, marketingMetricsDaily, marketingSyncRuns } = await import('../../database/schema');
-  const { and, eq, lt, max, sql } = await import('drizzle-orm');
+  const { and, desc, eq, lt, max, sql } = await import('drizzle-orm');
 
   const [dealer] = await db.select({ settings: dealers.settings }).from(dealers).where(eq(dealers.id, dealerId));
   const integrations: MarketingIntegrations =
@@ -73,11 +73,11 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
 
   const jobs: PlatformJob[] = [];
   if (integrations.ga4PropertyId && process.env.GA4_SERVICE_ACCOUNT_KEY) {
-    const { fetchGa4Daily } = await import('./ga4');
+    const { fetchGa4DailyWithBreakdowns } = await import('./ga4');
     const propertyId = integrations.ga4PropertyId;
     jobs.push({
       platform: 'ga4',
-      fetch: async () => fetchGa4Daily(propertyId, await windowFor('ga4')),
+      fetch: async () => fetchGa4DailyWithBreakdowns(propertyId, await windowFor('ga4')),
     });
   }
   if (integrations.metaAdAccountId && process.env.META_SYSTEM_USER_TOKEN) {
@@ -107,6 +107,15 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
   }
 
   async function windowFor(platform: Platform): Promise<DateRange> {
+    if (platform === 'ga4') {
+      const [latest] = await db.select({ date: marketingMetricsDaily.date, raw: marketingMetricsDaily.raw })
+        .from(marketingMetricsDaily)
+        .where(and(eq(marketingMetricsDaily.dealerId, dealerId), eq(marketingMetricsDaily.platform, platform)))
+        .orderBy(desc(marketingMetricsDaily.date))
+        .limit(1);
+      const hasBreakdownCache = Boolean((latest?.raw as { ga4Breakdowns?: unknown } | null)?.ga4Breakdowns);
+      return resolveSyncWindow(hasBreakdownCache ? latest?.date ?? null : null, today);
+    }
     const [row] = await db
       .select({ latest: max(marketingMetricsDaily.date) })
       .from(marketingMetricsDaily)

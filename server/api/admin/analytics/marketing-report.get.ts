@@ -10,7 +10,7 @@ import {
 } from '../../../utils/metrics/crmReport';
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
 import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
-import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
+import { aggregateStoredGa4Breakdowns, fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
 import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsights';
 import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
 import { buildMarketingTrend } from '../../../utils/metrics/marketingTrend';
@@ -287,7 +287,8 @@ async function buildWebsiteAnalytics(
   const dailyTrend = buildMarketingTrend(range, metricRows, dailyLeadRows, dailyPaidLeadRows);
   if (!ga4Connected || !integrations.ga4PropertyId) {
     const hasStoredGa4Data = metricRows.some(row => row.platform === 'ga4');
-    return emptyWebsiteAnalytics(hasStoredGa4Data ? 'stored_data' : 'not_configured', null, dailyTrend);
+    const analytics = emptyWebsiteAnalytics(hasStoredGa4Data ? 'stored_data' : 'not_configured', null, dailyTrend);
+    return { ...analytics, ...aggregateStoredGa4Breakdowns(metricRows.filter(row => row.platform === 'ga4')) };
   }
 
   try {

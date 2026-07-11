@@ -378,7 +378,9 @@
           </article>
 
           <p v-if="data.websiteAnalytics.status === 'stored_data'" class="marketing-hub__preview-note marketing-hub__ga4-credential-note">
-            Daily GA4 totals are available from the existing sync. Live landing-page, channel and event breakdowns require the GA4 reporting credential.
+            {{ hasCachedWebsiteBreakdowns
+              ? 'Daily GA4 totals and acquisition breakdowns are available from the production sync cache.'
+              : 'Daily GA4 totals are available from the existing sync. Live landing-page, channel and event breakdowns require the GA4 reporting credential.' }}
           </p>
 
           <div class="marketing-hub__website-breakdowns">
@@ -786,6 +788,11 @@ const websiteLeadFunnelRows = computed(() => {
   ];
 });
 const websiteAnalyticsAvailable = computed(() => data.value?.websiteAnalytics.status === 'connected' || data.value?.websiteAnalytics.status === 'stored_data');
+const hasCachedWebsiteBreakdowns = computed(() => Boolean(
+  data.value?.websiteAnalytics.topLandingPages.length
+  || data.value?.websiteAnalytics.trafficChannels.length
+  || data.value?.websiteAnalytics.sourceMedium.length,
+));
 const websiteAnalyticsStatusLabel = computed(() => data.value?.websiteAnalytics.status === 'connected' ? 'GA4 connected' : data.value?.websiteAnalytics.status === 'stored_data' ? 'GA4 synced data' : data.value?.websiteAnalytics.status === 'error' ? 'GA4 error' : 'Not connected');
 const websiteAnalyticsUnavailableMessage = computed(() => data.value?.websiteAnalytics.status === 'error' ? `GA4 website analytics could not be loaded: ${data.value.websiteAnalytics.error || 'Unknown error'}` : 'GA4 website analytics is not connected for this dealer.');
 const coverageMetrics = computed(() => {
