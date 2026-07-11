@@ -134,6 +134,11 @@ export default defineEventHandler(async (event) => {
       process.env.GOOGLE_ADS_REFRESH_TOKEN,
     ),
   };
+  const platformStatuses = {
+    ga4: platformDataStatus('ga4', connected.ga4, metricRows, syncRows),
+    meta_ads: platformDataStatus('meta_ads', connected.meta_ads, metricRows, syncRows),
+    google_ads: platformDataStatus('google_ads', connected.google_ads, metricRows, syncRows),
+  };
   const websiteAnalytics = await buildWebsiteAnalytics(
     integrations,
     { from, to },
@@ -170,6 +175,7 @@ export default defineEventHandler(async (event) => {
   return {
     period: { from, to },
     connected,
+    dataStatus: platformStatuses,
     avgSaleValue,
     summary,
     platformMetrics: metrics.platforms,
@@ -254,6 +260,19 @@ export default defineEventHandler(async (event) => {
   };
 });
 
+function platformDataStatus(
+  platform: 'ga4' | 'meta_ads' | 'google_ads',
+  liveConnected: boolean,
+  metricRows: MarketingMetricsDaily[],
+  syncRows: Array<{ platform: string; status: string }>,
+): 'connected' | 'stored_data' | 'not_connected' {
+  if (liveConnected) return 'connected';
+
+  const hasStoredData = metricRows.some(row => row.platform === platform)
+    || syncRows.some(run => run.platform === platform && run.status === 'success');
+  return hasStoredData ? 'stored_data' : 'not_connected';
+}
+
 async function buildWebsiteAnalytics(
   integrations: MarketingIntegrations,
   range: { from: string; to: string },
@@ -263,7 +282,8 @@ async function buildWebsiteAnalytics(
 ): Promise<Ga4WebsiteAnalytics> {
   const dailyTrend = buildWebsiteTrend(range, metricRows, dailyLeadRows);
   if (!ga4Connected || !integrations.ga4PropertyId) {
-    return emptyWebsiteAnalytics('not_configured', null, dailyTrend);
+    const hasStoredGa4Data = metricRows.some(row => row.platform === 'ga4');
+    return emptyWebsiteAnalytics(hasStoredGa4Data ? 'stored_data' : 'not_configured', null, dailyTrend);
   }
 
   try {

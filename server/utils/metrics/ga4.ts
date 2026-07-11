@@ -29,7 +29,7 @@ export interface Ga4BreakdownRow {
 }
 
 export interface Ga4WebsiteAnalytics {
-  status: 'connected' | 'not_configured' | 'error';
+  status: 'connected' | 'stored_data' | 'not_configured' | 'error';
   error: string | null;
   dailyTrend: Ga4WebsiteTrendRow[];
   topLandingPages: Ga4BreakdownRow[];

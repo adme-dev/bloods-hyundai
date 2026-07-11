@@ -153,7 +153,7 @@
             <div class="marketing-hub__pad">
               <div v-for="connection in connections" :key="connection.label" class="marketing-hub__connection">
                 {{ connection.label }}
-                <span :class="{ disconnected: !connection.connected }">{{ connection.connected ? 'Connected' : 'Not connected' }}</span>
+                <span :class="{ disconnected: connection.status === 'Not connected', stored: connection.status === 'Synced data' }">{{ connection.status }}</span>
               </div>
               <div class="marketing-hub__inset">
                 <small>External feeds (marketplace / email)</small>
@@ -240,7 +240,7 @@
           <p class="marketing-hub__status-pill" :class="{ disconnected: data.websiteAnalytics.status !== 'connected' }">{{ websiteAnalyticsStatusLabel }}</p>
         </div>
 
-        <div v-if="data.websiteAnalytics.status === 'connected'" class="marketing-hub__website">
+        <div v-if="websiteAnalyticsAvailable" class="marketing-hub__website">
           <div class="marketing-hub__split">
             <article class="marketing-hub__card">
               <header class="marketing-hub__panel-head"><h2>Website performance trend</h2><p>Sessions, key events &amp; CRM leads, indexed to peak.</p></header>
@@ -272,7 +272,11 @@
             </article>
           </div>
 
-          <div class="marketing-hub__split marketing-hub__website-detail">
+          <p v-if="data.websiteAnalytics.status === 'stored_data'" class="marketing-hub__preview-note marketing-hub__ga4-credential-note">
+            Daily GA4 totals are available from the existing sync. Live landing-page, channel and event breakdowns require the GA4 reporting credential.
+          </p>
+
+          <div v-if="data.websiteAnalytics.status === 'connected'" class="marketing-hub__split marketing-hub__website-detail">
             <article class="marketing-hub__card">
               <header class="marketing-hub__panel-head"><h2>Top landing pages</h2><p>Pages that started sessions.</p></header>
               <div class="marketing-hub__table-wrap">
@@ -282,7 +286,7 @@
                     <tr v-for="row in data.websiteAnalytics.topLandingPages.slice(0, 8)" :key="dimension(row, 'landingPagePlusQueryString')">
                       <td>{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</td>
                       <td>{{ n(metric(row, 'sessions')) }}</td>
-                      <td>{{ n(metric(row, 'activeUsers')) }}</td>
+                      <td>{{ n(metric(row, 'totalUsers')) }}</td>
                       <td>{{ fractionPct(metric(row, 'engagementRate')) }}</td>
                       <td>{{ n(metric(row, 'keyEvents')) }}</td>
                     </tr>
@@ -300,7 +304,7 @@
       </section>
 
       <section aria-label="Sources and audit">
-        <div class="marketing-hub__split">
+        <div class="marketing-hub__split marketing-hub__split--start">
           <article class="marketing-hub__card">
             <header class="marketing-hub__panel-head"><h2>Source / medium</h2><p>Where website sessions came from.</p></header>
             <div class="marketing-hub__table-wrap">
@@ -310,8 +314,13 @@
                   <tr v-for="row in data.websiteAnalytics.sourceMedium.slice(0, 8)" :key="dimension(row, 'sessionSourceMedium')">
                     <td>{{ dimension(row, 'sessionSourceMedium') || '(not set)' }}</td>
                     <td>{{ n(metric(row, 'sessions')) }}</td>
-                    <td>{{ n(metric(row, 'activeUsers')) }}</td>
+                    <td>{{ n(metric(row, 'totalUsers')) }}</td>
                     <td>{{ n(metric(row, 'keyEvents')) }}</td>
+                  </tr>
+                  <tr v-if="!data.websiteAnalytics.sourceMedium.length">
+                    <td colspan="4" class="marketing-hub__empty-cell">
+                      Live source / medium data is unavailable until the GA4 reporting credential is connected.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -426,6 +435,12 @@ import {
   WalletCards,
 } from 'lucide-vue-next';
 import { formatCurrency } from '~/utils';
+import {
+  formatReportDate as displayDate,
+  formatReportShortDate as displayShortDate,
+  formatReportTimestamp as shortDateTime,
+  reportDateInTimeZone,
+} from '~/utils/marketingReportFormat';
 
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
@@ -438,6 +453,7 @@ type MetricItem = { label: string; value: string };
 interface ReportResponse {
   period: { from: string; to: string };
   connected: Record<'ga4' | 'meta_ads' | 'google_ads', boolean>;
+  dataStatus: Record<'ga4' | 'meta_ads' | 'google_ads', 'connected' | 'stored_data' | 'not_connected'>;
   avgSaleValue: number | null;
   summary: Record<'totalCrmLeads' | 'paidCrmLeads' | 'externalMarketplaceLeads' | 'utmCoverage' | 'campaignCoverage' | 'paidAttributionCoverage' | 'sourceCoverage' | 'clickIdCoverage' | 'backfilledAttributionCoverage', number>;
   platformMetrics: { ga4: { sessions: number; conversions: number } };
@@ -453,7 +469,7 @@ interface ReportResponse {
     campaignDiagnostics: { opportunities: Array<{ platform: string; campaignName: string; spend: number; clicks: number; crmLeads: number; issue: string }> };
   };
   campaigns: Array<{ platform: string; campaignId: string; campaignName: string | null; spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null }>;
-  websiteAnalytics: { status: 'connected' | 'not_configured' | 'error'; error: string | null; dailyTrend: TrendRow[]; topLandingPages: BreakdownRow[]; trafficChannels: BreakdownRow[]; sourceMedium: BreakdownRow[]; deviceCategories: BreakdownRow[]; formEvents: BreakdownRow[]; topEvents: BreakdownRow[] };
+  websiteAnalytics: { status: 'connected' | 'stored_data' | 'not_configured' | 'error'; error: string | null; dailyTrend: TrendRow[]; topLandingPages: BreakdownRow[]; trafficChannels: BreakdownRow[]; sourceMedium: BreakdownRow[]; deviceCategories: BreakdownRow[]; formEvents: BreakdownRow[]; topEvents: BreakdownRow[] };
   crm: { typeBreakdown: Array<{ key: string; total: number }>; statusBreakdown: Array<{ key: string; total: number }> };
   dataLayer: { status: string };
   syncRuns: Array<{ platform: string; status: string; startedAt: string }>;
@@ -472,7 +488,7 @@ interface InboundResponse {
   addresses: Array<{ id: string; label: string; enabled: boolean }>;
 }
 
-const today = isoDate(new Date());
+const today = reportDateInTimeZone();
 const from = ref(`${today.slice(0, 8)}01`);
 const to = ref(today);
 const customRangeOpen = ref(false);
@@ -498,9 +514,9 @@ const syncStatusText = computed(() => latestSuccessfulSync.value ? `Platforms sy
 const attributionNeedsAttention = computed(() => (data.value?.summary.paidAttributionCoverage || 0) < 1);
 const avgSaleValueSet = computed(() => data.value?.avgSaleValue != null);
 const connections = computed(() => [
-  { label: 'GA4 Website', connected: Boolean(data.value?.connected.ga4) },
-  { label: 'Meta Ads', connected: Boolean(data.value?.connected.meta_ads) },
-  { label: 'Google Ads', connected: Boolean(data.value?.connected.google_ads) },
+  { label: 'GA4 Website', status: connectionStatusLabel(data.value?.dataStatus.ga4) },
+  { label: 'Meta Ads', status: connectionStatusLabel(data.value?.dataStatus.meta_ads) },
+  { label: 'Google Ads', status: connectionStatusLabel(data.value?.dataStatus.google_ads) },
 ]);
 const summaryCards = computed(() => [
   { label: 'Admin CRM leads', value: n(data.value?.summary.totalCrmLeads || 0), caption: `${n(data.value?.summary.paidCrmLeads || 0)} matched to paid media`, icon: UserCheck, alert: false },
@@ -565,7 +581,8 @@ const websiteFunnelRows = computed(() => {
     { label: 'CRM leads', value: leads, caption: 'Stored enquiries', width: barPercent(leads, max) },
   ];
 });
-const websiteAnalyticsStatusLabel = computed(() => data.value?.websiteAnalytics.status === 'connected' ? 'GA4 connected' : data.value?.websiteAnalytics.status === 'error' ? 'GA4 error' : 'Not connected');
+const websiteAnalyticsAvailable = computed(() => data.value?.websiteAnalytics.status === 'connected' || data.value?.websiteAnalytics.status === 'stored_data');
+const websiteAnalyticsStatusLabel = computed(() => data.value?.websiteAnalytics.status === 'connected' ? 'GA4 connected' : data.value?.websiteAnalytics.status === 'stored_data' ? 'GA4 synced data' : data.value?.websiteAnalytics.status === 'error' ? 'GA4 error' : 'Not connected');
 const websiteAnalyticsUnavailableMessage = computed(() => data.value?.websiteAnalytics.status === 'error' ? `GA4 website analytics could not be loaded: ${data.value.websiteAnalytics.error || 'Unknown error'}` : 'GA4 website analytics is not connected for this dealer.');
 const coverageMetrics = computed(() => {
   const s = data.value?.summary;
@@ -604,6 +621,9 @@ function applyPreset(id: PresetId) {
   customRangeOpen.value = false;
 }
 function qualityClass(score: number) { return score >= 80 ? 'ok' : score >= 60 ? 'mid' : 'bad'; }
+function connectionStatusLabel(status?: 'connected' | 'stored_data' | 'not_connected') {
+  return status === 'connected' ? 'Connected' : status === 'stored_data' ? 'Synced data' : 'Not connected';
+}
 function platformLabel(value: string) { return value === 'meta_ads' ? 'Meta' : value === 'google_ads' ? 'Google Ads' : value === 'ga4' ? 'GA4' : value; }
 function formatLabel(value: string) { return value.replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase()); }
 function cleanLandingPage(value: string) { return !value || value === '(not set)' ? '/' : value; }
@@ -621,9 +641,6 @@ function trendPoint(key: TrendKey, index: number) {
 }
 function daysAgo(days: number) { const date = new Date(`${today}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - days); return isoDate(date); }
 function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
-function displayDate(value: string) { return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00Z`)); }
-function displayShortDate(value: string) { return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' }).format(new Date(`${value}T00:00:00Z`)); }
-function shortDateTime(value: string) { return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value)); }
 function duration(value: number | null | undefined) { if (value == null) return '—'; return `${Math.floor(value / 60)}:${Math.round(value % 60).toString().padStart(2, '0')}`; }
 const n = (value: number) => new Intl.NumberFormat('en-AU').format(value || 0);
 const pct = (value: number) => `${new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value || 0)}%`;
@@ -750,6 +767,7 @@ const PreviewBars = defineComponent({
 .marketing-hub :deep(.marketing-hub__track b) { position: absolute; top: -2px; width: 2px; height: 11px; background: var(--ink-2); opacity: .45; }
 .marketing-hub__split, .marketing-hub__split2, .marketing-hub__split3 { display: grid; gap: 14px; }
 .marketing-hub__split { grid-template-columns: 1.45fr 1fr; }.marketing-hub__split2 { grid-template-columns: 1fr 1fr; }.marketing-hub__split3 { grid-template-columns: repeat(3, 1fr); }
+.marketing-hub__split--start { align-items: start; }
 .marketing-hub__executive-detail > div > .marketing-hub__eyebrow { margin-bottom: 12px; }
 .marketing-hub__health-row { margin-bottom: 13px; }.marketing-hub__health-row > div:first-child { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12.5px; }
 .marketing-hub__health-row > div:first-child span { border-radius: 999px; padding: 2px 8px; font-size: 11px; }.marketing-hub__health-row span.good { color: var(--good); background: var(--good-soft); }.marketing-hub__health-row span.poor { color: var(--crit); background: var(--crit-soft); }.marketing-hub__health-row span.watch { color: var(--warn); background: var(--warn-soft); }
@@ -757,7 +775,7 @@ const PreviewBars = defineComponent({
 .marketing-hub__opportunities article { margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
 .marketing-hub__opportunities h3 { margin-bottom: 3px; font-size: 13px; }.marketing-hub__opportunities p { margin-bottom: 8px; color: var(--muted); font-size: 11.5px; }.marketing-hub__opportunities span { display: inline-block; padding: 4px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 11px; }
 .marketing-hub__connection { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; }
-.marketing-hub__connection span, .marketing-hub__status-pill { border-radius: 999px; padding: 4px 11px; background: var(--brand); color: var(--brand-ink); font-size: 11px; font-weight: 700; }.marketing-hub__connection span.disconnected, .marketing-hub__status-pill.disconnected { background: var(--crit-soft); color: var(--crit); }
+.marketing-hub__connection span, .marketing-hub__status-pill { border-radius: 999px; padding: 4px 11px; background: var(--brand); color: var(--brand-ink); font-size: 11px; font-weight: 700; }.marketing-hub__connection span.disconnected, .marketing-hub__status-pill.disconnected { background: var(--crit-soft); color: var(--crit); }.marketing-hub__connection span.stored { background: var(--warn-soft); color: var(--warn); }
 .marketing-hub__inset { padding: 11px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); min-width: 0; }
 .marketing-hub__inset small { display: block; color: var(--muted); font-weight: 600; }.marketing-hub__inset strong { display: block; margin-top: 2px; font-size: 17px; overflow-wrap: anywhere; }
 .marketing-hub :deep(.marketing-hub__bar-row) { margin-bottom: 11px; }.marketing-hub :deep(.marketing-hub__bar-row:last-child) { margin-bottom: 0; }.marketing-hub :deep(.marketing-hub__bar-row p) { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 13px; }.marketing-hub :deep(.marketing-hub__bar-row p span) { color: var(--ink-2); font-weight: 600; }
@@ -769,6 +787,7 @@ const PreviewBars = defineComponent({
 .marketing-hub__legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; color: var(--ink-2); font-size: 11.5px; font-weight: 600; }.marketing-hub__legend span { display: flex; align-items: center; gap: 6px; }.marketing-hub__legend i { width: 10px; height: 3px; border-radius: 2px; }.marketing-hub__legend .sessions { background: var(--accent); }.marketing-hub__legend .events { background: var(--ga4); }.marketing-hub__legend .leads { background: var(--series3); }
 .marketing-hub__chart svg { display: block; width: 100%; height: 190px; }.marketing-hub__chart line { stroke: var(--line); }.marketing-hub__chart polyline { fill: none; stroke-width: 2.5; }.marketing-hub__chart polyline.sessions { stroke: var(--accent); }.marketing-hub__chart polyline.events { stroke: var(--ga4); }.marketing-hub__chart polyline.leads { stroke: var(--series3); }.marketing-hub__chart circle.sessions { fill: var(--accent); }.marketing-hub__chart circle.keyEvents { fill: var(--ga4); }.marketing-hub__chart circle.crmLeads { fill: var(--series3); }.marketing-hub__chart > div { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
 .marketing-hub__website-funnel > div { margin-bottom: 14px; }.marketing-hub__website-funnel p { display: flex; justify-content: space-between; margin-bottom: 6px; }.marketing-hub__website-funnel small { color: var(--muted); font-size: 11px; }.marketing-hub__website-detail { margin-top: 14px; }.marketing-hub__stack { display: grid; gap: 14px; }
+.marketing-hub__ga4-credential-note { margin-top: 14px; margin-bottom: 0; }
 .marketing-hub__coverage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.marketing-hub__coverage article { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__coverage small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__coverage strong { display: block; margin-top: 3px; font-size: 20px; }.marketing-hub__coverage .bad strong { color: var(--crit); }.marketing-hub__coverage .ok strong { color: var(--good); }.marketing-hub__audit-note, .marketing-hub__source-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub__domain { font-family: ui-monospace, Menlo, monospace; font-size: 13px !important; }
 .marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__preview-bars { padding: 15px; }.marketing-hub :deep(.marketing-hub__preview-bars h3) { margin-bottom: 13px; font-size: 12.5px; }
 .marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; color: white; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.35); font-size: 10.5px; }.marketing-hub__creative-art.ioniq { background: linear-gradient(135deg,#8a4b00,#e8710a); }.marketing-hub__creative-art.pmax { background: linear-gradient(135deg,#334155,#64748b); }.marketing-hub__creative-art.meta { background: linear-gradient(135deg,#0b3d91,#1877f2); }.marketing-hub__creative-art.service { background: linear-gradient(135deg,#0f5a2e,#188038); }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 7px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }
