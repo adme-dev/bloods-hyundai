@@ -73,4 +73,11 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /Source \/ medium[\s\S]*Where website sessions came from/);
     assert.match(pageSource, /GA4 reporting credential is connected/);
   });
+
+  it('shows the high-level path from website visits into the admin CRM', () => {
+    assert.match(pageSource, /Website to lead funnel/);
+    assert.match(pageSource, /High-level path from visits to this admin CRM/);
+    assert.match(pageSource, /websiteLeadFunnelRows/);
+    assert.match(pageSource, /Website sessions[\s\S]*GA4 key events[\s\S]*Admin CRM leads/);
+  });
 });

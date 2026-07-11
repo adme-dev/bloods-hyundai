@@ -361,6 +361,22 @@
             </div>
           </article>
 
+          <article class="marketing-hub__card marketing-hub__lead-funnel-card">
+            <header class="marketing-hub__panel-head">
+              <h2>Website to lead funnel</h2>
+              <p>High-level path from visits to this admin CRM.</p>
+            </header>
+            <ol class="marketing-hub__lead-funnel num" aria-label="Website to admin CRM stages">
+              <li v-for="(stage, index) in websiteLeadFunnelRows" :key="stage.label">
+                <small>Stage {{ index + 1 }}</small>
+                <strong>{{ n(stage.value) }}</strong>
+                <span>{{ stage.label }}</span>
+                <div class="marketing-hub__track"><i :style="{ width: `${stage.width}%` }" /></div>
+                <p>{{ stage.caption }}</p>
+              </li>
+            </ol>
+          </article>
+
           <p v-if="data.websiteAnalytics.status === 'stored_data'" class="marketing-hub__preview-note marketing-hub__ga4-credential-note">
             Daily GA4 totals are available from the existing sync. Live landing-page, channel and event breakdowns require the GA4 reporting credential.
           </p>
@@ -759,6 +775,16 @@ const activeChartTooltip = computed(() => {
     })),
   };
 });
+const websiteLeadFunnelRows = computed(() => {
+  const sessions = data.value?.professionalMetrics.ga4Website.sessions || 0;
+  const keyEvents = data.value?.professionalMetrics.ga4Website.keyEvents || 0;
+  const crmLeads = data.value?.summary.totalCrmLeads || 0;
+  return [
+    { label: 'Website sessions', value: sessions, width: 100, caption: 'Entry point' },
+    { label: 'GA4 key events', value: keyEvents, width: barPercent(keyEvents, sessions), caption: sessions ? `${pct((keyEvents / sessions) * 100)} of sessions` : 'No sessions in range' },
+    { label: 'Admin CRM leads', value: crmLeads, width: barPercent(crmLeads, sessions), caption: sessions ? `${pct((crmLeads / sessions) * 100)} of sessions` : 'No sessions in range' },
+  ];
+});
 const websiteAnalyticsAvailable = computed(() => data.value?.websiteAnalytics.status === 'connected' || data.value?.websiteAnalytics.status === 'stored_data');
 const websiteAnalyticsStatusLabel = computed(() => data.value?.websiteAnalytics.status === 'connected' ? 'GA4 connected' : data.value?.websiteAnalytics.status === 'stored_data' ? 'GA4 synced data' : data.value?.websiteAnalytics.status === 'error' ? 'GA4 error' : 'Not connected');
 const websiteAnalyticsUnavailableMessage = computed(() => data.value?.websiteAnalytics.status === 'error' ? `GA4 website analytics could not be loaded: ${data.value.websiteAnalytics.error || 'Unknown error'}` : 'GA4 website analytics is not connected for this dealer.');
@@ -1035,6 +1061,7 @@ const PreviewBars = defineComponent({
 .marketing-hub__chart-dates { display: flex; justify-content: space-between; margin: -16px 4.6% 0; color: var(--muted); font-size: 10px; }
 .marketing-hub__chart-tooltip { position: absolute; z-index: 2; top: 40px; display: grid; min-width: 178px; gap: 4px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; background: var(--surface); box-shadow: var(--shadow); pointer-events: none; }.marketing-hub__chart-tooltip > strong { margin-bottom: 2px; font-size: 11.5px; }.marketing-hub__chart-tooltip > span { display: grid; grid-template-columns: 11px 1fr auto; align-items: center; gap: 6px; color: var(--muted); font-size: 10.5px; }.marketing-hub__chart-tooltip b { color: var(--ink); font-weight: 700; }
 .marketing-hub__chart-empty { min-height: 220px; padding-top: 88px; text-align: center; }
+.marketing-hub__lead-funnel-card { margin-top: 14px; }.marketing-hub__lead-funnel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin: 0; padding: 16px; list-style: none; }.marketing-hub__lead-funnel li { position: relative; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__lead-funnel li:not(:last-child)::after { content: "→"; position: absolute; top: 50%; right: -18px; width: 13px; color: var(--muted); font-weight: 700; text-align: center; transform: translateY(-50%); }.marketing-hub__lead-funnel small { display: block; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }.marketing-hub__lead-funnel strong { display: block; margin-top: 3px; font-size: 22px; }.marketing-hub__lead-funnel > li > span { display: block; margin-bottom: 8px; color: var(--ink-2); font-size: 12px; font-weight: 650; }.marketing-hub__lead-funnel p { margin: 6px 0 0; color: var(--muted); font-size: 10.5px; }
 .marketing-hub__website-detail { margin-top: 14px; }.marketing-hub__source-medium-card { margin-top: 14px; }.marketing-hub__breakdown-empty { display: grid; place-items: center; min-height: 112px; margin-bottom: 0; padding: 20px; color: var(--muted); font-size: 12px; text-align: center; }
 .marketing-hub__ga4-credential-note { margin-top: 14px; margin-bottom: 0; }
 .marketing-hub__coverage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.marketing-hub__coverage article { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__coverage small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__coverage strong { display: block; margin-top: 3px; font-size: 20px; }.marketing-hub__coverage .bad strong { color: var(--crit); }.marketing-hub__coverage .ok strong { color: var(--good); }.marketing-hub__audit-note, .marketing-hub__source-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub__domain { font-family: ui-monospace, Menlo, monospace; font-size: 13px !important; }
@@ -1058,6 +1085,7 @@ const PreviewBars = defineComponent({
   .marketing-hub__analytics-head { align-items: stretch; flex-direction: column; }.marketing-hub__chart-tabs { align-self: flex-start; max-width: 100%; overflow-x: auto; }
   .marketing-hub__chart-toolbar { align-items: flex-start; flex-direction: column; }.marketing-hub__chart-toolbar > p { display: none; }
   .marketing-hub__chart svg { height: 220px; }.marketing-hub__chart-tooltip { top: 34px; }
+  .marketing-hub__lead-funnel { grid-template-columns: 1fr; gap: 10px; }.marketing-hub__lead-funnel li:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -14px; transform: translateX(50%); }
 }
 @media (max-width: 430px) {
   .marketing-hub__kpis, .marketing-hub__creatives, .marketing-hub__funnel, .marketing-hub__coverage, .marketing-hub__wells { grid-template-columns: 1fr; }
