@@ -6,19 +6,17 @@
       class="crm-kpi cursor-pointer transition-all hover:-translate-y-px hover:border-primary/25 hover:shadow-md"
       @click="kpi.go()"
     >
-      <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-1.5">
-        <CardTitle class="crm-kpi__label">{{ kpi.label }}</CardTitle>
-        <span class="crm-kpi__icon"><component :is="kpi.icon" class="h-3.5 w-3.5" /></span>
+      <CardHeader class="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 pb-2">
+        <CardDescription class="crm-kpi__label">{{ kpi.label }}</CardDescription>
+        <CardTitle class="crm-kpi__value" :class="kpi.emphasis && Number(kpi.value) > 0 ? 'text-red-600' : ''">{{ kpi.value }}</CardTitle>
+        <CardAction class="col-start-2 row-span-2 row-start-1">
+          <span class="crm-kpi__icon"><component :is="kpi.icon" class="h-3.5 w-3.5" /></span>
+        </CardAction>
       </CardHeader>
-      <CardContent>
-        <div class="crm-kpi__value" :class="kpi.emphasis && Number(kpi.value) > 0 ? 'text-red-600' : ''">
-          {{ kpi.value }}
-        </div>
-        <div class="crm-kpi__footer">
-          <p>{{ kpi.hint }}</p>
-          <ArrowUpRight class="h-3.5 w-3.5" aria-hidden="true" />
-        </div>
-      </CardContent>
+      <CardFooter class="crm-kpi__footer flex items-center justify-between pt-0">
+        <p>{{ kpi.hint }}</p>
+        <ArrowUpRight class="h-3.5 w-3.5" aria-hidden="true" />
+      </CardFooter>
     </Card>
   </div>
 </template>
@@ -26,7 +24,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Inbox, AlertTriangle, Clock, Flame, ArrowUpRight } from 'lucide-vue-next';
-import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card';
+import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
 import type { DashboardData } from './types';
 
 const props = defineProps<{ data: DashboardData }>();
@@ -121,6 +119,30 @@ const kpis = computed(() => [
   .crm-kpi :deep([data-slot="card-header"]),
   .crm-kpi :deep([data-slot="card-content"]) {
     padding: .85rem;
+  }
+
+  .crm-kpi {
+    min-height: 168px;
+    background: linear-gradient(180deg, var(--dashboard-surface, hsl(var(--card))) 58%, color-mix(in srgb, var(--dashboard-accent, #0091b8) 5%, var(--dashboard-surface, hsl(var(--card)))) 100%);
+  }
+
+  .crm-kpi :deep([data-slot="card-header"]) {
+    flex: 1;
+  }
+
+  .crm-kpi__label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .crm-kpi__footer {
+    align-items: flex-end;
+    min-height: 32px;
+    margin-top: auto;
+    padding-top: 0;
+    font-size: 11.5px;
   }
 
   .crm-kpi__value {
