@@ -48,4 +48,29 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /margin-left:\s*calc\(50%\s*-\s*50vw\);/);
     assert.match(pageSource, /\.marketing-hub\s*>\s*\*\s*\{\s*max-width:\s*1200px;/);
   });
+
+  it('provides separate accessible charts for website, paid media, and lead performance', () => {
+    assert.match(pageSource, /role="tablist"/);
+    assert.match(pageSource, /role="tab"/);
+    assert.match(pageSource, /Website[\s\S]*Paid media[\s\S]*Leads/);
+    assert.match(pageSource, /aria-selected/);
+    assert.match(pageSource, /analyticsChartTabs/);
+  });
+
+  it('makes daily chart values inspectable with pointer and keyboard tooltips', () => {
+    assert.match(pageSource, /@mouseenter="activeChartPoint = index"/);
+    assert.match(pageSource, /@focus="activeChartPoint = index"/);
+    assert.match(pageSource, /class="marketing-hub__chart-tooltip"/);
+    assert.match(pageSource, /tabindex="0"/);
+    assert.match(pageSource, /:x\.attr="chartHitX\(index\)"/);
+    assert.match(pageSource, /:width\.attr="chartHitWidth"/);
+  });
+
+  it('keeps the website acquisition breakdowns together with explicit unavailable states', () => {
+    assert.match(pageSource, /marketing-hub__website-breakdowns/);
+    assert.match(pageSource, /Top landing pages[\s\S]*Pages that started website sessions/);
+    assert.match(pageSource, /Traffic channels/);
+    assert.match(pageSource, /Source \/ medium[\s\S]*Where website sessions came from/);
+    assert.match(pageSource, /GA4 reporting credential is connected/);
+  });
 });
