@@ -35,4 +35,17 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /illustrative until the first breakdown sync runs/);
     assert.match(pageSource, /Example output/);
   });
+
+  it('reaches markup rendered by local child components through the scoped-style boundary', () => {
+    assert.match(pageSource, /:deep\(\.marketing-hub__panel-head\)/);
+    assert.match(pageSource, /:deep\(\.marketing-hub__metrics\)/);
+    assert.match(pageSource, /:deep\(\.marketing-hub__bar-row\)/);
+    assert.match(pageSource, /:deep\(\.marketing-hub__track\)/);
+  });
+
+  it('lets the muted report canvas bleed to the full viewport width', () => {
+    assert.match(pageSource, /\.marketing-hub\s*\{[\s\S]*?width:\s*100vw;/);
+    assert.match(pageSource, /margin-left:\s*calc\(50%\s*-\s*50vw\);/);
+    assert.match(pageSource, /\.marketing-hub\s*>\s*\*\s*\{\s*max-width:\s*1200px;/);
+  });
 });
