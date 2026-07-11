@@ -430,6 +430,7 @@ import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import { Label } from '~/components/ui/label'
 import { Button } from '~/components/ui/button'
+import { extractSafeIframeUrl } from '~/utils/iframe';
 
 const route = useRoute();
 const mainStore = useMainStore();
@@ -481,23 +482,7 @@ const useFinanceWidget = computed(() => {
 });
 
 // Extract base iframe URL from settings (handles both URL and HTML)
-const financeWidgetBaseUrl = computed(() => {
-  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
-  if (!input) return null;
-
-  // If it's already a URL
-  if (/^https?:\/\//i.test(input)) {
-    return input;
-  }
-
-  // Try to extract src from iframe HTML
-  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
-  if (srcMatch) {
-    return srcMatch[1];
-  }
-
-  return null;
-});
+const financeWidgetBaseUrl = computed(() => extractSafeIframeUrl(financeWidgetData.value?.settings?.financeWidgetIframe));
 
 // Fetch vehicle data
 const { data: apiResponse, status } = await useFetch<any>(`/api/vehicle-detail/${vehicleId.value}`, {

@@ -336,8 +336,8 @@
                   <!-- Iframe Preview -->
                   <div v-else class="aspect-video max-h-[300px]">
                     <iframe
-                      v-if="form.iframeUrl"
-                      :src="form.iframeUrl"
+                      v-if="safeIframeUrl"
+                      :src="safeIframeUrl"
                       class="w-full h-full border-0 rounded"
                       title="Popup Preview"
                       sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
@@ -451,6 +451,7 @@ import { Switch } from '~/components/ui/switch';
 import { Textarea } from '~/components/ui/textarea';
 import { Badge } from '~/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
+import { extractSafeIframeUrl } from '~/utils/iframe';
 
 definePageMeta({
   layout: 'admin',
@@ -559,6 +560,8 @@ const formatDate = (dateStr: string) => {
     minute: '2-digit',
   });
 };
+
+const safeIframeUrl = computed(() => extractSafeIframeUrl(form.iframeUrl));
 
 // Check if currently active
 const isCurrentlyActive = computed(() => {

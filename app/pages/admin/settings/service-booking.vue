@@ -175,6 +175,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { Textarea } from '~/components/ui/textarea';
 import { Badge } from '~/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
+import { extractSafeIframeUrl } from '~/utils/iframe';
 
 definePageMeta({
   layout: 'admin',
@@ -202,21 +203,7 @@ watch(data, (newData) => {
 
 // Extract iframe URL from input (handles both URL and HTML)
 const iframeUrl = computed(() => {
-  const input = form.externalBookingIframe?.trim();
-  if (!input) return null;
-
-  // If it's already a URL
-  if (/^https?:\/\//i.test(input)) {
-    return input;
-  }
-
-  // Try to extract src from iframe HTML
-  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
-  if (srcMatch) {
-    return srcMatch[1];
-  }
-
-  return null;
+  return extractSafeIframeUrl(form.externalBookingIframe);
 });
 
 // Save state

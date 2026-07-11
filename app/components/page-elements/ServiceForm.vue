@@ -554,6 +554,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { DatePicker } from '~/components/ui/date-picker'
 import { Stepper, StepperItem, StepperSeparator, StepperTitle, StepperDescription, StepperTrigger } from '~/components/ui/stepper'
+import { extractSafeIframeUrl } from '~/utils/iframe'
 
 const { trackServiceBooking } = useAnalytics()
 const { getUtmParams } = useUtmParams()
@@ -587,23 +588,7 @@ const { data: settingsData, pending: settingsPending } = useFetch<ServiceBooking
 const useExternalBooking = computed(() => settingsData.value?.settings?.useExternalBooking ?? false)
 
 // Extract iframe URL from settings (handles both URL and HTML)
-const externalIframeUrl = computed(() => {
-  const input = settingsData.value?.settings?.externalBookingIframe?.trim()
-  if (!input) return null
-
-  // If it's already a URL
-  if (/^https?:\/\//i.test(input)) {
-    return input
-  }
-
-  // Try to extract src from iframe HTML
-  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i)
-  if (srcMatch) {
-    return srcMatch[1]
-  }
-
-  return null
-})
+const externalIframeUrl = computed(() => extractSafeIframeUrl(settingsData.value?.settings?.externalBookingIframe))
 
 // Open external booking in a new tab to avoid iframe positioning issues
 const openBookingInNewTab = () => {

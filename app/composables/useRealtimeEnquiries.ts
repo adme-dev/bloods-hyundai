@@ -1,4 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import type { DealerRealtimeEvent } from '~~/shared/realtime/events';
 
 interface Enquiry {
   id: string;
@@ -29,7 +30,7 @@ interface RealtimeOptions {
  */
 export function useRealtimeEnquiries(options: RealtimeOptions = {}) {
   const {
-    pollInterval = 5000, // Poll every 5 seconds
+    pollInterval = 30000,
     onNewEnquiry,
     onUpdatedEnquiry,
     enabled = true,
@@ -43,6 +44,14 @@ export function useRealtimeEnquiries(options: RealtimeOptions = {}) {
   
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let visibilityHandler: (() => void) | null = null;
+
+  const realtime = useAdminRealtime({
+    onEvent: (event: DealerRealtimeEvent) => {
+      if (!event.invalidate?.includes('enquiries')) return;
+      if (event.type === 'enquiry.created') onNewEnquiry?.(event as unknown as Enquiry);
+      else onUpdatedEnquiry?.(event as unknown as Enquiry);
+    },
+  });
 
   const fetchLatest = async () => {
     if (!enabled) return;
@@ -117,7 +126,7 @@ export function useRealtimeEnquiries(options: RealtimeOptions = {}) {
   };
 
   const startPolling = () => {
-    if (pollTimer) return;
+    if (pollTimer || realtime.isConnected.value) return;
     
     // Initial fetch
     fetchLatest();
@@ -141,14 +150,15 @@ export function useRealtimeEnquiries(options: RealtimeOptions = {}) {
   const setupVisibilityHandler = () => {
     visibilityHandler = () => {
       if (document.visibilityState === 'visible') {
-        // Tab became visible - fetch immediately and resume polling
+        // Reconcile after returning to the tab, then use the socket or fallback poll.
         fetchLatest();
         startPolling();
       } else {
         // Tab hidden - reduce polling frequency
         stopPolling();
-        // Poll less frequently when hidden
-        pollTimer = setInterval(fetchLatest, 30000); // Every 30 seconds when hidden
+        if (!realtime.isConnected.value) {
+          pollTimer = setInterval(fetchLatest, 60000);
+        }
       }
     };
     document.addEventListener('visibilitychange', visibilityHandler);
@@ -156,14 +166,22 @@ export function useRealtimeEnquiries(options: RealtimeOptions = {}) {
 
   onMounted(() => {
     if (enabled && process.client) {
-      startPolling();
+      fetchLatest();
+      if (!realtime.isConnected.value) startPolling();
       setupVisibilityHandler();
       requestNotificationPermission();
     }
   });
 
+  const stopConnectionWatch = watch(realtime.isConnected, (connected) => {
+    isConnected.value = connected;
+    if (connected) stopPolling();
+    else if (document.visibilityState === 'visible') startPolling();
+  });
+
   onUnmounted(() => {
     stopPolling();
+    stopConnectionWatch();
     if (visibilityHandler) {
       document.removeEventListener('visibilitychange', visibilityHandler);
     }
@@ -173,14 +191,12 @@ export function useRealtimeEnquiries(options: RealtimeOptions = {}) {
     newEnquiries,
     updatedEnquiries,
     newCount,
-    isConnected,
+    isConnected: realtime.isConnected,
     clearNewCount,
     refresh: fetchLatest,
     requestNotificationPermission,
   };
 }
-
-
 
 
 
