@@ -43,18 +43,18 @@
         </div>
       </div>
 
-      <div v-if="data && attributionNeedsAttention" class="marketing-hub__insight" role="status">
+      <div v-if="data && attributionBanner" class="marketing-hub__insight" :class="{ observed: attributionBanner.kind === 'unmatched' }" role="status">
         <div class="marketing-hub__insight-icon"><TriangleAlert aria-hidden="true" /></div>
         <div>
-          <h2>Attribution isn’t connected yet — the report is running on empty</h2>
-          <p>
-            {{ money(data.insights.executive.totalSpend) }} spent this period, but
-            <strong>{{ pct(data.summary.campaignCoverage) }} of leads carry a campaign tag</strong> and
-            <strong>{{ n(data.summary.paidCrmLeads) }} CRM leads are matched to paid media</strong>.
-            Every panel below is built and working; tagging the ad URLs lights up this entire hub.
+          <h2>{{ attributionBanner.title }}</h2>
+          <p v-if="attributionBanner.kind === 'unmatched'">
+            {{ money(data.insights.executive.totalSpend) }} in ad spend is synced, but none of the
+            <strong>{{ n(data.summary.totalCrmLeads) }} CRM leads carries paid-platform evidence</strong>.
+            This is the result for the selected period, not a disconnected integration.
           </p>
+          <p v-else>Paid campaign data is not connected to this dealer yet. Connect an ad platform before assessing paid attribution.</p>
         </div>
-        <NuxtLink class="marketing-hub__action ui-button" to="/admin/settings">Fix ad tracking <ArrowRight aria-hidden="true" /></NuxtLink>
+        <NuxtLink class="marketing-hub__action ui-button" :to="attributionBanner.to">{{ attributionBanner.action }} <ArrowRight aria-hidden="true" /></NuxtLink>
       </div>
     </header>
 
@@ -661,7 +661,14 @@ const rangeLabel = computed(() => data.value ? `${displayDate(data.value.period.
 const compactRangeLabel = computed(() => `${displayShortDate(from.value)} – ${displayShortDate(to.value)}`);
 const latestSuccessfulSync = computed(() => data.value?.syncRuns.find(run => run.status === 'success'));
 const syncStatusText = computed(() => latestSuccessfulSync.value ? `Platforms synced · ${shortDateTime(latestSuccessfulSync.value.startedAt)}` : 'Waiting for platform sync');
-const attributionNeedsAttention = computed(() => (data.value?.summary.paidAttributionCoverage || 0) < 1);
+const attributionBanner = computed(() => {
+  const report = data.value;
+  if (!report || report.insights.executive.totalSpend <= 0 || report.summary.totalCrmLeads <= 0 || report.summary.paidCrmLeads > 0) return null;
+  const hasPaidPlatformData = report.dataStatus.meta_ads !== 'not_connected' || report.dataStatus.google_ads !== 'not_connected';
+  return hasPaidPlatformData
+    ? { kind: 'unmatched' as const, title: 'No CRM leads are matched to paid media for this period', action: 'Review enquiries', to: '/admin/enquiries' }
+    : { kind: 'disconnected' as const, title: 'Paid media attribution needs setup', action: 'Connect ad platforms', to: '/admin/settings' };
+});
 const avgSaleValueSet = computed(() => data.value?.avgSaleValue != null);
 const connections = computed(() => [
   { label: 'GA4 Website', status: connectionStatusLabel(data.value?.dataStatus.ga4) },
@@ -1006,6 +1013,7 @@ const MetricPanel = defineComponent({
 @keyframes spin { to { transform: rotate(360deg); } }
 .marketing-hub__insight { display: flex; align-items: flex-start; gap: 14px; margin-top: 18px; padding: 15px 18px; border: 1px solid var(--line); border-left: 3px solid var(--crit); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
 .marketing-hub__insight-icon { flex: 0 0 auto; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--crit-soft); color: var(--crit); }
+.marketing-hub__insight.observed { border-left-color: var(--warn); }.marketing-hub__insight.observed .marketing-hub__insight-icon { background: var(--warn-soft); color: var(--warn); }
 .marketing-hub__insight-icon svg { width: 18px; }
 .marketing-hub__insight h2 { margin-bottom: 3px; font-size: 14.5px; }
 .marketing-hub__insight p { max-width: 80ch; margin-bottom: 0; color: var(--ink-2); font-size: 13.5px; }

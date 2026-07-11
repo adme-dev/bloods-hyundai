@@ -97,4 +97,12 @@ describe('Marketing Hub UI', () => {
     assert.doesNotMatch(pageSource, /Every numeric value shown/);
     assert.doesNotMatch(pageSource, /production-synced cache/);
   });
+
+  it('distinguishes a zero-match period from a disconnected attribution setup', () => {
+    assert.match(pageSource, /No CRM leads are matched to paid media for this period/);
+    assert.match(pageSource, /none of the[\s\S]*CRM leads carries paid-platform evidence/);
+    assert.match(pageSource, /Review enquiries/);
+    assert.doesNotMatch(pageSource, /Attribution isn’t connected yet — the report is running on empty/);
+    assert.doesNotMatch(pageSource, /Every panel below is built and working/);
+  });
 });
