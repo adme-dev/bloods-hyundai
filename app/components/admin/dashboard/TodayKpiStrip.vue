@@ -67,6 +67,8 @@ const kpis = computed(() => [
 
 <style scoped>
 .crm-kpi {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 

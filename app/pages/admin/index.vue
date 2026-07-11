@@ -376,6 +376,11 @@ function onTabChange(value: string | number | null) {
   box-shadow: var(--dashboard-shadow);
 }
 
+.dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card"]) {
+  display: flex;
+  flex-direction: column;
+}
+
 .dashboard-shell :deep(.text-muted-foreground) {
   color: var(--dashboard-muted);
 }
@@ -470,10 +475,8 @@ function onTabChange(value: string | number | null) {
 
   .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card"]) {
     gap: 10px;
-    min-height: 174px;
     border-left-width: 1px !important;
     padding-block: 14px;
-    background: linear-gradient(180deg, var(--dashboard-surface) 58%, color-mix(in srgb, var(--dashboard-accent) 5%, var(--dashboard-surface)) 100%);
   }
 
   .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-header"]) {
