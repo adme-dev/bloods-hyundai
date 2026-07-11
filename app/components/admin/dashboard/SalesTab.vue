@@ -286,6 +286,7 @@
                 variant="ghost"
                 size="sm"
                 :class="{ 'bg-muted': selectedChartType === chartType.value }"
+                :aria-pressed="selectedChartType === chartType.value"
                 @click="selectedChartType = chartType.value"
               >
                 {{ chartType.label }}
@@ -306,7 +307,7 @@
                   :style="{ height: `${Math.round(getBarHeight(day) * 0.9)}%`, minHeight: getDayValue(day) > 0 ? '4px' : '0' }"
                 />
                 <div class="absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-background group-hover:block">
-                  {{ getDayValue(day) }} enquiries
+                  {{ formatChartDate(day.date) }} · {{ getDayValue(day) }} enquiries
                 </div>
                 <div class="trend-label mt-1 text-center text-[10px] text-muted-foreground">
                   {{ formatChartDate(day.date) }}
