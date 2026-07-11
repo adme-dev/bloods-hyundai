@@ -1,0 +1,5 @@
+interface:
+  display_name: "Marketing Hub Admin Design"
+  short_description: "Redesign admin routes with the Marketing Hub UI"
+  brand_color: "#001E50"
+  default_prompt: "Use $marketing-hub-admin-design to redesign this admin route to match the approved Marketing Hub UI."
