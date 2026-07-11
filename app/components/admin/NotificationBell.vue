@@ -4,7 +4,7 @@
       <Button
         variant="ghost"
         size="icon"
-        class="relative h-10 w-10 rounded-lg border border-border/80 bg-background text-foreground shadow-sm hover:bg-muted hover:text-foreground data-[state=open]:border-primary/30 data-[state=open]:bg-muted data-[state=open]:text-primary data-[state=open]:ring-2 data-[state=open]:ring-primary/10 [&_svg]:size-[18px]"
+        class="admin-notification-trigger relative h-10 w-10 text-foreground hover:text-foreground data-[state=open]:text-primary [&_svg]:size-[18px]"
         :aria-label="`Notifications${totalCount > 0 ? `, ${totalCount} unread` : ''}`"
         title="Notifications"
       >
@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, markRaw, type Component } from 'vue';
+import { ref, computed, onMounted, onUnmounted, markRaw, watch, type Component } from 'vue';
 import {
   Bell,
   BellOff,
@@ -148,6 +148,7 @@ const lastSeenAt = ref<string | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let visibilityHandler: (() => void) | null = null;
 let realtimeHandler: ((event: Event) => void) | null = null;
+const realtime = useAdminRealtime();
 
 const totalCount = computed(() =>
   notifications.value.filter(n => !n.read).length
@@ -382,10 +383,9 @@ async function requestNotificationPermission() {
 }
 
 function startPolling() {
-  if (pollTimer) return;
+  if (pollTimer || realtime.isConnected.value) return;
 
-  fetchNotifications();
-  pollTimer = setInterval(fetchLatestNotifications, 5000);
+  pollTimer = setInterval(fetchLatestNotifications, 30000);
 }
 
 function stopPolling() {
@@ -402,7 +402,9 @@ function setupVisibilityHandler() {
       startPolling();
     } else {
       stopPolling();
-      pollTimer = setInterval(fetchLatestNotifications, 30000);
+      if (!realtime.isConnected.value) {
+        pollTimer = setInterval(fetchLatestNotifications, 60000);
+      }
     }
   };
   document.addEventListener('visibilitychange', visibilityHandler);
@@ -410,7 +412,8 @@ function setupVisibilityHandler() {
 
 onMounted(() => {
   if (import.meta.client) {
-    startPolling();
+    fetchNotifications();
+    if (!realtime.isConnected.value) startPolling();
     setupVisibilityHandler();
     realtimeHandler = handleRealtimeEvent;
     window.addEventListener('admin:realtime-event', realtimeHandler);
@@ -418,8 +421,15 @@ onMounted(() => {
   }
 });
 
+const stopConnectionWatch = watch(realtime.isConnected, (connected) => {
+  isConnected.value = connected;
+  if (connected) stopPolling();
+  else if (document.visibilityState === 'visible') startPolling();
+});
+
 onUnmounted(() => {
   stopPolling();
+  stopConnectionWatch();
   if (visibilityHandler) {
     document.removeEventListener('visibilitychange', visibilityHandler);
   }

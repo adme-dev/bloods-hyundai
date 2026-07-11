@@ -1,10 +1,10 @@
 <template>
-  <div class="grid gap-6 lg:grid-cols-2">
+  <div class="grid min-w-0 gap-6 lg:grid-cols-2">
     <!-- Hot Leads -->
     <Card id="hot-leads-card">
       <CardHeader>
-        <div class="flex items-center justify-between">
-          <div>
+        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
             <CardTitle class="flex items-center gap-2">
               <Flame class="h-5 w-5 text-orange-500" />
               Hot Leads
@@ -17,11 +17,11 @@
         </div>
       </CardHeader>
       <CardContent class="p-0">
-        <div v-if="data?.hotLeads?.length" class="divide-y">
+        <div v-if="data?.hotLeads?.length" class="dashboard-action-list divide-y">
           <div
             v-for="lead in data.hotLeads.slice(0, 5)"
             :key="lead.id"
-            class="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
+            class="dashboard-action-row flex min-w-0 flex-col items-stretch gap-3 px-4 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6"
           >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <div class="relative shrink-0">
@@ -60,7 +60,7 @@
                 </div>
               </div>
             </div>
-            <div class="flex shrink-0 flex-col items-end gap-1.5">
+            <div class="dashboard-action-row__actions flex shrink-0 items-center justify-between gap-3 pl-12 sm:flex-col sm:items-end sm:gap-1.5 sm:pl-0">
               <span class="whitespace-nowrap text-xs text-muted-foreground">{{ formatTimeAgo(lead.createdAt) }}</span>
               <Button variant="default" size="sm" as-child>
                 <NuxtLink :to="`/admin/enquiries/${lead.id}`">
@@ -77,8 +77,8 @@
     <!-- Overdue Responses -->
     <Card :class="data?.followUpAlerts?.overdueEnquiries?.length ? 'border-red-200 dark:border-red-900' : ''">
       <CardHeader>
-        <div class="flex items-center justify-between">
-          <div>
+        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
             <CardTitle class="flex items-center gap-2" :class="data?.followUpAlerts?.overdueEnquiries?.length ? 'text-red-600' : ''">
               <Clock class="h-5 w-5" />
               Overdue Responses
@@ -89,11 +89,11 @@
         </div>
       </CardHeader>
       <CardContent class="p-0">
-        <div v-if="data?.followUpAlerts?.overdueEnquiries?.length" class="divide-y">
+        <div v-if="data?.followUpAlerts?.overdueEnquiries?.length" class="dashboard-action-list divide-y">
           <div
             v-for="enquiry in data.followUpAlerts.overdueEnquiries"
             :key="enquiry.id"
-            class="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
+            class="dashboard-action-row flex min-w-0 flex-col items-stretch gap-3 px-4 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6"
           >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
@@ -110,7 +110,7 @@
                 </div>
               </div>
             </div>
-            <Button variant="destructive" size="sm" as-child>
+            <Button variant="destructive" size="sm" class="dashboard-action-row__button ml-12 self-start sm:ml-0 sm:self-auto" as-child>
               <NuxtLink :to="`/admin/enquiries/${enquiry.id}`">
                 Respond Now
               </NuxtLink>
@@ -191,8 +191,8 @@
 
     <!-- Recent Activity -->
     <Card>
-      <CardHeader class="flex flex-row items-center justify-between">
-        <div>
+      <CardHeader class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>Latest enquiries across all departments</CardDescription>
         </div>
@@ -201,11 +201,11 @@
         </Button>
       </CardHeader>
       <CardContent class="p-0">
-        <div class="divide-y">
+        <div class="dashboard-action-list divide-y">
           <div
             v-for="enquiry in (data?.recentEnquiries || []).slice(0, 6)"
             :key="enquiry.id"
-            class="flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
+            class="dashboard-action-row flex min-w-0 flex-col items-stretch gap-3 px-4 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6"
           >
             <div class="flex min-w-0 flex-1 items-center gap-3">
               <Avatar class="h-9 w-9 shrink-0">
@@ -223,11 +223,11 @@
                 </div>
               </div>
             </div>
-            <div class="flex shrink-0 items-center gap-3">
+            <div class="flex min-w-0 shrink-0 items-center justify-between gap-2 pl-12 sm:justify-start sm:gap-3 sm:pl-0">
               <Badge :variant="getStatusVariant(enquiry.status)">
                 {{ formatStatus(enquiry.status) }}
               </Badge>
-              <span class="text-xs text-muted-foreground">
+              <span class="shrink-0 text-xs text-muted-foreground">
                 {{ formatTimeAgo(enquiry.createdAt) }}
               </span>
               <Button variant="ghost" size="icon" as-child>
@@ -266,3 +266,38 @@ defineProps<{ data: DashboardData }>();
 const getInitials = getDashboardInitials;
 const formatCurrency = formatDashboardCurrency;
 </script>
+
+<style scoped>
+.dashboard-action-list > * + * {
+  border-top-color: var(--dashboard-line, hsl(var(--border)));
+}
+
+@media (max-width: 639px) {
+  .dashboard-action-row {
+    min-height: 0;
+    gap: .65rem;
+    padding: .85rem 1rem;
+  }
+
+  .dashboard-action-row__actions {
+    width: auto;
+    padding-left: 3rem;
+  }
+
+  .dashboard-action-row__button {
+    min-width: 0;
+    margin-left: 3rem;
+  }
+
+  .dashboard-action-row :deep(.h-9.w-9),
+  .dashboard-action-row :deep(.h-10.w-10) {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .dashboard-action-row :deep(a),
+  .dashboard-action-row :deep(button) {
+    max-width: 100%;
+  }
+}
+</style>

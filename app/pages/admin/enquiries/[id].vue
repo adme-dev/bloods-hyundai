@@ -14,7 +14,7 @@
     </Button>
   </div>
   
-  <div v-else-if="enquiry" class="space-y-6">
+  <div v-else-if="enquiry" class="enquiry-detail space-y-6">
     <!-- Header -->
     <Card class="shadow-sm">
       <CardContent class="space-y-4 p-6">
@@ -39,7 +39,7 @@
               <span v-if="submittedRelative"> · {{ submittedRelative }} ago</span>
             </p>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="enquiry-detail__header-actions flex flex-wrap items-center gap-3">
             <Select :model-value="statusDraft" @update:model-value="onStatusSelect">
               <SelectTrigger class="w-[200px]">
                 <SelectValue placeholder="Set status" />
@@ -92,11 +92,11 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <Button v-if="enquiry.email" variant="secondary" size="sm" :href="`mailto:${enquiry.email}`">
-            <Mail class="mr-2 h-4 w-4" /> Email customer
+          <Button v-if="enquiry.email" variant="secondary" size="sm" as-child>
+            <a :href="`mailto:${enquiry.email}`"><Mail class="mr-2 h-4 w-4" /> Email customer</a>
           </Button>
-          <Button v-if="enquiry.phone" variant="outline" size="sm" :href="`tel:${enquiry.phone}`">
-            <Phone class="mr-2 h-4 w-4" /> Call {{ enquiry.firstName }}
+          <Button v-if="enquiry.phone" variant="outline" size="sm" as-child>
+            <a :href="`tel:${enquiry.phone}`"><Phone class="mr-2 h-4 w-4" /> Call {{ enquiry.firstName }}</a>
           </Button>
           <Button variant="ghost" size="sm" @click="copyValue(enquiry.id, 'Enquiry ID')">
             <Copy class="mr-2 h-4 w-4" /> Copy ID
@@ -626,12 +626,12 @@
       <div class="space-y-6">
         <Card>
           <CardHeader class="space-y-1">
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="crm-card__header flex items-start justify-between gap-3">
+              <div class="min-w-0">
                 <CardTitle>External CRM sync</CardTitle>
                 <CardDescription>Push to the external dealer CRM/export when ready.</CardDescription>
               </div>
-              <Badge :class="crmBadgeClass" class="gap-1 text-xs">
+              <Badge :class="crmBadgeClass" class="crm-card__status shrink-0 gap-1 text-xs">
                 <component :is="enquiry.syncedToCrm ? CheckCircle2 : AlertTriangle" class="h-3.5 w-3.5" />
                 {{ enquiry.syncedToCrm ? 'Synced' : 'Not synced' }}
               </Badge>
@@ -1339,3 +1339,40 @@ const submitCrmSync = async () => {
   }
 };
 </script>
+
+<style scoped>
+.enquiry-detail {
+  min-width: 0;
+}
+
+.enquiry-detail :deep(.rounded-xl.border) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.enquiry-detail :deep(dd),
+.enquiry-detail :deep(p),
+.enquiry-detail :deep(a) {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .enquiry-detail {
+    gap: 1rem;
+  }
+
+  .enquiry-detail__header-actions,
+  .enquiry-detail__header-actions :deep(button[role="combobox"]) {
+    width: 100%;
+  }
+
+  .crm-card__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .crm-card__status {
+    align-self: flex-start;
+  }
+}
+</style>

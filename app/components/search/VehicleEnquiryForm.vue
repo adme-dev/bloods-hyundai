@@ -175,6 +175,7 @@
 
 <script setup lang="ts">
 import { useAnalytics } from '~/composables/useAnalytics';
+import { extractSafeIframeUrl } from '~/utils/iframe';
 
 // Finance widget settings type
 type VehicleCondition = 'new' | 'used' | 'demo';
@@ -219,23 +220,7 @@ const useFinanceWidget = computed(() => {
 });
 
 // Extract base iframe URL from settings (handles both URL and HTML)
-const financeWidgetBaseUrl = computed(() => {
-  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
-  if (!input) return null;
-
-  // If it's already a URL
-  if (/^https?:\/\//i.test(input)) {
-    return input;
-  }
-
-  // Try to extract src from iframe HTML
-  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
-  if (srcMatch) {
-    return srcMatch[1];
-  }
-
-  return null;
-});
+const financeWidgetBaseUrl = computed(() => extractSafeIframeUrl(financeWidgetData.value?.settings?.financeWidgetIframe));
 
 interface Vehicle {
   stockid?: string | number;
@@ -496,8 +481,6 @@ const submitForm = async () => {
   }
 }
 </style>
-
-
 
 
 

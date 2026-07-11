@@ -400,33 +400,13 @@ const enquiries = computed(() => data.value?.enquiries || []);
 const pagination = computed(() => data.value?.pagination);
 
 // Real-time updates - auto-refresh when new enquiries arrive
-const realtimeConnected = ref(false);
-
-onMounted(async () => {
-  if (process.client) {
-    try {
-      const { useRealtimeEnquiries } = await import('~/composables/useRealtimeEnquiries');
-      const realtime = useRealtimeEnquiries({
-        pollInterval: 5000,
-        onNewEnquiry: () => {
-          // Auto-refresh the list when in inbox view
-          if (filters.view === 'inbox') {
-            refresh();
-          }
-        },
-        onUpdatedEnquiry: () => {
-          // Refresh on updates too
-          refresh();
-        },
-      });
-      
-      realtimeConnected.value = realtime.isConnected.value;
-      watch(() => realtime.isConnected.value, (val) => { realtimeConnected.value = val; });
-    } catch (e) {
-      console.error('Failed to initialize real-time updates:', e);
-    }
-  }
+const realtime = useRealtimeEnquiries({
+  onNewEnquiry: () => {
+    if (filters.view === 'inbox') refresh();
+  },
+  onUpdatedEnquiry: () => refresh(),
 });
+const realtimeConnected = realtime.isConnected;
 
 const clearFilters = () => {
   filters.search = '';
@@ -558,4 +538,3 @@ const formatDistanceToNow = (date: string) => {
 // Import Gravatar utilities with proper MD5 hashing
 import { getGravatarUrl, getInitials } from '~/utils/gravatar';
 </script>
-

@@ -16,33 +16,35 @@ type RealtimeOptions = {
 
 let sharedSocket: WebSocket | null = null;
 let sharedReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let sharedConnecting = false;
 let listenerCount = 0;
 const sharedListeners = new Set<(event: any) => void>();
+const sharedConnected = ref(false);
+const sharedEnabled = ref(false);
+const sharedLastEvent = ref<any>(null);
+const sharedLastError = ref<string | null>(null);
 
 export function useAdminRealtime(options: RealtimeOptions = {}) {
-  const isConnected = ref(false);
-  const isEnabled = ref(false);
-  const lastEvent = ref<any>(null);
-  const lastError = ref<string | null>(null);
-
   const handleEvent = (event: any) => {
-    lastEvent.value = event;
+    sharedLastEvent.value = event;
     options.onEvent?.(event);
   };
 
   async function connect() {
     if (!import.meta.client) return;
-    if (sharedSocket && sharedSocket.readyState <= WebSocket.OPEN) return;
+    if (sharedConnecting || (sharedSocket && sharedSocket.readyState <= WebSocket.OPEN)) return;
 
+    sharedConnecting = true;
     try {
       const token = await $fetch<TokenResponse>('/api/admin/realtime/token');
       if (!token.enabled) {
-        isEnabled.value = false;
-        lastError.value = token.reason || 'Realtime disabled';
+        sharedEnabled.value = false;
+        sharedConnected.value = false;
+        sharedLastError.value = token.reason || 'Realtime disabled';
         return;
       }
 
-      isEnabled.value = true;
+      sharedEnabled.value = true;
       const url = new URL(token.wsUrl);
       url.searchParams.set('dealerId', token.dealerId);
       url.searchParams.set('ts', token.timestamp);
@@ -50,16 +52,16 @@ export function useAdminRealtime(options: RealtimeOptions = {}) {
 
       sharedSocket = new WebSocket(url.toString());
       sharedSocket.addEventListener('open', () => {
-        isConnected.value = true;
-        lastError.value = null;
+        sharedConnected.value = true;
+        sharedLastError.value = null;
       });
       sharedSocket.addEventListener('close', () => {
-        isConnected.value = false;
+        sharedConnected.value = false;
         scheduleReconnect();
       });
       sharedSocket.addEventListener('error', () => {
-        isConnected.value = false;
-        lastError.value = 'Realtime socket error';
+        sharedConnected.value = false;
+        sharedLastError.value = 'Realtime socket error';
       });
       sharedSocket.addEventListener('message', (message) => {
         try {
@@ -71,9 +73,11 @@ export function useAdminRealtime(options: RealtimeOptions = {}) {
         }
       });
     } catch (error: any) {
-      isConnected.value = false;
-      lastError.value = error?.data?.message || error?.message || 'Realtime connection failed';
+      sharedConnected.value = false;
+      sharedLastError.value = error?.data?.message || error?.message || 'Realtime connection failed';
       scheduleReconnect();
+    } finally {
+      sharedConnecting = false;
     }
   }
 
@@ -110,10 +114,10 @@ export function useAdminRealtime(options: RealtimeOptions = {}) {
   });
 
   return {
-    isConnected,
-    isEnabled,
-    lastEvent,
-    lastError,
+    isConnected: sharedConnected,
+    isEnabled: sharedEnabled,
+    lastEvent: sharedLastEvent,
+    lastError: sharedLastError,
     connect,
   };
 }

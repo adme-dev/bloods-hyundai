@@ -193,6 +193,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue';
 import { useAnalytics } from '~/composables/useAnalytics';
+import { extractSafeIframeUrl } from '~/utils/iframe';
 
 // Finance widget settings type
 interface FinanceWidgetSettings {
@@ -221,23 +222,7 @@ const { data: financeWidgetData, pending: financeWidgetPending } = useFetch<Fina
 const useFinanceWidget = computed(() => financeWidgetData.value?.settings?.useFinanceWidget ?? false);
 
 // Extract base iframe URL from settings (handles both URL and HTML)
-const financeWidgetBaseUrl = computed(() => {
-  const input = financeWidgetData.value?.settings?.financeWidgetIframe?.trim();
-  if (!input) return null;
-
-  // If it's already a URL
-  if (/^https?:\/\//i.test(input)) {
-    return input;
-  }
-
-  // Try to extract src from iframe HTML
-  const srcMatch = input.match(/<iframe[^>]*src\s*=\s*["']([^"']+)["']/i);
-  if (srcMatch) {
-    return srcMatch[1];
-  }
-
-  return null;
-});
+const financeWidgetBaseUrl = computed(() => extractSafeIframeUrl(financeWidgetData.value?.settings?.financeWidgetIframe));
 
 // Build iframe URL (no vehicle params for general enquiry modal)
 const financeWidgetIframeUrl = computed(() => financeWidgetBaseUrl.value);
@@ -918,7 +903,6 @@ $bg-light: #f5f5f5;
   }
 }
 </style>
-
 
 
 
