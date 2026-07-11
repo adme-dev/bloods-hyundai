@@ -181,17 +181,22 @@
           <CardTitle>Pipeline Status</CardTitle>
           <CardDescription>Current enquiry distribution</CardDescription>
         </CardHeader>
-        <CardContent class="space-y-3">
-          <div
-            v-for="status in pipelineStatuses"
-            :key="status.key"
-            class="flex items-center justify-between rounded-lg border border-dashed px-4 py-3"
-          >
-            <div class="flex items-center gap-3">
-              <Badge :variant="status.variant">{{ status.label }}</Badge>
-              <span class="text-sm text-muted-foreground">{{ status.description }}</span>
+        <CardContent class="space-y-4">
+          <div v-for="group in pipelineStageGroups" :key="group.stage">
+            <h4 class="pb-1 text-[11px] font-bold uppercase tracking-[0.09em] text-muted-foreground">{{ group.label }}</h4>
+            <div class="divide-y">
+              <div
+                v-for="status in group.statuses"
+                :key="status.key"
+                class="stat-row flex items-center justify-between gap-3 py-2 text-sm"
+              >
+                <div class="flex min-w-0 items-center gap-2.5">
+                  <Badge :variant="status.variant">{{ status.label }}</Badge>
+                  <span class="truncate text-muted-foreground">{{ status.description }}</span>
+                </div>
+                <div class="text-base font-semibold tabular-nums">{{ data?.overview?.pipeline?.[status.key] || 0 }}</div>
+              </div>
             </div>
-            <div class="text-lg font-semibold">{{ data?.overview?.pipeline?.[status.key] || 0 }}</div>
           </div>
         </CardContent>
       </Card>
@@ -438,6 +443,14 @@ const pipelineStatuses = [
   { key: 'sold', label: 'Sold', description: 'Deal won', variant: 'default' as const, stage: 'closed' },
   { key: 'lost', label: 'Lost', description: 'Deal lost', variant: 'destructive' as const, stage: 'closed' },
 ];
+
+const stageLabels: Record<string, string> = { cold: 'Cold', warm: 'Warm', hot: 'Hot', closed: 'Closed' };
+
+const pipelineStageGroups = (['cold', 'warm', 'hot', 'closed'] as const).map(stage => ({
+  stage,
+  label: stageLabels[stage],
+  statuses: pipelineStatuses.filter(s => s.stage === stage),
+}));
 
 const iconMap: Record<string, any> = {
   Car,
