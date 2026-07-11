@@ -121,10 +121,6 @@ const kpis = computed(() => [
     padding: .85rem;
   }
 
-  .crm-kpi {
-    min-height: 168px;
-    background: linear-gradient(180deg, var(--dashboard-surface, hsl(var(--card))) 58%, color-mix(in srgb, var(--dashboard-accent, #0091b8) 5%, var(--dashboard-surface, hsl(var(--card)))) 100%);
-  }
 
   .crm-kpi :deep([data-slot="card-header"]) {
     flex: 1;
@@ -139,7 +135,6 @@ const kpis = computed(() => [
 
   .crm-kpi__footer {
     align-items: flex-end;
-    min-height: 32px;
     margin-top: auto;
     padding-top: 0;
     font-size: 11.5px;

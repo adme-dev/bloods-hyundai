@@ -538,10 +538,6 @@ function navigateToEnquiries(type: string) {
 }
 
 @media (max-width: 700px) {
-  .department-card {
-    min-height: 174px !important;
-  }
-
   .department-card__title {
     font-size: 11.5px !important;
   }
@@ -555,7 +551,7 @@ function navigateToEnquiries(type: string) {
     height: 200px;
   }
 
-  .trend-col:nth-child(even) .trend-label {
+  .trend-col:nth-last-child(even) .trend-label {
     visibility: hidden;
   }
 
