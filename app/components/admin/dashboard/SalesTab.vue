@@ -1,25 +1,19 @@
 <template>
   <div class="space-y-6">
     <!-- Volume overview -->
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Total Enquiries</CardTitle>
-          <Inbox class="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold">{{ data?.overview?.total || 0 }}</div>
-          <p class="text-xs text-muted-foreground">All-time recorded</p>
-        </CardContent>
-      </Card>
+    <div class="dashboard-compact-kpis grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+      <CompactKpiCard>
+        <template #label>Total Enquiries</template>
+        <template #value>{{ data?.overview?.total || 0 }}</template>
+        <template #action><Inbox class="h-4 w-4 text-muted-foreground" /></template>
+        <template #footer><p class="font-medium text-foreground">All enquiries recorded</p><p>All-time total</p></template>
+      </CompactKpiCard>
 
-      <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">This Week</CardTitle>
-          <Calendar class="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold">{{ data?.overview?.thisWeek || 0 }}</div>
+      <CompactKpiCard>
+        <template #label>This Week</template>
+        <template #value>{{ data?.overview?.thisWeek || 0 }}</template>
+        <template #action><Calendar class="h-4 w-4 text-muted-foreground" /></template>
+        <template #footer>
           <div class="flex items-center gap-1 text-xs">
             <TrendingUp v-if="(data?.overview?.weeklyChange || 0) > 0" class="h-3 w-3 text-green-500" />
             <TrendingDown v-else-if="(data?.overview?.weeklyChange || 0) < 0" class="h-3 w-3 text-red-500" />
@@ -28,16 +22,15 @@
               {{ formatTrend(data?.overview?.weeklyChange) }} vs last week
             </span>
           </div>
-        </CardContent>
-      </Card>
+          <p>Current seven-day period</p>
+        </template>
+      </CompactKpiCard>
 
-      <Card class="border-l-4 border-l-purple-500">
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Conversion Rate</CardTitle>
-          <Percent class="h-4 w-4 text-purple-500" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold">{{ data?.salesPerformance?.thisMonth?.conversionRate || 0 }}%</div>
+      <CompactKpiCard>
+        <template #label>Conversion Rate</template>
+        <template #value>{{ data?.salesPerformance?.thisMonth?.conversionRate || 0 }}%</template>
+        <template #action><Percent class="h-4 w-4 text-purple-500" /></template>
+        <template #footer>
           <div class="flex items-center gap-1 text-xs mt-1">
             <TrendingUp v-if="(data?.salesPerformance?.monthOverMonthChange || 0) > 0" class="h-3 w-3 text-green-500" />
             <TrendingDown v-else-if="(data?.salesPerformance?.monthOverMonthChange || 0) < 0" class="h-3 w-3 text-red-500" />
@@ -46,33 +39,31 @@
               {{ formatTrend(data?.salesPerformance?.monthOverMonthChange) }} vs last month
             </span>
           </div>
-        </CardContent>
-      </Card>
+          <p>Monthly lead conversion</p>
+        </template>
+      </CompactKpiCard>
 
-      <Card class="border-l-4 border-l-pink-500">
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Accessories Revenue</CardTitle>
-          <ShoppingCart class="h-4 w-4 text-pink-500" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold">${{ formatCurrency(data?.salesPerformance?.thisMonth?.accessoriesValue) }}</div>
-          <p class="text-xs text-muted-foreground mt-1">
+      <CompactKpiCard>
+        <template #label>Accessories Revenue</template>
+        <template #value>${{ formatCurrency(data?.salesPerformance?.thisMonth?.accessoriesValue) }}</template>
+        <template #action><ShoppingCart class="h-4 w-4 text-pink-500" /></template>
+        <template #footer>
+          <p class="font-medium text-foreground">
             {{ data?.salesPerformance?.thisMonth?.withAccessories || 0 }} enquiries with add-ons
           </p>
-        </CardContent>
-      </Card>
+          <p>Accessory value this month</p>
+        </template>
+      </CompactKpiCard>
     </div>
 
     <!-- Targets -->
-    <div class="grid gap-4 md:grid-cols-2">
-      <Card class="border-l-4 border-l-blue-500">
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Monthly Leads</CardTitle>
-          <Target class="h-4 w-4 text-blue-500" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold">{{ data?.salesPerformance?.thisMonth?.leads || 0 }}</div>
-          <div class="mt-2">
+    <div class="dashboard-compact-kpis grid grid-cols-2 gap-3 md:gap-4">
+      <CompactKpiCard>
+        <template #label>Monthly Leads</template>
+        <template #value>{{ data?.salesPerformance?.thisMonth?.leads || 0 }}</template>
+        <template #action><Target class="h-4 w-4 text-blue-500" /></template>
+        <template #footer>
+          <div class="w-full">
             <div class="flex items-center justify-between text-xs">
               <span class="text-muted-foreground">Target: {{ data?.salesPerformance?.targets?.monthlyLeads || 50 }}</span>
               <span :class="getTargetProgressClass(data?.salesPerformance?.thisMonth?.leads, data?.salesPerformance?.targets?.monthlyLeads)">
@@ -86,17 +77,15 @@
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </template>
+      </CompactKpiCard>
 
-      <Card class="border-l-4 border-l-green-500">
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Conversions</CardTitle>
-          <CheckCircle class="h-4 w-4 text-green-500" />
-        </CardHeader>
-        <CardContent>
-          <div class="text-3xl font-bold">{{ data?.salesPerformance?.thisMonth?.conversions || 0 }}</div>
-          <div class="mt-2">
+      <CompactKpiCard>
+        <template #label>Conversions</template>
+        <template #value>{{ data?.salesPerformance?.thisMonth?.conversions || 0 }}</template>
+        <template #action><CheckCircle class="h-4 w-4 text-green-500" /></template>
+        <template #footer>
+          <div class="w-full">
             <div class="flex items-center justify-between text-xs">
               <span class="text-muted-foreground">Target: {{ data?.salesPerformance?.targets?.monthlyConversions || 15 }}</span>
               <span :class="getTargetProgressClass(data?.salesPerformance?.thisMonth?.conversions, data?.salesPerformance?.targets?.monthlyConversions)">
@@ -110,8 +99,8 @@
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </template>
+      </CompactKpiCard>
     </div>
 
     <!-- Funnel + Pipeline Status -->
@@ -216,29 +205,32 @@
           <NuxtLink to="/admin/forms">View all forms <ArrowRight class="ml-2 h-4 w-4" /></NuxtLink>
         </Button>
       </div>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="dashboard-compact-kpis grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <Card
           v-for="dept in sortedDepartments"
           :key="dept.type"
-          class="cursor-pointer transition-colors hover:border-primary/50"
+          class="department-card cursor-pointer transition-colors hover:border-primary/50"
+          role="link"
+          tabindex="0"
           @click="navigateToEnquiries(dept.type)"
+          @keydown.enter="navigateToEnquiries(dept.type)"
         >
-          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div class="flex items-center gap-2">
+          <CardHeader class="department-card__header">
+            <div class="department-card__identity">
               <div
                 class="flex h-8 w-8 items-center justify-center rounded-lg"
                 :class="getDeptBgClass(dept.color)"
               >
                 <component :is="getDeptIcon(dept.icon)" class="h-4 w-4" :class="getDeptTextClass(dept.color)" />
               </div>
-              <CardTitle class="text-sm font-medium">{{ dept.label }}</CardTitle>
+              <CardTitle class="department-card__title">{{ dept.label }}</CardTitle>
             </div>
             <Badge v-if="dept.new > 0" variant="destructive" class="h-5 px-1.5 text-[10px]">
               {{ dept.new }} new
             </Badge>
           </CardHeader>
-          <CardContent>
-            <div class="flex items-baseline justify-between">
+          <CardContent class="department-card__content">
+            <div class="department-card__metric">
               <div class="text-2xl font-bold">{{ dept.total }}</div>
               <div class="flex items-center gap-1 text-xs">
                 <TrendingUp v-if="dept.weeklyChange > 0" class="h-3 w-3 text-green-500" />
@@ -248,7 +240,7 @@
                 </span>
               </div>
             </div>
-            <div class="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+            <div class="department-card__footer">
               <span>This week: {{ dept.thisWeek }}</span>
               <span v-if="dept.avgResponseHours !== null">
                 Avg: {{ formatResponseTime(dept.avgResponseHours) }}
@@ -474,3 +466,67 @@ function navigateToEnquiries(type: string) {
   navigateTo(`/admin/enquiries?type=${type}`);
 }
 </script>
+
+<style scoped>
+.department-card__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding-bottom: 0;
+}
+
+.department-card__identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.department-card__title {
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.department-card__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.department-card__metric {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.department-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .department-card {
+    min-height: 174px !important;
+  }
+
+  .department-card__title {
+    font-size: 11.5px !important;
+  }
+
+  .department-card__footer {
+    padding-top: 12px;
+    font-size: 11px;
+  }
+}
+</style>
