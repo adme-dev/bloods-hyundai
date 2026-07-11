@@ -550,9 +550,8 @@
       </section>
 
       <footer class="marketing-hub__footer">
-        <strong>About this report.</strong> Every numeric value shown for {{ rangeLabel }} comes from a connected provider,
-        the production-synced cache, or this admin CRM. Sections tagged <strong>Phase 2 / Phase 3 · new</strong> show capability
-        and availability states only—never sample figures. Unavailable ratios render as “—”.
+        <strong>About this report.</strong> Results reflect the website, advertising and CRM data available for {{ rangeLabel }}.
+        Panels waiting for a platform sync are clearly marked, and unavailable metrics display as “—”.
       </footer>
     </template>
   </div>

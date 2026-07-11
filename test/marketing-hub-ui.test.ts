@@ -90,4 +90,11 @@ describe('Marketing Hub UI', () => {
     assert.doesNotMatch(pageSource, /previewCreatives/);
     assert.doesNotMatch(pageSource, /art: 'IONIQ 9'/);
   });
+
+  it('explains report freshness in concise dealer-facing language', () => {
+    assert.match(pageSource, /Results reflect the website, advertising and CRM data available for/);
+    assert.match(pageSource, /Panels waiting for a platform sync are clearly marked/);
+    assert.doesNotMatch(pageSource, /Every numeric value shown/);
+    assert.doesNotMatch(pageSource, /production-synced cache/);
+  });
 });
