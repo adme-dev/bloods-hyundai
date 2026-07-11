@@ -13,6 +13,7 @@ import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../.
 import { fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
 import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsights';
 import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
+import { buildMarketingTrend } from '../../../utils/metrics/marketingTrend';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -118,6 +119,7 @@ export default defineEventHandler(async (event) => {
   });
 
   const crmCampaigns = summarizeCrmCampaigns(crmSignals);
+  const dailyPaidLeadRows = summarizeDailyPaidLeads(leadRows, inferredByLeadId);
   const metrics = aggregateMarketingMetrics(toMetricInputs(metricRows), crmCampaigns);
   const coverage = calculateLeadSignalCoverage(crmSignals);
   const leadSources = summarizeLeadSources(crmSignals);
@@ -145,6 +147,7 @@ export default defineEventHandler(async (event) => {
     connected.ga4,
     metricRows,
     dailyLeadRows,
+    dailyPaidLeadRows,
   );
   const summary = {
     totalCrmLeads: coverage.total,
@@ -279,8 +282,9 @@ async function buildWebsiteAnalytics(
   ga4Connected: boolean,
   metricRows: MarketingMetricsDaily[],
   dailyLeadRows: Array<{ date: string; total: number }>,
+  dailyPaidLeadRows: Array<{ date: string; total: number }>,
 ): Promise<Ga4WebsiteAnalytics> {
-  const dailyTrend = buildWebsiteTrend(range, metricRows, dailyLeadRows);
+  const dailyTrend = buildMarketingTrend(range, metricRows, dailyLeadRows, dailyPaidLeadRows);
   if (!ga4Connected || !integrations.ga4PropertyId) {
     const hasStoredGa4Data = metricRows.some(row => row.platform === 'ga4');
     return emptyWebsiteAnalytics(hasStoredGa4Data ? 'stored_data' : 'not_configured', null, dailyTrend);
@@ -312,51 +316,18 @@ function emptyWebsiteAnalytics(
   };
 }
 
-function buildWebsiteTrend(
-  range: { from: string; to: string },
-  metricRows: MarketingMetricsDaily[],
-  dailyLeadRows: Array<{ date: string; total: number }>,
-): Ga4WebsiteTrendRow[] {
-  const byDate = new Map<string, Ga4WebsiteTrendRow>();
-  for (const date of enumerateDates(range.from, range.to)) {
-    byDate.set(date, { date, sessions: 0, users: 0, keyEvents: 0, crmLeads: 0, paidSpend: 0 });
+function summarizeDailyPaidLeads(
+  leads: Array<{ id: string; createdAt: Date }>,
+  inferredByLeadId: Map<string, ReturnType<typeof inferLeadAttribution>>,
+) {
+  const totals = new Map<string, number>();
+  for (const lead of leads) {
+    const platform = inferredByLeadId.get(lead.id)?.platform;
+    if (platform !== 'meta_ads' && platform !== 'google_ads') continue;
+    const date = lead.createdAt.toISOString().slice(0, 10);
+    totals.set(date, (totals.get(date) || 0) + 1);
   }
-
-  for (const row of metricRows) {
-    const date = String(row.date);
-    const day = byDate.get(date);
-    if (!day) continue;
-
-    if (row.platform === 'ga4') {
-      day.sessions += row.sessions || 0;
-      day.users += row.users || 0;
-      day.keyEvents += row.conversions || 0;
-    }
-    if (row.platform === 'google_ads' || row.platform === 'meta_ads') {
-      day.paidSpend += Number(row.spend || 0);
-    }
-  }
-
-  for (const row of dailyLeadRows) {
-    const day = byDate.get(String(row.date));
-    if (day) day.crmLeads = Number(row.total || 0);
-  }
-
-  return [...byDate.values()].map(row => ({
-    ...row,
-    paidSpend: Math.round(row.paidSpend * 100) / 100,
-  }));
-}
-
-function enumerateDates(from: string, to: string) {
-  const dates: string[] = [];
-  const cursor = new Date(`${from}T00:00:00Z`);
-  const end = new Date(`${to}T00:00:00Z`);
-  while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-  return dates;
+  return [...totals].map(([date, total]) => ({ date, total }));
 }
 
 function summarizeCrmCampaigns(leads: CrmLeadSignal[]): CrmCampaignCount[] {

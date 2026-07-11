@@ -47,6 +47,10 @@ export interface Ga4WebsiteTrendRow {
   keyEvents: number;
   crmLeads: number;
   paidSpend: number;
+  paidClicks: number;
+  platformConversions: number;
+  paidCrmLeads: number;
+  crmCpl: number | null;
 }
 
 export function normalizeGa4Response(resp: unknown): NormalizedRow[] {
