@@ -480,23 +480,47 @@
 
       <section aria-labelledby="breakdowns-title">
         <div class="marketing-hub__section-head"><h2 id="breakdowns-title">Audience &amp; delivery breakdowns</h2><b>Phase 2 · new</b><span /></div>
-        <p class="marketing-hub__preview-note">Not in the report yet. Meta &amp; Google expose age, gender, area and device per campaign — we’ll ingest these into a breakdown table so ad <strong>spend</strong> can be sliced the way GA4 traffic already is. Figures below are illustrative until the first breakdown sync runs.</p>
+        <p class="marketing-hub__preview-note">No audience breakdown has been synced yet. Meta &amp; Google expose age, gender, area and device per campaign; these panels will populate only after that provider data is stored.</p>
         <div class="marketing-hub__split3">
-          <PreviewBars title="Spend by age" :rows="previewAge" />
-          <PreviewBars title="Spend by device" :rows="previewDevices" />
-          <PreviewBars title="Spend by area" :rows="previewAreas" />
+          <article v-for="title in plannedBreakdowns" :key="title" class="marketing-hub__card marketing-hub__planned-card">
+            <h3>{{ title }}</h3>
+            <p>Awaiting provider breakdown sync.</p>
+          </article>
         </div>
       </section>
 
       <section aria-labelledby="creative-title">
-        <div class="marketing-hub__section-head"><h2 id="creative-title">Ad creative</h2><b>Phase 2 · new</b><span /></div>
-        <p class="marketing-hub__preview-note">The actual ad images/video pulled from Meta &amp; Google, shown beside their spend and CTR — so you see <strong>what</strong> ran, not just the numbers.</p>
-        <div class="marketing-hub__creatives">
-          <article v-for="creative in previewCreatives" :key="creative.title" class="marketing-hub__creative">
-            <div class="marketing-hub__creative-art" :class="creative.class"><span>{{ creative.platform }}</span><strong>{{ creative.art }}</strong></div>
-            <div><h3>{{ creative.title }}</h3><p>Spend <strong class="num">{{ creative.spend }}</strong><span>CTR <strong class="num">{{ creative.ctr }}</strong></span></p></div>
+        <div class="marketing-hub__section-head"><h2 id="creative-title">Ad creative</h2><b>Synced media</b><span /></div>
+        <p class="marketing-hub__preview-note">Actual images and video thumbnails from Meta &amp; Google, matched to campaign spend and CTR for this report period.</p>
+        <div v-if="data.creativeMedia.length" class="marketing-hub__creatives">
+          <article v-for="creative in data.creativeMedia.slice(0, 12)" :key="`${creative.platform}:${creative.id}`" class="marketing-hub__creative">
+            <a
+              v-if="creative.videoUrl"
+              class="marketing-hub__creative-art"
+              :href="creative.videoUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              :aria-label="`Open video: ${creative.title}`"
+            >
+              <img :src="creative.imageUrl" :alt="creative.title" loading="lazy" referrerpolicy="no-referrer" @error="hideBrokenCreativeImage">
+              <span>{{ platformLabel(creative.platform) }}</span>
+              <i aria-hidden="true">▶</i>
+            </a>
+            <div v-else class="marketing-hub__creative-art">
+              <img :src="creative.imageUrl" :alt="creative.title" loading="lazy" referrerpolicy="no-referrer" @error="hideBrokenCreativeImage">
+              <span>{{ platformLabel(creative.platform) }}</span>
+            </div>
+            <div>
+              <h3 :title="creative.title">{{ creative.title }}</h3>
+              <small v-if="creative.performanceLabel">{{ formatLabel(creative.performanceLabel) }} asset</small>
+              <p>Spend <strong class="num">{{ money(creative.spend) }}</strong><span>CTR <strong class="num">{{ pctOrDash(creative.ctr) }}</strong></span></p>
+            </div>
           </article>
         </div>
+        <article v-else class="marketing-hub__card marketing-hub__creative-empty">
+          <strong>No creative media has been synced for this period.</strong>
+          <span>The next Meta and Google Ads sync will cache active image and video assets here.</span>
+        </article>
       </section>
 
       <section aria-labelledby="builder-title">
@@ -516,19 +540,19 @@
             <div class="marketing-hub__table-wrap">
               <table class="num"><thead><tr><th>Platform · Campaign</th><th>Spend</th><th>CRM leads</th><th>CPL</th></tr></thead>
                 <tbody>
-                  <tr v-for="row in previewPivot" :key="row.campaign"><td>{{ row.campaign }}</td><td>{{ row.spend }}</td><td>{{ row.leads }}</td><td>{{ row.cpl }}</td></tr>
+                  <tr><td colspan="4" class="marketing-hub__empty-cell">Report-builder results will appear when this Phase 3 feature is connected to report data.</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="marketing-hub__example">Example output — CRM leads/CPL shown as they’ll read once attribution is live.</p>
+            <p class="marketing-hub__example">No sample figures are shown.</p>
           </div>
         </article>
       </section>
 
       <footer class="marketing-hub__footer">
-        <strong>About this report.</strong> Sections above use live data for {{ rangeLabel }}. Sections tagged
-        <strong>Phase 2 / Phase 3 · new</strong> are previews and their figures are illustrative. Attribution remains honest:
-        unavailable ratios render as “—”, never as a fabricated result.
+        <strong>About this report.</strong> Every numeric value shown for {{ rangeLabel }} comes from a connected provider,
+        the production-synced cache, or this admin CRM. Sections tagged <strong>Phase 2 / Phase 3 · new</strong> show capability
+        and availability states only—never sample figures. Unavailable ratios render as “—”.
       </footer>
     </template>
   </div>
@@ -592,6 +616,7 @@ interface ReportResponse {
     campaignDiagnostics: { opportunities: Array<{ platform: string; campaignName: string; spend: number; clicks: number; crmLeads: number; issue: string }> };
   };
   campaigns: Array<{ platform: string; campaignId: string; campaignName: string | null; spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null }>;
+  creativeMedia: Array<{ id: string; platform: 'meta_ads' | 'google_ads'; campaignId: string; campaignName: string | null; title: string; mediaType: 'image' | 'video'; imageUrl: string; videoUrl: string | null; performanceLabel: string | null; spend: number; ctr: number | null }>;
   websiteAnalytics: { status: 'connected' | 'stored_data' | 'not_configured' | 'error'; error: string | null; dailyTrend: TrendRow[]; topLandingPages: BreakdownRow[]; trafficChannels: BreakdownRow[]; sourceMedium: BreakdownRow[]; deviceCategories: BreakdownRow[]; formEvents: BreakdownRow[]; topEvents: BreakdownRow[] };
   crm: { typeBreakdown: Array<{ key: string; total: number }>; statusBreakdown: Array<{ key: string; total: number }> };
   dataLayer: { status: string };
@@ -811,20 +836,7 @@ const dataLayerHelpText = computed(() => {
   return 'Coverage compares captured CRM attribution fields with the report targets above.';
 });
 
-const previewAge = [{ label: '25–34', value: '$164', width: 100 }, { label: '35–44', value: '$118', width: 72 }, { label: '45–54', value: '$82', width: 50 }, { label: '18–24', value: '$49', width: 30 }, { label: '55+', value: '$30', width: 18 }];
-const previewDevices = [{ label: 'Mobile', value: '71%', width: 100 }, { label: 'Desktop', value: '24%', width: 34 }, { label: 'Tablet', value: '5%', width: 7 }];
-const previewAreas = [{ label: 'Werribee', value: '$142', width: 100 }, { label: 'Point Cook', value: '$94', width: 66 }, { label: 'Hoppers Cr.', value: '$66', width: 46 }, { label: 'Tarneit', value: '$47', width: 33 }];
-const previewCreatives = [
-  { title: 'Search — IONIQ 9', platform: 'Google', art: 'IONIQ 9', spend: '$266', ctr: '21.2%', class: 'ioniq' },
-  { title: 'PMax — New & Demo', platform: 'Google', art: 'PMAX', spend: '$167', ctr: '1.1%', class: 'pmax' },
-  { title: 'Meta Traffic — Offers', platform: 'Meta', art: '▶', spend: '$10', ctr: '1.1%', class: 'meta' },
-  { title: 'Service & Trade-in', platform: 'Google', art: 'SERVICE', spend: '—', ctr: '—', class: 'service' },
-];
-const previewPivot = [
-  { campaign: 'Google · Search — IONIQ 9', spend: '$266.32', leads: 13, cpl: '$20.49' },
-  { campaign: 'Google · PMax — New & Demo', spend: '$166.80', leads: 6, cpl: '$27.80' },
-  { campaign: 'Meta · Traffic — Offers', spend: '$9.83', leads: 2, cpl: '$4.92' },
-];
+const plannedBreakdowns = ['Spend by age', 'Spend by device', 'Spend by area'];
 
 function applyPreset(id: PresetId) {
   to.value = today;
@@ -837,6 +849,7 @@ function connectionStatusLabel(status?: 'connected' | 'stored_data' | 'not_conne
 }
 function platformLabel(value: string) { return value === 'meta_ads' ? 'Meta' : value === 'google_ads' ? 'Google Ads' : value === 'ga4' ? 'GA4' : value; }
 function formatLabel(value: string) { return value.replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase()); }
+function hideBrokenCreativeImage(event: Event) { (event.currentTarget as HTMLImageElement).hidden = true; }
 function cleanLandingPage(value: string) { return !value || value === '(not set)' ? '/' : value; }
 function websiteBreakdownEmptyMessage(label: string) {
   return data.value?.websiteAnalytics.status === 'connected'
@@ -936,13 +949,6 @@ const MetricPanel = defineComponent({
   setup: props => () => h('article', { class: 'marketing-hub__card' }, [
     h('header', { class: 'marketing-hub__panel-head' }, [h('h2', props.title), h('p', props.description)]),
     h('div', { class: 'marketing-hub__metrics num' }, props.items.map(item => h('div', [h('small', item.label), h('strong', item.value)]))),
-  ]),
-});
-const PreviewBars = defineComponent({
-  props: { title: { type: String, required: true }, rows: { type: Array as () => Array<{ label: string; value: string; width: number }>, required: true } },
-  setup: props => () => h('article', { class: 'marketing-hub__card marketing-hub__preview-bars' }, [
-    h('h3', props.title),
-    ...props.rows.map(row => h('div', { key: row.label, class: 'marketing-hub__bar-row num' }, [h('p', [h('span', row.label), h('strong', row.value)]), h('span', { class: 'marketing-hub__track' }, [h('i', { style: { width: `${row.width}%` } })])])),
   ]),
 });
 </script>
@@ -1072,8 +1078,8 @@ const PreviewBars = defineComponent({
 .marketing-hub__website-detail { margin-top: 14px; }.marketing-hub__source-medium-card { margin-top: 14px; }.marketing-hub__breakdown-empty { display: grid; place-items: center; min-height: 112px; margin-bottom: 0; padding: 20px; color: var(--muted); font-size: 12px; text-align: center; }
 .marketing-hub__ga4-credential-note { margin-top: 14px; margin-bottom: 0; }
 .marketing-hub__coverage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.marketing-hub__coverage article { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__coverage small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__coverage strong { display: block; margin-top: 3px; font-size: 20px; }.marketing-hub__coverage .bad strong { color: var(--crit); }.marketing-hub__coverage .ok strong { color: var(--good); }.marketing-hub__audit-note, .marketing-hub__source-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub__domain { font-family: ui-monospace, Menlo, monospace; font-size: 13px !important; }
-.marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__preview-bars { padding: 15px; }.marketing-hub :deep(.marketing-hub__preview-bars h3) { margin-bottom: 13px; font-size: 12.5px; }
-.marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; color: white; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.35); font-size: 10.5px; }.marketing-hub__creative-art.ioniq { background: linear-gradient(135deg,#8a4b00,#e8710a); }.marketing-hub__creative-art.pmax { background: linear-gradient(135deg,#334155,#64748b); }.marketing-hub__creative-art.meta { background: linear-gradient(135deg,#0b3d91,#1877f2); }.marketing-hub__creative-art.service { background: linear-gradient(135deg,#0f5a2e,#188038); }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 7px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }
+.marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__planned-card { display: grid; place-items: center; min-height: 132px; padding: 22px; text-align: center; }.marketing-hub__planned-card h3 { margin-bottom: 5px; font-size: 12.5px; }.marketing-hub__planned-card p { margin-bottom: 0; color: var(--muted); font-size: 11.5px; }
+.marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; overflow: hidden; background: linear-gradient(135deg,#334155,#64748b); color: white !important; }.marketing-hub__creative-art img { width: 100%; height: 100%; object-fit: cover; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: white; font-size: 10.5px; }.marketing-hub__creative-art > i { position: absolute; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgba(0,0,0,.58); color: white; font-style: normal; }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 4px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative > div:last-child > small { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }.marketing-hub__creative-empty { display: grid; place-items: center; min-height: 150px; padding: 28px; color: var(--muted); text-align: center; }.marketing-hub__creative-empty strong { color: var(--ink-2); }.marketing-hub__creative-empty span { font-size: 12px; }
 .marketing-hub__pivot { display: grid; grid-template-columns: 230px 1fr; overflow: hidden; }.marketing-hub__pivot aside { padding: 15px; border-right: 1px solid var(--line); background: var(--surface-2); }.marketing-hub__pivot aside .marketing-hub__eyebrow:not(:first-child) { margin-top: 15px; }.marketing-hub__pivot aside div { display: flex; flex-wrap: wrap; gap: 7px; }.marketing-hub__pivot aside span, .marketing-hub__wells span { padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 600; }.marketing-hub__pivot aside span.on { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); color: var(--ink); }.marketing-hub__pivot-main { min-width: 0; padding: 15px; }.marketing-hub__wells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }.marketing-hub__wells > div { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__wells span { display: inline-block; }.marketing-hub__example { margin: 10px 0 0; color: var(--muted); font-size: 11.5px; }
 .marketing-hub__footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.65; }.marketing-hub__footer strong { color: var(--ink-2); }
 @media (max-width: 960px) {

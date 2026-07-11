@@ -29,11 +29,13 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /\.marketing-hub__kpis\s*\{[\s\S]*grid-template-columns:\s*repeat\(4,\s*1fr\)/);
   });
 
-  it('keeps future-data surfaces explicitly marked as previews', () => {
+  it('keeps future-data surfaces explicitly marked without fabricated figures', () => {
     assert.match(pageSource, /Phase 2 · new/);
     assert.match(pageSource, /Phase 3 · new/);
-    assert.match(pageSource, /illustrative until the first breakdown sync runs/);
-    assert.match(pageSource, /Example output/);
+    assert.match(pageSource, /No audience breakdown has been synced yet/);
+    assert.match(pageSource, /No sample figures are shown/);
+    assert.doesNotMatch(pageSource, /previewAge|previewDevices|previewAreas|previewPivot/);
+    assert.doesNotMatch(pageSource, /\$164|\$266\.32|Werribee/);
   });
 
   it('reaches markup rendered by local child components through the scoped-style boundary', () => {
@@ -79,5 +81,13 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /High-level path from visits to this admin CRM/);
     assert.match(pageSource, /websiteLeadFunnelRows/);
     assert.match(pageSource, /Website sessions[\s\S]*GA4 key events[\s\S]*Admin CRM leads/);
+  });
+
+  it('renders synced provider media instead of illustrative creative tiles', () => {
+    assert.match(pageSource, /data\.creativeMedia/);
+    assert.match(pageSource, /creative\.imageUrl/);
+    assert.match(pageSource, /No creative media has been synced/);
+    assert.doesNotMatch(pageSource, /previewCreatives/);
+    assert.doesNotMatch(pageSource, /art: 'IONIQ 9'/);
   });
 });

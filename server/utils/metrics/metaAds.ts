@@ -1,6 +1,7 @@
 // Meta Marketing API insights (level=campaign, time_increment=1).
 // Lead action types ported from XeroFlow metaClient.ts (incl. leads_retrieval).
 import type { DateRange, NormalizedRow } from './types';
+import { attachCreativeMedia, safeMediaUrl, type CreativeMedia } from './creativeMedia';
 
 export const META_LEAD_ACTION_TYPES = new Set([
   'lead',
@@ -16,6 +17,24 @@ interface MetaInsight {
   impressions?: string;
   clicks?: string;
   actions?: Array<{ action_type: string; value: string }>;
+}
+
+interface MetaAdCreative {
+  id?: string;
+  name?: string;
+  campaign_id?: string;
+  campaign?: { name?: string };
+  creative?: {
+    id?: string;
+    name?: string;
+    thumbnail_url?: string;
+    image_url?: string;
+    video_id?: string;
+    object_story_spec?: {
+      video_data?: { image_url?: string };
+      link_data?: { image_url?: string };
+    };
+  };
 }
 
 export function normalizeMetaInsights(insights: unknown[]): NormalizedRow[] {
@@ -37,6 +56,30 @@ export function normalizeMetaInsights(insights: unknown[]): NormalizedRow[] {
       conversions: null,
       raw: i,
     };
+  });
+}
+
+export function normalizeMetaCreatives(ads: unknown[]): CreativeMedia[] {
+  return (ads as MetaAdCreative[]).flatMap((ad) => {
+    const creative = ad.creative;
+    const imageUrl = safeMediaUrl(
+      creative?.thumbnail_url
+      || creative?.image_url
+      || creative?.object_story_spec?.video_data?.image_url
+      || creative?.object_story_spec?.link_data?.image_url,
+    );
+    if (!ad.id || !ad.campaign_id || !creative?.id || !imageUrl) return [];
+    return [{
+      id: `meta:${ad.id}:${creative.id}`,
+      platform: 'meta_ads' as const,
+      campaignId: ad.campaign_id,
+      campaignName: ad.campaign?.name || null,
+      title: ad.name || creative.name || 'Meta ad',
+      mediaType: creative.video_id ? 'video' as const : 'image' as const,
+      imageUrl,
+      videoUrl: null,
+      performanceLabel: null,
+    }];
   });
 }
 
@@ -70,5 +113,26 @@ export async function fetchMetaDaily(adAccountId: string, range: DateRange): Pro
     url = res.paging?.next || null;
     guard++;
   }
-  return normalizeMetaInsights(insights);
+  try {
+    const ads: unknown[] = [];
+    url = `${META_GRAPH_BASE}/${account}/ads?` + new URLSearchParams({
+      fields: 'id,name,campaign_id,campaign{name},creative{id,name,thumbnail_url,image_url,video_id,object_story_spec}',
+      effective_status: JSON.stringify(['ACTIVE', 'PAUSED']),
+      limit: '100',
+    }).toString();
+    guard = 0;
+    while (url && guard < 20) {
+      const res: { data?: unknown[]; paging?: { next?: string } } = await fetchJson(url, {
+        timeout: 30_000,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      ads.push(...(res.data || []));
+      url = res.paging?.next || null;
+      guard++;
+    }
+    return attachCreativeMedia(normalizeMetaInsights(insights), normalizeMetaCreatives(ads));
+  } catch {
+    console.warn('Meta Ads creative enrichment failed; campaign metrics were preserved');
+    return normalizeMetaInsights(insights);
+  }
 }

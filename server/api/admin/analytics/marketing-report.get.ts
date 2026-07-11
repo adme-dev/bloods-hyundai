@@ -14,6 +14,7 @@ import { aggregateStoredGa4Breakdowns, fetchGa4WebsiteAnalytics, type Ga4Website
 import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsights';
 import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
 import { buildMarketingTrend } from '../../../utils/metrics/marketingTrend';
+import { collectCreativeMedia } from '../../../utils/metrics/creativeMedia';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -186,6 +187,7 @@ export default defineEventHandler(async (event) => {
     insights,
     websiteAnalytics,
     campaigns: metrics.campaigns,
+    creativeMedia: collectCreativeMedia(metricRows, metrics.campaigns),
     crm: {
       coverage,
       leadSources,
