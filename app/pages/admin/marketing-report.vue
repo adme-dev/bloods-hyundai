@@ -1,1120 +1,488 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <p class="text-sm text-muted-foreground">Admin CRM attribution, platform ingestion, and data-layer coverage</p>
-        <h1 class="text-3xl font-semibold tracking-tight">Marketing Report</h1>
+  <div class="marketing-hub">
+    <header class="marketing-hub__header">
+      <div class="marketing-hub__header-row">
+        <div>
+          <p class="marketing-hub__eyebrow">Bloods Hyundai · Admin</p>
+          <h1>Marketing Hub</h1>
+          <p class="marketing-hub__subtitle">Spend, website, attribution and CRM capture — one commercial view.</p>
+        </div>
+
+        <div class="marketing-hub__range-wrap">
+          <div class="marketing-hub__daterange" aria-label="Report date range">
+            <button
+              v-for="preset in presets"
+              :key="preset.id"
+              type="button"
+              :class="{ on: activePreset === preset.id }"
+              :aria-pressed="activePreset === preset.id"
+              @click="applyPreset(preset.id)"
+            >
+              {{ preset.label }}
+            </button>
+            <button
+              type="button"
+              :class="{ on: activePreset === null }"
+              :aria-expanded="customRangeOpen"
+              @click="customRangeOpen = !customRangeOpen"
+            >
+              {{ compactRangeLabel }} <ChevronDown aria-hidden="true" />
+            </button>
+          </div>
+          <div v-if="customRangeOpen" class="marketing-hub__custom-range">
+            <label>From <input v-model="from" type="date" :max="to"></label>
+            <label>To <input v-model="to" type="date" :min="from" :max="today"></label>
+          </div>
+          <p class="marketing-hub__synced">
+            <span class="marketing-hub__live" />
+            {{ syncStatusText }}
+            <button type="button" :disabled="pending" aria-label="Refresh report" @click="refresh()">
+              <RefreshCw :class="{ spinning: pending }" aria-hidden="true" />
+            </button>
+          </p>
+        </div>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" as-child>
-          <NuxtLink to="/admin?tab=marketing">
-            <ArrowLeft class="h-4 w-4" />
-            Dashboard
-          </NuxtLink>
-        </Button>
-        <Button variant="outline" size="sm" :disabled="pending" @click="refresh">
-          <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': pending }" />
-          Refresh
-        </Button>
-        <Button variant="outline" size="sm" :disabled="backfillPending" @click="runAttributionBackfill">
-          <GitBranch class="h-4 w-4" :class="{ 'animate-spin': backfillPending }" />
-          Backfill attribution
-        </Button>
+
+      <div v-if="data && attributionNeedsAttention" class="marketing-hub__insight" role="status">
+        <div class="marketing-hub__insight-icon"><TriangleAlert aria-hidden="true" /></div>
+        <div>
+          <h2>Attribution isn’t connected yet — the report is running on empty</h2>
+          <p>
+            {{ money(data.insights.executive.totalSpend) }} spent this period, but
+            <strong>{{ pct(data.summary.campaignCoverage) }} of leads carry a campaign tag</strong> and
+            <strong>{{ n(data.summary.paidCrmLeads) }} CRM leads are matched to paid media</strong>.
+            Every panel below is built and working; tagging the ad URLs lights up this entire hub.
+          </p>
+        </div>
+        <NuxtLink class="marketing-hub__action ui-button" to="/admin/settings">Fix ad tracking <ArrowRight aria-hidden="true" /></NuxtLink>
       </div>
+    </header>
+
+    <div v-if="pending" class="marketing-hub__state" aria-live="polite">
+      <RefreshCw class="spinning" aria-hidden="true" />
+      Loading marketing report…
     </div>
 
-    <div class="flex flex-col gap-3 rounded-md border bg-background p-3 xl:flex-row xl:items-end xl:justify-between">
-      <div class="flex flex-wrap gap-2">
-        <Button
-          v-for="preset in presets"
-          :key="preset.id"
-          size="sm"
-          :variant="activePreset === preset.id ? 'default' : 'outline'"
-          @click="applyPreset(preset.id)"
-        >
-          {{ preset.label }}
-        </Button>
-      </div>
-      <div class="grid gap-3 sm:grid-cols-[minmax(0,160px)_minmax(0,160px)]">
-        <label class="space-y-1 text-xs font-medium text-muted-foreground">
-          From
-          <Input v-model="from" type="date" :max="to" class="h-9" />
-        </label>
-        <label class="space-y-1 text-xs font-medium text-muted-foreground">
-          To
-          <Input v-model="to" type="date" :min="from" :max="today" class="h-9" />
-        </label>
-      </div>
+    <div v-else-if="error || !data" class="marketing-hub__state marketing-hub__state--error" role="alert">
+      <TriangleAlert aria-hidden="true" />
+      <span>Could not load the marketing report.</span>
+      <button type="button" class="marketing-hub__action ui-button" @click="refresh()">Try again</button>
     </div>
 
-    <div v-if="pending" class="rounded-md border bg-background py-12 text-center text-sm text-muted-foreground">
-      Loading marketing report...
-    </div>
-
-    <template v-else-if="data">
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card v-for="item in summaryCards" :key="item.label">
-          <CardContent class="p-4">
-            <div class="mb-3 flex items-center justify-between gap-2">
-              <span class="text-xs font-medium uppercase text-muted-foreground">{{ item.label }}</span>
-              <component :is="item.icon" class="h-4 w-4 text-muted-foreground" />
+    <template v-else>
+      <section aria-label="Headline metrics">
+        <div class="marketing-hub__kpis num">
+          <article
+            v-for="item in summaryCards"
+            :key="item.label"
+            class="marketing-hub__kpi"
+            :class="{ alert: item.alert }"
+          >
+            <div class="marketing-hub__kpi-label">
+              {{ item.label }}
+              <component :is="item.icon" aria-hidden="true" />
             </div>
-            <div class="text-2xl font-semibold leading-tight">{{ item.value }}</div>
-            <p class="mt-1 text-xs text-muted-foreground">{{ item.caption }}</p>
-          </CardContent>
-        </Card>
-      </div>
+            <div class="marketing-hub__kpi-value">{{ item.value }}</div>
+            <p>{{ item.caption }}</p>
+          </article>
+        </div>
+      </section>
 
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
-        <Card>
-          <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <CardTitle class="flex items-center gap-2 text-xl">
-                <Gauge class="h-5 w-5 text-sky-600" />
-                Executive Readout
-              </CardTitle>
-              <CardDescription>Commercial view of spend, lead quality, attribution and admin CRM capture.</CardDescription>
-            </div>
-            <Badge :variant="data.insights.executive.dataQualityScore >= 80 ? 'default' : data.insights.executive.dataQualityScore >= 60 ? 'secondary' : 'destructive'">
-              {{ data.insights.executive.dataQualityScore }}% data quality
-            </Badge>
-          </CardHeader>
-          <CardContent class="space-y-5">
-            <div class="rounded-md border bg-muted/30 p-4">
-              <div class="text-sm font-semibold">{{ data.insights.executive.primaryRecommendation }}</div>
-              <div class="mt-2 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-                <MetricCell label="Blended CPL" :value="moneyOrDash(data.insights.executive.blendedCpl)" />
-                <MetricCell label="Blended ROAS" :value="roas(data.professionalMetrics.paidMedia.roas)" />
-                <MetricCell label="Paid lead share" :value="pctOrDash(data.insights.executive.paidShareOfLeads)" />
-                <MetricCell label="Top lead source" :value="data.insights.executive.topLeadSource || '-'" />
-                <MetricCell label="Best campaign" :value="data.insights.executive.bestCampaign || '-'" />
-              </div>
+      <section aria-labelledby="executive-title">
+        <article class="marketing-hub__card">
+          <header class="marketing-hub__panel-head">
+            <h2 id="executive-title">
+              <ChartNoAxesCombined aria-hidden="true" />
+              Executive Readout
+              <span class="marketing-hub__quality" :class="qualityClass(data.insights.executive.dataQualityScore)">
+                {{ data.insights.executive.dataQualityScore }}% data quality
+              </span>
+            </h2>
+            <p>Commercial view of spend, lead quality, attribution and CRM capture.</p>
+          </header>
+          <div class="marketing-hub__pad">
+            <div class="marketing-hub__funnel num">
+              <article v-for="step in data.insights.funnel" :key="step.key" class="marketing-hub__funnel-stage">
+                <p>{{ step.label }}</p>
+                <strong>{{ n(step.value) }}</strong>
+                <span class="marketing-hub__track">
+                  <i :style="{ width: `${barPercent(step.value, maxInsightFunnelValue)}%` }" />
+                </span>
+              </article>
             </div>
 
-            <div>
-              <div class="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <div class="text-sm font-semibold">Marketing funnel</div>
-                  <div class="text-xs text-muted-foreground">Website, paid media, GA4 key events and admin CRM leads in one flow.</div>
-                </div>
-              </div>
-              <div class="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
-                <div v-for="step in data.insights.funnel" :key="step.key" class="rounded-md border p-3">
-                  <div class="text-xs font-medium uppercase text-muted-foreground">{{ step.label }}</div>
-                  <div class="mt-2 text-xl font-semibold">{{ n(step.value) }}</div>
-                  <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div class="h-full rounded-full bg-sky-600" :style="{ width: `${barPercent(step.value, maxInsightFunnelValue)}%` }" />
+            <div class="marketing-hub__split2 marketing-hub__executive-detail">
+              <div class="marketing-hub__health">
+                <p class="marketing-hub__eyebrow">Data health</p>
+                <div v-for="check in data.insights.dataQuality" :key="check.key" class="marketing-hub__health-row">
+                  <div>
+                    <strong>{{ check.label }}</strong>
+                    <span :class="check.status">{{ pct(check.value) }}</span>
                   </div>
-                  <div class="mt-2 text-xs text-muted-foreground">
-                    {{ step.rateFromPrevious == null ? step.caption : `${pct(step.rateFromPrevious)} from previous signal` }}
+                  <div class="marketing-hub__track">
+                    <i :class="check.status" :style="{ width: `${Math.min(100, check.value)}%` }" />
+                    <b :style="{ left: `${Math.min(100, check.target)}%` }" />
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="grid gap-3 lg:grid-cols-2">
-              <div class="rounded-md border p-4">
-                <div class="mb-3 text-sm font-semibold">Data health</div>
-                <div class="space-y-3">
-                  <div v-for="check in data.insights.dataQuality" :key="check.key" class="space-y-1.5">
-                    <div class="flex items-center justify-between gap-3 text-sm">
-                      <span class="font-medium">{{ check.label }}</span>
-                      <Badge :variant="qualityBadgeVariant(check.status)">{{ pct(check.value) }}</Badge>
-                    </div>
-                    <div class="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div class="h-full rounded-full" :class="qualityBarClass(check.status)" :style="{ width: `${Math.min(100, check.value)}%` }" />
-                    </div>
-                    <div class="text-xs text-muted-foreground">Target {{ pct(check.target) }}</div>
-                  </div>
+                  <small>Target {{ pct(check.target) }}</small>
                 </div>
               </div>
 
-              <div class="rounded-md border p-4">
-                <div class="mb-3 text-sm font-semibold">Campaign opportunities</div>
-                <div v-if="data.insights.campaignDiagnostics.opportunities.length" class="space-y-3">
-                  <div v-for="item in data.insights.campaignDiagnostics.opportunities" :key="`${item.platform}:${item.campaignName}`" class="rounded-md bg-muted/40 p-3">
-                    <div class="truncate text-sm font-medium">{{ item.campaignName }}</div>
-                    <div class="mt-1 text-xs text-muted-foreground">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} admin CRM leads</div>
-                    <Badge variant="outline" class="mt-2">{{ item.issue }}</Badge>
-                  </div>
+              <div>
+                <p class="marketing-hub__eyebrow">Campaign opportunities</p>
+                <div v-if="data.insights.campaignDiagnostics.opportunities.length" class="marketing-hub__opportunities">
+                  <article
+                    v-for="item in data.insights.campaignDiagnostics.opportunities.slice(0, 3)"
+                    :key="`${item.platform}:${item.campaignName}`"
+                  >
+                    <h3>{{ item.campaignName }}</h3>
+                    <p class="num">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} CRM leads</p>
+                    <span>{{ item.issue }}</span>
+                  </article>
                 </div>
-                <div v-else class="rounded-md bg-muted/30 p-3 text-sm text-muted-foreground">
-                  No high-spend campaign issues detected for this period.
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Target class="h-5 w-5 text-emerald-600" />
-              Priority Actions
-            </CardTitle>
-            <CardDescription>Ordered actions for campaign optimisation and reporting confidence.</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div v-for="item in data.insights.recommendations" :key="`${item.priority}:${item.title}`" class="rounded-md border p-3">
-              <div class="mb-2 flex items-start justify-between gap-3">
-                <div class="text-sm font-semibold">{{ item.title }}</div>
-                <Badge :variant="priorityBadgeVariant(item.priority)" class="capitalize">{{ item.priority }}</Badge>
-              </div>
-              <p class="text-sm text-muted-foreground">{{ item.detail }}</p>
-              <p class="mt-2 text-sm font-medium">{{ item.action }}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2 text-xl">
-            <Database class="h-5 w-5 text-blue-600" />
-            Dealer Lead Diagnostics
-          </CardTitle>
-          <CardDescription>Source mix, campaign tagging and admin CRM lead capture by channel.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Source</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead class="text-right">Leads</TableHead>
-                <TableHead class="text-right">Share</TableHead>
-                <TableHead v-if="data.insights.externalCrmSyncEnabled" class="text-right">External sync</TableHead>
-                <TableHead class="text-right">Campaign tagged</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="source in data.insights.sourceDiagnostics" :key="source.key">
-                <TableCell class="font-medium">{{ source.label }}</TableCell>
-                <TableCell><Badge variant="outline" class="capitalize">{{ source.category.replaceAll('_', ' ') }}</Badge></TableCell>
-                <TableCell class="text-right">{{ n(source.total) }}</TableCell>
-                <TableCell class="text-right">{{ pct(source.share) }}</TableCell>
-                <TableCell v-if="data.insights.externalCrmSyncEnabled" class="text-right">{{ pct(source.crmSyncCoverage) }}</TableCell>
-                <TableCell class="text-right">{{ pct(source.campaignCoverage) }}</TableCell>
-              </TableRow>
-              <TableRow v-if="!data.insights.sourceDiagnostics.length">
-                <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 6 : 5" class="py-8 text-center text-muted-foreground">No lead source diagnostics for this range.</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Route class="h-5 w-5 text-sky-600" />
-              Lead Source Setup
-            </CardTitle>
-            <CardDescription>External lead inboxes are configured in Settings. This report uses those sources for attribution and lead quality checks.</CardDescription>
-          </div>
-          <Badge :variant="inboundEmailData?.configured ? 'default' : 'secondary'">
-            {{ inboundEmailData?.configured ? 'Email domain active' : 'Domain not configured' }}
-          </Badge>
-        </CardHeader>
-        <CardContent>
-          <div class="grid gap-3 sm:grid-cols-3">
-            <MetricCell label="Configured sources" :value="String(inboundEmailData?.addresses?.length || 0)" />
-            <MetricCell label="Active sources" :value="String(activeInboundLeadSourceCount)" />
-            <MetricCell label="Inbound domain" :value="inboundEmailData?.domain || '-'" />
-          </div>
-          <div class="mt-4 flex flex-col gap-3 rounded-md border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div class="text-sm font-medium">Manage provider addresses and source mapping</div>
-              <div class="text-xs text-muted-foreground">Carsales, Autotrader, Hyundai OEM, Meta Lead Ads and other inbound sources.</div>
-            </div>
-            <Button size="sm" as-child>
-              <NuxtLink to="/admin/settings/lead-sources">
-                <Route class="h-4 w-4" />
-                Open lead sources
-              </NuxtLink>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div class="grid gap-6 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Activity class="h-5 w-5 text-sky-600" />
-              GA4 Website
-            </CardTitle>
-            <CardDescription>Engagement quality for the selected period.</CardDescription>
-          </CardHeader>
-          <CardContent class="grid grid-cols-2 gap-3">
-            <MetricCell label="Sessions" :value="n(data.professionalMetrics.ga4Website.sessions)" />
-            <MetricCell label="Users" :value="n(data.professionalMetrics.ga4Website.users)" />
-            <MetricCell label="Engagement rate" :value="fractionPct(data.professionalMetrics.ga4Website.engagementRate)" />
-            <MetricCell label="Avg session" :value="duration(data.professionalMetrics.ga4Website.averageSessionDuration)" />
-            <MetricCell label="Page views" :value="n(data.professionalMetrics.ga4Website.screenPageViews)" />
-            <MetricCell label="Events" :value="n(data.professionalMetrics.ga4Website.eventCount)" />
-            <MetricCell label="Events/session" :value="decimal(data.professionalMetrics.ga4Website.eventsPerSession)" />
-            <MetricCell label="Key event rate" :value="pctOrDash(data.professionalMetrics.ga4Website.conversionRate)" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Gauge class="h-5 w-5 text-emerald-600" />
-              Paid Media Efficiency
-            </CardTitle>
-            <CardDescription>Meta and Google Ads blended delivery.</CardDescription>
-          </CardHeader>
-          <CardContent class="grid grid-cols-2 gap-3">
-            <MetricCell label="Spend" :value="money(data.professionalMetrics.paidMedia.spend)" />
-            <MetricCell label="CPM" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpm)" />
-            <MetricCell label="Impressions" :value="n(data.professionalMetrics.paidMedia.impressions)" />
-            <MetricCell label="CTR" :value="pctOrDash(data.professionalMetrics.paidMedia.ctr)" />
-            <MetricCell label="Clicks" :value="n(data.professionalMetrics.paidMedia.clicks)" />
-            <MetricCell label="Avg CPC" :value="moneyOrDash(data.professionalMetrics.paidMedia.averageCpc)" />
-            <MetricCell label="Platform lead rate" :value="pctOrDash(data.professionalMetrics.paidMedia.platformLeadRate)" />
-            <MetricCell label="Admin CRM CPL" :value="moneyOrDash(data.professionalMetrics.paidMedia.cpl)" />
-            <MetricCell v-if="data.professionalMetrics.paidMedia.roas != null || avgSaleValueSet" label="ROAS" :value="roas(data.professionalMetrics.paidMedia.roas)" />
-            <div v-else class="col-span-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-              Set an average sale value in
-              <NuxtLink to="/admin/settings/targets" class="font-medium text-primary hover:underline">Settings</NuxtLink>
-              to see ROAS.
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <MousePointerClick class="h-5 w-5 text-blue-600" />
-              Google Ads Depth
-            </CardTitle>
-            <CardDescription>Campaign-level metrics from Google Ads API sync.</CardDescription>
-          </CardHeader>
-          <CardContent class="grid grid-cols-2 gap-3">
-            <MetricCell label="Conversions" :value="n(data.professionalMetrics.googleAds.platformLeads)" />
-            <MetricCell label="Conv. rate" :value="pctOrDash(data.professionalMetrics.googleAds.conversionRate)" />
-            <MetricCell label="Cost / conv." :value="moneyOrDash(data.professionalMetrics.googleAds.costPerConversion)" />
-            <MetricCell label="All conversions" :value="decimal(data.professionalMetrics.googleAds.allConversions)" />
-            <MetricCell label="Conv. value" :value="moneyOrDash(data.professionalMetrics.googleAds.conversionsValue)" />
-            <MetricCell label="Interactions" :value="data.professionalMetrics.googleAds.interactions == null ? '-' : n(data.professionalMetrics.googleAds.interactions)" />
-            <MetricCell label="Interaction rate" :value="pctOrDash(data.professionalMetrics.googleAds.interactionRate)" />
-            <MetricCell label="Search impr. share" :value="fractionPct(data.professionalMetrics.googleAds.searchImpressionShare)" />
-            <MetricCell v-if="data.professionalMetrics.googleAds.roas != null || avgSaleValueSet" label="ROAS" :value="roas(data.professionalMetrics.googleAds.roas)" />
-            <div v-else class="col-span-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-              Set an average sale value in
-              <NuxtLink to="/admin/settings/targets" class="font-medium text-primary hover:underline">Settings</NuxtLink>
-              to see ROAS.
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader class="gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Globe2 class="h-5 w-5 text-sky-600" />
-              Website Analytics
-            </CardTitle>
-            <CardDescription>GA4 traffic, landing page and behaviour breakdown for {{ rangeLabel }}.</CardDescription>
-          </div>
-          <Badge :variant="websiteAnalyticsBadgeVariant">{{ websiteAnalyticsStatusLabel }}</Badge>
-        </CardHeader>
-        <CardContent v-if="data.websiteAnalytics.status === 'connected'" class="space-y-6">
-          <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-            <div class="rounded-md border p-4">
-              <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div class="text-sm font-semibold">Website performance trend</div>
-                  <div class="text-xs text-muted-foreground">Sessions, key events and admin CRM leads indexed to their selected-period peak.</div>
-                </div>
-                <div class="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-sky-600" />Sessions</span>
-                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-amber-500" />Key events</span>
-                  <span class="flex items-center gap-1.5"><span class="size-2 rounded-full bg-emerald-600" />Admin CRM leads</span>
-                </div>
-              </div>
-              <div v-if="trendHasData" class="overflow-hidden">
-                <svg viewBox="0 0 640 210" role="img" aria-label="Website analytics trend chart" class="h-[240px] w-full">
-                  <line x1="36" y1="20" x2="36" y2="170" class="stroke-muted" stroke-width="1" />
-                  <line x1="36" y1="170" x2="620" y2="170" class="stroke-muted" stroke-width="1" />
-                  <line v-for="y in chartGridLines" :key="y" x1="36" :y1="y" x2="620" :y2="y" class="stroke-muted/70" stroke-width="1" />
-                  <polyline :points="trendLinePoints('sessions')" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-sky-600" />
-                  <polyline :points="trendLinePoints('keyEvents')" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500" />
-                  <polyline :points="trendLinePoints('crmLeads')" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600" />
-                  <circle
-                    v-for="point in trendEndPoints"
-                    :key="point.key"
-                    :cx="point.x"
-                    :cy="point.y"
-                    r="4"
-                    :class="point.class"
-                    fill="currentColor"
-                  />
-                  <text x="36" y="198" class="fill-muted-foreground text-[11px]">{{ chartStartLabel }}</text>
-                  <text x="620" y="198" text-anchor="end" class="fill-muted-foreground text-[11px]">{{ chartEndLabel }}</text>
-                </svg>
-              </div>
-              <div v-else class="rounded-md bg-muted/30 py-10 text-center text-sm text-muted-foreground">
-                No daily website trend data for this period.
-              </div>
-            </div>
-
-            <div class="rounded-md border p-4">
-              <div class="mb-4 flex items-center gap-2">
-                <TrendingUp class="h-4 w-4 text-sky-600" />
-                <div>
-                  <div class="text-sm font-semibold">Website to lead funnel</div>
-                  <div class="text-xs text-muted-foreground">High-level path from visits to this admin CRM.</div>
-                </div>
-              </div>
-              <div class="space-y-4">
-                <div v-for="step in websiteFunnelRows" :key="step.label" class="space-y-1.5">
-                  <div class="flex items-center justify-between gap-3 text-sm">
-                    <span class="font-medium">{{ step.label }}</span>
-                    <span class="text-muted-foreground">{{ n(step.value) }}</span>
-                  </div>
-                  <div class="h-3 overflow-hidden rounded-full bg-muted">
-                    <div class="h-full rounded-full" :class="step.class" :style="{ width: `${step.width}%` }" />
-                  </div>
-                  <div class="text-xs text-muted-foreground">{{ step.caption }}</div>
-                </div>
+                <p v-else class="marketing-hub__empty">No high-spend campaign issues detected for this period.</p>
               </div>
             </div>
           </div>
+        </article>
+      </section>
 
-          <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
-            <div class="rounded-md border">
-              <div class="flex items-center justify-between gap-3 border-b px-4 py-3">
-                <div>
-                  <div class="text-sm font-semibold">Top landing pages</div>
-                  <div class="text-xs text-muted-foreground">Pages that started website sessions.</div>
-                </div>
-                <Badge variant="outline">{{ n(totalWebsiteSessions) }} sessions</Badge>
+      <section aria-label="Connections and lead mix">
+        <div class="marketing-hub__split3">
+          <article class="marketing-hub__card">
+            <header class="marketing-hub__panel-head"><h2>Connections</h2><p>Platform ingestion &amp; sync state.</p></header>
+            <div class="marketing-hub__pad">
+              <div v-for="connection in connections" :key="connection.label" class="marketing-hub__connection">
+                {{ connection.label }}
+                <span :class="{ disconnected: !connection.connected }">{{ connection.connected ? 'Connected' : 'Not connected' }}</span>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Landing page</TableHead>
-                    <TableHead class="text-right">Sessions</TableHead>
-                    <TableHead class="text-right">Users</TableHead>
-                    <TableHead class="text-right">Engaged</TableHead>
-                    <TableHead class="text-right">Key events</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="row in data.websiteAnalytics.topLandingPages" :key="dimension(row, 'landingPagePlusQueryString')">
-                    <TableCell class="max-w-[420px]">
-                      <div class="truncate font-medium">{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</div>
-                      <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div class="h-full rounded-full bg-sky-600" :style="{ width: `${barPercent(metric(row, 'sessions'), maxLandingPageSessions)}%` }" />
-                      </div>
-                    </TableCell>
-                    <TableCell class="text-right font-medium">{{ n(metric(row, 'sessions')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
-                    <TableCell class="text-right">{{ fractionPct(metric(row, 'engagementRate')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
-                  </TableRow>
-                  <TableRow v-if="!data.websiteAnalytics.topLandingPages.length">
-                    <TableCell colspan="5" class="py-8 text-center text-muted-foreground">No landing page rows returned by GA4.</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-
-            <div class="space-y-4">
-              <div class="rounded-md border p-4">
-                <div class="mb-3 flex items-center gap-2">
-                  <Route class="h-4 w-4 text-emerald-600" />
-                  <div class="text-sm font-semibold">Traffic channels</div>
-                </div>
-                <div class="space-y-3">
-                  <BreakdownRow
-                    v-for="row in data.websiteAnalytics.trafficChannels"
-                    :key="dimension(row, 'sessionDefaultChannelGroup')"
-                    :label="dimension(row, 'sessionDefaultChannelGroup') || 'Unassigned'"
-                    :value="metric(row, 'sessions')"
-                    :max="maxChannelSessions"
-                  />
-                </div>
-              </div>
-
-              <div class="rounded-md border p-4">
-                <div class="mb-3 flex items-center gap-2">
-                  <MonitorSmartphone class="h-4 w-4 text-blue-600" />
-                  <div class="text-sm font-semibold">Devices</div>
-                </div>
-                <div class="space-y-3">
-                  <BreakdownRow
-                    v-for="row in data.websiteAnalytics.deviceCategories"
-                    :key="dimension(row, 'deviceCategory')"
-                    :label="formatLabel(dimension(row, 'deviceCategory') || 'unknown')"
-                    :value="metric(row, 'sessions')"
-                    :max="maxDeviceSessions"
-                  />
-                </div>
+              <div class="marketing-hub__inset">
+                <small>External feeds (marketplace / email)</small>
+                <strong class="num">{{ n(data.summary.externalMarketplaceLeads) }} leads</strong>
               </div>
             </div>
+          </article>
+
+          <article class="marketing-hub__card">
+            <header class="marketing-hub__panel-head"><h2>Lead Types</h2><p>CRM enquiry mix for the period.</p></header>
+            <div class="marketing-hub__pad marketing-hub__bar-list">
+              <BarRow
+                v-for="row in data.crm.typeBreakdown.slice(0, 6)"
+                :key="row.key"
+                :label="formatLabel(row.key)"
+                :value="row.total"
+                :max="maxTypeTotal"
+              />
+              <p v-if="!data.crm.typeBreakdown.length" class="marketing-hub__empty">No leads in this range.</p>
+            </div>
+          </article>
+
+          <article class="marketing-hub__card">
+            <header class="marketing-hub__panel-head"><h2>Lead Status</h2><p>Pipeline state of period leads.</p></header>
+            <div class="marketing-hub__pad marketing-hub__bar-list">
+              <BarRow
+                v-for="row in data.crm.statusBreakdown.slice(0, 6)"
+                :key="row.key"
+                :label="formatLabel(row.key)"
+                :value="row.total"
+                :max="maxStatusTotal"
+              />
+              <p v-if="!data.crm.statusBreakdown.length" class="marketing-hub__empty">No lead statuses in this range.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="campaign-title">
+        <div class="marketing-hub__section-head">
+          <h2 id="campaign-title">Campaign CPL Reconciliation</h2>
+          <span />
+          <p>Ad rows matched to CRM leads by UTM campaign, ID or name</p>
+        </div>
+        <article class="marketing-hub__card marketing-hub__table-wrap">
+          <table class="num">
+            <thead>
+              <tr><th>Campaign</th><th>Platform</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>Plat. leads</th><th>Lead rate</th><th>CRM leads</th><th>CPL</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="campaign in data.campaigns" :key="`${campaign.platform}:${campaign.campaignId}`">
+                <td><span class="marketing-hub__campaign-name">{{ campaign.campaignName || campaign.campaignId }}</span></td>
+                <td><span class="marketing-hub__platform-pill" :class="campaign.platform">{{ platformLabel(campaign.platform) }}</span></td>
+                <td>{{ money(campaign.spend) }}</td>
+                <td>{{ n(campaign.impressions) }}</td>
+                <td>{{ n(campaign.clicks) }}</td>
+                <td>{{ pctOrDash(campaign.ctr) }}</td>
+                <td>{{ campaign.clicks ? money(campaign.spend / campaign.clicks) : '—' }}</td>
+                <td>{{ n(campaign.platformLeads) }}</td>
+                <td>{{ pctOrDash(campaign.platformLeadRate) }}</td>
+                <td :class="{ zero: campaign.crmLeads === 0 }">{{ n(campaign.crmLeads) }}</td>
+                <td :class="{ muted: campaign.cpl == null }">{{ moneyOrDash(campaign.cpl) }}</td>
+              </tr>
+              <tr v-if="!data.campaigns.length"><td colspan="11" class="marketing-hub__empty-cell">No campaign data in this range.</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
+
+      <section aria-label="Platform depth">
+        <div class="marketing-hub__split3">
+          <MetricPanel title="GA4 Website" description="Engagement quality for the period." :items="ga4Metrics" />
+          <MetricPanel title="Paid Media Efficiency" description="Meta &amp; Google blended delivery." :items="paidMediaMetrics" />
+          <MetricPanel title="Google Ads Depth" description="Campaign-level metrics from API sync." :items="googleAdsMetrics" />
+        </div>
+        <p v-if="!avgSaleValueSet && data.professionalMetrics.paidMedia.roas == null" class="marketing-hub__roas-note">
+          <NuxtLink to="/admin/settings">Set an average sale value</NuxtLink> to see modeled ROAS.
+        </p>
+      </section>
+
+      <section aria-labelledby="website-title">
+        <div class="marketing-hub__section-head">
+          <h2 id="website-title">Website Analytics</h2><span />
+          <p class="marketing-hub__status-pill" :class="{ disconnected: data.websiteAnalytics.status !== 'connected' }">{{ websiteAnalyticsStatusLabel }}</p>
+        </div>
+
+        <div v-if="data.websiteAnalytics.status === 'connected'" class="marketing-hub__website">
+          <div class="marketing-hub__split">
+            <article class="marketing-hub__card">
+              <header class="marketing-hub__panel-head"><h2>Website performance trend</h2><p>Sessions, key events &amp; CRM leads, indexed to peak.</p></header>
+              <div class="marketing-hub__pad">
+                <div class="marketing-hub__legend"><span><i class="sessions" />Sessions</span><span><i class="events" />Key events</span><span><i class="leads" />CRM leads</span></div>
+                <div v-if="trendHasData" class="marketing-hub__chart">
+                  <svg viewBox="0 0 656 190" preserveAspectRatio="none" role="img" aria-label="Website performance trend">
+                    <line v-for="y in chartGridLines" :key="y" x1="36" :y1="y" x2="620" :y2="y" />
+                    <polyline :points="trendLinePoints('sessions')" class="sessions" />
+                    <polyline :points="trendLinePoints('keyEvents')" class="events" />
+                    <polyline :points="trendLinePoints('crmLeads')" class="leads" />
+                    <circle v-for="point in trendEndPoints" :key="point.key" :cx="point.x" :cy="point.y" r="4" :class="point.key" />
+                  </svg>
+                  <div><span>{{ chartStartLabel }}</span><span>{{ chartEndLabel }}</span></div>
+                </div>
+                <p v-else class="marketing-hub__empty">No daily website activity in this range.</p>
+              </div>
+            </article>
+
+            <article class="marketing-hub__card">
+              <header class="marketing-hub__panel-head"><h2>Website → lead funnel</h2><p>Path from visits to CRM.</p></header>
+              <div class="marketing-hub__pad marketing-hub__website-funnel num">
+                <div v-for="row in websiteFunnelRows" :key="row.label">
+                  <p><strong>{{ row.label }}</strong><span>{{ n(row.value) }}</span></p>
+                  <span class="marketing-hub__track"><i :style="{ width: `${row.width}%` }" /></span>
+                  <small>{{ row.caption }}</small>
+                </div>
+              </div>
+            </article>
           </div>
 
-          <div class="grid gap-6 xl:grid-cols-2">
-            <div class="rounded-md border">
-              <div class="border-b px-4 py-3">
-                <div class="text-sm font-semibold">Source / medium</div>
-                <div class="text-xs text-muted-foreground">Where website sessions came from.</div>
+          <div class="marketing-hub__split marketing-hub__website-detail">
+            <article class="marketing-hub__card">
+              <header class="marketing-hub__panel-head"><h2>Top landing pages</h2><p>Pages that started sessions.</p></header>
+              <div class="marketing-hub__table-wrap">
+                <table class="num">
+                  <thead><tr><th>Landing page</th><th>Sessions</th><th>Users</th><th>Engaged</th><th>Key events</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in data.websiteAnalytics.topLandingPages.slice(0, 8)" :key="dimension(row, 'landingPagePlusQueryString')">
+                      <td>{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</td>
+                      <td>{{ n(metric(row, 'sessions')) }}</td>
+                      <td>{{ n(metric(row, 'activeUsers')) }}</td>
+                      <td>{{ fractionPct(metric(row, 'engagementRate')) }}</td>
+                      <td>{{ n(metric(row, 'keyEvents')) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Source / medium</TableHead>
-                    <TableHead class="text-right">Sessions</TableHead>
-                    <TableHead class="text-right">Users</TableHead>
-                    <TableHead class="text-right">Key events</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="row in data.websiteAnalytics.sourceMedium" :key="dimension(row, 'sessionSourceMedium')">
-                    <TableCell class="font-medium">{{ dimension(row, 'sessionSourceMedium') || 'Unassigned' }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'sessions')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-
-            <div class="rounded-md border">
-              <div class="border-b px-4 py-3">
-                <div class="text-sm font-semibold">Form and key events</div>
-                <div class="text-xs text-muted-foreground">Lead-related GA4 events and conversion signals.</div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Event</TableHead>
-                    <TableHead class="text-right">Count</TableHead>
-                    <TableHead class="text-right">Users</TableHead>
-                    <TableHead class="text-right">Key events</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="row in websiteEventRows" :key="dimension(row, 'eventName')">
-                    <TableCell class="font-medium">{{ formatEventName(dimension(row, 'eventName')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'eventCount')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
-                    <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
-                  </TableRow>
-                  <TableRow v-if="!websiteEventRows.length">
-                    <TableCell colspan="4" class="py-8 text-center text-muted-foreground">No lead or form GA4 events returned for this range.</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+            </article>
+            <div class="marketing-hub__stack">
+              <BreakdownPanel title="Traffic channels" :rows="data.websiteAnalytics.trafficChannels" dimension-key="sessionDefaultChannelGroup" :max="maxChannelSessions" />
+              <BreakdownPanel title="Devices" :rows="data.websiteAnalytics.deviceCategories" dimension-key="deviceCategory" :max="maxDeviceSessions" />
             </div>
           </div>
+        </div>
+        <article v-else class="marketing-hub__card marketing-hub__state">{{ websiteAnalyticsUnavailableMessage }}</article>
+      </section>
 
-          <div class="rounded-md border">
-            <div class="border-b px-4 py-3">
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div class="text-sm font-semibold">Chatbot activity</div>
-                  <div class="text-xs text-muted-foreground">Public assistant events tracked in GA4.</div>
-                </div>
-                <Badge variant="outline">{{ n(totalChatEventCount) }} events</Badge>
+      <section aria-label="Sources and audit">
+        <div class="marketing-hub__split">
+          <article class="marketing-hub__card">
+            <header class="marketing-hub__panel-head"><h2>Source / medium</h2><p>Where website sessions came from.</p></header>
+            <div class="marketing-hub__table-wrap">
+              <table class="num">
+                <thead><tr><th>Source / medium</th><th>Sessions</th><th>Users</th><th>Key events</th></tr></thead>
+                <tbody>
+                  <tr v-for="row in data.websiteAnalytics.sourceMedium.slice(0, 8)" :key="dimension(row, 'sessionSourceMedium')">
+                    <td>{{ dimension(row, 'sessionSourceMedium') || '(not set)' }}</td>
+                    <td>{{ n(metric(row, 'sessions')) }}</td>
+                    <td>{{ n(metric(row, 'activeUsers')) }}</td>
+                    <td>{{ n(metric(row, 'keyEvents')) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="marketing-hub__card">
+            <header class="marketing-hub__panel-head">
+              <h2><Code2 aria-hidden="true" />Data Layer Audit <span class="marketing-hub__quality mid">{{ dataLayerLabel }}</span></h2>
+              <p>Lead-tracking contract &amp; CRM field coverage.</p>
+            </header>
+            <div class="marketing-hub__pad">
+              <div class="marketing-hub__coverage num">
+                <article v-for="item in coverageMetrics" :key="item.label" :class="{ ok: item.ok, bad: !item.ok }">
+                  <small>{{ item.label }}</small><strong>{{ pct(item.value) }}</strong>
+                </article>
               </div>
+              <p class="marketing-hub__audit-note">{{ dataLayerHelpText }}</p>
             </div>
-            <div class="grid gap-3 p-4 md:grid-cols-3">
-              <MetricCell label="Chat opened" :value="n(chatMetricCount('chat_opened'))" />
-              <MetricCell label="Messages sent" :value="n(chatMetricCount('chat_message_sent'))" />
-              <MetricCell label="Lead handoffs" :value="n(chatMetricCount('chat_lead_handoff', 'chat_human_handoff'))" />
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="lead-source-title">
+        <article class="marketing-hub__card">
+          <header class="marketing-hub__panel-head">
+            <h2 id="lead-source-title"><ListFilter aria-hidden="true" />Lead Source Setup <span class="marketing-hub__status-pill">{{ inboundEmailData?.configured ? 'Email domain active' : 'Domain not configured' }}</span></h2>
+            <p>External lead inboxes used for attribution &amp; lead-quality checks.</p>
+          </header>
+          <div class="marketing-hub__pad">
+            <div class="marketing-hub__split3">
+              <div class="marketing-hub__inset"><small>Configured sources</small><strong class="num">{{ n(inboundEmailData?.addresses?.length || 0) }}</strong></div>
+              <div class="marketing-hub__inset"><small>Active sources</small><strong class="num">{{ n(activeInboundLeadSourceCount) }}</strong></div>
+              <div class="marketing-hub__inset"><small>Inbound domain</small><strong class="marketing-hub__domain">{{ inboundEmailData?.domain || 'Not configured' }}</strong></div>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Event</TableHead>
-                  <TableHead class="text-right">Count</TableHead>
-                  <TableHead class="text-right">Users</TableHead>
-                  <TableHead class="text-right">Key events</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="row in chatEventRows" :key="dimension(row, 'eventName')">
-                  <TableCell class="font-medium">{{ formatEventName(dimension(row, 'eventName')) }}</TableCell>
-                  <TableCell class="text-right">{{ n(metric(row, 'eventCount')) }}</TableCell>
-                  <TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell>
-                  <TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell>
-                </TableRow>
-                <TableRow v-if="!chatEventRows.length">
-                  <TableCell colspan="4" class="py-8 text-center text-muted-foreground">No chatbot GA4 events returned for this range.</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+            <p class="marketing-hub__source-note">
+              {{ inboundSourceLabels || 'No inbound sources configured' }} — currently
+              <strong>{{ n(data.summary.externalMarketplaceLeads) }} leads</strong> ingested this period.
+            </p>
           </div>
-        </CardContent>
-        <CardContent v-else>
-          <div class="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-            {{ websiteAnalyticsUnavailableMessage }}
+        </article>
+      </section>
+
+      <section aria-labelledby="breakdowns-title">
+        <div class="marketing-hub__section-head"><h2 id="breakdowns-title">Audience &amp; delivery breakdowns</h2><b>Phase 2 · new</b><span /></div>
+        <p class="marketing-hub__preview-note">Not in the report yet. Meta &amp; Google expose age, gender, area and device per campaign — we’ll ingest these into a breakdown table so ad <strong>spend</strong> can be sliced the way GA4 traffic already is. Figures below are illustrative until the first breakdown sync runs.</p>
+        <div class="marketing-hub__split3">
+          <PreviewBars title="Spend by age" :rows="previewAge" />
+          <PreviewBars title="Spend by device" :rows="previewDevices" />
+          <PreviewBars title="Spend by area" :rows="previewAreas" />
+        </div>
+      </section>
+
+      <section aria-labelledby="creative-title">
+        <div class="marketing-hub__section-head"><h2 id="creative-title">Ad creative</h2><b>Phase 2 · new</b><span /></div>
+        <p class="marketing-hub__preview-note">The actual ad images/video pulled from Meta &amp; Google, shown beside their spend and CTR — so you see <strong>what</strong> ran, not just the numbers.</p>
+        <div class="marketing-hub__creatives">
+          <article v-for="creative in previewCreatives" :key="creative.title" class="marketing-hub__creative">
+            <div class="marketing-hub__creative-art" :class="creative.class"><span>{{ creative.platform }}</span><strong>{{ creative.art }}</strong></div>
+            <div><h3>{{ creative.title }}</h3><p>Spend <strong class="num">{{ creative.spend }}</strong><span>CTR <strong class="num">{{ creative.ctr }}</strong></span></p></div>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="builder-title">
+        <div class="marketing-hub__section-head"><h2 id="builder-title">Report builder</h2><b class="p3">Phase 3 · new</b><span /><p>Slice any metric by any dimension</p></div>
+        <article class="marketing-hub__card marketing-hub__pivot">
+          <aside>
+            <p class="marketing-hub__eyebrow">Dimensions</p>
+            <div><span class="on">Campaign</span><span class="on">Platform</span><span>Age</span><span>Area</span><span>Device</span><span>Time of day</span><span>Landing page</span><span>Source / medium</span></div>
+            <p class="marketing-hub__eyebrow">Metrics</p>
+            <div><span class="on">Spend</span><span class="on">CRM leads</span><span class="on">CPL</span><span>Clicks</span><span>CTR</span><span>ROAS</span><span>Impr.</span><span>Sessions</span></div>
+          </aside>
+          <div class="marketing-hub__pivot-main">
+            <div class="marketing-hub__wells">
+              <div><p class="marketing-hub__eyebrow">Rows</p><span>Platform ×</span><span>Campaign ×</span></div>
+              <div><p class="marketing-hub__eyebrow">Values</p><span>Spend ×</span><span>CRM leads ×</span><span>CPL ×</span></div>
+            </div>
+            <div class="marketing-hub__table-wrap">
+              <table class="num"><thead><tr><th>Platform · Campaign</th><th>Spend</th><th>CRM leads</th><th>CPL</th></tr></thead>
+                <tbody>
+                  <tr v-for="row in previewPivot" :key="row.campaign"><td>{{ row.campaign }}</td><td>{{ row.spend }}</td><td>{{ row.leads }}</td><td>{{ row.cpl }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="marketing-hub__example">Example output — CRM leads/CPL shown as they’ll read once attribution is live.</p>
           </div>
-        </CardContent>
-      </Card>
+        </article>
+      </section>
 
-      <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Database class="h-5 w-5 text-sky-600" />
-              Admin CRM Lead Sources
-            </CardTitle>
-            <CardDescription>{{ rangeLabel }}. Includes website forms and external marketplace/email leads stored in this admin CRM.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead class="text-right">Leads</TableHead>
-                  <TableHead v-if="data.insights.externalCrmSyncEnabled" class="text-right">External sync</TableHead>
-                  <TableHead class="text-right">Campaign tagged</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="source in data.crm.leadSources" :key="source.key">
-                  <TableCell class="font-medium">{{ source.label }}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" class="capitalize">{{ source.category.replaceAll('_', ' ') }}</Badge>
-                  </TableCell>
-                  <TableCell class="text-right">{{ n(source.total) }}</TableCell>
-                  <TableCell v-if="data.insights.externalCrmSyncEnabled" class="text-right">{{ n(source.crmSynced) }}</TableCell>
-                  <TableCell class="text-right">{{ n(source.withCampaign) }}</TableCell>
-                </TableRow>
-                <TableRow v-if="!data.crm.leadSources.length">
-                  <TableCell :colspan="data.insights.externalCrmSyncEnabled ? 5 : 4" class="py-8 text-center text-muted-foreground">No admin CRM leads in this range.</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="flex items-center gap-2 text-xl">
-              <Code2 class="h-5 w-5 text-emerald-600" />
-              Data Layer Audit
-            </CardTitle>
-            <CardDescription>Lead tracking contract and admin CRM field coverage.</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <div class="rounded-md border p-3">
-              <div class="flex items-center justify-between gap-3">
-                <span class="text-sm font-medium">Coverage status</span>
-                <Badge :variant="dataLayerVariant">{{ dataLayerLabel }}</Badge>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <MetricCell label="UTM coverage" :value="pct(data.summary.utmCoverage)" />
-                <MetricCell label="Source coverage" :value="pct(data.summary.sourceCoverage)" />
-                <MetricCell v-if="typeof data.summary.chatCoverage === 'number'" label="Chat coverage" :value="pct(data.summary.chatCoverage)" />
-                <MetricCell label="Campaign coverage" :value="pct(data.summary.campaignCoverage)" />
-                <MetricCell label="Paid attribution" :value="pct(data.summary.paidAttributionCoverage)" />
-                <MetricCell label="Click ID coverage" :value="pct(data.summary.clickIdCoverage)" />
-                <MetricCell label="Backfilled" :value="pct(data.summary.backfilledAttributionCoverage)" />
-              </div>
-              <p class="mt-3 text-xs leading-5 text-muted-foreground">{{ dataLayerHelpText }}</p>
-            </div>
-            <div class="space-y-2">
-              <div v-for="event in data.dataLayer.expectedEvents" :key="event.event" class="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
-                <div>
-                  <div class="font-mono text-xs font-semibold">{{ event.event }}</div>
-                  <div class="text-xs text-muted-foreground">{{ event.destination }}</div>
-                </div>
-                <Badge variant="outline">{{ event.status }}</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div class="grid gap-6 xl:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-xl">Connections</CardTitle>
-            <CardDescription>Configured platform ingestion and outbound sync state.</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div v-for="connection in connections" :key="connection.label" class="flex items-center justify-between rounded-md border px-3 py-2">
-              <span class="text-sm font-medium">{{ connection.label }}</span>
-              <Badge :variant="connection.connected ? 'default' : 'outline'">{{ connection.connected ? 'Connected' : 'Not connected' }}</Badge>
-            </div>
-            <div class="grid gap-3 pt-2" :class="data.insights.externalCrmSyncEnabled ? 'grid-cols-2' : 'grid-cols-1'">
-              <MetricCell v-if="data.insights.externalCrmSyncEnabled" label="External CRM synced" :value="`${n(data.summary.syncedToCrm)} leads`" />
-              <MetricCell label="External feeds" :value="`${n(data.summary.externalMarketplaceLeads)} leads`" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-xl">Lead Types</CardTitle>
-            <CardDescription>Admin CRM enquiry mix for the selected period.</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-2">
-            <BreakdownRow v-for="row in data.crm.typeBreakdown.slice(0, 8)" :key="row.key" :label="formatLabel(row.key)" :value="row.total" :max="maxTypeTotal" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-xl">Lead Status</CardTitle>
-            <CardDescription>Pipeline state of report-period admin CRM leads.</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-2">
-            <BreakdownRow v-for="row in data.crm.statusBreakdown.slice(0, 8)" :key="row.key" :label="formatLabel(row.key)" :value="row.total" :max="maxStatusTotal" />
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2 text-xl">
-            <Target class="h-5 w-5 text-violet-600" />
-            Campaign CPL Reconciliation
-          </CardTitle>
-          <CardDescription>Ad-platform rows matched to admin CRM leads by UTM campaign, campaign ID, or campaign name.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Campaign</TableHead>
-                <TableHead>Platform</TableHead>
-                <TableHead class="text-right">Spend</TableHead>
-                <TableHead class="text-right">Impr.</TableHead>
-                <TableHead class="text-right">Clicks</TableHead>
-                <TableHead class="text-right">CTR</TableHead>
-                <TableHead class="text-right">CPC</TableHead>
-                <TableHead class="text-right">Platform leads</TableHead>
-                <TableHead class="text-right">Lead rate</TableHead>
-                <TableHead class="text-right">Admin CRM leads</TableHead>
-                <TableHead class="text-right">CPL</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow v-for="campaign in data.campaigns" :key="`${campaign.platform}:${campaign.campaignId}`">
-                <TableCell class="min-w-[260px] font-medium">{{ campaign.campaignName || campaign.campaignId }}</TableCell>
-                <TableCell><Badge variant="outline">{{ platformLabel(campaign.platform) }}</Badge></TableCell>
-                <TableCell class="text-right">{{ campaign.spend ? formatCurrency(campaign.spend, true) : '-' }}</TableCell>
-                <TableCell class="text-right">{{ n(campaign.impressions) }}</TableCell>
-                <TableCell class="text-right">{{ n(campaign.clicks) }}</TableCell>
-                <TableCell class="text-right">{{ pctOrDash(campaign.ctr) }}</TableCell>
-                <TableCell class="text-right">{{ campaign.clicks ? money(campaign.spend / campaign.clicks) : '-' }}</TableCell>
-                <TableCell class="text-right">{{ n(campaign.platformLeads) }}</TableCell>
-                <TableCell class="text-right">{{ pctOrDash(campaign.platformLeadRate) }}</TableCell>
-                <TableCell class="text-right font-medium">{{ n(campaign.crmLeads) }}</TableCell>
-                <TableCell class="text-right font-medium">{{ campaign.cpl == null ? '-' : formatCurrency(campaign.cpl, true) }}</TableCell>
-              </TableRow>
-              <TableRow v-if="!data.campaigns.length">
-                <TableCell colspan="11" class="py-8 text-center text-muted-foreground">No campaign rows in this range.</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-xl">Recent Admin CRM Leads</CardTitle>
-            <CardDescription>Latest leads with source, UTM and attribution indicators.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead class="text-right">Flags</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="lead in data.crm.recentLeads" :key="lead.id">
-                  <TableCell class="whitespace-nowrap">{{ shortDateTime(lead.createdAt) }}</TableCell>
-                  <TableCell>
-                    <NuxtLink :to="`/admin/enquiries/${lead.id}`" class="font-medium text-primary hover:underline">
-                      {{ formatLabel(lead.type) }}
-                    </NuxtLink>
-                    <div class="text-xs text-muted-foreground">{{ formatLabel(lead.status) }}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div class="font-medium">{{ lead.sourceBucket.label }}</div>
-                    <div class="max-w-[260px] truncate text-xs text-muted-foreground">{{ lead.source || '-' }}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div class="max-w-[240px] truncate">{{ lead.utmCampaign || '-' }}</div>
-                    <div class="text-xs text-muted-foreground">{{ [lead.utmSource, lead.utmMedium].filter(Boolean).join(' / ') || '-' }}</div>
-                  </TableCell>
-                  <TableCell class="text-right">
-                    <div class="flex flex-wrap justify-end gap-1">
-                      <Badge v-if="data.insights.externalCrmSyncEnabled && lead.syncedToCrm" variant="outline">External CRM</Badge>
-                      <Badge v-if="lead.hasExternalRef" variant="outline">External</Badge>
-                      <Badge v-if="lead.attributedPlatform" variant="outline">{{ platformLabel(lead.attributedPlatform) }}</Badge>
-                      <Badge v-if="lead.testDrive" variant="outline">Test drive</Badge>
-                      <Badge v-if="lead.financeInterest" variant="outline">Finance</Badge>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle class="text-xl">Sync History</CardTitle>
-            <CardDescription>Current ingestion health and recent platform runs.</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-4">
-            <div class="space-y-2">
-              <div
-                v-for="run in latestSyncRuns"
-                :key="`latest:${run.platform}`"
-                class="rounded-md border bg-background px-3 py-2.5"
-                :class="syncRunFrameClass(run)"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                      <component :is="syncRunIcon(run)" class="size-4 shrink-0" :class="syncRunIconClass(run)" />
-                      <span class="truncate text-sm font-semibold">{{ platformLabel(run.platform) }}</span>
-                    </div>
-                    <div class="mt-1 text-xs text-muted-foreground">
-                      Current · {{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows
-                    </div>
-                  </div>
-                  <Badge :variant="syncRunBadgeVariant(run)">{{ syncRunBadgeLabel(run) }}</Badge>
-                </div>
-                <p v-if="run.error && !isResolvedSyncRun(run)" class="mt-2 text-xs text-destructive">{{ run.error }}</p>
-              </div>
-            </div>
-
-            <details v-if="recentSyncRuns.length" class="group rounded-md border">
-              <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold">Recent runs</div>
-                  <div class="truncate text-xs text-muted-foreground">Older sync history and resolved failures.</div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <Badge variant="outline">{{ recentSyncRuns.length }}</Badge>
-                  <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
-                </div>
-              </summary>
-
-              <div class="max-h-[320px] space-y-2 overflow-auto border-t p-3">
-                <div
-                  v-for="run in recentSyncRuns"
-                  :key="`${run.platform}:${run.startedAt}`"
-                  class="rounded-md border px-3 py-2"
-                  :class="syncHistoryRowClass(run)"
-                >
-                  <div class="flex items-center justify-between gap-3">
-                    <div class="min-w-0">
-                      <div class="truncate text-sm font-medium">{{ platformLabel(run.platform) }}</div>
-                      <div class="text-xs text-muted-foreground">{{ shortDateTime(run.startedAt) }} · {{ run.rowsUpserted ?? 0 }} rows</div>
-                    </div>
-                    <Badge :variant="syncRunBadgeVariant(run)">{{ syncRunBadgeLabel(run) }}</Badge>
-                  </div>
-                  <p v-if="run.error" class="mt-2 text-xs" :class="isResolvedSyncRun(run) ? 'text-muted-foreground' : 'text-destructive'">
-                    {{ isResolvedSyncRun(run) ? 'Resolved by a later successful sync. ' : '' }}{{ run.error }}
-                  </p>
-                </div>
-              </div>
-            </details>
-          </CardContent>
-        </Card>
-      </div>
+      <footer class="marketing-hub__footer">
+        <strong>About this report.</strong> Sections above use live data for {{ rangeLabel }}. Sections tagged
+        <strong>Phase 2 / Phase 3 · new</strong> are previews and their figures are illustrative. Attribution remains honest:
+        unavailable ratios render as “—”, never as a fabricated result.
+      </footer>
     </template>
-
-    <div v-else class="rounded-md border bg-background py-12 text-center text-sm text-muted-foreground">
-      Could not load the marketing report.
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, defineComponent, h, ref } from 'vue';
 import {
-  AlertCircle,
-  Activity,
-  ArrowLeft,
-  CheckCircle2,
+  ArrowRight,
+  ChartNoAxesCombined,
   ChevronDown,
   Code2,
   Database,
-  Gauge,
-  GitBranch,
-  Globe2,
-  History,
-  MonitorSmartphone,
-  MousePointerClick,
+  ListFilter,
   RefreshCw,
-  Route,
-  Target,
-  TrendingUp,
+  TriangleAlert,
   UserCheck,
   WalletCards,
 } from 'lucide-vue-next';
-import { defineComponent, h } from 'vue';
-import { Button } from '~/components/ui/button';
-import { Badge } from '~/components/ui/badge';
-import { Input } from '~/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { formatCurrency } from '~/utils';
 
-definePageMeta({
-  layout: 'admin',
-  middleware: 'auth',
-});
+definePageMeta({ layout: 'admin', middleware: 'auth' });
 
 type PresetId = 'mtd' | '7d' | '30d' | '90d';
-type InboundLeadSource = 'carsales' | 'autotrader' | 'hyundai_oem' | 'meta_lead_ads' | 'other';
+type BreakdownRow = { dimensions: Record<string, string>; metrics: Record<string, number> };
+type TrendRow = { date: string; sessions: number; keyEvents: number; crmLeads: number };
+type TrendKey = 'sessions' | 'keyEvents' | 'crmLeads';
+type MetricItem = { label: string; value: string };
 
 interface ReportResponse {
   period: { from: string; to: string };
   connected: Record<'ga4' | 'meta_ads' | 'google_ads', boolean>;
   avgSaleValue: number | null;
-  summary: {
-    totalCrmLeads: number;
-    paidCrmLeads: number;
-    syncedToCrm: number;
-    externalMarketplaceLeads: number;
-    crmSyncCoverage: number;
-    utmCoverage: number;
-    campaignCoverage: number;
-    paidAttributionCoverage: number;
-    sourceCoverage: number;
-    chatCoverage?: number;
-    clickIdCoverage: number;
-    backfilledAttributionCoverage: number;
-    vehicleCoverage: number;
-  };
-  platformMetrics: {
-    ga4: { sessions: number; users: number; conversions: number };
-    meta_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null };
-    google_ads: { spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null };
-  };
+  summary: Record<'totalCrmLeads' | 'paidCrmLeads' | 'externalMarketplaceLeads' | 'utmCoverage' | 'campaignCoverage' | 'paidAttributionCoverage' | 'sourceCoverage' | 'clickIdCoverage' | 'backfilledAttributionCoverage', number>;
+  platformMetrics: { ga4: { sessions: number; conversions: number } };
   professionalMetrics: {
-    ga4Website: {
-      sessions: number;
-      users: number;
-      keyEvents: number;
-      engagementRate: number | null;
-      averageSessionDuration: number | null;
-      screenPageViews: number;
-      eventCount: number;
-      eventsPerSession: number | null;
-      conversionRate: number | null;
-    };
-    paidMedia: ProfessionalAdMetrics;
-    googleAds: ProfessionalAdMetrics;
-    metaAds: ProfessionalAdMetrics;
+    ga4Website: { sessions: number; users: number; engagementRate: number | null; averageSessionDuration: number | null; screenPageViews: number; eventCount: number; eventsPerSession: number | null; conversionRate: number | null; keyEvents: number };
+    paidMedia: AdMetrics;
+    googleAds: AdMetrics;
   };
   insights: {
-    externalCrmSyncEnabled: boolean;
-    executive: {
-      totalSpend: number;
-      totalCrmLeads: number;
-      blendedCpl: number | null;
-      paidShareOfLeads: number | null;
-      topLeadSource: string | null;
-      bestCampaign: string | null;
-      dataQualityScore: number;
-      primaryRecommendation: string;
-    };
-    funnel: Array<{
-      key: string;
-      label: string;
-      value: number;
-      rateFromPrevious: number | null;
-      caption: string;
-    }>;
-    recommendations: Array<{
-      priority: 'high' | 'medium' | 'low';
-      title: string;
-      detail: string;
-      action: string;
-    }>;
-    sourceDiagnostics: Array<{
-      key: string;
-      label: string;
-      category: string;
-      total: number;
-      crmSynced: number;
-      withCampaign: number;
-      share: number;
-      crmSyncCoverage: number;
-      campaignCoverage: number;
-    }>;
-    campaignDiagnostics: {
-      bestByCpl: ReportCampaign | null;
-      highestSpendNoCrmLead: ReportCampaign | null;
-      opportunities: Array<{
-        campaignName: string;
-        platform: string;
-        spend: number;
-        clicks: number;
-        crmLeads: number;
-        issue: string;
-      }>;
-    };
-    dataQuality: Array<{
-      key: string;
-      label: string;
-      value: number;
-      target: number;
-      status: 'good' | 'watch' | 'poor';
-    }>;
+    executive: { totalSpend: number; dataQualityScore: number };
+    funnel: Array<{ key: string; label: string; value: number }>;
+    dataQuality: Array<{ key: string; label: string; value: number; target: number; status: 'good' | 'watch' | 'poor' }>;
+    campaignDiagnostics: { opportunities: Array<{ platform: string; campaignName: string; spend: number; clicks: number; crmLeads: number; issue: string }> };
   };
-  websiteAnalytics: {
-    status: 'connected' | 'not_configured' | 'error';
-    error: string | null;
-    dailyTrend: WebsiteTrendRow[];
-    topLandingPages: Ga4BreakdownRow[];
-    trafficChannels: Ga4BreakdownRow[];
-    sourceMedium: Ga4BreakdownRow[];
-    deviceCategories: Ga4BreakdownRow[];
-    topEvents: Ga4BreakdownRow[];
-    formEvents: Ga4BreakdownRow[];
-  };
-  campaigns: ReportCampaign[];
-  crm: {
-    leadSources: Array<{ key: string; label: string; category: string; total: number; crmSynced: number; withCampaign: number }>;
-    typeBreakdown: Array<{ key: string; total: number }>;
-    statusBreakdown: Array<{ key: string; total: number }>;
-    recentLeads: Array<{
-      id: string;
-      createdAt: string;
-      type: string;
-      status: string;
-      source: string | null;
-      utmSource: string | null;
-      utmMedium: string | null;
-      utmCampaign: string | null;
-      attributedPlatform: string | null;
-      attributedCampaignId: string | null;
-      attributionMethod: string | null;
-      attributionConfidence: number | null;
-      testDrive: boolean;
-      financeInterest: boolean;
-      syncedToCrm: boolean;
-      hasExternalRef: boolean;
-      sourceBucket: { label: string };
-    }>;
-  };
-  dataLayer: {
-    status: 'healthy' | 'needs_attention' | 'limited_sample' | 'low_attribution_signal' | 'field_mapping_gap' | 'no_leads' | 'poor_coverage';
-    expectedEvents: Array<{ event: string; destination: string; status: string }>;
-  };
-  syncRuns: SyncRun[];
+  campaigns: Array<{ platform: string; campaignId: string; campaignName: string | null; spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null }>;
+  websiteAnalytics: { status: 'connected' | 'not_configured' | 'error'; error: string | null; dailyTrend: TrendRow[]; topLandingPages: BreakdownRow[]; trafficChannels: BreakdownRow[]; sourceMedium: BreakdownRow[]; deviceCategories: BreakdownRow[]; formEvents: BreakdownRow[]; topEvents: BreakdownRow[] };
+  crm: { typeBreakdown: Array<{ key: string; total: number }>; statusBreakdown: Array<{ key: string; total: number }> };
+  dataLayer: { status: string };
+  syncRuns: Array<{ platform: string; status: string; startedAt: string }>;
 }
 
-type SyncRun = {
-  platform: string;
-  status: string;
-  rowsUpserted: number | null;
-  error: string | null;
-  startedAt: string;
-  finishedAt?: string | null;
-};
+interface AdMetrics {
+  spend: number; impressions: number; clicks: number; ctr: number | null; averageCpc: number | null; cpm: number | null;
+  platformLeads: number; platformLeadRate?: number | null; conversionRate?: number | null; costPerConversion?: number | null;
+  cpl: number | null; conversionsValue?: number | null; allConversions?: number | null; interactions?: number | null;
+  interactionRate?: number | null; searchImpressionShare?: number | null; roas: number | null;
+}
 
-type InboundLeadEmailAddress = {
-  id: string;
-  source: InboundLeadSource;
-  label: string;
-  localPart: string;
-  email: string | null;
-  enabled: boolean;
-  enquiryType: string;
-  createdAt: string;
-};
-
-type InboundLeadEmailResponse = {
+interface InboundResponse {
   configured: boolean;
   domain: string | null;
-  addresses: InboundLeadEmailAddress[];
-};
-
-type Ga4BreakdownRow = {
-  dimensions: Record<string, string>;
-  metrics: Record<string, number>;
-};
-
-type WebsiteTrendRow = {
-  date: string;
-  sessions: number;
-  users: number;
-  keyEvents: number;
-  crmLeads: number;
-  paidSpend: number;
-};
-
-type TrendMetricKey = 'sessions' | 'keyEvents' | 'crmLeads';
-
-type ReportCampaign = {
-  platform: string;
-  campaignId: string;
-  campaignName: string | null;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  platformLeads: number;
-  crmLeads: number;
-  cpl: number | null;
-  ctr: number | null;
-  platformLeadRate: number | null;
-};
-
-type ProfessionalAdMetrics = {
-  spend: number;
-  impressions: number;
-  clicks: number;
-  ctr: number | null;
-  averageCpc: number | null;
-  cpm: number | null;
-  platformLeads: number;
-  platformLeadRate?: number | null;
-  conversionRate?: number | null;
-  costPerConversion?: number | null;
-  crmLeads: number;
-  cpl: number | null;
-  conversionsValue?: number | null;
-  allConversions?: number | null;
-  interactions?: number | null;
-  interactionRate?: number | null;
-  searchImpressionShare?: number | null;
-  roas: number | null;
-};
+  addresses: Array<{ id: string; label: string; enabled: boolean }>;
+}
 
 const today = isoDate(new Date());
 const from = ref(`${today.slice(0, 8)}01`);
 const to = ref(today);
-
+const customRangeOpen = ref(false);
 const query = computed(() => ({ from: from.value, to: to.value }));
-const { data, pending, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', {
-  query,
-});
-const { data: inboundEmailData } = await useFetch<InboundLeadEmailResponse>('/api/admin/lead-ingestion/email-addresses');
-const backfillPending = ref(false);
+const { data, pending, error, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', { query });
+const { data: inboundEmailData } = await useFetch<InboundResponse>('/api/admin/lead-ingestion/email-addresses');
 
-const presets: { id: PresetId; label: string }[] = [
-  { id: 'mtd', label: 'Month to date' },
-  { id: '7d', label: '7 days' },
-  { id: '30d', label: '30 days' },
-  { id: '90d', label: '90 days' },
+const presets: Array<{ id: PresetId; label: string }> = [
+  { id: 'mtd', label: 'Month to date' }, { id: '7d', label: '7 days' }, { id: '30d', label: '30 days' }, { id: '90d', label: '90 days' },
 ];
-
 const activePreset = computed<PresetId | null>(() => {
   if (to.value !== today) return null;
   if (from.value === `${today.slice(0, 8)}01`) return 'mtd';
@@ -1123,398 +491,308 @@ const activePreset = computed<PresetId | null>(() => {
   if (from.value === daysAgo(89)) return '90d';
   return null;
 });
-
 const rangeLabel = computed(() => data.value ? `${displayDate(data.value.period.from)} to ${displayDate(data.value.period.to)}` : '');
-
-const summaryCards = computed(() => {
-  const summary = data.value?.summary;
-  const platforms = data.value?.platformMetrics;
-  return [
-    {
-      label: 'Admin CRM leads',
-      value: n(summary?.totalCrmLeads || 0),
-      caption: `${n(summary?.paidCrmLeads || 0)} matched to paid media`,
-      icon: UserCheck,
-    },
-    {
-      label: 'Ad spend',
-      value: formatCurrency((platforms?.meta_ads.spend || 0) + (platforms?.google_ads.spend || 0), true),
-      caption: `Blended CPL ${blendedCpl.value}`,
-      icon: WalletCards,
-    },
-    {
-      label: 'Website activity',
-      value: n(platforms?.ga4.sessions || 0),
-      caption: `${n(platforms?.ga4.conversions || 0)} GA4 key events`,
-      icon: Database,
-    },
-    {
-      label: 'UTM coverage',
-      value: pct(summary?.utmCoverage || 0),
-      caption: `${pct(summary?.campaignCoverage || 0)} campaign tagged`,
-      icon: Code2,
-    },
-  ];
-});
-
-const blendedCpl = computed(() => {
-  const summary = data.value?.summary;
-  const platforms = data.value?.platformMetrics;
-  if (!summary || !platforms || !summary.paidCrmLeads) return '-';
-  const spend = (platforms.meta_ads.spend || 0) + (platforms.google_ads.spend || 0);
-  return formatCurrency(spend / summary.paidCrmLeads, true);
-});
-
+const compactRangeLabel = computed(() => `${displayShortDate(from.value)} – ${displayShortDate(to.value)}`);
+const latestSuccessfulSync = computed(() => data.value?.syncRuns.find(run => run.status === 'success'));
+const syncStatusText = computed(() => latestSuccessfulSync.value ? `Platforms synced · ${shortDateTime(latestSuccessfulSync.value.startedAt)}` : 'Waiting for platform sync');
+const attributionNeedsAttention = computed(() => (data.value?.summary.paidAttributionCoverage || 0) < 1);
 const avgSaleValueSet = computed(() => data.value?.avgSaleValue != null);
-
 const connections = computed(() => [
   { label: 'GA4 Website', connected: Boolean(data.value?.connected.ga4) },
   { label: 'Meta Ads', connected: Boolean(data.value?.connected.meta_ads) },
   { label: 'Google Ads', connected: Boolean(data.value?.connected.google_ads) },
 ]);
-
-const latestSyncRuns = computed(() => {
-  const latestByPlatform = new Map<string, SyncRun>();
-  for (const run of data.value?.syncRuns || []) {
-    if (!latestByPlatform.has(run.platform)) latestByPlatform.set(run.platform, run);
-  }
-  return ['google_ads', 'meta_ads', 'ga4']
-    .map(platform => latestByPlatform.get(platform))
-    .filter(Boolean) as SyncRun[];
-});
-
-const recentSyncRuns = computed(() => (data.value?.syncRuns || []).slice(0, 10));
-
+const summaryCards = computed(() => [
+  { label: 'Admin CRM leads', value: n(data.value?.summary.totalCrmLeads || 0), caption: `${n(data.value?.summary.paidCrmLeads || 0)} matched to paid media`, icon: UserCheck, alert: false },
+  { label: 'Ad spend', value: money(data.value?.insights.executive.totalSpend || 0), caption: `blended CPL ${moneyOrDash(data.value?.professionalMetrics.paidMedia.cpl)}`, icon: WalletCards, alert: false },
+  { label: 'Website activity', value: n(data.value?.platformMetrics.ga4.sessions || 0), caption: `${n(data.value?.platformMetrics.ga4.conversions || 0)} GA4 key events`, icon: Database, alert: false },
+  { label: 'UTM coverage', value: pct(data.value?.summary.utmCoverage || 0), caption: `${pct(data.value?.summary.campaignCoverage || 0)} campaign tagged`, icon: Code2, alert: (data.value?.summary.utmCoverage || 0) < 50 },
+]);
+const maxInsightFunnelValue = computed(() => Math.max(...(data.value?.insights.funnel.map(row => row.value) || [1]), 1));
 const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
 const maxStatusTotal = computed(() => Math.max(...(data.value?.crm.statusBreakdown.map(row => row.total) || [1]), 1));
-const maxInsightFunnelValue = computed(() => Math.max(...(data.value?.insights.funnel.map(step => step.value) || [1]), 1));
-const activeInboundLeadSourceCount = computed(() => (inboundEmailData.value?.addresses || []).filter(address => address.enabled).length);
-const totalWebsiteSessions = computed(() => data.value?.professionalMetrics.ga4Website.sessions || 0);
-const maxChannelSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.trafficChannels.map(row => metric(row, 'sessions')) || [1]), 1));
-const maxDeviceSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.deviceCategories.map(row => metric(row, 'sessions')) || [1]), 1));
-const maxLandingPageSessions = computed(() => Math.max(...(data.value?.websiteAnalytics.topLandingPages.map(row => metric(row, 'sessions')) || [1]), 1));
+const activeInboundLeadSourceCount = computed(() => inboundEmailData.value?.addresses.filter(row => row.enabled).length || 0);
+const inboundSourceLabels = computed(() => inboundEmailData.value?.addresses.filter(row => row.enabled).map(row => row.label).join(' · ') || '');
+
+const ga4Metrics = computed<MetricItem[]>(() => {
+  const m = data.value?.professionalMetrics.ga4Website;
+  return m ? [
+    { label: 'Sessions', value: n(m.sessions) }, { label: 'Users', value: n(m.users) },
+    { label: 'Engagement', value: fractionPct(m.engagementRate) }, { label: 'Avg session', value: duration(m.averageSessionDuration) },
+    { label: 'Page views', value: n(m.screenPageViews) }, { label: 'Events', value: n(m.eventCount) },
+    { label: 'Events / session', value: decimal(m.eventsPerSession) }, { label: 'Key event rate', value: pctOrDash(m.conversionRate) },
+  ] : [];
+});
+const paidMediaMetrics = computed<MetricItem[]>(() => {
+  const m = data.value?.professionalMetrics.paidMedia;
+  return m ? [
+    { label: 'Spend', value: money(m.spend) }, { label: 'CPM', value: moneyOrDash(m.cpm) },
+    { label: 'Impressions', value: n(m.impressions) }, { label: 'CTR', value: pctOrDash(m.ctr) },
+    { label: 'Clicks', value: n(m.clicks) }, { label: 'Avg CPC', value: moneyOrDash(m.averageCpc) },
+    { label: 'Platform lead rate', value: pctOrDash(m.platformLeadRate) }, { label: 'CRM CPL', value: moneyOrDash(m.cpl) },
+    ...(m.roas != null ? [{ label: 'ROAS', value: roas(m.roas) }] : []),
+  ] : [];
+});
+const googleAdsMetrics = computed<MetricItem[]>(() => {
+  const m = data.value?.professionalMetrics.googleAds;
+  return m ? [
+    { label: 'Conversions', value: n(m.platformLeads) }, { label: 'Conv. rate', value: pctOrDash(m.conversionRate) },
+    { label: 'Cost / conv.', value: moneyOrDash(m.costPerConversion) }, { label: 'Conv. value', value: moneyOrDash(m.conversionsValue) },
+    { label: 'Interactions', value: m.interactions == null ? '—' : n(m.interactions) }, { label: 'Interaction rate', value: pctOrDash(m.interactionRate) },
+    { label: 'Search impr. share', value: fractionPct(m.searchImpressionShare) }, { label: 'All conversions', value: decimal(m.allConversions) },
+    ...(m.roas != null ? [{ label: 'ROAS', value: roas(m.roas) }] : []),
+  ] : [];
+});
+
+const maxChannelSessions = computed(() => maxBreakdown(data.value?.websiteAnalytics.trafficChannels));
+const maxDeviceSessions = computed(() => maxBreakdown(data.value?.websiteAnalytics.deviceCategories));
 const websiteTrendRows = computed(() => data.value?.websiteAnalytics.dailyTrend || []);
 const trendHasData = computed(() => websiteTrendRows.value.some(row => row.sessions || row.keyEvents || row.crmLeads));
 const chartGridLines = [57.5, 95, 132.5];
 const chartStartLabel = computed(() => websiteTrendRows.value[0]?.date ? displayShortDate(websiteTrendRows.value[0].date) : '');
-const chartEndLabel = computed(() => {
-  const lastRow = websiteTrendRows.value.at(-1);
-  return lastRow?.date ? displayShortDate(lastRow.date) : '';
-});
-const trendEndPoints = computed(() => [
-  { key: 'sessions', class: 'text-sky-600', ...trendPoint('sessions', Math.max(websiteTrendRows.value.length - 1, 0)) },
-  { key: 'keyEvents', class: 'text-amber-500', ...trendPoint('keyEvents', Math.max(websiteTrendRows.value.length - 1, 0)) },
-  { key: 'crmLeads', class: 'text-emerald-600', ...trendPoint('crmLeads', Math.max(websiteTrendRows.value.length - 1, 0)) },
-]);
-const websiteEventRows = computed(() => {
-  const analytics = data.value?.websiteAnalytics;
-  if (!analytics) return [];
-  return analytics.formEvents.length ? analytics.formEvents : analytics.topEvents.slice(0, 8);
-});
-const totalFormEventCount = computed(() => websiteEventRows.value.reduce((sum, row) => sum + metric(row, 'eventCount'), 0));
-const chatEventRows = computed(() => {
-  const analytics = data.value?.websiteAnalytics;
-  if (!analytics) return [];
-  return analytics.topEvents.filter((row) => /^chat_/i.test(dimension(row, 'eventName')));
-});
-const totalChatEventCount = computed(() => chatEventRows.value.reduce((sum, row) => sum + metric(row, 'eventCount'), 0));
+const chartEndLabel = computed(() => websiteTrendRows.value.at(-1)?.date ? displayShortDate(websiteTrendRows.value.at(-1)!.date) : '');
+const trendEndPoints = computed(() => (['sessions', 'keyEvents', 'crmLeads'] as TrendKey[]).map(key => ({ key, ...trendPoint(key, Math.max(0, websiteTrendRows.value.length - 1)) })));
+const totalFormEventCount = computed(() => (data.value?.websiteAnalytics.formEvents || []).reduce((sum, row) => sum + metric(row, 'eventCount'), 0));
 const websiteFunnelRows = computed(() => {
   const sessions = data.value?.professionalMetrics.ga4Website.sessions || 0;
   const keyEvents = data.value?.professionalMetrics.ga4Website.keyEvents || 0;
-  const crmLeads = data.value?.summary.totalCrmLeads || 0;
-  const max = Math.max(sessions, totalFormEventCount.value, keyEvents, crmLeads, 1);
-
+  const leads = data.value?.summary.totalCrmLeads || 0;
+  const max = Math.max(sessions, totalFormEventCount.value, keyEvents, leads, 1);
   return [
-    {
-      label: 'Sessions',
-      value: sessions,
-      caption: 'Website visits tracked by GA4',
-      width: barPercent(sessions, max),
-      class: 'bg-sky-600',
-    },
-    {
-      label: 'Form events',
-      value: totalFormEventCount.value,
-      caption: 'GA4 lead/form activity',
-      width: barPercent(totalFormEventCount.value, max),
-      class: 'bg-blue-500',
-    },
-    {
-      label: 'Key events',
-      value: keyEvents,
-      caption: 'GA4 conversion events',
-      width: barPercent(keyEvents, max),
-      class: 'bg-amber-500',
-    },
-    {
-      label: 'Admin CRM leads',
-      value: crmLeads,
-      caption: 'Enquiries stored in this admin CRM',
-      width: barPercent(crmLeads, max),
-      class: 'bg-emerald-600',
-    },
+    { label: 'Sessions', value: sessions, caption: 'Website visits (GA4)', width: barPercent(sessions, max) },
+    { label: 'Form events', value: totalFormEventCount.value, caption: 'GA4 form activity', width: barPercent(totalFormEventCount.value, max) },
+    { label: 'Key events', value: keyEvents, caption: 'GA4 conversions', width: barPercent(keyEvents, max) },
+    { label: 'CRM leads', value: leads, caption: 'Stored enquiries', width: barPercent(leads, max) },
   ];
 });
-
-const websiteAnalyticsStatusLabel = computed(() => {
-  if (data.value?.websiteAnalytics.status === 'connected') return 'Connected';
-  if (data.value?.websiteAnalytics.status === 'error') return 'GA4 error';
-  return 'Not connected';
+const websiteAnalyticsStatusLabel = computed(() => data.value?.websiteAnalytics.status === 'connected' ? 'GA4 connected' : data.value?.websiteAnalytics.status === 'error' ? 'GA4 error' : 'Not connected');
+const websiteAnalyticsUnavailableMessage = computed(() => data.value?.websiteAnalytics.status === 'error' ? `GA4 website analytics could not be loaded: ${data.value.websiteAnalytics.error || 'Unknown error'}` : 'GA4 website analytics is not connected for this dealer.');
+const coverageMetrics = computed(() => {
+  const s = data.value?.summary;
+  return s ? [
+    { label: 'UTM coverage', value: s.utmCoverage, ok: s.utmCoverage >= 80 }, { label: 'Source coverage', value: s.sourceCoverage, ok: s.sourceCoverage >= 95 },
+    { label: 'Campaign coverage', value: s.campaignCoverage, ok: s.campaignCoverage >= 80 }, { label: 'Paid attribution', value: s.paidAttributionCoverage, ok: s.paidAttributionCoverage >= 80 },
+    { label: 'Click-ID coverage', value: s.clickIdCoverage, ok: s.clickIdCoverage >= 80 }, { label: 'Backfilled', value: s.backfilledAttributionCoverage, ok: s.backfilledAttributionCoverage >= 80 },
+  ] : [];
 });
-
-const websiteAnalyticsBadgeVariant = computed(() => {
-  if (data.value?.websiteAnalytics.status === 'connected') return 'default';
-  if (data.value?.websiteAnalytics.status === 'error') return 'destructive';
-  return 'outline';
-});
-
-const websiteAnalyticsUnavailableMessage = computed(() => {
-  if (data.value?.websiteAnalytics.status === 'error') {
-    return `GA4 website analytics could not be loaded: ${data.value.websiteAnalytics.error || 'Unknown GA4 error'}`;
-  }
-  return 'GA4 website analytics is not connected for this dealer.';
-});
-
-const dataLayerLabel = computed(() => {
-  const status = data.value?.dataLayer.status;
-  if (status === 'healthy') return 'Healthy';
-  if (status === 'needs_attention') return 'Needs attention';
-  if (status === 'limited_sample') return 'Limited sample';
-  if (status === 'low_attribution_signal' || status === 'poor_coverage') return 'Low attribution signal';
-  if (status === 'field_mapping_gap') return 'Field mapping gap';
-  return 'No CRM leads';
-});
-
-const dataLayerVariant = computed(() => data.value?.dataLayer.status === 'field_mapping_gap' ? 'destructive' : data.value?.dataLayer.status === 'healthy' ? 'default' : 'secondary');
-
+const dataLayerLabel = computed(() => formatLabel(data.value?.dataLayer.status || 'No leads'));
 const dataLayerHelpText = computed(() => {
-  const status = data.value?.dataLayer.status;
-  const totalLeads = data.value?.summary.totalCrmLeads || 0;
-
-  if (status === 'healthy') return 'Lead source, campaign and paid attribution fields are being captured at healthy levels for this period.';
-  if (status === 'needs_attention') return 'Tracking events are implemented, but some admin CRM attribution fields are below target and should be monitored.';
-  if (status === 'limited_sample') return `Only ${n(totalLeads)} admin CRM leads are in this range, so attribution percentages can look severe from a small sample.`;
-  if (status === 'low_attribution_signal' || status === 'poor_coverage') return 'Tracking events are implemented, but current admin CRM leads are not carrying enough UTM, campaign or click ID fields.';
-  if (status === 'field_mapping_gap') return 'Admin CRM lead records are missing source fields. Check form payloads and inbound source mapping.';
-  return 'No admin CRM leads were captured in this range, so field coverage cannot be assessed yet.';
+  const total = data.value?.summary.totalCrmLeads || 0;
+  if (!total) return 'No admin CRM leads were captured in this range, so field coverage cannot be assessed yet.';
+  if (total < 5) return `Only ${n(total)} CRM leads are in range, so percentages can look severe from a small sample.`;
+  return 'Coverage compares captured CRM attribution fields with the report targets above.';
 });
 
-function priorityBadgeVariant(priority: 'high' | 'medium' | 'low') {
-  if (priority === 'high') return 'destructive';
-  if (priority === 'medium') return 'secondary';
-  return 'outline';
-}
-
-function qualityBadgeVariant(status: 'good' | 'watch' | 'poor') {
-  if (status === 'good') return 'default';
-  if (status === 'watch') return 'secondary';
-  return 'destructive';
-}
-
-function qualityBarClass(status: 'good' | 'watch' | 'poor') {
-  if (status === 'good') return 'bg-emerald-600';
-  if (status === 'watch') return 'bg-amber-500';
-  return 'bg-destructive';
-}
-
-async function runAttributionBackfill() {
-  if (backfillPending.value) return;
-  backfillPending.value = true;
-  try {
-    await $fetch('/api/admin/analytics/attribution-backfill', {
-      method: 'POST',
-      body: { days: 180 },
-    });
-    await refresh();
-  } finally {
-    backfillPending.value = false;
-  }
-}
+const previewAge = [{ label: '25–34', value: '$164', width: 100 }, { label: '35–44', value: '$118', width: 72 }, { label: '45–54', value: '$82', width: 50 }, { label: '18–24', value: '$49', width: 30 }, { label: '55+', value: '$30', width: 18 }];
+const previewDevices = [{ label: 'Mobile', value: '71%', width: 100 }, { label: 'Desktop', value: '24%', width: 34 }, { label: 'Tablet', value: '5%', width: 7 }];
+const previewAreas = [{ label: 'Werribee', value: '$142', width: 100 }, { label: 'Point Cook', value: '$94', width: 66 }, { label: 'Hoppers Cr.', value: '$66', width: 46 }, { label: 'Tarneit', value: '$47', width: 33 }];
+const previewCreatives = [
+  { title: 'Search — IONIQ 9', platform: 'Google', art: 'IONIQ 9', spend: '$266', ctr: '21.2%', class: 'ioniq' },
+  { title: 'PMax — New & Demo', platform: 'Google', art: 'PMAX', spend: '$167', ctr: '1.1%', class: 'pmax' },
+  { title: 'Meta Traffic — Offers', platform: 'Meta', art: '▶', spend: '$10', ctr: '1.1%', class: 'meta' },
+  { title: 'Service & Trade-in', platform: 'Google', art: 'SERVICE', spend: '—', ctr: '—', class: 'service' },
+];
+const previewPivot = [
+  { campaign: 'Google · Search — IONIQ 9', spend: '$266.32', leads: 13, cpl: '$20.49' },
+  { campaign: 'Google · PMax — New & Demo', spend: '$166.80', leads: 6, cpl: '$27.80' },
+  { campaign: 'Meta · Traffic — Offers', spend: '$9.83', leads: 2, cpl: '$4.92' },
+];
 
 function applyPreset(id: PresetId) {
   to.value = today;
-  if (id === 'mtd') from.value = `${today.slice(0, 8)}01`;
-  if (id === '7d') from.value = daysAgo(6);
-  if (id === '30d') from.value = daysAgo(29);
-  if (id === '90d') from.value = daysAgo(89);
+  from.value = id === 'mtd' ? `${today.slice(0, 8)}01` : daysAgo(id === '7d' ? 6 : id === '30d' ? 29 : 89);
+  customRangeOpen.value = false;
 }
-
-function platformLabel(platform: string) {
-  if (platform === 'meta_ads') return 'Meta';
-  if (platform === 'google_ads') return 'Google Ads';
-  if (platform === 'ga4') return 'GA4';
-  if (platform === 'crm') return 'CRM';
-  return platform;
-}
-
-function isResolvedSyncRun(run: SyncRun) {
-  if (run.status === 'success') return false;
-  const runStartedAt = new Date(run.startedAt).getTime();
-  return Boolean(data.value?.syncRuns.some(candidate =>
-    candidate.platform === run.platform &&
-    candidate.status === 'success' &&
-    new Date(candidate.startedAt).getTime() > runStartedAt,
-  ));
-}
-
-function syncRunBadgeLabel(run: SyncRun) {
-  if (isResolvedSyncRun(run)) return 'resolved';
-  return run.status;
-}
-
-function syncRunBadgeVariant(run: SyncRun) {
-  if (run.status === 'success') return 'default';
-  if (isResolvedSyncRun(run)) return 'secondary';
-  return 'destructive';
-}
-
-function syncRunIcon(run: SyncRun) {
-  if (run.status === 'success') return CheckCircle2;
-  if (isResolvedSyncRun(run)) return History;
-  return AlertCircle;
-}
-
-function syncRunIconClass(run: SyncRun) {
-  if (run.status === 'success') return 'text-emerald-600';
-  if (isResolvedSyncRun(run)) return 'text-muted-foreground';
-  return 'text-destructive';
-}
-
-function syncRunFrameClass(run: SyncRun) {
-  if (run.status === 'success') return 'border-emerald-200 bg-emerald-50/40';
-  if (isResolvedSyncRun(run)) return 'border-muted bg-muted/20';
-  return 'border-destructive/40 bg-destructive/5';
-}
-
-function syncHistoryRowClass(run: SyncRun) {
-  if (run.status === 'success') return 'bg-background';
-  if (isResolvedSyncRun(run)) return 'border-muted bg-muted/20 opacity-80';
-  return 'border-destructive/40 bg-destructive/5';
-}
-
-function formatLabel(value: string) {
-  return value.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase());
-}
-
-function formatEventName(value: string) {
-  return formatLabel(value || 'unknown');
-}
-
-function cleanLandingPage(value: string) {
-  if (!value || value === '(not set)') return '/';
-  return value;
-}
-
-function dimension(row: Ga4BreakdownRow, key: string) {
-  return row.dimensions[key] || '';
-}
-
-function metric(row: Ga4BreakdownRow, key: string) {
+function qualityClass(score: number) { return score >= 80 ? 'ok' : score >= 60 ? 'mid' : 'bad'; }
+function platformLabel(value: string) { return value === 'meta_ads' ? 'Meta' : value === 'google_ads' ? 'Google Ads' : value === 'ga4' ? 'GA4' : value; }
+function formatLabel(value: string) { return value.replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase()); }
+function cleanLandingPage(value: string) { return !value || value === '(not set)' ? '/' : value; }
+function dimension(row: BreakdownRow, key: string) { return row.dimensions[key] || ''; }
+function metric(row: BreakdownRow, key: string): number {
   const value = row.metrics[key];
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
-
-function chatMetricCount(...eventNames: string[]) {
-  const wanted = new Set(eventNames.map(name => name.toLowerCase()));
-  return chatEventRows.value
-    .filter((row) => wanted.has(dimension(row, 'eventName').toLowerCase()))
-    .reduce((sum, row) => sum + metric(row, 'eventCount'), 0);
+function maxBreakdown(rows?: BreakdownRow[]) { return Math.max(...(rows?.map(row => metric(row, 'sessions')) || [1]), 1); }
+function barPercent(value: number, max: number) { return max ? Math.max(value > 0 ? 3 : 0, Math.min(100, (value / max) * 100)) : 0; }
+function trendLinePoints(key: TrendKey) { return websiteTrendRows.value.map((_, index) => { const p = trendPoint(key, index); return `${p.x},${p.y}`; }).join(' '); }
+function trendPoint(key: TrendKey, index: number) {
+  const rows = websiteTrendRows.value; const max = Math.max(...rows.map(row => row[key]), 1); const value = rows[index]?.[key] || 0;
+  return { x: rows.length <= 1 ? 36 : Math.round((36 + (index / (rows.length - 1)) * 584) * 10) / 10, y: Math.round((170 - (value / max) * 150) * 10) / 10 };
 }
-
-function barPercent(value: number, max: number) {
-  if (!max) return 0;
-  return Math.max(value > 0 ? 3 : 0, Math.min(100, (value / max) * 100));
-}
-
-function trendLinePoints(key: TrendMetricKey) {
-  return websiteTrendRows.value
-    .map((_, index) => {
-      const point = trendPoint(key, index);
-      return `${point.x},${point.y}`;
-    })
-    .join(' ');
-}
-
-function trendPoint(key: TrendMetricKey, index: number) {
-  const rows = websiteTrendRows.value;
-  const max = Math.max(...rows.map(row => row[key]), 1);
-  const row = rows[index] || rows[0];
-  const value = row?.[key] || 0;
-  const x = rows.length <= 1 ? 36 : 36 + (index / (rows.length - 1)) * 584;
-  const y = 170 - (value / max) * 150;
-  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
-}
-
-function daysAgo(days: number) {
-  const date = new Date(`${today}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - days);
-  return isoDate(date);
-}
-
-function isoDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function displayDate(value: string) {
-  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00Z`));
-}
-
-function displayShortDate(value: string) {
-  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' }).format(new Date(`${value}T00:00:00Z`));
-}
-
-function shortDateTime(value: string) {
-  return new Intl.DateTimeFormat('en-AU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
-}
-
+function daysAgo(days: number) { const date = new Date(`${today}T00:00:00Z`); date.setUTCDate(date.getUTCDate() - days); return isoDate(date); }
+function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
+function displayDate(value: string) { return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00Z`)); }
+function displayShortDate(value: string) { return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short' }).format(new Date(`${value}T00:00:00Z`)); }
+function shortDateTime(value: string) { return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value)); }
+function duration(value: number | null | undefined) { if (value == null) return '—'; return `${Math.floor(value / 60)}:${Math.round(value % 60).toString().padStart(2, '0')}`; }
 const n = (value: number) => new Intl.NumberFormat('en-AU').format(value || 0);
 const pct = (value: number) => `${new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value || 0)}%`;
 const money = (value: number) => formatCurrency(value || 0, true);
-const moneyOrDash = (value: number | null | undefined) => value == null ? '-' : money(value);
-const pctOrDash = (value: number | null | undefined) => value == null ? '-' : pct(value);
-const fractionPct = (value: number | null | undefined) => value == null ? '-' : pct(value * 100);
-const roas = (value: number | null | undefined) => value == null ? '-' : `${new Intl.NumberFormat('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}×`;
-const decimal = (value: number | null | undefined) => value == null ? '-' : new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value);
+const moneyOrDash = (value?: number | null) => value == null ? '—' : money(value);
+const pctOrDash = (value?: number | null) => value == null ? '—' : pct(value);
+const fractionPct = (value?: number | null) => value == null ? '—' : pct(value * 100);
+const decimal = (value?: number | null) => value == null ? '—' : new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value);
+const roas = (value: number) => `${new Intl.NumberFormat('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}×`;
 
-function duration(value: number | null | undefined) {
-  if (value == null) return '-';
-  const minutes = Math.floor(value / 60);
-  const seconds = Math.round(value % 60).toString().padStart(2, '0');
-  return `${minutes}:${seconds}`;
-}
-
-const MetricCell = defineComponent({
-  props: {
-    label: { type: String, required: true },
-    value: { type: String, required: true },
-  },
-  setup(props) {
-    return () => h('div', { class: 'rounded-md bg-muted/40 p-2' }, [
-      h('div', { class: 'text-xs text-muted-foreground' }, props.label),
-      h('div', { class: 'mt-1 font-semibold' }, props.value),
-    ]);
-  },
+const BarRow = defineComponent({
+  props: { label: { type: String, required: true }, value: { type: Number, required: true }, max: { type: Number, required: true } },
+  setup: props => () => h('div', { class: 'marketing-hub__bar-row num' }, [
+    h('p', [h('span', props.label), h('strong', n(props.value))]),
+    h('span', { class: 'marketing-hub__track' }, [h('i', { style: { width: `${barPercent(props.value, props.max)}%` } })]),
+  ]),
 });
-
-const BreakdownRow = defineComponent({
-  props: {
-    label: { type: String, required: true },
-    value: { type: Number, required: true },
-    max: { type: Number, required: true },
-  },
-  setup(props) {
-    return () => h('div', { class: 'space-y-1' }, [
-      h('div', { class: 'flex items-center justify-between gap-3 text-sm' }, [
-        h('span', { class: 'truncate font-medium' }, props.label),
-        h('span', { class: 'text-muted-foreground' }, n(props.value)),
-      ]),
-      h('div', { class: 'h-1.5 overflow-hidden rounded-full bg-muted' }, [
-        h('div', {
-          class: 'h-full rounded-full bg-sky-600',
-          style: { width: `${Math.max(4, Math.min(100, (props.value / props.max) * 100))}%` },
-        }),
-      ]),
-    ]);
-  },
+const MetricPanel = defineComponent({
+  props: { title: { type: String, required: true }, description: { type: String, required: true }, items: { type: Array as () => MetricItem[], required: true } },
+  setup: props => () => h('article', { class: 'marketing-hub__card' }, [
+    h('header', { class: 'marketing-hub__panel-head' }, [h('h2', props.title), h('p', props.description)]),
+    h('div', { class: 'marketing-hub__metrics num' }, props.items.map(item => h('div', [h('small', item.label), h('strong', item.value)]))),
+  ]),
+});
+const BreakdownPanel = defineComponent({
+  props: { title: { type: String, required: true }, rows: { type: Array as () => BreakdownRow[], required: true }, dimensionKey: { type: String, required: true }, max: { type: Number, required: true } },
+  setup: props => () => h('article', { class: 'marketing-hub__card' }, [
+    h('header', { class: 'marketing-hub__panel-head' }, [h('h2', props.title)]),
+    h('div', { class: 'marketing-hub__pad marketing-hub__bar-list' }, props.rows.slice(0, 6).map(row => h(BarRow, { key: dimension(row, props.dimensionKey), label: dimension(row, props.dimensionKey) || '(not set)', value: metric(row, 'sessions'), max: props.max ?? 1 }))),
+  ]),
+});
+const PreviewBars = defineComponent({
+  props: { title: { type: String, required: true }, rows: { type: Array as () => Array<{ label: string; value: string; width: number }>, required: true } },
+  setup: props => () => h('article', { class: 'marketing-hub__card marketing-hub__preview-bars' }, [
+    h('h3', props.title),
+    ...props.rows.map(row => h('div', { key: row.label, class: 'marketing-hub__bar-row num' }, [h('p', [h('span', row.label), h('strong', row.value)]), h('span', { class: 'marketing-hub__track' }, [h('i', { style: { width: `${row.width}%` } })])])),
+  ]),
 });
 </script>
+
+<style scoped>
+.marketing-hub {
+  --ground: #eaeef3; --surface: #ffffff; --surface-2: #f5f8fb; --surface-3: #eef3f8;
+  --ink: #0b1a2b; --ink-2: #39506a; --muted: #6b7d90; --line: #dfe6ee; --line-2: #eaf0f6;
+  --brand: #001e50; --brand-ink: #ffffff; --accent: #0091b8; --accent-soft: rgba(0,145,184,.1);
+  --good: #1a9e5c; --good-soft: rgba(26,158,92,.12); --warn: #c47d1f; --warn-soft: rgba(196,125,31,.13);
+  --crit: #d13b22; --crit-soft: rgba(209,59,34,.11); --meta: #1877f2; --google: #188038; --ga4: #e8710a; --series3: #7c5cff;
+  --radius: 14px; --shadow: 0 1px 2px rgba(11,26,43,.05), 0 8px 24px -14px rgba(11,26,43,.18);
+  color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums;
+  margin: -2rem -2rem -2rem; padding: 24px 22px 64px; min-height: calc(100vh - 64px); background: var(--ground);
+}
+:global(.dark) .marketing-hub, :global(:root[data-theme="dark"]) .marketing-hub {
+  --ground: #080f18; --surface: #101b28; --surface-2: #152232; --surface-3: #1b2a3b;
+  --ink: #e7eef6; --ink-2: #aebdce; --muted: #7c8ea0; --line: #213042; --line-2: #1a2836;
+  --brand: #4d88cc; --brand-ink: #07101b; --accent: #37c4e6; --accent-soft: rgba(55,196,230,.13);
+  --good: #39c682; --good-soft: rgba(57,198,130,.15); --warn: #eab255; --warn-soft: rgba(234,178,85,.15);
+  --crit: #f4674c; --crit-soft: rgba(244,103,76,.15); --meta: #4a9bff; --google: #4dbf72; --ga4: #f5924a; --series3: #a58cff;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+}
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme="light"])) .marketing-hub {
+    --ground: #080f18; --surface: #101b28; --surface-2: #152232; --surface-3: #1b2a3b;
+    --ink: #e7eef6; --ink-2: #aebdce; --muted: #7c8ea0; --line: #213042; --line-2: #1a2836;
+    --brand: #4d88cc; --brand-ink: #07101b; --accent: #37c4e6; --accent-soft: rgba(55,196,230,.13);
+    --good: #39c682; --good-soft: rgba(57,198,130,.15); --warn: #eab255; --warn-soft: rgba(234,178,85,.15);
+    --crit: #f4674c; --crit-soft: rgba(244,103,76,.15); --meta: #4a9bff; --google: #4dbf72; --ga4: #f5924a; --series3: #a58cff;
+  }
+}
+.marketing-hub > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
+.marketing-hub section { margin-top: 26px; }
+.marketing-hub h1, .marketing-hub h2, .marketing-hub h3, .marketing-hub p { margin-top: 0; }
+.marketing-hub__header { padding-bottom: 6px; }
+.marketing-hub__header-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.marketing-hub__eyebrow { margin-bottom: 6px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.marketing-hub h1 { margin-bottom: 4px; font-size: 29px; font-weight: 750; letter-spacing: -.02em; line-height: 1.05; }
+.marketing-hub__subtitle { margin-bottom: 0; color: var(--ink-2); }
+.marketing-hub__range-wrap { position: relative; }
+.marketing-hub__daterange { display: inline-flex; gap: 2px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); box-shadow: var(--shadow); }
+.marketing-hub__daterange button { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 8px; padding: 7px 13px; background: transparent; color: var(--ink-2); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.marketing-hub__daterange button svg { width: 13px; }
+.marketing-hub__daterange button.on { background: var(--brand); color: var(--brand-ink); }
+.marketing-hub__custom-range { position: absolute; z-index: 5; top: 47px; right: 0; display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
+.marketing-hub__custom-range label { color: var(--muted); font-size: 11px; font-weight: 700; }
+.marketing-hub__custom-range input { display: block; margin-top: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 6px; background: var(--surface-2); color: var(--ink); }
+.marketing-hub__synced { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin: 9px 0 0; color: var(--muted); font-size: 12px; }
+.marketing-hub__synced button { display: inline-grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.marketing-hub__synced svg { width: 14px; }
+.marketing-hub__live { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+.spinning { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.marketing-hub__insight { display: flex; align-items: flex-start; gap: 14px; margin-top: 18px; padding: 15px 18px; border: 1px solid var(--line); border-left: 3px solid var(--crit); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+.marketing-hub__insight-icon { flex: 0 0 auto; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--crit-soft); color: var(--crit); }
+.marketing-hub__insight-icon svg { width: 18px; }
+.marketing-hub__insight h2 { margin-bottom: 3px; font-size: 14.5px; }
+.marketing-hub__insight p { max-width: 80ch; margin-bottom: 0; color: var(--ink-2); font-size: 13.5px; }
+.marketing-hub__action { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; border: 1px solid var(--line); border-radius: 9px; padding: 8px 13px; background: var(--surface-2); color: var(--ink); font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.marketing-hub__action svg { width: 14px; }
+.marketing-hub__state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 180px; margin-top: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--muted); }
+.marketing-hub__state svg { width: 18px; }.marketing-hub__state--error { color: var(--crit); }
+.marketing-hub__kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.marketing-hub__kpi, .marketing-hub__card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.marketing-hub__kpi { padding: 15px; }
+.marketing-hub__kpi-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.marketing-hub__kpi-label svg { width: 15px; opacity: .7; }
+.marketing-hub__kpi-value { margin-top: 9px; font-size: 26px; font-weight: 750; letter-spacing: -.02em; line-height: 1; }
+.marketing-hub__kpi.alert .marketing-hub__kpi-value { color: var(--crit); }
+.marketing-hub__kpi p { margin: 7px 0 0; color: var(--muted); font-size: 11.5px; }
+.marketing-hub__panel-head { padding: 15px 16px 0; }
+.marketing-hub__panel-head h2 { display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
+.marketing-hub__panel-head h2 > svg { width: 16px; color: var(--accent); }
+.marketing-hub__panel-head p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.marketing-hub__pad { padding: 16px; }
+.marketing-hub__quality { margin-left: auto; border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
+.marketing-hub__quality.bad { color: var(--crit); background: var(--crit-soft); }.marketing-hub__quality.mid { color: var(--warn); background: var(--warn-soft); }.marketing-hub__quality.ok { color: var(--good); background: var(--good-soft); }
+.marketing-hub__funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+.marketing-hub__funnel-stage { padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
+.marketing-hub__funnel-stage p { margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 600; }
+.marketing-hub__funnel-stage strong { display: block; margin-bottom: 8px; font-size: 22px; }
+.marketing-hub__track { position: relative; display: block; height: 7px; overflow: hidden; border-radius: 5px; background: var(--surface-3); }
+.marketing-hub__track i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.marketing-hub__track i.poor { background: var(--crit); }.marketing-hub__track i.watch { background: var(--warn); }.marketing-hub__track i.good { background: var(--good); }
+.marketing-hub__track b { position: absolute; top: -2px; width: 2px; height: 11px; background: var(--ink-2); opacity: .45; }
+.marketing-hub__split, .marketing-hub__split2, .marketing-hub__split3 { display: grid; gap: 14px; }
+.marketing-hub__split { grid-template-columns: 1.45fr 1fr; }.marketing-hub__split2 { grid-template-columns: 1fr 1fr; }.marketing-hub__split3 { grid-template-columns: repeat(3, 1fr); }
+.marketing-hub__executive-detail > div > .marketing-hub__eyebrow { margin-bottom: 12px; }
+.marketing-hub__health-row { margin-bottom: 13px; }.marketing-hub__health-row > div:first-child { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12.5px; }
+.marketing-hub__health-row > div:first-child span { border-radius: 999px; padding: 2px 8px; font-size: 11px; }.marketing-hub__health-row span.good { color: var(--good); background: var(--good-soft); }.marketing-hub__health-row span.poor { color: var(--crit); background: var(--crit-soft); }.marketing-hub__health-row span.watch { color: var(--warn); background: var(--warn-soft); }
+.marketing-hub__health-row small { color: var(--muted); font-size: 11px; }
+.marketing-hub__opportunities article { margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
+.marketing-hub__opportunities h3 { margin-bottom: 3px; font-size: 13px; }.marketing-hub__opportunities p { margin-bottom: 8px; color: var(--muted); font-size: 11.5px; }.marketing-hub__opportunities span { display: inline-block; padding: 4px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 11px; }
+.marketing-hub__connection { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; }
+.marketing-hub__connection span, .marketing-hub__status-pill { border-radius: 999px; padding: 4px 11px; background: var(--brand); color: var(--brand-ink); font-size: 11px; font-weight: 700; }.marketing-hub__connection span.disconnected, .marketing-hub__status-pill.disconnected { background: var(--crit-soft); color: var(--crit); }
+.marketing-hub__inset { padding: 11px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); min-width: 0; }
+.marketing-hub__inset small { display: block; color: var(--muted); font-weight: 600; }.marketing-hub__inset strong { display: block; margin-top: 2px; font-size: 17px; overflow-wrap: anywhere; }
+.marketing-hub__bar-row { margin-bottom: 11px; }.marketing-hub__bar-row:last-child { margin-bottom: 0; }.marketing-hub__bar-row p { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 13px; }.marketing-hub__bar-row p span { color: var(--ink-2); font-weight: 600; }
+.marketing-hub__empty { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+.marketing-hub__section-head { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }.marketing-hub__section-head h2 { margin-bottom: 0; font-size: 15px; }.marketing-hub__section-head > span { flex: 1; height: 1px; background: var(--line); }.marketing-hub__section-head p { margin-bottom: 0; color: var(--muted); font-size: 12px; }.marketing-hub__section-head b { padding: 3px 8px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }.marketing-hub__section-head b.p3 { color: var(--series3); background: color-mix(in srgb, var(--series3) 12%, transparent); border-color: color-mix(in srgb, var(--series3) 30%, transparent); }
+.marketing-hub__table-wrap { overflow-x: auto; }.marketing-hub table { width: 100%; border-collapse: collapse; font-size: 12.5px; }.marketing-hub th { padding: 12px 13px; border-bottom: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 10.5px; letter-spacing: .03em; text-align: right; text-transform: uppercase; white-space: nowrap; }.marketing-hub th:first-child, .marketing-hub td:first-child { text-align: left; }.marketing-hub td { padding: 12px 13px; border-bottom: 1px solid var(--line-2); text-align: right; white-space: nowrap; }.marketing-hub tbody tr:last-child td { border-bottom: 0; }
+.marketing-hub__campaign-name { display: block; max-width: 300px; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; font-weight: 600; text-overflow: ellipsis; }.marketing-hub__platform-pill { display: inline-block; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); font-size: 11px; font-weight: 650; }.marketing-hub__platform-pill.meta_ads { border-color: var(--meta); }.marketing-hub__platform-pill.google_ads { border-color: var(--google); }.marketing-hub td.zero { color: var(--crit); font-weight: 700; }.marketing-hub td.muted { color: var(--muted); }.marketing-hub__empty-cell { padding: 28px !important; color: var(--muted); text-align: center !important; }
+.marketing-hub__metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 18px; padding: 12px 16px 16px; }.marketing-hub__metrics small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__metrics strong { display: block; margin-top: 2px; font-size: 17px; }.marketing-hub__roas-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub a { color: var(--accent); }
+.marketing-hub__legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; color: var(--ink-2); font-size: 11.5px; font-weight: 600; }.marketing-hub__legend span { display: flex; align-items: center; gap: 6px; }.marketing-hub__legend i { width: 10px; height: 3px; border-radius: 2px; }.marketing-hub__legend .sessions { background: var(--accent); }.marketing-hub__legend .events { background: var(--ga4); }.marketing-hub__legend .leads { background: var(--series3); }
+.marketing-hub__chart svg { display: block; width: 100%; height: 190px; }.marketing-hub__chart line { stroke: var(--line); }.marketing-hub__chart polyline { fill: none; stroke-width: 2.5; }.marketing-hub__chart polyline.sessions { stroke: var(--accent); }.marketing-hub__chart polyline.events { stroke: var(--ga4); }.marketing-hub__chart polyline.leads { stroke: var(--series3); }.marketing-hub__chart circle.sessions { fill: var(--accent); }.marketing-hub__chart circle.keyEvents { fill: var(--ga4); }.marketing-hub__chart circle.crmLeads { fill: var(--series3); }.marketing-hub__chart > div { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
+.marketing-hub__website-funnel > div { margin-bottom: 14px; }.marketing-hub__website-funnel p { display: flex; justify-content: space-between; margin-bottom: 6px; }.marketing-hub__website-funnel small { color: var(--muted); font-size: 11px; }.marketing-hub__website-detail { margin-top: 14px; }.marketing-hub__stack { display: grid; gap: 14px; }
+.marketing-hub__coverage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.marketing-hub__coverage article { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__coverage small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__coverage strong { display: block; margin-top: 3px; font-size: 20px; }.marketing-hub__coverage .bad strong { color: var(--crit); }.marketing-hub__coverage .ok strong { color: var(--good); }.marketing-hub__audit-note, .marketing-hub__source-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub__domain { font-family: ui-monospace, Menlo, monospace; font-size: 13px !important; }
+.marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__preview-bars { padding: 15px; }.marketing-hub__preview-bars h3 { margin-bottom: 13px; font-size: 12.5px; }
+.marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; color: white; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.35); font-size: 10.5px; }.marketing-hub__creative-art.ioniq { background: linear-gradient(135deg,#8a4b00,#e8710a); }.marketing-hub__creative-art.pmax { background: linear-gradient(135deg,#334155,#64748b); }.marketing-hub__creative-art.meta { background: linear-gradient(135deg,#0b3d91,#1877f2); }.marketing-hub__creative-art.service { background: linear-gradient(135deg,#0f5a2e,#188038); }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 7px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }
+.marketing-hub__pivot { display: grid; grid-template-columns: 230px 1fr; overflow: hidden; }.marketing-hub__pivot aside { padding: 15px; border-right: 1px solid var(--line); background: var(--surface-2); }.marketing-hub__pivot aside .marketing-hub__eyebrow:not(:first-child) { margin-top: 15px; }.marketing-hub__pivot aside div { display: flex; flex-wrap: wrap; gap: 7px; }.marketing-hub__pivot aside span, .marketing-hub__wells span { padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 600; }.marketing-hub__pivot aside span.on { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); color: var(--ink); }.marketing-hub__pivot-main { min-width: 0; padding: 15px; }.marketing-hub__wells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }.marketing-hub__wells > div { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__wells span { display: inline-block; }.marketing-hub__example { margin: 10px 0 0; color: var(--muted); font-size: 11.5px; }
+.marketing-hub__footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.65; }.marketing-hub__footer strong { color: var(--ink-2); }
+@media (max-width: 960px) {
+  .marketing-hub { margin-left: -1.5rem; margin-right: -1.5rem; }
+  .marketing-hub__kpis { grid-template-columns: repeat(2, 1fr); }
+  .marketing-hub__split, .marketing-hub__split2, .marketing-hub__split3 { grid-template-columns: 1fr; }
+  .marketing-hub__creatives { grid-template-columns: repeat(2, 1fr); }
+  .marketing-hub__funnel { grid-template-columns: repeat(2, 1fr); }
+  .marketing-hub__pivot { grid-template-columns: 1fr; }.marketing-hub__pivot aside { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 700px) {
+  .marketing-hub { margin: -2rem -1rem; padding: 20px 16px 48px; }
+  .marketing-hub__range-wrap, .marketing-hub__daterange { width: 100%; }.marketing-hub__daterange { overflow-x: auto; }.marketing-hub__daterange button { flex: 0 0 auto; }
+  .marketing-hub__insight { flex-wrap: wrap; }.marketing-hub__action { margin-left: 48px; }
+  .marketing-hub__section-head { flex-wrap: wrap; }.marketing-hub__section-head > span { min-width: 30px; }
+}
+@media (max-width: 430px) {
+  .marketing-hub__kpis, .marketing-hub__creatives, .marketing-hub__funnel, .marketing-hub__coverage, .marketing-hub__wells { grid-template-columns: 1fr; }
+  .marketing-hub__action { margin-left: 0; }.marketing-hub__custom-range { left: 0; right: auto; flex-direction: column; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .marketing-hub__track i { transition: width .6s cubic-bezier(.2,.7,.2,1); }
+}
+@media (prefers-reduced-motion: reduce) { .spinning { animation: none; } }
+</style>
