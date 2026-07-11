@@ -104,8 +104,8 @@
     </div>
 
     <!-- Funnel + Pipeline Status -->
-    <div class="grid gap-6 lg:grid-cols-2">
-      <Card>
+    <div class="grid gap-4 md:gap-6 lg:grid-cols-2">
+      <Card class="sales-panel">
         <CardHeader>
           <CardTitle class="flex items-center gap-2">
             <Filter class="h-5 w-5" />
@@ -113,21 +113,21 @@
           </CardTitle>
           <CardDescription>This month's conversion pipeline</CardDescription>
         </CardHeader>
-        <CardContent class="space-y-3">
+        <CardContent class="funnel-content space-y-3">
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span>Total Leads</span>
-              <span class="font-semibold">{{ data?.conversionFunnel?.totalLeads || 0 }}</span>
+              <span class="font-semibold tabular-nums">{{ data?.conversionFunnel?.totalLeads || 0 }}</span>
             </div>
-            <div class="h-3 w-full rounded-full bg-blue-500" />
+            <div class="funnel-bar h-3 w-full rounded-full bg-blue-500" />
           </div>
 
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span>Contacted</span>
-              <span class="font-semibold">{{ data?.conversionFunnel?.contacted || 0 }} ({{ data?.conversionFunnel?.contactedRate || 0 }}%)</span>
+              <span class="font-semibold tabular-nums">{{ data?.conversionFunnel?.contacted || 0 }} ({{ data?.conversionFunnel?.contactedRate || 0 }}%)</span>
             </div>
-            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+            <div class="funnel-bar h-3 w-full rounded-full bg-muted overflow-hidden">
               <div
                 class="h-full rounded-full bg-cyan-500 transition-all"
                 :style="{ width: `${data?.conversionFunnel?.contactedRate || 0}%` }"
@@ -136,11 +136,11 @@
           </div>
 
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span>Test Drive Booked</span>
-              <span class="font-semibold">{{ data?.conversionFunnel?.testDriveBooked || 0 }} ({{ data?.conversionFunnel?.testDriveRate || 0 }}%)</span>
+              <span class="font-semibold tabular-nums">{{ data?.conversionFunnel?.testDriveBooked || 0 }} ({{ data?.conversionFunnel?.testDriveRate || 0 }}%)</span>
             </div>
-            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+            <div class="funnel-bar h-3 w-full rounded-full bg-muted overflow-hidden">
               <div
                 class="h-full rounded-full bg-purple-500 transition-all"
                 :style="{ width: `${data?.conversionFunnel?.testDriveRate || 0}%` }"
@@ -149,11 +149,11 @@
           </div>
 
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span>Finance Applied</span>
-              <span class="font-semibold">{{ data?.conversionFunnel?.financeApplied || 0 }} ({{ data?.conversionFunnel?.financeRate || 0 }}%)</span>
+              <span class="font-semibold tabular-nums">{{ data?.conversionFunnel?.financeApplied || 0 }} ({{ data?.conversionFunnel?.financeRate || 0 }}%)</span>
             </div>
-            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+            <div class="funnel-bar h-3 w-full rounded-full bg-muted overflow-hidden">
               <div
                 class="h-full rounded-full bg-yellow-500 transition-all"
                 :style="{ width: `${data?.conversionFunnel?.financeRate || 0}%` }"
@@ -162,11 +162,11 @@
           </div>
 
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span class="font-semibold">Converted</span>
-              <span class="font-bold text-green-600">{{ data?.conversionFunnel?.converted || 0 }} ({{ data?.conversionFunnel?.conversionRate || 0 }}%)</span>
+              <span class="font-bold tabular-nums text-green-600">{{ data?.conversionFunnel?.converted || 0 }} ({{ data?.conversionFunnel?.conversionRate || 0 }}%)</span>
             </div>
-            <div class="h-3 w-full rounded-full bg-muted overflow-hidden">
+            <div class="funnel-bar h-3 w-full rounded-full bg-muted overflow-hidden">
               <div
                 class="h-full rounded-full bg-green-500 transition-all"
                 :style="{ width: `${data?.conversionFunnel?.conversionRate || 0}%` }"
@@ -176,7 +176,7 @@
         </CardContent>
       </Card>
 
-      <Card>
+      <Card class="sales-panel">
         <CardHeader>
           <CardTitle>Pipeline Status</CardTitle>
           <CardDescription>Current enquiry distribution</CardDescription>
@@ -271,7 +271,7 @@
     </div>
 
     <!-- Trends + Response Performance -->
-    <div class="grid gap-6 lg:grid-cols-3">
+    <div class="grid gap-4 md:gap-6 lg:grid-cols-3">
       <Card class="sales-panel lg:col-span-2">
         <CardHeader class="grid grid-cols-[1fr_auto] items-start gap-2">
           <div class="min-w-0">
@@ -320,22 +320,22 @@
         </CardContent>
       </Card>
 
-      <Card>
+      <Card class="sales-panel">
         <CardHeader>
           <CardTitle>Response Performance</CardTitle>
           <CardDescription>This month's metrics</CardDescription>
         </CardHeader>
-        <CardContent class="space-y-4">
+        <CardContent class="response-content space-y-4">
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span class="text-muted-foreground">Avg Response Time</span>
-              <span class="font-semibold">
+              <span class="font-semibold tabular-nums">
                 {{ data?.responseMetrics?.avgHours ? formatResponseTime(data.responseMetrics.avgHours) : 'N/A' }}
               </span>
             </div>
-            <div class="flex items-center justify-between text-sm">
+            <div class="stat-row flex items-center justify-between text-sm">
               <span class="text-muted-foreground">Median Response</span>
-              <span class="font-semibold">
+              <span class="font-semibold tabular-nums">
                 {{ data?.responseMetrics?.medianHours ? formatResponseTime(data.responseMetrics.medianHours) : 'N/A' }}
               </span>
             </div>
@@ -345,9 +345,9 @@
 
           <div class="space-y-3">
             <div>
-              <div class="flex items-center justify-between text-sm">
+              <div class="stat-row flex items-center justify-between text-sm">
                 <span class="text-muted-foreground">Responded within 1 hour</span>
-                <span class="font-semibold">{{ data?.responseMetrics?.within1hRate || 0 }}%</span>
+                <span class="font-semibold tabular-nums">{{ data?.responseMetrics?.within1hRate || 0 }}%</span>
               </div>
               <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
@@ -357,9 +357,9 @@
               </div>
             </div>
             <div>
-              <div class="flex items-center justify-between text-sm">
+              <div class="stat-row flex items-center justify-between text-sm">
                 <span class="text-muted-foreground">Responded within 24 hours</span>
-                <span class="font-semibold">{{ data?.responseMetrics?.within24hRate || 0 }}%</span>
+                <span class="font-semibold tabular-nums">{{ data?.responseMetrics?.within24hRate || 0 }}%</span>
               </div>
               <div class="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
@@ -378,10 +378,10 @@
               <div
                 v-for="source in data?.sources || []"
                 :key="source.source"
-                class="flex items-center justify-between text-sm"
+                class="stat-row flex items-center justify-between text-sm"
               >
                 <span class="capitalize text-muted-foreground">{{ source.source }}</span>
-                <Badge variant="secondary">{{ source.count }}</Badge>
+                <Badge variant="secondary" class="tabular-nums">{{ source.count }}</Badge>
               </div>
               <p v-if="!data?.sources?.length" class="text-xs text-muted-foreground">
                 No source data available
@@ -562,6 +562,27 @@ function navigateToEnquiries(type: string) {
     height: 28px;
     padding-inline: 8px;
     font-size: 12px;
+  }
+
+  .sales-panel :deep([data-slot="card-header"]),
+  .sales-panel :deep([data-slot="card-content"]) {
+    padding-inline: 14px;
+  }
+
+  .sales-panel .stat-row {
+    font-size: 13px;
+  }
+
+  .sales-panel .funnel-bar {
+    height: 10px;
+  }
+
+  .sales-panel .funnel-content > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 10px;
+  }
+
+  .sales-panel .response-content > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 12px;
   }
 }
 </style>
