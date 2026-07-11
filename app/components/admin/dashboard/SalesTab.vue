@@ -272,14 +272,14 @@
 
     <!-- Trends + Response Performance -->
     <div class="grid gap-6 lg:grid-cols-3">
-      <Card class="lg:col-span-2">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <div>
-              <CardTitle>Enquiry Trends</CardTitle>
-              <CardDescription>Last 14 days activity</CardDescription>
-            </div>
-            <div class="flex gap-1">
+      <Card class="sales-panel lg:col-span-2">
+        <CardHeader class="grid grid-cols-[1fr_auto] items-start gap-2">
+          <div class="min-w-0">
+            <CardTitle>Enquiry Trends</CardTitle>
+            <CardDescription>Last 14 days activity</CardDescription>
+          </div>
+          <CardAction>
+            <div class="trend-toggle flex gap-1">
               <Button
                 v-for="chartType in chartTypes"
                 :key="chartType.value"
@@ -291,24 +291,24 @@
                 {{ chartType.label }}
               </Button>
             </div>
-          </div>
+          </CardAction>
         </CardHeader>
         <CardContent>
-          <div class="h-[280px]">
+          <div class="trend-chart h-[280px]">
             <div v-if="data?.dailyTrend?.length" class="flex h-full gap-1">
               <div
                 v-for="day in data.dailyTrend"
                 :key="day.date"
-                class="group relative flex h-full flex-1 flex-col justify-end"
+                class="trend-col group relative flex h-full flex-1 flex-col justify-end"
               >
                 <div
                   class="w-full rounded-t bg-primary/80 transition-colors hover:bg-primary"
-                  :style="{ height: `${Math.round(getBarHeight(day) * 0.9)}%`, minHeight: day.total > 0 ? '4px' : '0' }"
+                  :style="{ height: `${Math.round(getBarHeight(day) * 0.9)}%`, minHeight: getDayValue(day) > 0 ? '4px' : '0' }"
                 />
                 <div class="absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-background group-hover:block">
-                  {{ day.total }} enquiries
+                  {{ getDayValue(day) }} enquiries
                 </div>
-                <div class="mt-1 text-center text-[10px] text-muted-foreground">
+                <div class="trend-label mt-1 text-center text-[10px] text-muted-foreground">
                   {{ formatChartDate(day.date) }}
                 </div>
               </div>
@@ -402,7 +402,7 @@ import {
   Car, MessageSquare, DollarSign, Wrench, Package, CalendarCheck,
   ArrowLeftRight, Sparkles, Truck,
 } from 'lucide-vue-next';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
+import { Card, CardAction, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -469,10 +469,18 @@ function getDeptIcon(icon: string) {
   return iconMap[icon] || Inbox;
 }
 
-function getBarHeight(day: { total: number }): number {
+type TrendDay = { total: number; vehicle?: number; testDrive?: number; service?: number };
+
+function getDayValue(day: TrendDay): number {
+  if (selectedChartType.value === 'sales') return (day.vehicle || 0) + (day.testDrive || 0);
+  if (selectedChartType.value === 'service') return day.service || 0;
+  return day.total;
+}
+
+function getBarHeight(day: TrendDay): number {
   if (!props.data?.dailyTrend) return 0;
-  const maxTotal = Math.max(...props.data.dailyTrend.map((d: any) => d.total), 1);
-  return (day.total / maxTotal) * 100;
+  const maxValue = Math.max(...props.data.dailyTrend.map((d: TrendDay) => getDayValue(d)), 1);
+  return (getDayValue(day) / maxValue) * 100;
 }
 
 function navigateToEnquiries(type: string) {
@@ -540,6 +548,20 @@ function navigateToEnquiries(type: string) {
   .department-card__footer {
     padding-top: 12px;
     font-size: 11px;
+  }
+
+  .sales-panel .trend-chart {
+    height: 200px;
+  }
+
+  .trend-col:nth-child(even) .trend-label {
+    visibility: hidden;
+  }
+
+  .trend-toggle button {
+    height: 28px;
+    padding-inline: 8px;
+    font-size: 12px;
   }
 }
 </style>
