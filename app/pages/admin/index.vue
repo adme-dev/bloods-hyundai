@@ -42,12 +42,38 @@
     </div>
 
     <!-- Today: the actionable numbers -->
-    <TodayKpiStrip :data="data" />
+    <section class="dashboard-section" aria-labelledby="today-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p class="dashboard-section-kicker">Live operations</p>
+          <h2 id="today-title">Today’s workload</h2>
+        </div>
+        <p>Current queues and follow-up pressure across the dealership.</p>
+      </div>
+      <TodayKpiStrip :data="data" />
+    </section>
 
     <!-- Action zone: daily work -->
-    <ActionZone :data="data" />
+    <section class="dashboard-section" aria-labelledby="priority-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p class="dashboard-section-kicker">CRM workspace</p>
+          <h2 id="priority-title">Priority queue</h2>
+        </div>
+        <p>Leads, overdue responses, and the next actions your team should take.</p>
+      </div>
+      <ActionZone :data="data" />
+    </section>
 
     <!-- Analytics tabs -->
+    <section class="dashboard-section" aria-labelledby="performance-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p class="dashboard-section-kicker">Reporting</p>
+          <h2 id="performance-title">Performance workspace</h2>
+        </div>
+        <p>Switch between pipeline, customer, inventory, marketing, and team views.</p>
+      </div>
     <Tabs class="dashboard-tabs" :model-value="activeTab" @update:model-value="onTabChange">
       <TabsList class="grid h-auto w-full grid-cols-2 sm:grid-cols-5">
         <TabsTrigger value="sales">Sales &amp; Pipeline</TabsTrigger>
@@ -72,6 +98,7 @@
         <TeamTab v-if="visited.team" :data="data" />
       </TabsContent>
     </Tabs>
+    </section>
   </div>
 </template>
 
@@ -223,6 +250,45 @@ function onTabChange(value: string | number | null) {
   gap: 9px;
 }
 
+.dashboard-section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.dashboard-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--dashboard-line);
+  padding-bottom: 10px;
+}
+
+.dashboard-section-kicker {
+  margin: 0 0 3px;
+  color: var(--dashboard-accent);
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.dashboard-section-heading h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.dashboard-section-heading > p {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--dashboard-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
 .dashboard-alert {
   display: flex;
   border: 1px solid var(--dashboard-line);
@@ -321,6 +387,16 @@ function onTabChange(value: string | number | null) {
   .dashboard-header-actions {
     justify-content: flex-start;
     width: 100%;
+  }
+
+  .dashboard-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .dashboard-section-heading > p {
+    text-align: left;
   }
 
   .dashboard-alert > div {

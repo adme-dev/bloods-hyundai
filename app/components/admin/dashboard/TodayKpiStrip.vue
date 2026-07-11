@@ -1,20 +1,23 @@
 <template>
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="crm-kpi-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <Card
       v-for="kpi in kpis"
       :key="kpi.label"
-      class="cursor-pointer transition-shadow hover:shadow-md"
+      class="crm-kpi cursor-pointer transition-all hover:-translate-y-px hover:border-primary/25 hover:shadow-md"
       @click="kpi.go()"
     >
-      <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle class="text-sm font-medium">{{ kpi.label }}</CardTitle>
-        <component :is="kpi.icon" class="h-4 w-4 text-muted-foreground" />
+      <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-1.5">
+        <CardTitle class="crm-kpi__label">{{ kpi.label }}</CardTitle>
+        <span class="crm-kpi__icon"><component :is="kpi.icon" class="h-3.5 w-3.5" /></span>
       </CardHeader>
       <CardContent>
-        <div class="text-3xl font-bold" :class="kpi.emphasis && Number(kpi.value) > 0 ? 'text-red-600' : ''">
+        <div class="crm-kpi__value" :class="kpi.emphasis && Number(kpi.value) > 0 ? 'text-red-600' : ''">
           {{ kpi.value }}
         </div>
-        <p class="text-xs text-muted-foreground">{{ kpi.hint }}</p>
+        <div class="crm-kpi__footer">
+          <p>{{ kpi.hint }}</p>
+          <ArrowUpRight class="h-3.5 w-3.5" aria-hidden="true" />
+        </div>
       </CardContent>
     </Card>
   </div>
@@ -22,7 +25,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Inbox, AlertTriangle, Clock, Flame } from 'lucide-vue-next';
+import { Inbox, AlertTriangle, Clock, Flame, ArrowUpRight } from 'lucide-vue-next';
 import { Card, CardHeader, CardTitle, CardContent } from '~/components/ui/card';
 import type { DashboardData } from './types';
 
@@ -63,3 +66,65 @@ const kpis = computed(() => [
   },
 ]);
 </script>
+
+<style scoped>
+.crm-kpi {
+  overflow: hidden;
+}
+
+.crm-kpi__label {
+  color: var(--dashboard-muted, hsl(var(--muted-foreground)));
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.crm-kpi__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--dashboard-line, hsl(var(--border)));
+  border-radius: 8px;
+  background: var(--dashboard-surface-2, hsl(var(--muted)));
+  color: var(--dashboard-muted, hsl(var(--muted-foreground)));
+}
+
+.crm-kpi__value {
+  color: var(--dashboard-ink, hsl(var(--foreground)));
+  font-size: 27px;
+  font-weight: 750;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+}
+
+.crm-kpi__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  color: var(--dashboard-muted, hsl(var(--muted-foreground)));
+  font-size: 11px;
+}
+
+.crm-kpi__footer p {
+  margin: 0;
+}
+
+@media (max-width: 639px) {
+  .crm-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .crm-kpi :deep([data-slot="card-header"]),
+  .crm-kpi :deep([data-slot="card-content"]) {
+    padding: .85rem;
+  }
+
+  .crm-kpi__value {
+    font-size: 23px;
+  }
+}
+</style>
