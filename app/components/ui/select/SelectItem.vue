@@ -14,6 +14,7 @@ const props = defineProps<SelectItemProps & { class?: HTMLAttributes['class'] }>
 
 <template>
   <SelectItem
+    data-slot="select-item"
     v-bind="props"
     :class="cn(
       'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-gray-100 focus:bg-gray-100 data-[highlighted]:bg-gray-100 data-[state=checked]:bg-blue-50 data-[state=checked]:text-[#001E50] data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
@@ -31,7 +32,6 @@ const props = defineProps<SelectItemProps & { class?: HTMLAttributes['class'] }>
     </SelectItemText>
   </SelectItem>
 </template>
-
 
 
 

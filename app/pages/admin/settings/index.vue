@@ -1,9 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <p class="text-sm text-muted-foreground">Manage dealer profile &amp; security</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Settings</h1>
-    </div>
+    <AdminPageHeader title="Settings" description="Manage dealer profile and security" />
 
     <!-- Loading State -->
     <div v-if="pending" class="flex items-center justify-center py-12">
@@ -224,10 +221,10 @@
               class="sm:flex-1"
             />
             <div class="flex gap-2">
-              <Button variant="outline" size="icon" @click="showApiKey = !showApiKey">
+              <Button variant="outline" size="icon" :aria-label="showApiKey ? 'Hide API key' : 'Show API key'" @click="showApiKey = !showApiKey">
                 <component :is="showApiKey ? EyeOff : Eye" class="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" @click="copyApiKey" :disabled="!dealer?.apiKey">
+              <Button variant="outline" size="icon" aria-label="Copy API key" @click="copyApiKey" :disabled="!dealer?.apiKey">
                 <Copy class="h-4 w-4" />
               </Button>
             </div>

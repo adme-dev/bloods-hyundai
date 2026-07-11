@@ -1,12 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Service Appointments</h1>
-        <p class="text-sm text-muted-foreground">Manage all service bookings and appointments</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
+    <AdminPageHeader title="Service Appointments" description="Manage all service bookings and appointments">
+      <template #actions>
         <div class="flex items-center border rounded-lg">
           <Button
             variant="ghost"
@@ -34,8 +30,8 @@
             <ArrowLeft class="mr-2 h-4 w-4" /> Dashboard
           </NuxtLink>
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Filters -->
     <Card>
@@ -70,18 +66,20 @@
 
           <div class="flex items-center gap-2">
             <Label class="text-sm text-muted-foreground">From:</Label>
-            <Input
+            <AdminDatePicker
               v-model="dateFrom"
-              type="date"
+              label="Appointments from"
+              :max="dateTo"
               class="w-[150px]"
             />
           </div>
 
           <div class="flex items-center gap-2">
             <Label class="text-sm text-muted-foreground">To:</Label>
-            <Input
+            <AdminDatePicker
               v-model="dateTo"
-              type="date"
+              label="Appointments to"
+              :min="dateFrom"
               class="w-[150px]"
             />
           </div>

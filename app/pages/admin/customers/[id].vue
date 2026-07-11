@@ -1,18 +1,13 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="flex items-start gap-4">
-        <Button variant="ghost" size="icon" @click="navigateTo('/admin/customers')">
-          <ArrowLeft class="h-5 w-5" />
-        </Button>
+    <AdminPageHeader :title="customerName" :description="customer?.email || 'Customer record'" eyebrow="Customer CRM record">
+      <div class="mt-3 flex items-center gap-3">
         <Avatar class="h-16 w-16">
           <AvatarImage :src="getGravatarUrl(customer?.email || '')" :alt="customerName" />
           <AvatarFallback class="text-xl">{{ getInitials(customer?.firstName || undefined, customer?.lastName || undefined) }}</AvatarFallback>
         </Avatar>
-        <div>
-          <h1 class="text-2xl font-semibold tracking-tight">{{ customerName }}</h1>
-          <p class="text-sm text-muted-foreground">{{ customer?.email }}</p>
+        <div class="min-w-0">
           <p v-if="customer?.phone" class="text-sm text-muted-foreground">{{ customer?.phone }}</p>
           <div class="flex items-center gap-2 mt-2">
             <Badge :variant="getLifecycleBadgeVariant(customer?.retentionProfile?.lifecycleStage)">
@@ -28,9 +23,12 @@
               </span>
             </div>
           </div>
-        </div>
       </div>
-      <div class="flex items-center gap-2">
+      </div>
+      <template #actions>
+        <Button variant="ghost" size="sm" @click="navigateTo('/admin/customers')">
+          <ArrowLeft class="mr-2 h-4 w-4" /> Customers
+        </Button>
         <Button variant="outline" size="sm" @click="logCall">
           <Phone class="mr-2 h-4 w-4" /> Log Call
         </Button>
@@ -42,7 +40,7 @@
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Open customer actions">
               <MoreHorizontal class="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -59,8 +57,8 @@
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <div class="grid gap-6 lg:grid-cols-3">
       <!-- Left Column - Main Info -->
@@ -352,7 +350,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <Label for="dueDate">Due Date</Label>
-                <Input id="dueDate" v-model="newTask.dueDate" type="date" required />
+                <AdminDatePicker v-model="newTask.dueDate" label="Task due date" placeholder="Choose due date" />
               </div>
               <div class="space-y-2">
                 <Label for="priority">Priority</Label>

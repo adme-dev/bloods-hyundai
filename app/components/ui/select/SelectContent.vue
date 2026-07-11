@@ -28,6 +28,7 @@ const forwarded = useForwardPropsEmits(props, emits)
 <template>
   <SelectPortal>
     <SelectContent
+      data-slot="select-content"
       v-bind="{ ...forwarded, class: undefined }"
       :class="cn(
         'relative z-[100] max-h-96 min-w-[8rem] overflow-hidden rounded-md border border-gray-200 bg-white text-gray-900 shadow-lg',
@@ -38,6 +39,7 @@ const forwarded = useForwardPropsEmits(props, emits)
     >
       <SelectScrollUpButton />
       <SelectViewport
+        data-slot="select-viewport"
         :class="cn(
           'p-1',
           position === 'popper'
@@ -50,7 +52,6 @@ const forwarded = useForwardPropsEmits(props, emits)
     </SelectContent>
   </SelectPortal>
 </template>
-
 
 
 

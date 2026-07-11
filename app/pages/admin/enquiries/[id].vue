@@ -18,27 +18,19 @@
     <!-- Header -->
     <Card class="shadow-sm">
       <CardContent class="space-y-4 p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div class="space-y-2">
-            <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <NuxtLink to="/admin/enquiries" class="flex items-center gap-1 hover:text-foreground">
-                <ChevronLeft class="h-4 w-4" /> Back to enquiries
-              </NuxtLink>
-              <span>/</span>
-              <span>{{ shortId }}</span>
-            </div>
-            <div class="flex flex-wrap items-center gap-3">
-              <h1 class="text-3xl font-semibold tracking-tight">
-                {{ enquiry.firstName }} {{ enquiry.lastName }}
-              </h1>
-              <Badge variant="secondary">{{ formatType(enquiry.type) }}</Badge>
-              <Badge v-if="enquiry.department" variant="outline">{{ enquiry.department }}</Badge>
-            </div>
-            <p class="text-sm text-muted-foreground">
-              Submitted {{ formatDate(enquiry.createdAt) }}
-              <span v-if="submittedRelative"> · {{ submittedRelative }} ago</span>
-            </p>
+        <AdminPageHeader
+          :title="`${enquiry.firstName} ${enquiry.lastName}`"
+          :description="`Submitted ${formatDate(enquiry.createdAt)}${submittedRelative ? ` · ${submittedRelative} ago` : ''}`"
+          :eyebrow="`Enquiry · ${shortId}`"
+        >
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{{ formatType(enquiry.type) }}</Badge>
+            <Badge v-if="enquiry.department" variant="outline">{{ enquiry.department }}</Badge>
+            <NuxtLink to="/admin/enquiries" class="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <ChevronLeft class="h-3.5 w-3.5" /> Back to enquiries
+            </NuxtLink>
           </div>
+          <template #actions>
           <div class="enquiry-detail__header-actions flex flex-wrap items-center gap-3">
             <Select :model-value="statusDraft" @update:model-value="onStatusSelect">
               <SelectTrigger class="w-[200px]">
@@ -61,7 +53,8 @@
               <RefreshCcw class="mr-2 h-4 w-4" /> Refresh
             </Button>
           </div>
-        </div>
+          </template>
+        </AdminPageHeader>
 
         <!-- Lost-reason capture -->
         <div v-if="showLostPanel" class="mt-3 rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/10">

@@ -1,23 +1,13 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex items-center gap-4">
-        <Button variant="ghost" size="icon" as-child>
-          <NuxtLink to="/admin/service/appointments">
-            <ArrowLeft class="h-5 w-5" />
-          </NuxtLink>
-        </Button>
-        <div>
-          <h1 class="text-2xl font-semibold tracking-tight">
-            {{ data?.appointment?.customerName }}
-          </h1>
-          <p class="text-sm text-muted-foreground">
-            {{ data?.appointment?.vehicleDisplay }} · {{ data?.appointment?.vehicleRegistration }}
-          </p>
-        </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
+    <AdminPageHeader
+      :title="data?.appointment?.customerName || 'Service appointment'"
+      :description="`${data?.appointment?.vehicleDisplay || ''}${data?.appointment?.vehicleRegistration ? ` · ${data.appointment.vehicleRegistration}` : ''}`"
+      eyebrow="Service appointment"
+    >
+      <template #actions>
+        <Button variant="ghost" size="sm" as-child><NuxtLink to="/admin/service/appointments"><ArrowLeft class="mr-2 h-4 w-4" /> Appointments</NuxtLink></Button>
         <Badge :variant="getStatusVariant(data?.appointment?.status)" class="capitalize text-sm">
           {{ data?.appointment?.status?.replace('_', ' ') }}
         </Badge>
@@ -25,8 +15,8 @@
           <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': pending }" />
           Refresh
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <div v-if="pending" class="flex justify-center py-12">
       <Loader2 class="h-8 w-8 animate-spin text-muted-foreground" />

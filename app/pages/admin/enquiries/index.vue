@@ -1,40 +1,35 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Enquiries</h1>
-        <p class="text-sm text-muted-foreground">Monitor and respond to every customer touchpoint</p>
-      </div>
-      <div class="flex items-center gap-2">
+    <AdminPageHeader title="Enquiries" description="Monitor and respond to every customer touchpoint">
+      <template #actions>
         <!-- Real-time indicator -->
-        <div v-if="realtimeConnected" class="flex items-center gap-1 text-xs text-green-600">
+        <Badge v-if="realtimeConnected" variant="outline" class="gap-1 border-green-200 text-green-700">
           <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           Live
-        </div>
+        </Badge>
         <Button variant="outline" size="sm" @click="refresh">
           <RotateCcw class="mr-2 h-4 w-4" /> Refresh
         </Button>
         <Button variant="outline" size="sm" @click="clearFilters">
           <Filter class="mr-2 h-4 w-4" /> Clear filters
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- View Tabs -->
-    <div class="flex gap-1 border-b">
-      <Button 
+    <Tabs :model-value="filters.view" @update:model-value="filters.view = String($event)">
+      <TabsList class="grid h-auto w-full grid-cols-3">
+      <TabsTrigger
         v-for="tab in viewTabs" 
         :key="tab.value"
-        :variant="filters.view === tab.value ? 'default' : 'ghost'"
-        size="sm"
-        class="rounded-b-none"
-        @click="filters.view = tab.value"
+        :value="tab.value"
       >
         <component :is="tab.icon" class="mr-2 h-4 w-4" />
         {{ tab.label }}
         <Badge v-if="tab.count > 0" variant="secondary" class="ml-2">{{ tab.count }}</Badge>
-      </Button>
-    </div>
+      </TabsTrigger>
+      </TabsList>
+    </Tabs>
 
     <!-- Filters -->
     <Card>
@@ -312,6 +307,7 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 import { Badge } from '~/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import {
   Table,
   TableBody,

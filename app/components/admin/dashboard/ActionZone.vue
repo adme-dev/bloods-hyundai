@@ -2,19 +2,19 @@
   <div class="grid min-w-0 gap-6 lg:grid-cols-2">
     <!-- Hot Leads -->
     <Card id="hot-leads-card" class="crm-queue-card">
-      <CardHeader>
-        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="min-w-0">
-            <CardTitle class="flex items-center gap-2">
-              <Flame class="h-5 w-5 text-orange-500" />
-              Hot Leads
-            </CardTitle>
-            <CardDescription>High-priority leads with buying signals</CardDescription>
-          </div>
+      <CardHeader class="grid grid-cols-[1fr_auto] items-start gap-2">
+        <div class="min-w-0">
+          <CardTitle class="flex items-center gap-2">
+            <Flame class="h-5 w-5 text-orange-500" />
+            Hot Leads
+          </CardTitle>
+          <CardDescription>High-priority leads with buying signals</CardDescription>
+        </div>
+        <CardAction>
           <Button variant="outline" size="sm" as-child>
             <NuxtLink to="/admin/enquiries?priority=high,urgent">View All</NuxtLink>
           </Button>
-        </div>
+        </CardAction>
       </CardHeader>
       <CardContent class="p-0">
         <div v-if="data?.hotLeads?.length" class="dashboard-action-list divide-y">
@@ -77,17 +77,17 @@
 
     <!-- Overdue Responses -->
     <Card class="crm-queue-card" :class="data?.followUpAlerts?.overdueEnquiries?.length ? 'border-red-200 dark:border-red-900' : ''">
-      <CardHeader>
-        <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="min-w-0">
-            <CardTitle class="flex items-center gap-2" :class="data?.followUpAlerts?.overdueEnquiries?.length ? 'text-red-600' : ''">
-              <Clock class="h-5 w-5" />
-              Overdue Responses
-            </CardTitle>
-            <CardDescription>Leads waiting over 24 hours</CardDescription>
-          </div>
-          <Badge v-if="data?.followUpAlerts?.overdue" variant="destructive">{{ data.followUpAlerts.overdue }} overdue</Badge>
+      <CardHeader class="grid grid-cols-[1fr_auto] items-start gap-2">
+        <div class="min-w-0">
+          <CardTitle class="flex items-center gap-2" :class="data?.followUpAlerts?.overdueEnquiries?.length ? 'text-red-600' : ''">
+            <Clock class="h-5 w-5" />
+            Overdue Responses
+          </CardTitle>
+          <CardDescription>Leads waiting over 24 hours</CardDescription>
         </div>
+        <CardAction>
+          <Badge v-if="data?.followUpAlerts?.overdue" variant="destructive">{{ data.followUpAlerts.overdue }} overdue</Badge>
+        </CardAction>
       </CardHeader>
       <CardContent class="p-0">
         <div v-if="data?.followUpAlerts?.overdueEnquiries?.length" class="dashboard-action-list divide-y">
@@ -196,14 +196,12 @@
 
     <!-- Recent Activity -->
     <Card class="crm-queue-card">
-      <CardHeader class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader class="grid grid-cols-[1fr_auto] items-start gap-2">
         <div class="min-w-0">
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>Latest enquiries across all departments</CardDescription>
         </div>
-        <Button variant="outline" size="sm" as-child>
-          <NuxtLink to="/admin/enquiries">View all</NuxtLink>
-        </Button>
+        <CardAction><Button variant="outline" size="sm" as-child><NuxtLink to="/admin/enquiries">View all</NuxtLink></Button></CardAction>
       </CardHeader>
       <CardContent class="p-0">
         <div class="dashboard-action-list divide-y">
@@ -261,7 +259,7 @@ import {
   Flame, CalendarCheck, DollarSign, Package, Phone, Clock, Inbox, UserPlus,
   HeartCrack, Users, GitBranch, Settings, Target, Mail, MailPlus, ArrowRight,
 } from 'lucide-vue-next';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
+import { Card, CardAction, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';

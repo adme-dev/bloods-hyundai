@@ -1,9 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <p class="text-sm text-muted-foreground">Email deliverability & sender management</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Email Settings</h1>
-    </div>
+    <AdminPageHeader title="Email Settings" description="Email deliverability and sender management" />
 
     <!-- Verified Senders Section -->
     <Card>
@@ -510,7 +507,6 @@ const resendVerification = async (senderId: number) => {
   }
 };
 </script>
-
 
 
 

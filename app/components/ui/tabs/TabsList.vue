@@ -8,6 +8,7 @@ const props = defineProps<TabsListProps & { class?: HTMLAttributes['class'] }>()
 
 <template>
   <TabsList
+    data-slot="tabs-list"
     :class="cn(
       'inline-flex h-10 items-center justify-center rounded-md bg-gray-100 p-1 text-gray-500',
       props.class,
@@ -17,7 +18,6 @@ const props = defineProps<TabsListProps & { class?: HTMLAttributes['class'] }>()
     <slot />
   </TabsList>
 </template>
-
 
 
 
