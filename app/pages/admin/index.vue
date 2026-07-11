@@ -22,9 +22,11 @@
 
     <!-- Alert Banner for Urgent Items -->
     <div v-if="alerts && alerts.totalAlerts > 0" class="dashboard-alert" role="alert">
-      <div class="flex items-start gap-3">
-        <AlertTriangle class="h-5 w-5 text-red-500 mt-0.5" />
-        <div class="flex-1">
+      <div class="dashboard-alert__inner">
+        <div class="dashboard-alert__icon" aria-hidden="true">
+          <AlertTriangle class="h-5 w-5" />
+        </div>
+        <div class="dashboard-alert__copy">
           <h3 class="font-semibold text-red-800 dark:text-red-200">Action Required</h3>
           <p class="text-sm text-red-700 dark:text-red-300">
             {{ alerts.overdue }} leads awaiting response
@@ -33,7 +35,7 @@
             </span>
           </p>
         </div>
-        <Button variant="destructive" size="sm" as-child>
+        <Button variant="destructive" size="sm" class="dashboard-alert__action" as-child>
           <NuxtLink to="/admin/enquiries?status=new_lead&sort=oldest">
             View Overdue <ArrowRight class="ml-1 h-4 w-4" />
           </NuxtLink>
@@ -75,7 +77,7 @@
         <p>Switch between pipeline, customer, inventory, marketing, and team views.</p>
       </div>
     <Tabs class="dashboard-tabs" :model-value="activeTab" @update:model-value="onTabChange">
-      <TabsList class="grid h-auto w-full grid-cols-2 sm:grid-cols-5">
+      <TabsList class="dashboard-tab-list">
         <TabsTrigger value="sales">Sales &amp; Pipeline</TabsTrigger>
         <TabsTrigger value="marketing">Marketing</TabsTrigger>
         <TabsTrigger value="customers">Customers</TabsTrigger>
@@ -303,11 +305,46 @@ function onTabChange(value: string | number | null) {
   width: 100%;
 }
 
-.dashboard-alert :deep(.ui-button) {
-  margin-left: auto;
+.dashboard-alert__inner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
 }
 
-.dashboard-tabs :deep([role="tablist"]) {
+.dashboard-alert__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--dashboard-crit) 10%, transparent);
+  color: var(--dashboard-crit);
+}
+
+.dashboard-alert__copy {
+  min-width: 0;
+}
+
+.dashboard-alert__copy h3,
+.dashboard-alert__copy p {
+  margin: 0;
+}
+
+.dashboard-alert__copy p {
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+.dashboard-alert__action {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.dashboard-tabs :deep([data-slot="tabs-list"]) {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
   height: auto;
   gap: 3px;
   border: 1px solid var(--dashboard-line);
@@ -316,7 +353,7 @@ function onTabChange(value: string | number | null) {
   background: var(--dashboard-surface-2);
 }
 
-.dashboard-tabs :deep([role="tab"]) {
+.dashboard-tabs :deep([data-slot="tabs-trigger"]) {
   min-height: 36px;
   border-radius: 7px;
   color: var(--dashboard-muted);
@@ -324,13 +361,13 @@ function onTabChange(value: string | number | null) {
   font-weight: 650;
 }
 
-.dashboard-tabs :deep([role="tab"][data-state="active"]) {
+.dashboard-tabs :deep([data-slot="tabs-trigger"][data-state="active"]) {
   background: var(--dashboard-brand);
   color: #fff;
   box-shadow: 0 1px 3px rgb(11 26 43 / 14%);
 }
 
-.dashboard-shell :deep(.rounded-xl.border) {
+.dashboard-shell :deep([data-slot="card"]) {
   min-width: 0;
   max-width: 100%;
   border-color: var(--dashboard-line);
@@ -399,12 +436,104 @@ function onTabChange(value: string | number | null) {
     text-align: left;
   }
 
-  .dashboard-alert > div {
-    flex-wrap: wrap;
+  .dashboard-alert {
+    padding: 14px;
   }
 
-  .dashboard-alert :deep(.ui-button) {
-    margin-left: 2rem;
+  .dashboard-alert__inner {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 12px;
+  }
+
+  .dashboard-alert__icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .dashboard-alert__copy h3 {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .dashboard-alert__copy p {
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
+  .dashboard-alert__action {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 40px;
+    margin-left: 0;
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card"]) {
+    gap: 10px;
+    min-height: 174px;
+    border-left-width: 1px !important;
+    padding-block: 14px;
+    background: linear-gradient(180deg, var(--dashboard-surface) 58%, color-mix(in srgb, var(--dashboard-accent) 5%, var(--dashboard-surface)) 100%);
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-header"]) {
+    gap: 4px;
+    padding-inline: 14px;
+    padding-bottom: 0;
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-content"]),
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-footer"]) {
+    padding-inline: 14px;
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-content"]) {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-content"] > :last-child:not(:first-child)) {
+    margin-top: auto;
+    padding-top: 16px;
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis [data-slot="card-title"]) {
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .dashboard-shell :deep(.dashboard-compact-kpis .text-3xl) {
+    font-size: 1.65rem;
+    line-height: 1.1;
+  }
+
+  .dashboard-tabs :deep([data-slot="tabs-list"]) {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 4px;
+    scroll-padding-inline: 4px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-tabs :deep([data-slot="tabs-list"]::-webkit-scrollbar) {
+    display: none;
+  }
+
+  .dashboard-tabs :deep([data-slot="tabs-trigger"]) {
+    flex: 0 0 auto;
+    min-width: max-content;
+    min-height: 40px;
+    padding-inline: 16px;
+    scroll-snap-align: start;
+    white-space: nowrap;
   }
 }
 </style>
