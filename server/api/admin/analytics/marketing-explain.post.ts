@@ -1,6 +1,20 @@
 import Groq from 'groq-sdk';
 import { createHash } from 'node:crypto';
 
+interface ExplainReportSlice {
+  period: { from: string; to: string };
+  summary: {
+    totalCrmLeads: number;
+    paidCrmLeads: number;
+    utmCoverage: number;
+    campaignCoverage: number;
+    sourceCoverage: number;
+  };
+  insights: { executive: { totalSpend: number } };
+  platformMetrics: { ga4: { sessions: number } };
+  professionalMetrics: { paidMedia: { platformLeads: number } };
+}
+
 const AI_MODEL = 'llama-3.1-8b-instant';
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const cache = new Map<string, { narrative: string; generatedAt: string; expires: number }>();
@@ -32,7 +46,7 @@ export default defineEventHandler(async (event) => {
     return { available: false as const };
   }
 
-  const report = await $fetch<any>('/api/admin/analytics/marketing-report', {
+  const report = await $fetch<ExplainReportSlice>('/api/admin/analytics/marketing-report', {
     query: { from, to },
     headers: { cookie: getHeader(event, 'cookie') || '' },
   });
