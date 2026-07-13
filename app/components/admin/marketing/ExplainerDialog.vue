@@ -33,7 +33,6 @@
           <p class="whitespace-pre-wrap text-sm leading-relaxed">{{ narrative }}</p>
           <div class="flex gap-2">
             <Button size="sm" variant="outline" @click="copyNarrative">{{ copied ? 'Copied' : 'Copy' }}</Button>
-            <Button size="sm" variant="ghost" @click="generate">Regenerate</Button>
           </div>
           <p v-if="copyFailed" class="text-xs text-muted-foreground">Copy failed — select the text manually.</p>
         </div>
@@ -102,6 +101,13 @@ watch(() => props.open, async (open) => {
   highlighted.value = props.topic;
   await nextTick();
   sectionEls.get(props.topic)?.scrollIntoView({ block: 'start' });
+});
+
+watch(() => [props.from, props.to], () => {
+  aiState.value = 'idle';
+  narrative.value = '';
+  copied.value = false;
+  copyFailed.value = false;
 });
 
 async function generate() {

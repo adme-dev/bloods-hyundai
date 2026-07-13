@@ -39,6 +39,14 @@ export default defineEventHandler(async (event) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
     throw createError({ statusCode: 400, message: 'Invalid period' });
   }
+  const fromDate = new Date(`${from}T00:00:00Z`);
+  const toDate = new Date(`${to}T00:00:00Z`);
+  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime()) || fromDate > toDate) {
+    throw createError({ statusCode: 400, message: 'Invalid period' });
+  }
+  if ((toDate.getTime() - fromDate.getTime()) / 86_400_000 > 366) {
+    throw createError({ statusCode: 400, message: 'Period too long' });
+  }
 
   const apiKey = process.env.AI_API_KEY || process.env.GROQ_API_KEY;
   if (!apiKey) {

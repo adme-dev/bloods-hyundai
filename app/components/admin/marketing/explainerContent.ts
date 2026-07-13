@@ -21,7 +21,7 @@ export const explainerTopics: ExplainerTopic[] = [
     key: 'unmatched-banner',
     title: 'Why "no CRM leads matched to paid media"?',
     measures:
-      'This banner compares synced ad spend with CRM leads that carry paid-platform evidence — UTM tags or click IDs tying a lead to a specific ad. Spend showing here means the platform connection is working.',
+      'This banner compares synced ad spend with CRM leads that carry paid-platform evidence — UTM tags, ad click IDs, or other recorded paid-platform signals. Spend showing here means the platform connection is working.',
     whyAlarming:
       'It reads like the spend produced nothing. Zero matches has four common, honest explanations: campaigns whose objective is awareness or traffic rather than leads; campaigns still pending or in their learning phase; tracking feeds not live yet; and leads arriving by phone or walk-in, which never carry ad tags.',
     whatGoodLooksLike:
@@ -113,7 +113,7 @@ export const explainerTopics: ExplainerTopic[] = [
     measures:
       'Each ad campaign\'s spend alongside the platform\'s own reported leads and the CRM leads matched back to that campaign.',
     whyAlarming:
-      'Zero platform leads against real spend usually means the campaign is not optimising for leads — the platform itself reports none — rather than tracking losing them. Zero CRM matches on top of that follows from the same cause.',
+      'Zero platform leads against real spend most often means the campaign is not optimising for leads — the platform itself reports none. A broken tracking pixel on a lead-gen campaign can produce the same zero, so the campaign objective is the first thing to confirm. Zero CRM matches on top of that follows from the same cause.',
     whatGoodLooksLike:
       'Lead-gen campaigns showing platform leads and CRM matches. Awareness and traffic rows showing clicks and impressions, with CPL treated as not applicable.',
     whatToCheck: [
