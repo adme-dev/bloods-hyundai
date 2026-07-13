@@ -1065,6 +1065,7 @@ const MetricPanel = defineComponent({
 .marketing-hub__explain { display: inline-flex; align-items: center; padding: 2px; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .marketing-hub__explain:hover { color: var(--accent); }
 .marketing-hub__explain svg { width: 14px; height: 14px; }
+.marketing-hub__section-head h2 .marketing-hub__explain { margin-left: 8px; }
 .marketing-hub__explain-link { margin-top: 6px; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; font-size: 12.5px; font-weight: 600; text-decoration: underline; }
 .marketing-hub__help { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: none; color: inherit; cursor: pointer; font-size: 12.5px; font-weight: 600; }
 .marketing-hub__help svg { width: 14px; height: 14px; }
