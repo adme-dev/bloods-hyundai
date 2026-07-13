@@ -29,6 +29,9 @@
               {{ compactRangeLabel }} <ChevronDown aria-hidden="true" />
             </button>
           </div>
+          <button type="button" class="marketing-hub__help" @click="openExplainer()">
+            <CircleHelp aria-hidden="true" /> Help
+          </button>
           <div v-if="customRangeOpen" class="marketing-hub__custom-range">
             <div><span>From</span><AdminDatePicker v-model="from" label="Report from date" :max="to" /></div>
             <div><span>To</span><AdminDatePicker v-model="to" label="Report to date" :min="from" :max="today" /></div>
@@ -53,6 +56,9 @@
             This is the result for the selected period, not a disconnected integration.
           </p>
           <p v-else>Paid campaign data is not connected to this dealer yet. Connect an ad platform before assessing paid attribution.</p>
+          <button type="button" class="marketing-hub__explain-link" @click="openExplainer('unmatched-banner')">
+            What does this mean?
+          </button>
         </div>
         <NuxtLink class="marketing-hub__action ui-button" :to="attributionBanner.to">{{ attributionBanner.action }} <ArrowRight aria-hidden="true" /></NuxtLink>
       </div>
@@ -80,7 +86,17 @@
           >
             <div class="marketing-hub__kpi-label">
               {{ item.label }}
-              <component :is="item.icon" aria-hidden="true" />
+              <span class="marketing-hub__kpi-trailing">
+                <button
+                  type="button"
+                  class="marketing-hub__explain"
+                  :aria-label="`Explain ${item.label}`"
+                  @click="openExplainer(item.topic)"
+                >
+                  <CircleHelp aria-hidden="true" />
+                </button>
+                <component :is="item.icon" aria-hidden="true" />
+              </span>
             </div>
             <div class="marketing-hub__kpi-value">{{ item.value }}</div>
             <p>{{ item.caption }}</p>
@@ -194,7 +210,7 @@
 
       <section aria-labelledby="campaign-title">
         <div class="marketing-hub__section-head">
-          <h2 id="campaign-title">Campaign CPL Reconciliation</h2>
+          <h2 id="campaign-title">Campaign CPL Reconciliation<button type="button" class="marketing-hub__explain" aria-label="Explain CPL reconciliation" @click="openExplainer('cpl-reconciliation')"><CircleHelp aria-hidden="true" /></button></h2>
           <span />
           <p>Ad rows matched to CRM leads by UTM campaign, ID or name</p>
         </div>
@@ -444,7 +460,7 @@
       <section aria-label="Tracking audit">
         <article class="marketing-hub__card">
             <header class="marketing-hub__panel-head">
-              <h2><Code2 aria-hidden="true" />Data Layer Audit <span class="marketing-hub__quality mid">{{ dataLayerLabel }}</span></h2>
+              <h2><Code2 aria-hidden="true" />Data Layer Audit <span class="marketing-hub__quality mid">{{ dataLayerLabel }}</span><button type="button" class="marketing-hub__explain" aria-label="Explain the Data Layer Audit" @click="openExplainer('data-layer-audit')"><CircleHelp aria-hidden="true" /></button></h2>
               <p>Lead-tracking contract &amp; CRM field coverage.</p>
             </header>
             <div class="marketing-hub__pad">
@@ -554,6 +570,7 @@
         Panels waiting for a platform sync are clearly marked, and unavailable metrics display as “—”.
       </footer>
     </template>
+    <ExplainerDialog v-model:open="explainerOpen" :topic="explainerTopic" :from="from" :to="to" />
   </div>
 </template>
 
@@ -563,6 +580,7 @@ import {
   ArrowRight,
   ChartNoAxesCombined,
   ChevronDown,
+  CircleHelp,
   Code2,
   Database,
   ListFilter,
@@ -578,6 +596,8 @@ import {
   formatReportTimestamp as shortDateTime,
   reportDateInTimeZone,
 } from '~/utils/marketingReportFormat';
+import ExplainerDialog from '~/components/admin/marketing/ExplainerDialog.vue';
+import type { ExplainerTopicKey } from '~/components/admin/marketing/explainerContent';
 
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
@@ -646,6 +666,13 @@ const query = computed(() => ({ from: from.value, to: to.value }));
 const { data, pending, error, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', { query });
 const { data: inboundEmailData } = await useFetch<InboundResponse>('/api/admin/lead-ingestion/email-addresses');
 
+const explainerOpen = ref(false);
+const explainerTopic = ref<ExplainerTopicKey | null>(null);
+function openExplainer(topic: ExplainerTopicKey | null = null) {
+  explainerTopic.value = topic;
+  explainerOpen.value = true;
+}
+
 const presets: Array<{ id: PresetId; label: string }> = [
   { id: 'mtd', label: 'Month to date' }, { id: '7d', label: '7 days' }, { id: '30d', label: '30 days' }, { id: '90d', label: '90 days' },
 ];
@@ -676,10 +703,10 @@ const connections = computed(() => [
   { label: 'Google Ads', status: connectionStatusLabel(data.value?.dataStatus.google_ads) },
 ]);
 const summaryCards = computed(() => [
-  { label: 'Admin CRM leads', value: n(data.value?.summary.totalCrmLeads || 0), caption: `${n(data.value?.summary.paidCrmLeads || 0)} matched to paid media`, icon: UserCheck, alert: false },
-  { label: 'Ad spend', value: money(data.value?.insights.executive.totalSpend || 0), caption: `blended CPL ${moneyOrDash(data.value?.professionalMetrics.paidMedia.cpl)}`, icon: WalletCards, alert: false },
-  { label: 'Website activity', value: n(data.value?.platformMetrics.ga4.sessions || 0), caption: `${n(data.value?.platformMetrics.ga4.conversions || 0)} GA4 key events`, icon: Database, alert: false },
-  { label: 'UTM coverage', value: pct(data.value?.summary.utmCoverage || 0), caption: `${pct(data.value?.summary.campaignCoverage || 0)} campaign tagged`, icon: Code2, alert: (data.value?.summary.utmCoverage || 0) < 50 },
+  { label: 'Admin CRM leads', value: n(data.value?.summary.totalCrmLeads || 0), caption: `${n(data.value?.summary.paidCrmLeads || 0)} matched to paid media`, icon: UserCheck, alert: false, topic: 'crm-leads' as const },
+  { label: 'Ad spend', value: money(data.value?.insights.executive.totalSpend || 0), caption: `blended CPL ${moneyOrDash(data.value?.professionalMetrics.paidMedia.cpl)}`, icon: WalletCards, alert: false, topic: 'ad-spend' as const },
+  { label: 'Website activity', value: n(data.value?.platformMetrics.ga4.sessions || 0), caption: `${n(data.value?.platformMetrics.ga4.conversions || 0)} GA4 key events`, icon: Database, alert: false, topic: 'website-activity' as const },
+  { label: 'UTM coverage', value: pct(data.value?.summary.utmCoverage || 0), caption: `${pct(data.value?.summary.campaignCoverage || 0)} campaign tagged`, icon: Code2, alert: (data.value?.summary.utmCoverage || 0) < 50, topic: 'utm-coverage' as const },
 ]);
 const maxInsightFunnelValue = computed(() => Math.max(...(data.value?.insights.funnel.map(row => row.value) || [1]), 1));
 const maxTypeTotal = computed(() => Math.max(...(data.value?.crm.typeBreakdown.map(row => row.total) || [1]), 1));
@@ -1034,6 +1061,14 @@ const MetricPanel = defineComponent({
 .marketing-hub :deep(.marketing-hub__panel-head h2) { display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
 .marketing-hub :deep(.marketing-hub__panel-head h2 > svg) { width: 16px; color: var(--accent); }
 .marketing-hub :deep(.marketing-hub__panel-head p) { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.marketing-hub__kpi-trailing { display: inline-flex; align-items: center; gap: 6px; }
+.marketing-hub__explain { display: inline-flex; align-items: center; padding: 5px; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.marketing-hub__explain:hover { color: var(--accent); }
+.marketing-hub__explain svg { width: 14px; height: 14px; }
+.marketing-hub__section-head h2 .marketing-hub__explain { margin-left: 8px; }
+.marketing-hub__explain-link { margin-top: 6px; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; font-size: 12.5px; font-weight: 600; text-decoration: underline; }
+.marketing-hub__help { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: none; color: inherit; cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.marketing-hub__help svg { width: 14px; height: 14px; }
 .marketing-hub :deep(.marketing-hub__pad) { padding: 16px; }
 .marketing-hub__quality { margin-left: auto; border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
 .marketing-hub__quality.bad { color: var(--crit); background: var(--crit-soft); }.marketing-hub__quality.mid { color: var(--warn); background: var(--warn-soft); }.marketing-hub__quality.ok { color: var(--good); background: var(--good-soft); }
