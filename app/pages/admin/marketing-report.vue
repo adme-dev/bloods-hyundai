@@ -553,27 +553,110 @@
       </section>
 
       <section aria-labelledby="builder-title">
-        <div class="marketing-hub__section-head"><h2 id="builder-title">Report builder</h2><b class="p3">Phase 3 · new</b><span /><p>Slice any metric by any dimension</p></div>
+        <div class="marketing-hub__section-head"><h2 id="builder-title">Report builder</h2><b class="p3">Live report data</b><span /><p>Build a table from the selected report period</p></div>
         <article class="marketing-hub__card marketing-hub__pivot">
           <aside>
             <p class="marketing-hub__eyebrow">Dimensions</p>
-            <div><span class="on">Campaign</span><span class="on">Platform</span><span>Age</span><span>Area</span><span>Device</span><span>Time of day</span><span>Landing page</span><span>Source / medium</span></div>
+            <div>
+              <button
+                v-for="dimensionOption in REPORT_BUILDER_DIMENSIONS"
+                :key="dimensionOption.id"
+                type="button"
+                :class="{ on: builderDimensions.includes(dimensionOption.id) }"
+                :aria-pressed="builderDimensions.includes(dimensionOption.id)"
+                :title="dimensionOption.description"
+                @click="toggleBuilderDimension(dimensionOption.id)"
+              >
+                {{ dimensionOption.label }}
+              </button>
+            </div>
             <p class="marketing-hub__eyebrow">Metrics</p>
-            <div><span class="on">Spend</span><span class="on">CRM leads</span><span class="on">CPL</span><span>Clicks</span><span>CTR</span><span>ROAS</span><span>Impr.</span><span>Sessions</span></div>
+            <div>
+              <button
+                v-for="metricOption in REPORT_BUILDER_METRICS"
+                :key="metricOption.id"
+                type="button"
+                :class="{ on: builderMetrics.includes(metricOption.id) }"
+                :aria-pressed="builderMetrics.includes(metricOption.id)"
+                :disabled="!builderAvailableMetrics.includes(metricOption.id)"
+                :title="builderMetricTitle(metricOption.id)"
+                @click="toggleBuilderMetric(metricOption.id)"
+              >
+                {{ metricOption.label }}
+              </button>
+            </div>
           </aside>
           <div class="marketing-hub__pivot-main">
             <div class="marketing-hub__wells">
-              <div><p class="marketing-hub__eyebrow">Rows</p><span>Platform ×</span><span>Campaign ×</span></div>
-              <div><p class="marketing-hub__eyebrow">Values</p><span>Spend ×</span><span>CRM leads ×</span><span>CPL ×</span></div>
+              <div>
+                <p class="marketing-hub__eyebrow">Rows</p>
+                <button
+                  v-for="dimensionId in builderDimensions"
+                  :key="dimensionId"
+                  type="button"
+                  :aria-label="`Remove ${builderDimensionLabel(dimensionId)}`"
+                  @click="removeBuilderDimension(dimensionId)"
+                >
+                  {{ builderDimensionLabel(dimensionId) }} <span aria-hidden="true">×</span>
+                </button>
+              </div>
+              <div>
+                <p class="marketing-hub__eyebrow">Values</p>
+                <button
+                  v-for="metricId in builderMetrics"
+                  :key="metricId"
+                  type="button"
+                  :aria-label="`Remove ${builderMetricLabel(metricId)}`"
+                  @click="removeBuilderMetric(metricId)"
+                >
+                  {{ builderMetricLabel(metricId) }} <span aria-hidden="true">×</span>
+                </button>
+              </div>
             </div>
             <div class="marketing-hub__table-wrap">
-              <table class="num"><thead><tr><th>Platform · Campaign</th><th>Spend</th><th>CRM leads</th><th>CPL</th></tr></thead>
+              <table class="num"><thead><tr>
+                <th
+                  v-for="dimensionId in builderDimensions"
+                  :key="dimensionId"
+                  class="dimension"
+                  scope="col"
+                  :aria-sort="builderAriaSort(dimensionId)"
+                >
+                  <button type="button" @click="sortBuilderBy(dimensionId)">
+                    {{ builderDimensionLabel(dimensionId) }} <span aria-hidden="true">{{ builderSortIndicator(dimensionId) }}</span>
+                  </button>
+                </th>
+                <th
+                  v-for="metricId in builderMetrics"
+                  :key="metricId"
+                  scope="col"
+                  :aria-sort="builderAriaSort(metricId)"
+                >
+                  <button type="button" @click="sortBuilderBy(metricId)">
+                    {{ builderMetricLabel(metricId) }} <span aria-hidden="true">{{ builderSortIndicator(metricId) }}</span>
+                  </button>
+                </th>
+              </tr></thead>
                 <tbody>
-                  <tr><td colspan="4" class="marketing-hub__empty-cell">Report-builder results will appear when this Phase 3 feature is connected to report data.</td></tr>
+                  <tr v-for="row in builderRows" :key="row.key">
+                    <td v-for="dimensionId in builderDimensions" :key="dimensionId" class="dimension">
+                      {{ formatBuilderDimension(dimensionId, row.dimensions[dimensionId]) }}
+                    </td>
+                    <td v-for="metricId in builderMetrics" :key="metricId">
+                      {{ formatBuilderMetric(metricId, row.metrics[metricId]) }}
+                    </td>
+                  </tr>
+                  <tr v-if="!builderRows.length">
+                    <td :colspan="builderDimensions.length + builderMetrics.length" class="marketing-hub__empty-cell">
+                      No real report data is available for this breakdown in {{ rangeLabel }}.
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
-            <p class="marketing-hub__example">No sample figures are shown.</p>
+            <p class="marketing-hub__example" role="status" aria-live="polite">
+              {{ n(builderRows.length) }} {{ builderRows.length === 1 ? 'row' : 'rows' }} from the current report data. Metrics unavailable at the selected grain are disabled.
+            </p>
           </div>
         </article>
       </section>
@@ -616,6 +699,18 @@ import {
   formatReportTimestamp as shortDateTime,
   reportDateInTimeZone,
 } from '~/utils/marketingReportFormat';
+import {
+  REPORT_BUILDER_DIMENSIONS,
+  REPORT_BUILDER_METRICS,
+  availableMetricsForDimensions,
+  buildReportBuilderRows,
+  normalizeReportBuilderSelection,
+  sortReportBuilderRows,
+  type ReportBuilderDimension,
+  type ReportBuilderMetric,
+  type ReportBuilderSortDirection,
+  type ReportBuilderSortKey,
+} from '~/utils/marketingReportBuilder';
 import ExplainerDialog from '~/components/admin/marketing/ExplainerDialog.vue';
 import CreativePreviewDialog from '~/components/admin/marketing/CreativePreviewDialog.vue';
 import type { ExplainerTopicKey } from '~/components/admin/marketing/explainerContent';
@@ -696,6 +791,98 @@ const { data, pending, error, refresh } = await useFetch<ReportResponse>('/api/a
 const { data: inboundEmailData } = await useFetch<InboundResponse>('/api/admin/lead-ingestion/email-addresses');
 const syncing = ref(false);
 const syncError = ref<string | null>(null);
+const builderDimensions = ref<ReportBuilderDimension[]>(['platform', 'campaign']);
+const builderMetrics = ref<ReportBuilderMetric[]>(['spend', 'crm_leads', 'cpl']);
+const builderSortKey = ref<ReportBuilderSortKey>('spend');
+const builderSortDirection = ref<ReportBuilderSortDirection>('desc');
+const builderAvailableMetrics = computed(() => availableMetricsForDimensions(builderDimensions.value));
+const builderRows = computed(() => {
+  if (!data.value) return [];
+  const rows = buildReportBuilderRows(data.value, builderDimensions.value, builderMetrics.value);
+  return sortReportBuilderRows(rows, builderSortKey.value, builderSortDirection.value);
+});
+
+function applyBuilderSelection(dimensions: ReportBuilderDimension[], metrics: ReportBuilderMetric[]) {
+  const normalized = normalizeReportBuilderSelection(dimensions, metrics);
+  builderDimensions.value = normalized.dimensions;
+  builderMetrics.value = normalized.metrics;
+  if (![...normalized.dimensions, ...normalized.metrics].includes(builderSortKey.value)) {
+    builderSortKey.value = normalized.metrics[0]!;
+    builderSortDirection.value = 'desc';
+  }
+}
+
+function toggleBuilderDimension(dimension: ReportBuilderDimension) {
+  const selected = builderDimensions.value.includes(dimension);
+  const next: ReportBuilderDimension[] = selected
+    ? builderDimensions.value.filter(item => item !== dimension)
+    : dimension === 'platform'
+      ? ['platform', ...builderDimensions.value]
+      : [...builderDimensions.value.filter(item => item === 'platform'), dimension];
+  applyBuilderSelection(next, builderMetrics.value);
+}
+
+function removeBuilderDimension(dimension: ReportBuilderDimension) {
+  applyBuilderSelection(builderDimensions.value.filter(item => item !== dimension), builderMetrics.value);
+}
+
+function toggleBuilderMetric(metric: ReportBuilderMetric) {
+  if (!builderAvailableMetrics.value.includes(metric)) return;
+  const next = builderMetrics.value.includes(metric)
+    ? builderMetrics.value.filter(item => item !== metric)
+    : [...builderMetrics.value, metric];
+  applyBuilderSelection(builderDimensions.value, next);
+}
+
+function removeBuilderMetric(metric: ReportBuilderMetric) {
+  applyBuilderSelection(builderDimensions.value, builderMetrics.value.filter(item => item !== metric));
+}
+
+function sortBuilderBy(key: ReportBuilderSortKey) {
+  if (builderSortKey.value === key) {
+    builderSortDirection.value = builderSortDirection.value === 'asc' ? 'desc' : 'asc';
+    return;
+  }
+  builderSortKey.value = key;
+  builderSortDirection.value = builderDimensions.value.includes(key as ReportBuilderDimension) ? 'asc' : 'desc';
+}
+
+function builderAriaSort(key: ReportBuilderSortKey) {
+  if (builderSortKey.value !== key) return undefined;
+  return builderSortDirection.value === 'asc' ? 'ascending' as const : 'descending' as const;
+}
+
+function builderSortIndicator(key: ReportBuilderSortKey) {
+  if (builderSortKey.value !== key) return '';
+  return builderSortDirection.value === 'asc' ? '↑' : '↓';
+}
+
+function builderDimensionLabel(dimension: ReportBuilderDimension) {
+  return REPORT_BUILDER_DIMENSIONS.find(option => option.id === dimension)?.label || dimension;
+}
+
+function builderMetricLabel(metric: ReportBuilderMetric) {
+  return REPORT_BUILDER_METRICS.find(option => option.id === metric)?.label || metric;
+}
+
+function builderMetricTitle(metric: ReportBuilderMetric) {
+  return builderAvailableMetrics.value.includes(metric)
+    ? `${builderMetricLabel(metric)} from current report data`
+    : `${builderMetricLabel(metric)} is unavailable for the selected row breakdown`;
+}
+
+function formatBuilderDimension(dimension: ReportBuilderDimension, value?: string) {
+  if (!value) return 'Unknown';
+  return dimension === 'platform' ? platformLabel(value) : value;
+}
+
+function formatBuilderMetric(metric: ReportBuilderMetric, value?: number | null) {
+  if (value == null) return '—';
+  const format = REPORT_BUILDER_METRICS.find(option => option.id === metric)?.format;
+  if (format === 'money') return money(value);
+  if (format === 'percent') return pct(value);
+  return n(value);
+}
 
 async function syncAndRefresh() {
   if (syncing.value) return;
@@ -1200,7 +1387,7 @@ const MetricPanel = defineComponent({
 .marketing-hub__breakdown-card { overflow: hidden; }.marketing-hub__provider-breakdowns { min-height: 132px; }.marketing-hub__provider-breakdown { margin-bottom: 13px; }.marketing-hub__provider-breakdown:last-child { margin-bottom: 0; }.marketing-hub__provider-breakdown p { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 2px; font-size: 12px; }.marketing-hub__provider-breakdown p span { overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__provider-breakdown small { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10.5px; }
 .marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; overflow: hidden; background: linear-gradient(135deg,#334155,#64748b); color: white !important; }.marketing-hub__creative-art img { width: 100%; height: 100%; object-fit: cover; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: white; font-size: 10.5px; }.marketing-hub__creative-art > i { position: absolute; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgba(0,0,0,.58); color: white; font-style: normal; }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 4px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative > div:last-child > small { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }.marketing-hub__creative-empty { display: grid; place-items: center; min-height: 150px; padding: 28px; color: var(--muted); text-align: center; }.marketing-hub__creative-empty strong { color: var(--ink-2); }.marketing-hub__creative-empty span { font-size: 12px; }
 .marketing-hub__creative-art { width: 100%; border: 0; padding: 0; font: inherit; cursor: zoom-in; }.marketing-hub__creative-art:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
-.marketing-hub__pivot { display: grid; grid-template-columns: 230px 1fr; overflow: hidden; }.marketing-hub__pivot aside { padding: 15px; border-right: 1px solid var(--line); background: var(--surface-2); }.marketing-hub__pivot aside .marketing-hub__eyebrow:not(:first-child) { margin-top: 15px; }.marketing-hub__pivot aside div { display: flex; flex-wrap: wrap; gap: 7px; }.marketing-hub__pivot aside span, .marketing-hub__wells span { padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 600; }.marketing-hub__pivot aside span.on { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); color: var(--ink); }.marketing-hub__pivot-main { min-width: 0; padding: 15px; }.marketing-hub__wells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }.marketing-hub__wells > div { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__wells span { display: inline-block; }.marketing-hub__example { margin: 10px 0 0; color: var(--muted); font-size: 11.5px; }
+.marketing-hub__pivot { display: grid; grid-template-columns: 230px 1fr; overflow: hidden; }.marketing-hub__pivot aside { padding: 15px; border-right: 1px solid var(--line); background: var(--surface-2); }.marketing-hub__pivot aside .marketing-hub__eyebrow:not(:first-child) { margin-top: 15px; }.marketing-hub__pivot aside div { display: flex; flex-wrap: wrap; gap: 7px; }.marketing-hub__pivot aside button, .marketing-hub__wells button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }.marketing-hub__pivot aside button.on { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); color: var(--ink); }.marketing-hub__pivot aside button:disabled { border-style: dashed; background: transparent; color: var(--muted); cursor: not-allowed; opacity: .58; }.marketing-hub__pivot button:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }.marketing-hub__pivot-main { min-width: 0; padding: 15px; }.marketing-hub__wells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }.marketing-hub__wells > div { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__wells button { display: inline-flex; align-items: center; gap: 4px; margin: 0 3px 3px 0; }.marketing-hub__wells button span { color: var(--muted); }.marketing-hub__pivot th.dimension, .marketing-hub__pivot td.dimension { text-align: left; }.marketing-hub__pivot th > button { display: inline-flex; align-items: center; gap: 4px; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }.marketing-hub__pivot th:not(.dimension) > button { justify-content: flex-end; }.marketing-hub__example { margin: 10px 0 0; color: var(--muted); font-size: 11.5px; }
 .marketing-hub__footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.65; }.marketing-hub__footer strong { color: var(--ink-2); }
 @media (max-width: 960px) {
   .marketing-hub__kpis { grid-template-columns: repeat(2, 1fr); }

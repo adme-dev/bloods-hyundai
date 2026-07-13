@@ -28,7 +28,7 @@ export interface Ga4BreakdownRow {
   metrics: Record<string, number>;
 }
 
-type CachedGa4Breakdowns = Pick<Ga4WebsiteAnalytics, 'topLandingPages' | 'trafficChannels' | 'sourceMedium'>;
+type CachedGa4Breakdowns = Pick<Ga4WebsiteAnalytics, 'topLandingPages' | 'trafficChannels' | 'sourceMedium' | 'deviceCategories'>;
 
 export interface Ga4WebsiteAnalytics {
   status: 'connected' | 'stored_data' | 'not_configured' | 'error';
@@ -120,6 +120,7 @@ export function aggregateStoredGa4Breakdowns(rows: Array<{ raw: unknown }>): Cac
     topLandingPages: aggregateCachedRows(rows, 'topLandingPages', 'landingPagePlusQueryString', 12),
     trafficChannels: aggregateCachedRows(rows, 'trafficChannels', 'sessionDefaultChannelGroup', 10),
     sourceMedium: aggregateCachedRows(rows, 'sourceMedium', 'sessionSourceMedium', 12),
+    deviceCategories: aggregateCachedRows(rows, 'deviceCategories', 'deviceCategory', 8),
   };
 }
 
@@ -261,13 +262,14 @@ export async function fetchGa4WebsiteAnalytics(propertyId: string, range: DateRa
 }
 
 export async function fetchGa4DailyWithBreakdowns(propertyId: string, range: DateRange): Promise<NormalizedRow[]> {
-  const [daily, topLandingPages, trafficChannels, sourceMedium] = await Promise.all([
+  const [daily, topLandingPages, trafficChannels, sourceMedium, deviceCategories] = await Promise.all([
     fetchGa4Daily(propertyId, range),
     runGa4Report(propertyId, range, { dimensions: ['date', 'landingPagePlusQueryString'], metrics: ['sessions', 'totalUsers', 'screenPageViews', 'keyEvents', 'engagementRate'], limit: 100_000 }),
     runGa4Report(propertyId, range, { dimensions: ['date', 'sessionDefaultChannelGroup'], metrics: ['sessions', 'totalUsers', 'keyEvents'], limit: 100_000 }),
     runGa4Report(propertyId, range, { dimensions: ['date', 'sessionSourceMedium'], metrics: ['sessions', 'totalUsers', 'keyEvents'], limit: 100_000 }),
+    runGa4Report(propertyId, range, { dimensions: ['date', 'deviceCategory'], metrics: ['sessions', 'totalUsers', 'keyEvents'], limit: 100_000 }),
   ]);
-  return attachGa4Breakdowns(daily, { topLandingPages, trafficChannels, sourceMedium });
+  return attachGa4Breakdowns(daily, { topLandingPages, trafficChannels, sourceMedium, deviceCategories });
 }
 
 function isLeadEvent(eventName = '') {

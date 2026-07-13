@@ -88,12 +88,19 @@ describe('GA4 stored breakdown cache', () => {
       { dimensions: { date: '20260701', landingPagePlusQueryString: '/offers' }, metrics: { sessions: 4, totalUsers: 3, keyEvents: 1 } },
       { dimensions: { date: '20260702', landingPagePlusQueryString: '/offers' }, metrics: { sessions: 6, totalUsers: 5, keyEvents: 2 } },
     ];
-    const cached = attachGa4Breakdowns(daily, { topLandingPages: landing, trafficChannels: [], sourceMedium: [] });
+    const devices = [
+      { dimensions: { date: '20260701', deviceCategory: 'mobile' }, metrics: { sessions: 7, totalUsers: 6, keyEvents: 1 } },
+      { dimensions: { date: '20260702', deviceCategory: 'mobile' }, metrics: { sessions: 11, totalUsers: 9, keyEvents: 2 } },
+    ];
+    const cached = attachGa4Breakdowns(daily, { topLandingPages: landing, trafficChannels: [], sourceMedium: [], deviceCategories: devices });
     const result = aggregateStoredGa4Breakdowns(cached);
 
     assert.equal(result.topLandingPages[0]?.dimensions.landingPagePlusQueryString, '/offers');
     assert.equal(result.topLandingPages[0]?.metrics.sessions, 10);
     assert.equal(result.topLandingPages[0]?.metrics.keyEvents, 3);
+    assert.equal(result.deviceCategories[0]?.dimensions.deviceCategory, 'mobile');
+    assert.equal(result.deviceCategories[0]?.metrics.sessions, 18);
+    assert.equal(result.deviceCategories[0]?.metrics.keyEvents, 3);
   });
 });
 

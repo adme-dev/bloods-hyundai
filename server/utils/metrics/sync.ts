@@ -25,6 +25,13 @@ export function resolveSyncWindow(latestDate: string | null, today: string): Dat
   return { from: from.toISOString().slice(0, 10), to: today };
 }
 
+export function hasRequiredGa4BreakdownCache(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false;
+  const cache = value as Record<string, unknown>;
+  return ['topLandingPages', 'trafficChannels', 'sourceMedium', 'deviceCategories']
+    .every(key => Array.isArray(cache[key]));
+}
+
 export interface PlatformJob {
   platform: Platform;
   fetch: () => Promise<NormalizedRow[]>;
@@ -140,7 +147,7 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
       .limit(1);
     const raw = latest?.raw as { ga4Breakdowns?: unknown; providerBreakdowns?: unknown } | null;
     const hasRequiredCache = platform === 'ga4'
-      ? Boolean(raw?.ga4Breakdowns)
+      ? hasRequiredGa4BreakdownCache(raw?.ga4Breakdowns)
       : Array.isArray(raw?.providerBreakdowns);
     return resolveSyncWindow(hasRequiredCache ? latest?.date ?? null : null, today);
   }
