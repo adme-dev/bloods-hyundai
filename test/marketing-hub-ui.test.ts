@@ -36,12 +36,25 @@ describe('Marketing Hub UI', () => {
   it('renders stored provider breakdowns with explicit empty states and no fabricated figures', () => {
     assert.match(pageSource, /audienceBreakdowns/);
     assert.match(pageSource, /Synced provider data/);
-    assert.match(pageSource, /Phase 3 · new/);
+    assert.match(pageSource, /Live report data/);
     assert.match(pageSource, /No audience breakdown data is stored for this period/);
     assert.match(pageSource, /Awaiting provider breakdown sync/);
-    assert.match(pageSource, /No sample figures are shown/);
+    assert.doesNotMatch(pageSource, /No sample figures are shown|Report-builder results will appear|Phase 3 · new/);
     assert.doesNotMatch(pageSource, /previewAge|previewDevices|previewAreas|previewPivot/);
     assert.doesNotMatch(pageSource, /\$164|\$266\.32|Werribee/);
+  });
+
+  it('connects the report builder to real report data with accessible controls and sorting', () => {
+    assert.match(pageSource, /buildReportBuilderRows\(data\.value/);
+    assert.match(pageSource, /REPORT_BUILDER_DIMENSIONS/);
+    assert.match(pageSource, /REPORT_BUILDER_METRICS/);
+    assert.match(pageSource, /:aria-pressed="builderDimensions\.includes/);
+    assert.match(pageSource, /:disabled="!builderAvailableMetrics\.includes/);
+    assert.match(pageSource, /:aria-sort="builderAriaSort/);
+    assert.match(pageSource, /sortBuilderBy/);
+    assert.match(pageSource, /role="status" aria-live="polite"/);
+    assert.match(pageSource, /No real report data is available for this breakdown/);
+    assert.doesNotMatch(pageSource, /Time of day|<span>ROAS<\/span>/);
   });
 
   it('reaches markup rendered by local child components through the scoped-style boundary', () => {

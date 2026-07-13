@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { credentialErrorsForIntegrations, resolveSyncWindow, syncPlatforms } from '../server/utils/metrics/sync.ts';
+import { credentialErrorsForIntegrations, hasRequiredGa4BreakdownCache, resolveSyncWindow, syncPlatforms } from '../server/utils/metrics/sync.ts';
 
 describe('resolveSyncWindow', () => {
   it('backfills 30 days when no rows exist', () => {
@@ -11,6 +11,22 @@ describe('resolveSyncWindow', () => {
   });
   it('heals gaps longer than 3 days by resuming from the day after the latest row', () => {
     assert.deepEqual(resolveSyncWindow('2026-07-01', '2026-07-09'), { from: '2026-07-02', to: '2026-07-09' });
+  });
+});
+
+describe('GA4 breakdown cache completeness', () => {
+  it('requires website-device rows before using the incremental sync window', () => {
+    assert.equal(hasRequiredGa4BreakdownCache({
+      topLandingPages: [],
+      trafficChannels: [],
+      sourceMedium: [],
+    }), false);
+    assert.equal(hasRequiredGa4BreakdownCache({
+      topLandingPages: [],
+      trafficChannels: [],
+      sourceMedium: [],
+      deviceCategories: [],
+    }), true);
   });
 });
 
