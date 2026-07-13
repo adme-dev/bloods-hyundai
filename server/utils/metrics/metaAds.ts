@@ -2,6 +2,7 @@
 // Lead action types ported from XeroFlow metaClient.ts (incl. leads_retrieval).
 import type { DateRange, NormalizedRow } from './types';
 import { attachCreativeMedia, safeMediaUrl, type CreativeMedia } from './creativeMedia';
+import { attachProviderBreakdowns, type ProviderBreakdownDimension, type ProviderBreakdownInput } from './providerBreakdowns';
 
 export const META_LEAD_ACTION_TYPES = new Set([
   'lead',
@@ -16,7 +17,30 @@ interface MetaInsight {
   spend?: string;
   impressions?: string;
   clicks?: string;
+  age?: string;
+  impression_device?: string;
+  region?: string;
   actions?: Array<{ action_type: string; value: string }>;
+}
+
+export function normalizeMetaBreakdownInsights(
+  dimension: ProviderBreakdownDimension,
+  insights: unknown[],
+): ProviderBreakdownInput[] {
+  const field = dimension === 'device' ? 'impression_device' : dimension === 'area' ? 'region' : 'age';
+  return (insights as MetaInsight[]).flatMap((row) => {
+    const rawValue = row[field];
+    if (!rawValue) return [];
+    return [{
+      dimension,
+      value: dimension === 'device' ? titleCase(rawValue) : rawValue,
+      date: row.date_start || '',
+      campaignId: row.campaign_id || '',
+      spend: Number(row.spend || 0),
+      impressions: Number(row.impressions || 0),
+      clicks: Number(row.clicks || 0),
+    }];
+  });
 }
 
 interface MetaAdCreative {
@@ -62,12 +86,12 @@ export function normalizeMetaInsights(insights: unknown[]): NormalizedRow[] {
 export function normalizeMetaCreatives(ads: unknown[]): CreativeMedia[] {
   return (ads as MetaAdCreative[]).flatMap((ad) => {
     const creative = ad.creative;
-    const imageUrl = safeMediaUrl(
-      creative?.thumbnail_url
-      || creative?.image_url
-      || creative?.object_story_spec?.video_data?.image_url
-      || creative?.object_story_spec?.link_data?.image_url,
-    );
+    const imageUrl = [
+      creative?.image_url,
+      creative?.object_story_spec?.video_data?.image_url,
+      creative?.object_story_spec?.link_data?.image_url,
+      creative?.thumbnail_url,
+    ].map(safeMediaUrl).find((value): value is string => Boolean(value)) || null;
     if (!ad.id || !ad.campaign_id || !creative?.id || !imageUrl) return [];
     return [{
       id: `meta:${ad.id}:${creative.id}`,
@@ -113,6 +137,7 @@ export async function fetchMetaDaily(adAccountId: string, range: DateRange): Pro
     url = res.paging?.next || null;
     guard++;
   }
+  let rows = normalizeMetaInsights(insights);
   try {
     const ads: unknown[] = [];
     url = `${META_GRAPH_BASE}/${account}/ads?` + new URLSearchParams({
@@ -130,9 +155,43 @@ export async function fetchMetaDaily(adAccountId: string, range: DateRange): Pro
       url = res.paging?.next || null;
       guard++;
     }
-    return attachCreativeMedia(normalizeMetaInsights(insights), normalizeMetaCreatives(ads));
+    rows = attachCreativeMedia(rows, normalizeMetaCreatives(ads));
   } catch {
     console.warn('Meta Ads creative enrichment failed; campaign metrics were preserved');
-    return normalizeMetaInsights(insights);
   }
+
+  const dimensions: Array<{ dimension: ProviderBreakdownDimension; apiValue: string }> = [
+    { dimension: 'age', apiValue: 'age' },
+    { dimension: 'device', apiValue: 'impression_device' },
+    { dimension: 'area', apiValue: 'region' },
+  ];
+  const breakdownResults = await Promise.allSettled(dimensions.map(async ({ dimension, apiValue }) => {
+    const data: unknown[] = [];
+    let breakdownUrl: string | null = `${META_GRAPH_BASE}/${account}/insights?` + new URLSearchParams({
+      level: 'campaign',
+      time_increment: '1',
+      time_range: JSON.stringify({ since: range.from, until: range.to }),
+      fields: 'campaign_id,campaign_name,spend,impressions,clicks',
+      breakdowns: apiValue,
+      limit: '100',
+    }).toString();
+    let page = 0;
+    while (breakdownUrl && page < 20) {
+      const response: { data?: unknown[]; paging?: { next?: string } } = await fetchJson(breakdownUrl, {
+        timeout: 30_000,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      data.push(...(response.data || []));
+      breakdownUrl = response.paging?.next || null;
+      page++;
+    }
+    return normalizeMetaBreakdownInsights(dimension, data);
+  }));
+  const failedBreakdowns = breakdownResults.filter(result => result.status === 'rejected').length;
+  if (failedBreakdowns) console.warn(`Meta Ads breakdown enrichment: ${failedBreakdowns} query failed; campaign metrics were preserved`);
+  return attachProviderBreakdowns(rows, breakdownResults.flatMap(result => result.status === 'fulfilled' ? result.value : []));
+}
+
+function titleCase(value: string) {
+  return value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { resolveSyncWindow, syncPlatforms } from '../server/utils/metrics/sync.ts';
+import { credentialErrorsForIntegrations, resolveSyncWindow, syncPlatforms } from '../server/utils/metrics/sync.ts';
 
 describe('resolveSyncWindow', () => {
   it('backfills 30 days when no rows exist', () => {
@@ -26,5 +26,37 @@ describe('syncPlatforms isolation', () => {
     assert.equal(results.find(r => r.platform === 'meta_ads')?.status, 'error');
     assert.match(results.find(r => r.platform === 'meta_ads')?.error || '', /token expired/);
     assert.equal(results.find(r => r.platform === 'ga4')?.status, 'success');
+  });
+});
+
+describe('credentialErrorsForIntegrations', () => {
+  it('reports configured providers whose runtime credentials are unavailable', () => {
+    const results = credentialErrorsForIntegrations({
+      ga4PropertyId: 'properties/123',
+      metaAdAccountId: 'act_123',
+      googleAdsCustomerId: '456',
+    }, {});
+
+    assert.deepEqual(results.map(result => [result.platform, result.status]), [
+      ['ga4', 'error'],
+      ['meta_ads', 'error'],
+      ['google_ads', 'error'],
+    ]);
+    assert.match(results[1]?.error || '', /META_SYSTEM_USER_TOKEN/);
+  });
+
+  it('returns no credential errors when configured providers can authenticate', () => {
+    assert.deepEqual(credentialErrorsForIntegrations({
+      ga4PropertyId: 'properties/123',
+      metaAdAccountId: 'act_123',
+      googleAdsCustomerId: '456',
+    }, {
+      GA4_SERVICE_ACCOUNT_KEY: 'configured',
+      META_SYSTEM_USER_TOKEN: 'configured',
+      GOOGLE_ADS_DEVELOPER_TOKEN: 'configured',
+      GOOGLE_ADS_CLIENT_ID: 'configured',
+      GOOGLE_ADS_CLIENT_SECRET: 'configured',
+      GOOGLE_ADS_REFRESH_TOKEN: 'configured',
+    }), []);
   });
 });

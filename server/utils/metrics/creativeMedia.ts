@@ -21,7 +21,14 @@ export function safeMediaUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' ? url.toString() : null;
+    if (url.protocol !== 'https:') return null;
+    const facebookProxy = url.hostname.endsWith('.fbcdn.net') && /^\/emg\d+\//.test(url.pathname);
+    if (facebookProxy) {
+      const original = url.searchParams.get('url');
+      if (!original || original === value) return null;
+      return safeMediaUrl(original);
+    }
+    return url.toString();
   } catch {
     return null;
   }

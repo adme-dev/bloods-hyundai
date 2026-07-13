@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   attachCreativeMedia,
   collectCreativeMedia,
+  safeMediaUrl,
   type CreativeMedia,
 } from '../server/utils/metrics/creativeMedia.ts';
 
@@ -61,6 +62,15 @@ describe('creative media cache', () => {
     }];
 
     assert.deepEqual(collectCreativeMedia(rows, []), []);
+  });
+
+  it('unwraps transient Facebook proxy URLs to their durable original asset', () => {
+    const durableUrl = 'https://www.facebook.com/ads/image/?d=AQIEgXXZ1cWrf';
+    const transientUrl = `https://external-ord5-2.xx.fbcdn.net/emg1/v/t13/2898335607006425892?url=${encodeURIComponent(durableUrl)}&ccb=13`;
+    assert.equal(safeMediaUrl(transientUrl), durableUrl);
+    assert.deepEqual(collectCreativeMedia([{
+      platform: 'meta_ads', campaignId: 'campaign-1', raw: { creativeMedia: [{ ...image, imageUrl: transientUrl }] },
+    }], []), [{ ...image, imageUrl: durableUrl, spend: 0, ctr: null }]);
   });
 
   it('caps the cached media attached to each campaign', () => {

@@ -15,6 +15,7 @@ import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsig
 import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
 import { buildMarketingTrend } from '../../../utils/metrics/marketingTrend';
 import { collectCreativeMedia } from '../../../utils/metrics/creativeMedia';
+import { aggregateProviderBreakdowns } from '../../../utils/metrics/providerBreakdowns';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_RANGE_DAYS = 366;
@@ -187,6 +188,7 @@ export default defineEventHandler(async (event) => {
     insights,
     websiteAnalytics,
     campaigns: metrics.campaigns,
+    audienceBreakdowns: aggregateProviderBreakdowns(metricRows),
     creativeMedia: collectCreativeMedia(metricRows, metrics.campaigns),
     crm: {
       coverage,
