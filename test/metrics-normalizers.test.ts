@@ -1,14 +1,23 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { aggregateStoredGa4Breakdowns, attachGa4Breakdowns, normalizeGa4BreakdownResponse, normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
-import { normalizeMetaCreatives, normalizeMetaInsights } from '../server/utils/metrics/metaAds.ts';
+import { normalizeMetaBreakdownInsights, normalizeMetaCreatives, normalizeMetaInsights } from '../server/utils/metrics/metaAds.ts';
 import {
+  buildAgeBreakdownGaql,
+  buildAreaBreakdownGaql,
   buildAssetGroupGaql,
+  buildDeviceBreakdownGaql,
   normalizeGoogleAdsResults,
+  normalizeGoogleBreakdownResults,
+  normalizeGoogleAreaBreakdownResults,
   normalizeGoogleCreativeAssets,
   flattenSearchStream,
   buildCampaignGaql,
 } from '../server/utils/metrics/googleAds.ts';
+import {
+  aggregateProviderBreakdowns,
+  attachProviderBreakdowns,
+} from '../server/utils/metrics/providerBreakdowns.ts';
 
 describe('normalizeGa4Response', () => {
   it('maps runReport rows to property-level NormalizedRows', () => {
@@ -88,6 +97,46 @@ describe('GA4 stored breakdown cache', () => {
   });
 });
 
+describe('paid provider breakdown cache', () => {
+  it('attaches campaign-day breakdowns and aggregates spend by provider and value', () => {
+    const daily = [
+      { platform: 'meta_ads' as const, date: '2026-07-01', campaignId: 'c1', campaignName: 'EOFY', spend: 10, impressions: 100, clicks: 5, platformLeads: 1, sessions: null, users: null, conversions: null, raw: {} },
+      { platform: 'meta_ads' as const, date: '2026-07-02', campaignId: 'c1', campaignName: 'EOFY', spend: 12, impressions: 120, clicks: 6, platformLeads: 1, sessions: null, users: null, conversions: null, raw: {} },
+    ];
+    const cached = attachProviderBreakdowns(daily, [
+      { dimension: 'age', value: '25-34', date: '2026-07-01', campaignId: 'c1', spend: 4, impressions: 40, clicks: 2 },
+      { dimension: 'age', value: '25-34', date: '2026-07-02', campaignId: 'c1', spend: 6, impressions: 60, clicks: 3 },
+      { dimension: 'device', value: 'mobile', date: '2026-07-02', campaignId: 'c1', spend: 8, impressions: 80, clicks: 4 },
+    ]);
+
+    assert.deepEqual(aggregateProviderBreakdowns(cached), {
+      age: [{ platform: 'meta_ads', value: '25-34', spend: 10, impressions: 100, clicks: 5 }],
+      device: [{ platform: 'meta_ads', value: 'mobile', spend: 8, impressions: 80, clicks: 4 }],
+      area: [],
+    });
+  });
+
+  it('ignores malformed cached values instead of emitting fabricated totals', () => {
+    const rows = [{
+      platform: 'google_ads' as const, date: '2026-07-01', campaignId: 'c1', campaignName: 'Brand', spend: 10,
+      impressions: 100, clicks: 5, platformLeads: 1, sessions: null, users: null, conversions: null,
+      raw: { providerBreakdowns: [{ dimension: 'age', value: '', spend: 'bad' }] },
+    }];
+    assert.deepEqual(aggregateProviderBreakdowns(rows), { age: [], device: [], area: [] });
+  });
+
+  it('marks an attempted empty cache and rejects non-finite provider metrics', () => {
+    const daily = [{
+      platform: 'meta_ads' as const, date: '2026-07-01', campaignId: 'c1', campaignName: 'EOFY', spend: 10,
+      impressions: 100, clicks: 5, platformLeads: 1, sessions: null, users: null, conversions: null, raw: {},
+    }];
+    const [cached] = attachProviderBreakdowns(daily, [
+      { dimension: 'age', value: '25-34', date: '2026-07-01', campaignId: 'c1', spend: Number.NaN, impressions: 20, clicks: 2 },
+    ]);
+    assert.deepEqual(cached?.raw, { providerBreakdowns: [] });
+  });
+});
+
 describe('normalizeMetaInsights', () => {
   const insight = {
     campaign_id: '238461',
@@ -134,14 +183,35 @@ describe('normalizeMetaInsights', () => {
 describe('normalizeMetaCreatives', () => {
   it('extracts the real image or video thumbnail and campaign identity', () => {
     const result = normalizeMetaCreatives([{ id: 'ad-1', name: 'EOFY video', campaign_id: 'campaign-1', campaign: { name: 'EOFY' }, creative: {
-      id: 'creative-1', name: 'IONIQ 5 video', thumbnail_url: 'https://scontent.example/thumb.jpg', video_id: 'video-1',
+      id: 'creative-1', name: 'IONIQ 5 video', image_url: 'https://scontent.example/direct.jpg',
+      thumbnail_url: 'https://external-ord5-2.xx.fbcdn.net/emg1/v/t13/2898335607006425892', video_id: 'video-1',
     } }]);
 
     assert.deepEqual(result, [{
       id: 'meta:ad-1:creative-1', platform: 'meta_ads', campaignId: 'campaign-1', campaignName: 'EOFY',
-      title: 'EOFY video', mediaType: 'video', imageUrl: 'https://scontent.example/thumb.jpg', videoUrl: null,
+      title: 'EOFY video', mediaType: 'video', imageUrl: 'https://scontent.example/direct.jpg', videoUrl: null,
       performanceLabel: null,
     }]);
+  });
+
+  it('uses the durable original URL inside a Meta thumbnail proxy', () => {
+    const durableUrl = 'https://www.facebook.com/ads/image/?d=AQIEgXXZ1cWrf';
+    const thumbnailUrl = `https://external-ord5-2.xx.fbcdn.net/emg1/v/t13/2898335607006425892?url=${encodeURIComponent(durableUrl)}&ccb=13`;
+    const [result] = normalizeMetaCreatives([{ id: 'ad-2', campaign_id: 'campaign-2', creative: {
+      id: 'creative-2', thumbnail_url: thumbnailUrl,
+    } }]);
+
+    assert.equal(result?.imageUrl, durableUrl);
+  });
+});
+
+describe('normalizeMetaBreakdownInsights', () => {
+  it('maps Meta age, device and region rows to the shared cache contract', () => {
+    assert.deepEqual(normalizeMetaBreakdownInsights('age', [{
+      campaign_id: 'c1', date_start: '2026-07-02', age: '25-34', spend: '12.40', impressions: '800', clicks: '21',
+    }]), [{ dimension: 'age', value: '25-34', date: '2026-07-02', campaignId: 'c1', spend: 12.4, impressions: 800, clicks: 21 }]);
+    assert.equal(normalizeMetaBreakdownInsights('device', [{ impression_device: 'mobile_app' }])[0]?.value, 'Mobile App');
+    assert.equal(normalizeMetaBreakdownInsights('area', [{ region: 'Victoria' }])[0]?.value, 'Victoria');
   });
 });
 
@@ -187,6 +257,25 @@ describe('googleAds helpers', () => {
     assert.match(q, /metrics\.average_cpc/);
     assert.match(q, /metrics\.cost_per_conversion/);
     assert.match(q, /metrics\.search_impression_share/);
+  });
+
+  it('builds and normalizes Google age and device breakdowns', () => {
+    assert.match(buildAgeBreakdownGaql({ from: '2026-07-01', to: '2026-07-09' }), /FROM age_range_view/);
+    assert.match(buildDeviceBreakdownGaql({ from: '2026-07-01', to: '2026-07-09' }), /segments\.device/);
+    assert.deepEqual(normalizeGoogleBreakdownResults('device', [{
+      campaign: { id: '99887' }, segments: { date: '2026-07-03', device: 'MOBILE' },
+      metrics: { costMicros: '2500000', impressions: '200', clicks: '9' },
+    }]), [{ dimension: 'device', value: 'Mobile', date: '2026-07-03', campaignId: '99887', spend: 2.5, impressions: 200, clicks: 9 }]);
+  });
+
+  it('builds and normalizes Google region breakdowns using resolved geo names', () => {
+    assert.match(buildAreaBreakdownGaql({ from: '2026-07-01', to: '2026-07-09' }), /FROM user_location_view/);
+    assert.deepEqual(normalizeGoogleAreaBreakdownResults([{
+      campaign: { id: '99887' }, segments: { date: '2026-07-03', geoTargetRegion: 'geoTargetConstants/2036' },
+      metrics: { costMicros: '3750000', impressions: '320', clicks: '12' },
+    }], [{ geoTargetConstant: { resourceName: 'geoTargetConstants/2036', canonicalName: 'Victoria, Australia' } }]), [{
+      dimension: 'area', value: 'Victoria, Australia', date: '2026-07-03', campaignId: '99887', spend: 3.75, impressions: 320, clicks: 12,
+    }]);
   });
 
   it('builds and normalizes the Performance Max image asset query', () => {

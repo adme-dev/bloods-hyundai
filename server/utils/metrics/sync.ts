@@ -37,6 +37,31 @@ export interface PlatformResult {
   error?: string;
 }
 
+type CredentialEnvironment = { [key: string]: string | undefined };
+
+export function credentialErrorsForIntegrations(
+  integrations: MarketingIntegrations,
+  env: CredentialEnvironment,
+): PlatformResult[] {
+  const results: PlatformResult[] = [];
+  if (integrations.ga4PropertyId && !env.GA4_SERVICE_ACCOUNT_KEY) {
+    results.push({ platform: 'ga4', status: 'error', error: 'GA4_SERVICE_ACCOUNT_KEY is not configured' });
+  }
+  if (integrations.metaAdAccountId && !env.META_SYSTEM_USER_TOKEN) {
+    results.push({ platform: 'meta_ads', status: 'error', error: 'META_SYSTEM_USER_TOKEN is not configured' });
+  }
+  const googleCredentials = [
+    env.GOOGLE_ADS_DEVELOPER_TOKEN,
+    env.GOOGLE_ADS_CLIENT_ID,
+    env.GOOGLE_ADS_CLIENT_SECRET,
+    env.GOOGLE_ADS_REFRESH_TOKEN,
+  ];
+  if (integrations.googleAdsCustomerId && googleCredentials.some(value => !value)) {
+    results.push({ platform: 'google_ads', status: 'error', error: 'Google Ads runtime credentials are not fully configured' });
+  }
+  return results;
+}
+
 /** Runs each job in its own try/catch; upsert(rows) persists and returns count. */
 export async function syncPlatforms(
   jobs: PlatformJob[],
@@ -63,7 +88,7 @@ export async function syncPlatforms(
 export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]> {
   const { db } = await import('../db');
   const { dealers, marketingMetricsDaily, marketingSyncRuns } = await import('../../database/schema');
-  const { and, desc, eq, lt, max, sql } = await import('drizzle-orm');
+  const { and, desc, eq, lt, sql } = await import('drizzle-orm');
 
   const [dealer] = await db.select({ settings: dealers.settings }).from(dealers).where(eq(dealers.id, dealerId));
   const integrations: MarketingIntegrations =
@@ -107,23 +132,20 @@ export async function runMetricsSync(dealerId: string): Promise<PlatformResult[]
   }
 
   async function windowFor(platform: Platform): Promise<DateRange> {
-    if (platform === 'ga4') {
-      const [latest] = await db.select({ date: marketingMetricsDaily.date, raw: marketingMetricsDaily.raw })
-        .from(marketingMetricsDaily)
-        .where(and(eq(marketingMetricsDaily.dealerId, dealerId), eq(marketingMetricsDaily.platform, platform)))
-        .orderBy(desc(marketingMetricsDaily.date))
-        .limit(1);
-      const hasBreakdownCache = Boolean((latest?.raw as { ga4Breakdowns?: unknown } | null)?.ga4Breakdowns);
-      return resolveSyncWindow(hasBreakdownCache ? latest?.date ?? null : null, today);
-    }
-    const [row] = await db
-      .select({ latest: max(marketingMetricsDaily.date) })
+    const [latest] = await db
+      .select({ date: marketingMetricsDaily.date, raw: marketingMetricsDaily.raw })
       .from(marketingMetricsDaily)
-      .where(and(eq(marketingMetricsDaily.dealerId, dealerId), eq(marketingMetricsDaily.platform, platform)));
-    return resolveSyncWindow(row?.latest ?? null, today);
+      .where(and(eq(marketingMetricsDaily.dealerId, dealerId), eq(marketingMetricsDaily.platform, platform)))
+      .orderBy(desc(marketingMetricsDaily.date))
+      .limit(1);
+    const raw = latest?.raw as { ga4Breakdowns?: unknown; providerBreakdowns?: unknown } | null;
+    const hasRequiredCache = platform === 'ga4'
+      ? Boolean(raw?.ga4Breakdowns)
+      : Array.isArray(raw?.providerBreakdowns);
+    return resolveSyncWindow(hasRequiredCache ? latest?.date ?? null : null, today);
   }
 
-  const results: PlatformResult[] = [];
+  const results: PlatformResult[] = credentialErrorsForIntegrations(integrations, process.env);
   for (const job of jobs) {
     // Expire stale 'running' rows (crashed/never-finished syncs) before
     // attempting the insert below, so a dead row can't hold the

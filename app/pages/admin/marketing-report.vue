@@ -36,11 +36,11 @@
             <div><span>From</span><AdminDatePicker v-model="from" label="Report from date" :max="to" /></div>
             <div><span>To</span><AdminDatePicker v-model="to" label="Report to date" :min="from" :max="today" /></div>
           </div>
-          <p class="marketing-hub__synced">
+          <p class="marketing-hub__synced" :class="{ error: syncError }" role="status" aria-live="polite">
             <span class="marketing-hub__live" />
             {{ syncStatusText }}
-            <button type="button" :disabled="pending" aria-label="Refresh report" @click="refresh()">
-              <RefreshCw :class="{ spinning: pending }" aria-hidden="true" />
+            <button type="button" :disabled="pending || syncing" aria-label="Sync provider data" title="Sync provider data" @click="syncAndRefresh">
+              <RefreshCw :class="{ spinning: pending || syncing }" aria-hidden="true" />
             </button>
           </p>
         </div>
@@ -325,14 +325,14 @@
               >
                 <svg viewBox="0 0 720 220" preserveAspectRatio="none" aria-hidden="true">
                   <g v-for="tick in chartAxisTicks" :key="tick.y">
-                    <line x1="54" :y1="tick.y" x2="686" :y2="tick.y" />
-                    <text x="48" :y="tick.y + 4" text-anchor="end">{{ formatChartAxis(tick.left, 'left') }}</text>
-                    <text v-if="activeChartRightMax" x="692" :y="tick.y + 4">{{ formatChartAxis(tick.right, 'right') }}</text>
+                    <line x1="54" :y1.attr="tick.y" x2="686" :y2.attr="tick.y" />
+                    <text x="48" :y.attr="tick.y + 4" text-anchor="end">{{ formatChartAxis(tick.left, 'left') }}</text>
+                    <text v-if="activeChartRightMax" x="692" :y.attr="tick.y + 4">{{ formatChartAxis(tick.right, 'right') }}</text>
                   </g>
                   <path
                     v-for="series in visibleChartSeries"
                     :key="series.key"
-                    :d="chartLinePath(series)"
+                    :d.attr="chartLinePath(series)"
                     :class="series.className"
                   />
                   <g
@@ -348,16 +348,16 @@
                   <line
                     v-if="activeChartPoint != null"
                     class="marketing-hub__chart-crosshair"
-                    :x1="chartPointX(activeChartPoint)"
+                    :x1.attr="chartPointX(activeChartPoint)"
                     y1="18"
-                    :x2="chartPointX(activeChartPoint)"
+                    :x2.attr="chartPointX(activeChartPoint)"
                     y2="182"
                   />
                   <circle
                     v-for="point in activeChartDots"
                     :key="point.key"
-                    :cx="point.x"
-                    :cy="point.y"
+                    :cx.attr="point.x"
+                    :cy.attr="point.y"
                     r="4"
                     :class="point.className"
                   />
@@ -495,12 +495,27 @@
       </section>
 
       <section aria-labelledby="breakdowns-title">
-        <div class="marketing-hub__section-head"><h2 id="breakdowns-title">Audience &amp; delivery breakdowns</h2><b>Phase 2 · new</b><span /></div>
-        <p class="marketing-hub__preview-note">No audience breakdown has been synced yet. Meta &amp; Google expose age, gender, area and device per campaign; these panels will populate only after that provider data is stored.</p>
+        <div class="marketing-hub__section-head"><h2 id="breakdowns-title">Audience &amp; delivery breakdowns</h2><b>{{ hasAudienceBreakdowns ? 'Synced provider data' : 'Phase 2 · new' }}</b><span /></div>
+        <div class="marketing-hub__preview-note marketing-hub__preview-note--action">
+          <span>{{ hasAudienceBreakdowns
+            ? 'Spend is grouped from the Meta and Google Ads breakdown data stored during platform syncs.'
+            : 'No audience breakdown data is stored for this period. Sync Meta and Google Ads to request age, device and area data.' }}</span>
+          <button v-if="!hasAudienceBreakdowns" type="button" class="marketing-hub__empty-sync ui-button" :disabled="syncing" @click="syncAndRefresh">
+            <RefreshCw :class="{ spinning: syncing }" aria-hidden="true" />
+            {{ syncing ? 'Syncing platforms…' : 'Sync provider data' }}
+          </button>
+        </div>
         <div class="marketing-hub__split3">
-          <article v-for="title in plannedBreakdowns" :key="title" class="marketing-hub__card marketing-hub__planned-card">
-            <h3>{{ title }}</h3>
-            <p>Awaiting provider breakdown sync.</p>
+          <article v-for="card in audienceBreakdownCards" :key="card.key" class="marketing-hub__card marketing-hub__breakdown-card">
+            <header class="marketing-hub__panel-head"><h3>{{ card.title }}</h3><p>Provider-reported spend for this period.</p></header>
+            <div v-if="card.rows.length" class="marketing-hub__pad marketing-hub__provider-breakdowns">
+              <div v-for="row in card.rows" :key="`${row.platform}:${row.value}`" class="marketing-hub__provider-breakdown num">
+                <p><span>{{ row.value }}</span><strong>{{ money(row.spend) }}</strong></p>
+                <small>{{ platformLabel(row.platform) }} · {{ n(row.impressions) }} impressions</small>
+                <span class="marketing-hub__track"><i :style="{ width: `${barPercent(row.spend, card.maxSpend)}%` }" /></span>
+              </div>
+            </div>
+            <p v-else class="marketing-hub__breakdown-empty">Awaiting provider breakdown sync.</p>
           </article>
         </div>
       </section>
@@ -510,22 +525,16 @@
         <p class="marketing-hub__preview-note">Actual images and video thumbnails from Meta &amp; Google, matched to campaign spend and CTR for this report period.</p>
         <div v-if="data.creativeMedia.length" class="marketing-hub__creatives">
           <article v-for="creative in data.creativeMedia.slice(0, 12)" :key="`${creative.platform}:${creative.id}`" class="marketing-hub__creative">
-            <a
-              v-if="creative.videoUrl"
+            <button
+              type="button"
               class="marketing-hub__creative-art"
-              :href="creative.videoUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              :aria-label="`Open video: ${creative.title}`"
+              :aria-label="`Preview ad: ${creative.title}`"
+              @click="openCreative(creative)"
             >
               <img :src="creative.imageUrl" :alt="creative.title" loading="lazy" referrerpolicy="no-referrer" @error="hideBrokenCreativeImage">
               <span>{{ platformLabel(creative.platform) }}</span>
-              <i aria-hidden="true">▶</i>
-            </a>
-            <div v-else class="marketing-hub__creative-art">
-              <img :src="creative.imageUrl" :alt="creative.title" loading="lazy" referrerpolicy="no-referrer" @error="hideBrokenCreativeImage">
-              <span>{{ platformLabel(creative.platform) }}</span>
-            </div>
+              <i v-if="creative.videoUrl" aria-hidden="true">▶</i>
+            </button>
             <div>
               <h3 :title="creative.title">{{ creative.title }}</h3>
               <small v-if="creative.performanceLabel">{{ formatLabel(creative.performanceLabel) }} asset</small>
@@ -535,7 +544,11 @@
         </div>
         <article v-else class="marketing-hub__card marketing-hub__creative-empty">
           <strong>No creative media has been synced for this period.</strong>
-          <span>The next Meta and Google Ads sync will cache active image and video assets here.</span>
+          <span>Sync Meta and Google Ads to refresh active image and video assets for this period.</span>
+          <button type="button" class="marketing-hub__empty-sync ui-button" :disabled="syncing" @click="syncAndRefresh">
+            <RefreshCw :class="{ spinning: syncing }" aria-hidden="true" />
+            {{ syncing ? 'Syncing platforms…' : 'Sync provider data' }}
+          </button>
         </article>
       </section>
 
@@ -571,6 +584,13 @@
       </footer>
     </template>
     <ExplainerDialog v-model:open="explainerOpen" :topic="explainerTopic" :from="from" :to="to" />
+    <CreativePreviewDialog
+      v-model:open="creativeDialogOpen"
+      :creative="selectedCreative"
+      :platform-label="selectedCreative ? platformLabel(selectedCreative.platform) : ''"
+      :spend-label="selectedCreative ? money(selectedCreative.spend) : '—'"
+      :ctr-label="selectedCreative ? pctOrDash(selectedCreative.ctr) : '—'"
+    />
   </div>
 </template>
 
@@ -597,12 +617,16 @@ import {
   reportDateInTimeZone,
 } from '~/utils/marketingReportFormat';
 import ExplainerDialog from '~/components/admin/marketing/ExplainerDialog.vue';
+import CreativePreviewDialog from '~/components/admin/marketing/CreativePreviewDialog.vue';
 import type { ExplainerTopicKey } from '~/components/admin/marketing/explainerContent';
 
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
 type PresetId = 'mtd' | '7d' | '30d' | '90d';
 type BreakdownRow = { dimensions: Record<string, string>; metrics: Record<string, number> };
+type AudienceBreakdownRow = { platform: 'meta_ads' | 'google_ads'; value: string; spend: number; impressions: number; clicks: number };
+type ReportCreative = { id: string; platform: 'meta_ads' | 'google_ads'; campaignId: string; campaignName: string | null; title: string; mediaType: 'image' | 'video'; imageUrl: string; videoUrl: string | null; performanceLabel: string | null; spend: number; ctr: number | null };
+type SyncPlatformResult = { platform: 'ga4' | 'meta_ads' | 'google_ads'; status: 'success' | 'error' | 'skipped'; rows?: number; error?: string };
 type AnalyticsTabId = 'website' | 'paid' | 'leads';
 type TrendRow = {
   date: string; sessions: number; users: number; keyEvents: number; crmLeads: number; paidSpend: number;
@@ -635,7 +659,8 @@ interface ReportResponse {
     campaignDiagnostics: { opportunities: Array<{ platform: string; campaignName: string; spend: number; clicks: number; crmLeads: number; issue: string }> };
   };
   campaigns: Array<{ platform: string; campaignId: string; campaignName: string | null; spend: number; impressions: number; clicks: number; platformLeads: number; crmLeads: number; cpl: number | null; ctr: number | null; platformLeadRate: number | null }>;
-  creativeMedia: Array<{ id: string; platform: 'meta_ads' | 'google_ads'; campaignId: string; campaignName: string | null; title: string; mediaType: 'image' | 'video'; imageUrl: string; videoUrl: string | null; performanceLabel: string | null; spend: number; ctr: number | null }>;
+  audienceBreakdowns: Record<'age' | 'device' | 'area', AudienceBreakdownRow[]>;
+  creativeMedia: ReportCreative[];
   websiteAnalytics: { status: 'connected' | 'stored_data' | 'not_configured' | 'error'; error: string | null; dailyTrend: TrendRow[]; topLandingPages: BreakdownRow[]; trafficChannels: BreakdownRow[]; sourceMedium: BreakdownRow[]; deviceCategories: BreakdownRow[]; formEvents: BreakdownRow[]; topEvents: BreakdownRow[] };
   crm: { typeBreakdown: Array<{ key: string; total: number }>; statusBreakdown: Array<{ key: string; total: number }> };
   dataLayer: { status: string };
@@ -655,6 +680,10 @@ interface InboundResponse {
   addresses: Array<{ id: string; label: string; enabled: boolean }>;
 }
 
+interface SyncResponse {
+  results: SyncPlatformResult[];
+}
+
 const today = reportDateInTimeZone();
 const from = ref(`${today.slice(0, 8)}01`);
 const to = ref(today);
@@ -665,12 +694,47 @@ const hiddenChartSeries = ref(new Set<TrendKey>());
 const query = computed(() => ({ from: from.value, to: to.value }));
 const { data, pending, error, refresh } = await useFetch<ReportResponse>('/api/admin/analytics/marketing-report', { query });
 const { data: inboundEmailData } = await useFetch<InboundResponse>('/api/admin/lead-ingestion/email-addresses');
+const syncing = ref(false);
+const syncError = ref<string | null>(null);
+
+async function syncAndRefresh() {
+  if (syncing.value) return;
+
+  syncing.value = true;
+  syncError.value = null;
+  try {
+    const response = await $fetch<SyncResponse>('/api/admin/metrics/sync', { method: 'POST' });
+    await refresh();
+
+    const failures = response.results.filter(result => result.status === 'error');
+    const successes = response.results.filter(result => result.status === 'success');
+    if (failures.length) {
+      const failureDetails = failures.map(result => `${platformLabel(result.platform)}: ${result.error || 'sync failed'}`).join(' · ');
+      const successDetails = successes.length ? ` ${successes.map(result => platformLabel(result.platform)).join(' and ')} refreshed.` : '';
+      syncError.value = `${failureDetails}.${successDetails}`;
+    } else if (!response.results.some(result => result.platform === 'meta_ads' || result.platform === 'google_ads')) {
+      syncError.value = 'No ad-provider integration is configured for this dealer.';
+    } else if (response.results.length && response.results.every(result => result.status === 'skipped')) {
+      syncError.value = 'A platform sync is already running. Refresh again when it finishes.';
+    }
+  } catch {
+    syncError.value = 'Platform sync failed. Try again.';
+  } finally {
+    syncing.value = false;
+  }
+}
 
 const explainerOpen = ref(false);
 const explainerTopic = ref<ExplainerTopicKey | null>(null);
+const creativeDialogOpen = ref(false);
+const selectedCreative = ref<ReportCreative | null>(null);
 function openExplainer(topic: ExplainerTopicKey | null = null) {
   explainerTopic.value = topic;
   explainerOpen.value = true;
+}
+function openCreative(creative: ReportCreative) {
+  selectedCreative.value = creative;
+  creativeDialogOpen.value = true;
 }
 
 const presets: Array<{ id: PresetId; label: string }> = [
@@ -687,7 +751,11 @@ const activePreset = computed<PresetId | null>(() => {
 const rangeLabel = computed(() => data.value ? `${displayDate(data.value.period.from)} to ${displayDate(data.value.period.to)}` : '');
 const compactRangeLabel = computed(() => `${displayShortDate(from.value)} – ${displayShortDate(to.value)}`);
 const latestSuccessfulSync = computed(() => data.value?.syncRuns.find(run => run.status === 'success'));
-const syncStatusText = computed(() => latestSuccessfulSync.value ? `Platforms synced · ${shortDateTime(latestSuccessfulSync.value.startedAt)}` : 'Waiting for platform sync');
+const syncStatusText = computed(() => {
+  if (syncing.value) return 'Syncing platforms…';
+  if (syncError.value) return syncError.value;
+  return latestSuccessfulSync.value ? `Platforms synced · ${shortDateTime(latestSuccessfulSync.value.startedAt)}` : 'Waiting for platform sync';
+});
 const attributionBanner = computed(() => {
   const report = data.value;
   if (!report || report.insights.executive.totalSpend <= 0 || report.summary.totalCrmLeads <= 0 || report.summary.paidCrmLeads > 0) return null;
@@ -869,7 +937,12 @@ const dataLayerHelpText = computed(() => {
   return 'Coverage compares captured CRM attribution fields with the report targets above.';
 });
 
-const plannedBreakdowns = ['Spend by age', 'Spend by device', 'Spend by area'];
+const audienceBreakdownCards = computed(() => ([
+  { key: 'age' as const, title: 'Spend by age', rows: data.value?.audienceBreakdowns.age.slice(0, 6) || [] },
+  { key: 'device' as const, title: 'Spend by device', rows: data.value?.audienceBreakdowns.device.slice(0, 6) || [] },
+  { key: 'area' as const, title: 'Spend by area', rows: data.value?.audienceBreakdowns.area.slice(0, 6) || [] },
+].map(card => ({ ...card, maxSpend: Math.max(...card.rows.map(row => row.spend), 1) }))));
+const hasAudienceBreakdowns = computed(() => audienceBreakdownCards.value.some(card => card.rows.length));
 
 function applyPreset(id: PresetId) {
   to.value = today;
@@ -1035,6 +1108,8 @@ const MetricPanel = defineComponent({
 .marketing-hub__custom-range :deep([data-slot="button"]) { min-width: 160px; margin-top: 4px; background: var(--surface-2); color: var(--ink); }
 .marketing-hub__synced { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin: 9px 0 0; color: var(--muted); font-size: 12px; }
 .marketing-hub__synced button { display: inline-grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
+.marketing-hub__synced.error { color: var(--crit); }
+.marketing-hub__synced.error .marketing-hub__live { background: var(--crit); box-shadow: 0 0 0 3px var(--crit-soft); }
 .marketing-hub__synced svg { width: 14px; }
 .marketing-hub__live { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
 .spinning { animation: spin .8s linear infinite; }
@@ -1121,8 +1196,10 @@ const MetricPanel = defineComponent({
 .marketing-hub__website-detail { margin-top: 14px; }.marketing-hub__source-medium-card { margin-top: 14px; }.marketing-hub__breakdown-empty { display: grid; place-items: center; min-height: 112px; margin-bottom: 0; padding: 20px; color: var(--muted); font-size: 12px; text-align: center; }
 .marketing-hub__ga4-credential-note { margin-top: 14px; margin-bottom: 0; }
 .marketing-hub__coverage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.marketing-hub__coverage article { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__coverage small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__coverage strong { display: block; margin-top: 3px; font-size: 20px; }.marketing-hub__coverage .bad strong { color: var(--crit); }.marketing-hub__coverage .ok strong { color: var(--good); }.marketing-hub__audit-note, .marketing-hub__source-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub__domain { font-family: ui-monospace, Menlo, monospace; font-size: 13px !important; }
-.marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__planned-card { display: grid; place-items: center; min-height: 132px; padding: 22px; text-align: center; }.marketing-hub__planned-card h3 { margin-bottom: 5px; font-size: 12.5px; }.marketing-hub__planned-card p { margin-bottom: 0; color: var(--muted); font-size: 11.5px; }
+.marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__preview-note--action { display: flex; align-items: center; justify-content: space-between; gap: 12px; }.marketing-hub__preview-note--action > span { min-width: 0; }.marketing-hub__empty-sync { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; background: var(--surface); color: var(--ink-2); font-size: 11.5px; font-weight: 650; white-space: nowrap; cursor: pointer; }.marketing-hub__empty-sync:disabled { cursor: wait; opacity: .65; }.marketing-hub__empty-sync svg { width: 14px; height: 14px; }.marketing-hub__planned-card { display: grid; place-items: center; min-height: 132px; padding: 22px; text-align: center; }.marketing-hub__planned-card h3 { margin-bottom: 5px; font-size: 12.5px; }.marketing-hub__planned-card p { margin-bottom: 0; color: var(--muted); font-size: 11.5px; }
+.marketing-hub__breakdown-card { overflow: hidden; }.marketing-hub__provider-breakdowns { min-height: 132px; }.marketing-hub__provider-breakdown { margin-bottom: 13px; }.marketing-hub__provider-breakdown:last-child { margin-bottom: 0; }.marketing-hub__provider-breakdown p { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 2px; font-size: 12px; }.marketing-hub__provider-breakdown p span { overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__provider-breakdown small { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10.5px; }
 .marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; overflow: hidden; background: linear-gradient(135deg,#334155,#64748b); color: white !important; }.marketing-hub__creative-art img { width: 100%; height: 100%; object-fit: cover; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: white; font-size: 10.5px; }.marketing-hub__creative-art > i { position: absolute; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgba(0,0,0,.58); color: white; font-style: normal; }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 4px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative > div:last-child > small { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }.marketing-hub__creative-empty { display: grid; place-items: center; min-height: 150px; padding: 28px; color: var(--muted); text-align: center; }.marketing-hub__creative-empty strong { color: var(--ink-2); }.marketing-hub__creative-empty span { font-size: 12px; }
+.marketing-hub__creative-art { width: 100%; border: 0; padding: 0; font: inherit; cursor: zoom-in; }.marketing-hub__creative-art:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
 .marketing-hub__pivot { display: grid; grid-template-columns: 230px 1fr; overflow: hidden; }.marketing-hub__pivot aside { padding: 15px; border-right: 1px solid var(--line); background: var(--surface-2); }.marketing-hub__pivot aside .marketing-hub__eyebrow:not(:first-child) { margin-top: 15px; }.marketing-hub__pivot aside div { display: flex; flex-wrap: wrap; gap: 7px; }.marketing-hub__pivot aside span, .marketing-hub__wells span { padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 600; }.marketing-hub__pivot aside span.on { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); color: var(--ink); }.marketing-hub__pivot-main { min-width: 0; padding: 15px; }.marketing-hub__wells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }.marketing-hub__wells > div { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__wells span { display: inline-block; }.marketing-hub__example { margin: 10px 0 0; color: var(--muted); font-size: 11.5px; }
 .marketing-hub__footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.65; }.marketing-hub__footer strong { color: var(--ink-2); }
 @media (max-width: 960px) {
@@ -1142,6 +1219,7 @@ const MetricPanel = defineComponent({
   .marketing-hub__chart-toolbar { align-items: flex-start; flex-direction: column; }.marketing-hub__chart-toolbar > p { display: none; }
   .marketing-hub__chart svg { height: 220px; }.marketing-hub__chart-tooltip { top: 34px; }
   .marketing-hub__lead-funnel { grid-template-columns: 1fr; gap: 10px; }.marketing-hub__lead-funnel li:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -14px; transform: translateX(50%); }
+  .marketing-hub__preview-note--action { align-items: flex-start; flex-direction: column; }
 }
 @media (max-width: 430px) {
   .marketing-hub__kpis, .marketing-hub__creatives, .marketing-hub__funnel, .marketing-hub__coverage, .marketing-hub__wells { grid-template-columns: 1fr; }

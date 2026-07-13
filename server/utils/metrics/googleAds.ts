@@ -2,6 +2,7 @@
 // googleAdsClient.ts: dash-stripped IDs, batch flattening, camelCase results.
 import type { DateRange, NormalizedRow } from './types';
 import { attachCreativeMedia, safeMediaUrl, type CreativeMedia } from './creativeMedia';
+import { attachProviderBreakdowns, type ProviderBreakdownDimension, type ProviderBreakdownInput } from './providerBreakdowns';
 
 export function buildCampaignGaql(range: DateRange): string {
   // Field names source: https://developers.google.com/google-ads/api/fields/v23/metrics
@@ -23,6 +24,48 @@ export function buildCampaignGaql(range: DateRange): string {
       metrics.interaction_rate,
       metrics.search_impression_share
     FROM campaign
+    WHERE segments.date BETWEEN '${range.from}' AND '${range.to}'
+  `;
+}
+
+export function buildAgeBreakdownGaql(range: DateRange): string {
+  return `
+    SELECT
+      campaign.id,
+      segments.date,
+      ad_group_criterion.age_range.type,
+      metrics.cost_micros,
+      metrics.impressions,
+      metrics.clicks
+    FROM age_range_view
+    WHERE segments.date BETWEEN '${range.from}' AND '${range.to}'
+  `;
+}
+
+export function buildDeviceBreakdownGaql(range: DateRange): string {
+  return `
+    SELECT
+      campaign.id,
+      segments.date,
+      segments.device,
+      metrics.cost_micros,
+      metrics.impressions,
+      metrics.clicks
+    FROM campaign
+    WHERE segments.date BETWEEN '${range.from}' AND '${range.to}'
+  `;
+}
+
+export function buildAreaBreakdownGaql(range: DateRange): string {
+  return `
+    SELECT
+      campaign.id,
+      segments.date,
+      segments.geo_target_region,
+      metrics.cost_micros,
+      metrics.impressions,
+      metrics.clicks
+    FROM user_location_view
     WHERE segments.date BETWEEN '${range.from}' AND '${range.to}'
   `;
 }
@@ -89,7 +132,59 @@ interface GoogleAdsResult {
     interactionRate?: string | number;
     searchImpressionShare?: string | number;
   };
-  segments?: { date?: string };
+  segments?: { date?: string; device?: string; geoTargetRegion?: string };
+  adGroupCriterion?: { ageRange?: { type?: string } };
+}
+
+interface GoogleGeoTargetResult {
+  geoTargetConstant?: { resourceName?: string; canonicalName?: string; name?: string };
+}
+
+export function normalizeGoogleBreakdownResults(
+  dimension: Extract<ProviderBreakdownDimension, 'age' | 'device'>,
+  results: unknown[],
+): ProviderBreakdownInput[] {
+  return (results as GoogleAdsResult[]).flatMap((row) => {
+    const rawValue = dimension === 'device'
+      ? (row.segments as { device?: string } | undefined)?.device
+      : row.adGroupCriterion?.ageRange?.type;
+    if (!rawValue || !row.segments?.date || row.campaign?.id == null) return [];
+    return [{
+      dimension,
+      value: formatBreakdownValue(rawValue),
+      date: row.segments.date,
+      campaignId: String(row.campaign.id),
+      spend: Math.round((Number(row.metrics?.costMicros || 0) / 1_000_000) * 100) / 100,
+      impressions: Number(row.metrics?.impressions || 0),
+      clicks: Number(row.metrics?.clicks || 0),
+    }];
+  });
+}
+
+export function normalizeGoogleAreaBreakdownResults(
+  results: unknown[],
+  geoTargets: unknown[],
+): ProviderBreakdownInput[] {
+  const names = new Map((geoTargets as GoogleGeoTargetResult[]).flatMap((row) => {
+    const resourceName = row.geoTargetConstant?.resourceName;
+    const name = row.geoTargetConstant?.canonicalName || row.geoTargetConstant?.name;
+    return resourceName && name ? [[resourceName, name] as const] : [];
+  }));
+
+  return (results as GoogleAdsResult[]).flatMap((row) => {
+    const resourceName = row.segments?.geoTargetRegion;
+    const value = resourceName ? names.get(resourceName) : null;
+    if (!resourceName || !value || !row.segments?.date || row.campaign?.id == null) return [];
+    return [{
+      dimension: 'area' as const,
+      value,
+      date: row.segments.date,
+      campaignId: String(row.campaign.id),
+      spend: Math.round((Number(row.metrics?.costMicros || 0) / 1_000_000) * 100) / 100,
+      impressions: Number(row.metrics?.impressions || 0),
+      clicks: Number(row.metrics?.clicks || 0),
+    }];
+  });
 }
 
 interface GoogleCreativeAssetResult {
@@ -221,5 +316,38 @@ export async function fetchGoogleAdsDaily(
     console.warn(`Google Ads creative enrichment: ${failedCreativeQueries.length} asset query failed; campaign metrics were preserved`);
   }
   const creativeMedia = normalizeGoogleCreativeAssets(creativeResults.flatMap(result => result.status === 'fulfilled' ? result.value : []));
-  return attachCreativeMedia(normalizeGoogleAdsResults(campaignResults), creativeMedia);
+  const breakdownResults = await Promise.allSettled([
+    search(buildAgeBreakdownGaql(range)).then(results => normalizeGoogleBreakdownResults('age', results)),
+    search(buildDeviceBreakdownGaql(range)).then(results => normalizeGoogleBreakdownResults('device', results)),
+    search(buildAreaBreakdownGaql(range)).then(async (results) => {
+      const ids = [...new Set((results as GoogleAdsResult[]).flatMap((row) => {
+        const id = row.segments?.geoTargetRegion?.replace(/[^0-9]/g, '');
+        return id ? [id] : [];
+      }))];
+      if (!ids.length) return [];
+      const resourceNames = ids.map(id => `'geoTargetConstants/${id}'`).join(', ');
+      const geoTargets = await search(`
+        SELECT
+          geo_target_constant.resource_name,
+          geo_target_constant.name,
+          geo_target_constant.canonical_name
+        FROM geo_target_constant
+        WHERE geo_target_constant.resource_name IN (${resourceNames})
+      `);
+      return normalizeGoogleAreaBreakdownResults(results, geoTargets);
+    }),
+  ]);
+  const failedBreakdowns = breakdownResults.filter(result => result.status === 'rejected').length;
+  if (failedBreakdowns) console.warn(`Google Ads breakdown enrichment: ${failedBreakdowns} query failed; campaign metrics were preserved`);
+  const rows = attachCreativeMedia(normalizeGoogleAdsResults(campaignResults), creativeMedia);
+  return attachProviderBreakdowns(rows, breakdownResults.flatMap(result => result.status === 'fulfilled' ? result.value : []));
+}
+
+function formatBreakdownValue(value: string) {
+  const ageLabels: Record<string, string> = {
+    AGE_RANGE_18_24: '18-24', AGE_RANGE_25_34: '25-34', AGE_RANGE_35_44: '35-44',
+    AGE_RANGE_45_54: '45-54', AGE_RANGE_55_64: '55-64', AGE_RANGE_65_UP: '65+',
+    AGE_RANGE_UNDETERMINED: 'Undetermined',
+  };
+  return ageLabels[value] || value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
 }

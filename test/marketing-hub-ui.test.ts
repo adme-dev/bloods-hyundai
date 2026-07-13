@@ -9,6 +9,10 @@ const pageSource = readFileSync(
   resolve(__dirname, '../app/pages/admin/marketing-report.vue'),
   'utf8',
 );
+const creativeDialogSource = readFileSync(
+  resolve(__dirname, '../app/components/admin/marketing/CreativePreviewDialog.vue'),
+  'utf8',
+);
 
 describe('Marketing Hub UI', () => {
   it('uses the approved Marketing Hub information architecture', () => {
@@ -29,10 +33,12 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /\.marketing-hub__kpis\s*\{[\s\S]*grid-template-columns:\s*repeat\(4,\s*1fr\)/);
   });
 
-  it('keeps future-data surfaces explicitly marked without fabricated figures', () => {
-    assert.match(pageSource, /Phase 2 · new/);
+  it('renders stored provider breakdowns with explicit empty states and no fabricated figures', () => {
+    assert.match(pageSource, /audienceBreakdowns/);
+    assert.match(pageSource, /Synced provider data/);
     assert.match(pageSource, /Phase 3 · new/);
-    assert.match(pageSource, /No audience breakdown has been synced yet/);
+    assert.match(pageSource, /No audience breakdown data is stored for this period/);
+    assert.match(pageSource, /Awaiting provider breakdown sync/);
     assert.match(pageSource, /No sample figures are shown/);
     assert.doesNotMatch(pageSource, /previewAge|previewDevices|previewAreas|previewPivot/);
     assert.doesNotMatch(pageSource, /\$164|\$266\.32|Werribee/);
@@ -68,6 +74,13 @@ describe('Marketing Hub UI', () => {
     assert.match(pageSource, /:width\.attr="chartHitWidth"/);
   });
 
+  it('binds calculated SVG geometry as attributes instead of readonly DOM properties', () => {
+    for (const binding of ['y1', 'y2', 'y', 'd', 'x1', 'x2', 'cx', 'cy']) {
+      assert.match(pageSource, new RegExp(`:${binding}\\.attr=`));
+      assert.doesNotMatch(pageSource, new RegExp(`:${binding}=(?!\\"?[^>]*\\.attr)`));
+    }
+  });
+
   it('keeps the website acquisition breakdowns together with explicit unavailable states', () => {
     assert.match(pageSource, /marketing-hub__website-breakdowns/);
     assert.match(pageSource, /Top landing pages[\s\S]*Pages that started website sessions/);
@@ -90,6 +103,35 @@ describe('Marketing Hub UI', () => {
     assert.doesNotMatch(pageSource, /previewCreatives/);
     assert.doesNotMatch(pageSource, /art: 'IONIQ 9'/);
   });
+
+  it('opens each synced ad in an accessible creative preview dialog', () => {
+    assert.match(pageSource, /@click="openCreative\(creative\)"/);
+    assert.match(pageSource, /:aria-label="`Preview ad: \$\{creative\.title\}`"/);
+    assert.match(pageSource, /<CreativePreviewDialog/);
+    assert.match(pageSource, /v-model:open="creativeDialogOpen"/);
+    assert.match(creativeDialogSource, /<Dialog/);
+    assert.match(creativeDialogSource, /<DialogTitle[^>]*>/);
+    assert.match(creativeDialogSource, /Open video/);
+    assert.match(creativeDialogSource, /referrerpolicy="no-referrer"/);
+    assert.match(creativeDialogSource, /minmax\(340px/);
+    assert.match(creativeDialogSource, /\[overflow-wrap:anywhere\]/);
+    assert.match(creativeDialogSource, /leading-snug/);
+    assert.match(creativeDialogSource, /100svh/);
+    assert.match(creativeDialogSource, /42svh/);
+    assert.match(creativeDialogSource, /md:min-h-\[520px\]/);
+  });
+
+  it('runs the provider sync before refreshing empty breakdown and creative data', () => {
+    assert.match(pageSource, /async function syncAndRefresh/);
+    assert.match(pageSource, /\$fetch<SyncResponse>\('\/api\/admin\/metrics\/sync', \{ method: 'POST' \}\)/);
+    assert.match(pageSource, /await refresh\(\)/);
+    assert.match(pageSource, /Sync provider data/);
+  assert.match(pageSource, /Syncing platforms…/);
+  assert.match(pageSource, /syncError/);
+  assert.match(pageSource, /No ad-provider integration is configured/);
+  assert.match(pageSource, /result\.error/);
+  assert.doesNotMatch(pageSource, /Other provider data was refreshed/);
+});
 
   it('explains report freshness in concise dealer-facing language', () => {
     assert.match(pageSource, /Results reflect the website, advertising and CRM data available for/);
