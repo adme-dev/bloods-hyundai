@@ -5,7 +5,7 @@
       <div class="admin-topbar__inner">
         <div class="flex min-w-0 flex-1 items-center gap-3">
           <!-- Mobile Nav -->
-          <Sheet>
+          <Sheet v-model:open="mobileNavOpen">
             <SheetTrigger as-child>
               <Button variant="ghost" size="icon" class="admin-menu-trigger xl:hidden">
                 <Menu class="h-5 w-5" />
@@ -15,22 +15,42 @@
             <SheetContent side="left" class="w-64 p-0">
               <SheetHeader class="border-b px-6 py-4 text-left">
                 <SheetTitle class="text-lg font-semibold">{{ siteName }} Admin</SheetTitle>
-                <SheetDescription>Navigate between admin tools.</SheetDescription>
+                <SheetDescription class="sr-only">Navigate between admin tools.</SheetDescription>
+                <div class="admin-mobile-profile">
+                  <Avatar class="h-9 w-9 border border-border bg-primary/10 text-primary">
+                    <AvatarImage v-if="userState?.avatarUrl" :src="userState.avatarUrl" :alt="avatarAlt" />
+                    <AvatarFallback class="text-xs font-semibold">{{ userInitials }}</AvatarFallback>
+                  </Avatar>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-foreground">{{ displayName }}</p>
+                    <p class="truncate text-xs text-muted-foreground">{{ userRoleLabel }}</p>
+                  </div>
+                </div>
               </SheetHeader>
               <nav class="admin-mobile-nav space-y-1 px-4 py-4">
-                <NuxtLink
+                <SheetClose
                   v-for="link in navItems"
                   :key="link.href"
-                  :to="link.href"
-                  class="admin-mobile-nav__link"
-                  :class="{ 'is-active': isActive(link.href) }"
+                  as-child
                 >
-                  <component :is="link.icon" class="mr-2 h-4 w-4" />
-                  {{ link.label }}
-                </NuxtLink>
+                  <NuxtLink
+                    :to="link.href"
+                    class="admin-mobile-nav__link"
+                    :class="{ 'is-active': isActive(link.href) }"
+                    :aria-current="isActive(link.href) ? 'page' : undefined"
+                  >
+                    <component :is="link.icon" class="mr-2 h-4 w-4" />
+                    {{ link.label }}
+                  </NuxtLink>
+                </SheetClose>
               </nav>
             </SheetContent>
           </Sheet>
+
+          <div class="admin-mobile-user sm:hidden" aria-label="Signed-in user">
+            <span class="truncate">{{ displayName }}</span>
+            <small class="truncate">{{ currentSectionLabel }}</small>
+          </div>
 
           <div class="admin-brand hidden sm:flex">
             <span class="admin-brand__mark" aria-hidden="true">BH</span>
@@ -139,6 +159,7 @@ import { Separator } from '~/components/ui/separator';
 import NotificationBell from '~/components/admin/NotificationBell.vue';
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -156,6 +177,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 const route = useRoute();
 const { siteName } = useSiteIdentity();
+const mobileNavOpen = ref(false);
 
 const navLinks = [
   { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
@@ -428,24 +450,59 @@ const handleLogout = async () => {
   background: var(--admin-surface);
 }
 
+.admin-mobile-user {
+  display: flex;
+  min-width: 0;
+  max-width: 9rem;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.admin-mobile-user > span {
+  color: var(--admin-ink);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.admin-mobile-user > small {
+  margin-top: 3px;
+  color: var(--admin-muted);
+  font-size: 10.5px;
+}
+
+.admin-mobile-profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--admin-surface-2, #f5f8fb);
+}
+
+.admin-mobile-profile p {
+  margin: 0;
+}
+
 .admin-mobile-nav__link {
   display: flex;
   align-items: center;
   border-radius: 8px;
   padding: 10px 12px;
-  color: var(--admin-muted);
+  color: var(--admin-muted, #6b7d90);
   font-size: 13px;
   font-weight: 650;
   transition: background-color .15s ease, color .15s ease;
 }
 
 .admin-mobile-nav__link:hover {
-  background: var(--admin-surface-2);
-  color: var(--admin-ink);
+  background: var(--admin-surface-2, #f5f8fb);
+  color: var(--admin-ink, #0b1a2b);
 }
 
 .admin-mobile-nav__link.is-active {
-  background: var(--admin-brand);
+  background: var(--admin-brand, #001e50);
   color: #fff;
 }
 
@@ -469,27 +526,6 @@ const handleLogout = async () => {
   margin-top: 0;
 }
 
-.admin-content:not(.admin-content--marketing) h1 {
-  color: var(--admin-ink);
-  font-size: 29px;
-  font-weight: 750;
-  letter-spacing: -.01em;
-  line-height: 1.15;
-  text-wrap: balance;
-}
-
-.admin-content:not(.admin-content--marketing) > :not(.dashboard-shell) h1::before {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--admin-muted);
-  content: "Bloods Hyundai · Admin";
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .09em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
 .admin-content:not(.admin-content--marketing) h2,
 .admin-content:not(.admin-content--marketing) h3 {
   color: var(--admin-ink);
@@ -500,14 +536,14 @@ const handleLogout = async () => {
   color: var(--admin-muted);
 }
 
-.admin-content:not(.admin-content--marketing) .rounded-xl.border {
+.admin-content:not(.admin-content--marketing) [data-slot="card"] {
   border-color: var(--admin-line);
   border-radius: 14px;
   background: var(--admin-surface);
   box-shadow: var(--admin-shadow);
 }
 
-.admin-content:not(.admin-content--marketing) [role="tablist"] {
+.admin-content:not(.admin-content--marketing) [data-slot="tabs-list"] {
   height: auto;
   gap: 3px;
   border: 1px solid var(--admin-line);
@@ -516,7 +552,7 @@ const handleLogout = async () => {
   background: var(--admin-surface-2);
 }
 
-.admin-content:not(.admin-content--marketing) [role="tab"] {
+.admin-content:not(.admin-content--marketing) [data-slot="tabs-trigger"] {
   min-height: 36px;
   border-radius: 7px;
   color: var(--admin-muted);
@@ -524,13 +560,13 @@ const handleLogout = async () => {
   font-weight: 650;
 }
 
-.admin-content:not(.admin-content--marketing) [role="tab"][data-state="active"] {
+.admin-content:not(.admin-content--marketing) [data-slot="tabs-trigger"][data-state="active"] {
   background: var(--admin-brand);
   color: #fff;
   box-shadow: 0 1px 3px rgb(11 26 43 / 14%);
 }
 
-.admin-content:not(.admin-content--marketing) table {
+.admin-content:not(.admin-content--marketing) [data-slot="table"] {
   width: 100%;
   font-size: 12.5px;
 }
@@ -539,12 +575,12 @@ const handleLogout = async () => {
   overscroll-behavior-inline: contain;
 }
 
-.admin-content:not(.admin-content--marketing) thead tr {
+.admin-content:not(.admin-content--marketing) [data-slot="table-header"] [data-slot="table-row"] {
   border-color: var(--admin-line);
   background: var(--admin-surface-2);
 }
 
-.admin-content:not(.admin-content--marketing) th {
+.admin-content:not(.admin-content--marketing) [data-slot="table-head"] {
   color: var(--admin-muted);
   font-size: 10.5px;
   font-weight: 700;
@@ -553,13 +589,13 @@ const handleLogout = async () => {
   white-space: nowrap;
 }
 
-.admin-content:not(.admin-content--marketing) tbody tr {
+.admin-content:not(.admin-content--marketing) [data-slot="table-body"] [data-slot="table-row"] {
   border-color: var(--admin-line-2);
 }
 
-.admin-content:not(.admin-content--marketing) input,
-.admin-content:not(.admin-content--marketing) textarea,
-.admin-content:not(.admin-content--marketing) button[role="combobox"] {
+.admin-content:not(.admin-content--marketing) [data-slot="input"],
+.admin-content:not(.admin-content--marketing) [data-slot="textarea"],
+.admin-content:not(.admin-content--marketing) [data-slot="select-trigger"] {
   border-color: var(--admin-line);
 }
 
@@ -607,15 +643,11 @@ const handleLogout = async () => {
     padding: 20px 16px 48px;
   }
 
-  .admin-content:not(.admin-content--marketing) h1 {
-    font-size: 26px;
-  }
-
-  .admin-content:not(.admin-content--marketing) [role="tablist"] {
+  .admin-content:not(.admin-content--marketing) [data-slot="tabs-list"] {
     overflow-x: auto;
   }
 
-  .admin-content:not(.admin-content--marketing) [role="tab"] {
+  .admin-content:not(.admin-content--marketing) [data-slot="tabs-trigger"] {
     flex: 0 0 auto;
   }
 }

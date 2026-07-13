@@ -8,6 +8,7 @@ const props = defineProps<TabsContentProps & { class?: HTMLAttributes['class'] }
 
 <template>
   <TabsContent
+    data-slot="tabs-content"
     :class="cn(
       'mt-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2',
       props.class,
@@ -17,7 +18,6 @@ const props = defineProps<TabsContentProps & { class?: HTMLAttributes['class'] }
     <slot />
   </TabsContent>
 </template>
-
 
 
 

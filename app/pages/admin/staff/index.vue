@@ -1,14 +1,12 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Staff Management</h1>
-        <p class="text-sm text-muted-foreground">Manage your dealership team and their access levels</p>
-      </div>
+    <AdminPageHeader title="Staff Management" description="Manage your dealership team and their access levels">
+      <template #actions>
       <Button @click="openAddModal">
         <UserPlus class="mr-2 h-4 w-4" /> Invite staff member
       </Button>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Filters -->
     <div class="flex flex-wrap gap-3">
@@ -746,7 +744,6 @@ const toggleStatus = async (member: any) => {
   }
 };
 </script>
-
 
 
 

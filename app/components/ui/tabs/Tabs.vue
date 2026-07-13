@@ -10,13 +10,13 @@ const emits = defineEmits<{
 
 <template>
   <TabsRoot
+    data-slot="tabs"
     v-bind="props"
     @update:model-value="emits('update:modelValue', String($event))"
   >
     <slot />
   </TabsRoot>
 </template>
-
 
 
 

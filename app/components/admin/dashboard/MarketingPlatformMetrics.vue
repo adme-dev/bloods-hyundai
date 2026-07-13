@@ -49,24 +49,80 @@
           </Button>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-[minmax(0,160px)_minmax(0,160px)]">
-          <label class="space-y-1 text-xs font-medium text-muted-foreground">
-            From
-            <Input v-model="from" type="date" :max="to" class="h-9" />
-          </label>
-          <label class="space-y-1 text-xs font-medium text-muted-foreground">
-            To
-            <Input v-model="to" type="date" :min="from" :max="today" class="h-9" />
-          </label>
+        <Button
+          variant="outline"
+          class="w-full justify-start md:hidden"
+          @click="dateSheetOpen = true"
+        >
+          <CalendarDays class="h-4 w-4" />
+          <span class="min-w-0 truncate">{{ compactRangeLabel }}</span>
+        </Button>
+
+        <div class="hidden gap-3 md:grid md:grid-cols-[minmax(0,160px)_minmax(0,160px)]">
+          <div class="space-y-1 text-xs font-medium text-muted-foreground">
+            <span>From</span>
+            <AdminDatePicker v-model="from" label="From date" :max="to" />
+          </div>
+          <div class="space-y-1 text-xs font-medium text-muted-foreground">
+            <span>To</span>
+            <AdminDatePicker v-model="to" label="To date" :min="from" :max="today" />
+          </div>
         </div>
       </div>
     </CardHeader>
+
+    <Sheet v-model:open="dateSheetOpen">
+      <SheetContent
+        side="bottom"
+        class="max-h-[88dvh] overflow-y-auto rounded-t-2xl px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5"
+      >
+        <SheetHeader class="pr-8 text-left">
+          <SheetTitle>Choose reporting dates</SheetTitle>
+          <SheetDescription>Select the start and end date for platform performance.</SheetDescription>
+        </SheetHeader>
+
+        <div class="mt-5 space-y-4">
+          <div class="grid grid-cols-2 rounded-lg bg-muted p-1" role="tablist" aria-label="Date boundary">
+            <Button
+              v-for="boundary in dateBoundaries"
+              :key="boundary.id"
+              type="button"
+              size="sm"
+              :variant="activeDateBoundary === boundary.id ? 'secondary' : 'ghost'"
+              role="tab"
+              :aria-selected="activeDateBoundary === boundary.id"
+              @click="activeDateBoundary = boundary.id"
+            >
+              <span class="flex min-w-0 flex-col items-start leading-tight">
+                <span class="text-[11px] text-muted-foreground">{{ boundary.label }}</span>
+                <span class="truncate text-xs font-semibold">{{ displayDate(boundary.id === 'from' ? from : to) }}</span>
+              </span>
+            </Button>
+          </div>
+
+          <div class="w-full rounded-xl border bg-background shadow-sm">
+            <Calendar
+              fluid
+              :model-value="activeCalendarValue"
+              :is-date-disabled="isMobileDateDisabled"
+              initial-focus
+              @update:model-value="selectMobileDate"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <Button type="button" variant="outline" @click="dateSheetOpen = false">Cancel</Button>
+            <Button type="button" @click="dateSheetOpen = false">Apply dates</Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
 
     <CardContent>
       <div v-if="pending" class="py-8 text-center text-sm text-muted-foreground">Loading platform metrics...</div>
 
       <template v-else-if="data">
-        <div class="mb-4 grid gap-3 lg:grid-cols-4">
+        <div class="dashboard-compact-kpis mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div v-for="kpi in executiveKpis" :key="kpi.label" class="rounded-md border bg-background p-4">
             <div class="mb-2 flex items-center justify-between gap-2">
               <span class="text-xs font-medium uppercase text-muted-foreground">{{ kpi.label }}</span>
@@ -77,7 +133,7 @@
           </div>
         </div>
 
-        <div class="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="dashboard-compact-kpis mb-6 grid grid-cols-2 gap-3 xl:grid-cols-5">
           <div v-for="kpi in paidKpis" :key="kpi.label" class="rounded-md border bg-muted/20 p-4">
             <div class="mb-2 flex items-center justify-between gap-2">
               <span class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{{ kpi.label }}</span>
@@ -178,10 +234,13 @@ import {
   TrendingUp,
   WalletCards,
 } from 'lucide-vue-next';
+import { parseDate, type DateValue } from '@internationalized/date';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '~/components/ui/card';
 import { Button } from '~/components/ui/button';
-import { Input } from '~/components/ui/input';
 import { Badge } from '~/components/ui/badge';
+import { Calendar } from '~/components/ui/calendar';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '~/components/ui/sheet';
+import { formatAdminDate } from '~/utils/dashboardFormat';
 
 type PlatformId = 'ga4' | 'meta_ads' | 'google_ads' | 'crm';
 
@@ -234,10 +293,37 @@ interface MarketingMetricsResponse {
 
 type PresetId = 'mtd' | '7d' | '30d' | '90d';
 type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
+type DateBoundary = 'from' | 'to';
 
 const today = isoDate(new Date());
 const from = ref(`${today.slice(0, 8)}01`);
 const to = ref(today);
+const dateSheetOpen = ref(false);
+const activeDateBoundary = ref<DateBoundary>('from');
+const dateBoundaries: { id: DateBoundary; label: string }[] = [
+  { id: 'from', label: 'From' },
+  { id: 'to', label: 'To' },
+];
+
+const compactRangeLabel = computed(() => `${displayDate(from.value)} – ${displayDate(to.value)}`);
+const activeCalendarValue = computed<DateValue>(() => parseDate(activeDateBoundary.value === 'from' ? from.value : to.value));
+
+function isMobileDateDisabled(date: DateValue) {
+  const value = date.toString();
+  if (value > today) return true;
+  if (activeDateBoundary.value === 'from') return value > to.value;
+  return value < from.value;
+}
+
+function selectMobileDate(value: DateValue | undefined) {
+  if (!value) return;
+  if (activeDateBoundary.value === 'from') {
+    from.value = value.toString();
+    activeDateBoundary.value = 'to';
+    return;
+  }
+  to.value = value.toString();
+}
 
 const rangeQuery = computed(() => ({ from: from.value, to: to.value }));
 const { data, pending, refresh } = useFetch<MarketingMetricsResponse>('/api/admin/analytics/marketing-metrics', {
@@ -516,7 +602,7 @@ function isoDate(date: Date) {
 }
 
 function displayDate(value: string) {
-  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00Z`));
+  return formatAdminDate(value);
 }
 
 function ratioPercent(numerator: number, denominator: number) {

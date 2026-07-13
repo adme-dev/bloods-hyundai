@@ -1,13 +1,8 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <NuxtLink to="/admin/settings" class="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mb-2">
-        <ChevronLeft class="h-4 w-4" />
-        Back to Settings
-      </NuxtLink>
-      <h1 class="text-3xl font-semibold tracking-tight">Service Booking</h1>
-      <p class="text-sm text-muted-foreground">Configure how customers book service appointments</p>
-    </div>
+    <AdminPageHeader title="Service Booking" description="Configure how customers book service appointments">
+      <template #actions><Button variant="ghost" size="sm" as-child><NuxtLink to="/admin/settings"><ChevronLeft class="mr-2 h-4 w-4" /> Settings</NuxtLink></Button></template>
+    </AdminPageHeader>
 
     <!-- Loading State -->
     <div v-if="pending" class="flex items-center justify-center py-12">

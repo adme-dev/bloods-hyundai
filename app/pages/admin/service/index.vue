@@ -1,12 +1,8 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Service Department</h1>
-        <p class="text-sm text-muted-foreground">Manage service appointments and workshop schedule</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
+    <AdminPageHeader title="Service Department" description="Manage service appointments and workshop schedule">
+      <template #actions>
         <Button variant="outline" size="sm" @click="refresh()">
           <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': pending }" />
           Refresh
@@ -16,8 +12,8 @@
             <Calendar class="mr-2 h-4 w-4" /> View Calendar
           </NuxtLink>
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Overdue Alert -->
     <div v-if="data.overdueCount > 0" class="rounded-lg border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-4">

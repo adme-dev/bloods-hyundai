@@ -1,11 +1,7 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Customers</h1>
-        <p class="text-sm text-muted-foreground">Manage customer relationships and retention</p>
-      </div>
-      <div class="flex items-center gap-2">
+    <AdminPageHeader title="Customers" description="Manage customer relationships and retention">
+      <template #actions>
         <Button variant="outline" size="sm" @click="refresh">
           <RotateCcw class="mr-2 h-4 w-4" /> Refresh
         </Button>
@@ -15,68 +11,59 @@
         <Button size="sm" @click="showAddCustomer = true">
           <Plus class="mr-2 h-4 w-4" /> Add Customer
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Quick Stats -->
     <div class="grid gap-4 md:grid-cols-4">
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Total Customers</CardTitle>
-          <Users class="h-4 w-4 text-muted-foreground" />
+        <CardHeader class="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 pb-2">
+          <CardDescription>Total Customers</CardDescription>
+          <CardTitle class="text-2xl tabular-nums">{{ stats?.total || 0 }}</CardTitle>
+          <CardAction class="col-start-2 row-span-2 row-start-1"><Users class="h-4 w-4 text-muted-foreground" /></CardAction>
         </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold">{{ stats?.total || 0 }}</div>
-          <p class="text-xs text-muted-foreground">Active in your database</p>
-        </CardContent>
+        <CardFooter class="text-xs text-muted-foreground">Active in your database</CardFooter>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">At Risk</CardTitle>
-          <AlertTriangle class="h-4 w-4 text-red-500" />
+        <CardHeader class="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 pb-2">
+          <CardDescription>At Risk</CardDescription>
+          <CardTitle class="text-2xl text-red-600 tabular-nums">{{ stats?.atRisk || 0 }}</CardTitle>
+          <CardAction class="col-start-2 row-span-2 row-start-1"><AlertTriangle class="h-4 w-4 text-red-500" /></CardAction>
         </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold text-red-600">{{ stats?.atRisk || 0 }}</div>
-          <p class="text-xs text-muted-foreground">Need immediate attention</p>
-        </CardContent>
+        <CardFooter class="text-xs text-muted-foreground">Need immediate attention</CardFooter>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">Due Follow-ups</CardTitle>
-          <Clock class="h-4 w-4 text-amber-500" />
+        <CardHeader class="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 pb-2">
+          <CardDescription>Due Follow-ups</CardDescription>
+          <CardTitle class="text-2xl text-amber-600 tabular-nums">{{ stats?.dueFollowups || 0 }}</CardTitle>
+          <CardAction class="col-start-2 row-span-2 row-start-1"><Clock class="h-4 w-4 text-amber-500" /></CardAction>
         </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold text-amber-600">{{ stats?.dueFollowups || 0 }}</div>
-          <p class="text-xs text-muted-foreground">Tasks due today</p>
-        </CardContent>
+        <CardFooter class="text-xs text-muted-foreground">Tasks due today</CardFooter>
       </Card>
       <Card>
-        <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle class="text-sm font-medium">New This Month</CardTitle>
-          <TrendingUp class="h-4 w-4 text-green-500" />
+        <CardHeader class="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 pb-2">
+          <CardDescription>New This Month</CardDescription>
+          <CardTitle class="text-2xl text-green-600 tabular-nums">{{ stats?.newThisMonth || 0 }}</CardTitle>
+          <CardAction class="col-start-2 row-span-2 row-start-1"><TrendingUp class="h-4 w-4 text-green-500" /></CardAction>
         </CardHeader>
-        <CardContent>
-          <div class="text-2xl font-bold text-green-600">{{ stats?.newThisMonth || 0 }}</div>
-          <p class="text-xs text-muted-foreground">Customers added</p>
-        </CardContent>
+        <CardFooter class="text-xs text-muted-foreground">Customers added</CardFooter>
       </Card>
     </div>
 
     <!-- View Tabs -->
-    <div class="flex gap-1 border-b">
-      <Button
+    <Tabs :model-value="filters.view" @update:model-value="filters.view = String($event)">
+      <TabsList class="grid h-auto w-full grid-cols-3">
+      <TabsTrigger
         v-for="tab in viewTabs"
         :key="tab.value"
-        :variant="filters.view === tab.value ? 'default' : 'ghost'"
-        size="sm"
-        class="rounded-b-none"
-        @click="filters.view = tab.value"
+        :value="tab.value"
       >
         <component :is="tab.icon" class="mr-2 h-4 w-4" />
         {{ tab.label }}
         <Badge v-if="tab.count > 0" variant="secondary" class="ml-2">{{ tab.count }}</Badge>
-      </Button>
-    </div>
+      </TabsTrigger>
+      </TabsList>
+    </Tabs>
 
     <!-- Filters -->
     <Card>
@@ -446,7 +433,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <Label for="dueDate">Due Date</Label>
-                <Input id="dueDate" v-model="newTask.dueDate" type="date" required />
+                <AdminDatePicker v-model="newTask.dueDate" label="Task due date" placeholder="Choose due date" />
               </div>
               <div class="space-y-2">
                 <Label for="priority">Priority</Label>
@@ -489,7 +476,7 @@ import {
   Archive, X, Tag
 } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Textarea } from '~/components/ui/textarea';
@@ -503,6 +490,7 @@ import {
   SelectValue,
 } from '~/components/ui/select';
 import { Badge } from '~/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import {
   Table,
   TableBody,

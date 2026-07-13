@@ -1,9 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <p class="text-sm text-muted-foreground">Configure sales goals and performance metrics</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Sales Targets</h1>
-    </div>
+    <AdminPageHeader title="Sales Targets" description="Configure sales goals and performance metrics" />
 
     <!-- Loading State -->
     <div v-if="pending" class="flex items-center justify-center py-12">

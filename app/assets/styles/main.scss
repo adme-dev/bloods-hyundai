@@ -816,29 +816,6 @@ a[style*="backgroundImage"],
   opacity: 0;
 }
 
-// ============================================
-// SHADCN ANIMATIONS
-// ============================================
-
-@keyframes accordion-down {
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
-}
-
-@keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
-}
-
-// Animation classes for radix components
-[data-state="open"] {
-  animation: accordion-down 0.2s ease-out;
-}
-
-[data-state="closed"] {
-  animation: accordion-up 0.2s ease-out;
-}
-
 // Ensure proper z-index for popovers/selects
 [data-radix-popper-content-wrapper] {
   z-index: 50 !important;

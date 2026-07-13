@@ -1,15 +1,13 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">Tasks</h1>
-        <p class="text-sm text-muted-foreground">Follow-ups and reminders across your pipeline</p>
-      </div>
+    <AdminPageHeader title="Tasks" description="Follow-ups and reminders across your pipeline">
+      <template #actions>
       <Button variant="outline" size="sm" @click="refresh">
         <RotateCcw class="mr-2 h-4 w-4" /> Refresh
       </Button>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Stat cards -->
     <div class="grid gap-4 sm:grid-cols-3">

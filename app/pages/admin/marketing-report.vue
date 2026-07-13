@@ -30,8 +30,8 @@
             </button>
           </div>
           <div v-if="customRangeOpen" class="marketing-hub__custom-range">
-            <label>From <input v-model="from" type="date" :max="to"></label>
-            <label>To <input v-model="to" type="date" :min="from" :max="today"></label>
+            <div><span>From</span><AdminDatePicker v-model="from" label="Report from date" :max="to" /></div>
+            <div><span>To</span><AdminDatePicker v-model="to" label="Report to date" :min="from" :max="today" /></div>
           </div>
           <p class="marketing-hub__synced">
             <span class="marketing-hub__live" />
@@ -1003,8 +1003,9 @@ const MetricPanel = defineComponent({
 .marketing-hub__daterange button svg { width: 13px; }
 .marketing-hub__daterange button.on { background: var(--brand); color: var(--brand-ink); }
 .marketing-hub__custom-range { position: absolute; z-index: 5; top: 47px; right: 0; display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
-.marketing-hub__custom-range label { color: var(--muted); font-size: 11px; font-weight: 700; }
+.marketing-hub__custom-range > div { color: var(--muted); font-size: 11px; font-weight: 700; }
 .marketing-hub__custom-range input { display: block; margin-top: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 6px; background: var(--surface-2); color: var(--ink); }
+.marketing-hub__custom-range :deep([data-slot="button"]) { min-width: 160px; margin-top: 4px; background: var(--surface-2); color: var(--ink); }
 .marketing-hub__synced { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin: 9px 0 0; color: var(--muted); font-size: 12px; }
 .marketing-hub__synced button { display: inline-grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
 .marketing-hub__synced svg { width: 14px; }

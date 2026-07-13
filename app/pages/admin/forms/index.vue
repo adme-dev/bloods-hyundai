@@ -1,18 +1,14 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Forms</h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Manage your enquiry forms, notifications, and confirmations
-        </p>
-      </div>
+    <AdminPageHeader title="Forms" description="Manage your enquiry forms, notifications, and confirmations">
+      <template #actions>
       <Button @click="refreshStats">
         <RefreshCw class="mr-2 h-4 w-4" />
         Refresh
       </Button>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Stats Overview -->
     <div class="grid gap-4 md:grid-cols-4">
@@ -126,7 +122,7 @@
               <TableCell class="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" size="icon" @click.stop>
+                    <Button variant="ghost" size="icon" aria-label="Open form actions" @click.stop>
                       <MoreHorizontal class="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -366,8 +362,6 @@ const previewForm = (form: any) => {
   window.open(routes[form.slug] || '/', '_blank');
 };
 </script>
-
-
 
 
 

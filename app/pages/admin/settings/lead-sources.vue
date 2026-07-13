@@ -1,11 +1,7 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <p class="text-sm text-muted-foreground">External provider lead capture</p>
-        <h1 class="text-3xl font-semibold tracking-tight">Lead Sources</h1>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
+    <AdminPageHeader title="Lead Sources" description="External provider lead capture">
+      <template #actions>
         <Button variant="outline" size="sm" as-child>
           <NuxtLink to="/admin/settings">
             <ArrowLeft class="h-4 w-4" />
@@ -16,8 +12,8 @@
           <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': pending }" />
           Refresh
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <div v-if="pending" class="rounded-md border bg-background py-12 text-center text-sm text-muted-foreground">
       Loading lead sources...

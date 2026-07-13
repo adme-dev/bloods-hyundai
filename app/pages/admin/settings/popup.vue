@@ -1,13 +1,8 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <NuxtLink to="/admin/settings" class="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-1 mb-2">
-        <ChevronLeft class="h-4 w-4" />
-        Back to Settings
-      </NuxtLink>
-      <h1 class="text-3xl font-semibold tracking-tight">Popup Settings</h1>
-      <p class="text-sm text-muted-foreground">Configure an auto-popup to display site-wide or on specific pages</p>
-    </div>
+    <AdminPageHeader title="Popup Settings" description="Configure an auto-popup to display site-wide or on specific pages">
+      <template #actions><Button variant="ghost" size="sm" as-child><NuxtLink to="/admin/settings"><ChevronLeft class="mr-2 h-4 w-4" /> Settings</NuxtLink></Button></template>
+    </AdminPageHeader>
 
     <!-- Loading State -->
     <div v-if="pending" class="flex items-center justify-center py-12">
@@ -245,18 +240,20 @@
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-2">
                   <Label for="startDate">Start Date</Label>
-                  <Input
+                  <AdminDateTimePicker
                     id="startDate"
-                    type="datetime-local"
                     v-model="form.startDate"
+                    label="Schedule start"
+                    :max="form.endDate || undefined"
                   />
                 </div>
                 <div class="space-y-2">
                   <Label for="endDate">End Date</Label>
-                  <Input
+                  <AdminDateTimePicker
                     id="endDate"
-                    type="datetime-local"
                     v-model="form.endDate"
+                    label="Schedule end"
+                    :min="form.startDate || undefined"
                   />
                 </div>
               </div>

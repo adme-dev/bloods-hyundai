@@ -1,24 +1,10 @@
 <template>
   <div class="space-y-6">
     <!-- Breadcrumb & Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <Button variant="ghost" size="icon" @click="navigateTo('/admin/forms')">
-          <ArrowLeft class="h-4 w-4" />
-        </Button>
-        <div>
-          <div class="flex items-center gap-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-lg" :class="formConfig.iconBg">
-              <component :is="formConfig.icon" class="h-6 w-6" :class="formConfig.iconColor" />
-            </div>
-            <div>
-              <h1 class="text-2xl font-semibold text-gray-900">{{ formConfig.name }}</h1>
-              <p class="text-sm text-muted-foreground">{{ formConfig.description }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
+    <AdminPageHeader :title="formConfig.name" :description="formConfig.description" eyebrow="Form configuration">
+      <div class="mt-3 flex h-10 w-10 items-center justify-center rounded-lg" :class="formConfig.iconBg"><component :is="formConfig.icon" class="h-5 w-5" :class="formConfig.iconColor" /></div>
+      <template #actions>
+        <Button variant="ghost" size="sm" @click="navigateTo('/admin/forms')"><ArrowLeft class="mr-2 h-4 w-4" /> Forms</Button>
         <span v-if="saveSuccess" class="text-sm text-green-600 flex items-center gap-1">
           <CheckCircle class="h-4 w-4" />
           Saved!
@@ -34,8 +20,8 @@
           <Save class="mr-2 h-4 w-4" />
           {{ saving ? 'Saving...' : 'Save Changes' }}
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Tabs Navigation -->
     <Tabs v-model="activeTab" class="space-y-6">
@@ -206,13 +192,13 @@
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-2">
-                  <Button variant="ghost" size="icon" @click="editNotification(notification)">
+                  <Button variant="ghost" size="icon" aria-label="Edit notification" @click="editNotification(notification)">
                     <PenSquare class="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" @click="duplicateNotification(notification)">
+                  <Button variant="ghost" size="icon" aria-label="Duplicate notification" @click="duplicateNotification(notification)">
                     <Copy class="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" class="text-destructive" @click="deleteNotification(notification)">
+                  <Button variant="ghost" size="icon" class="text-destructive" aria-label="Delete notification" @click="deleteNotification(notification)">
                     <Trash2 class="h-4 w-4" />
                   </Button>
                 </div>
@@ -342,12 +328,13 @@
                 </div>
               </div>
               <div class="flex items-center gap-1">
-                <Button variant="ghost" size="icon" @click="editRoutingRule(rule)">
+                <Button variant="ghost" size="icon" aria-label="Edit routing rule" @click="editRoutingRule(rule)">
                   <PenSquare class="h-4 w-4" />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="icon"
+                  aria-label="Move routing rule up"
                   :disabled="index === 0"
                   @click="moveRuleUp(index)"
                 >
@@ -356,12 +343,13 @@
                 <Button 
                   variant="ghost" 
                   size="icon"
+                  aria-label="Move routing rule down"
                   :disabled="index === formRules.length - 1"
                   @click="moveRuleDown(index)"
                 >
                   <ArrowDown class="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" class="text-destructive" @click="deleteRoutingRule(rule)">
+                <Button variant="ghost" size="icon" class="text-destructive" aria-label="Delete routing rule" @click="deleteRoutingRule(rule)">
                   <Trash2 class="h-4 w-4" />
                 </Button>
               </div>
@@ -937,6 +925,4 @@ const handleSaveNotification = async (notificationData: NotificationConfig) => {
   await saveSettings();
 };
 </script>
-
-
 

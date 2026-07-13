@@ -1,19 +1,15 @@
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-sm text-muted-foreground">Define automation for enquiry notifications</p>
-        <h1 class="text-3xl font-semibold tracking-tight">Routing Rules</h1>
-      </div>
-      <div class="flex flex-wrap gap-2">
+    <AdminPageHeader title="Routing Rules" description="Define automation for enquiry notifications">
+      <template #actions>
         <Button variant="outline" size="sm" @click="refresh">
           <RefreshCw class="mr-2 h-4 w-4" /> Sync
         </Button>
         <Button size="sm" @click="openCreate">
           <Plus class="mr-2 h-4 w-4" /> New rule
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <Card v-if="pending">
       <CardContent class="py-10 text-center text-sm text-muted-foreground">

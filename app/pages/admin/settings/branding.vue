@@ -1,9 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div>
-      <p class="text-sm text-muted-foreground">Customize your dealer branding & social presence</p>
-      <h1 class="text-3xl font-semibold tracking-tight">Branding & Social Media</h1>
-    </div>
+    <AdminPageHeader title="Branding & Social Media" description="Customise your dealer branding and social presence" />
 
     <!-- Loading State -->
     <div v-if="pending" class="flex items-center justify-center py-12">

@@ -21,6 +21,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
 
 <template>
   <input
+    data-slot="input"
     v-model="modelValue"
     :class="cn(
       'flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition-colors hover:border-gray-400 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#001E50] focus:ring-offset-2 focus:border-[#001E50] disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-gray-50 file:border-0 file:bg-transparent file:text-sm file:font-medium',
@@ -28,7 +29,6 @@ const modelValue = useVModel(props, 'modelValue', emits, {
     )"
   >
 </template>
-
 
 
 

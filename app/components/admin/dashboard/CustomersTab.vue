@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <template v-if="data?.customerRetention">
       <!-- Retention Quick Stats -->
-      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div class="dashboard-compact-kpis grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         <Card class="border-l-4 border-l-teal-500 cursor-pointer hover:border-teal-600 transition-colors" @click="navigateTo('/admin/customers')">
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">Total Customers</CardTitle>

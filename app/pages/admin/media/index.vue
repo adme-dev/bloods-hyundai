@@ -234,16 +234,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6 max-w-7xl mx-auto">
+  <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold">Media Library</h1>
-        <p class="text-muted-foreground">
-          Manage your uploaded images, logos, and documents
-        </p>
-      </div>
-      <div class="flex items-center gap-2">
+    <AdminPageHeader title="Media Library" description="Manage your uploaded images, logos, and documents">
+      <template #actions>
         <input
           ref="fileInputRef"
           type="file"
@@ -269,8 +263,8 @@ onMounted(() => {
           <Upload v-else class="w-4 h-4 mr-2" />
           Upload Files
         </Button>
-      </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
