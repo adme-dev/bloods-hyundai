@@ -41,10 +41,14 @@ export default defineEventHandler(async (event) => {
   }
   const fromDate = new Date(`${from}T00:00:00Z`);
   const toDate = new Date(`${to}T00:00:00Z`);
-  if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime()) || fromDate > toDate) {
+  if (
+    Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())
+    || fromDate.toISOString().slice(0, 10) !== from || toDate.toISOString().slice(0, 10) !== to
+    || fromDate > toDate
+  ) {
     throw createError({ statusCode: 400, message: 'Invalid period' });
   }
-  if ((toDate.getTime() - fromDate.getTime()) / 86_400_000 > 366) {
+  if ((toDate.getTime() - fromDate.getTime()) / 86_400_000 > 365) {
     throw createError({ statusCode: 400, message: 'Period too long' });
   }
 

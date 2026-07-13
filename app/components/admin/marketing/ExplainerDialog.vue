@@ -89,6 +89,8 @@ const copied = ref(false);
 const copyFailed = ref(false);
 const highlighted = ref<ExplainerTopicKey | null>(null);
 
+let requestSeq = 0;
+
 const sectionEls = new Map<ExplainerTopicKey, HTMLElement>();
 function setSectionEl(key: ExplainerTopicKey, el: Element | ComponentPublicInstance | null) {
   if (el instanceof HTMLElement) sectionEls.set(key, el);
@@ -104,6 +106,7 @@ watch(() => props.open, async (open) => {
 });
 
 watch(() => [props.from, props.to], () => {
+  requestSeq += 1;
   aiState.value = 'idle';
   narrative.value = '';
   copied.value = false;
@@ -111,6 +114,7 @@ watch(() => [props.from, props.to], () => {
 });
 
 async function generate() {
+  const seq = ++requestSeq;
   aiState.value = 'loading';
   copied.value = false;
   copyFailed.value = false;
@@ -119,11 +123,13 @@ async function generate() {
       '/api/admin/analytics/marketing-explain',
       { method: 'POST', body: { from: props.from, to: props.to } },
     );
+    if (seq !== requestSeq) return;
     if (!res.available) { aiState.value = 'unavailable'; return; }
     narrative.value = res.narrative || '';
     aiState.value = narrative.value ? 'success' : 'error';
   }
   catch {
+    if (seq !== requestSeq) return;
     aiState.value = 'error';
   }
 }
