@@ -60,4 +60,12 @@ describe('Dealer Studio API client', () => {
     assert.equal(unavailable.ok, false);
     if (!unavailable.ok) assert.equal(unavailable.kind, 'retryable');
   });
+
+  it('marks transport failures as ambiguous so scheduled retries cannot silently duplicate a lead', async () => {
+    const result = await createDealerStudioLead('token', { lead: {} }, async () => {
+      throw new DOMException('Timed out', 'TimeoutError');
+    });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.kind, 'ambiguous');
+  });
 });

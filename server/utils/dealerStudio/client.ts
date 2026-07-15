@@ -52,9 +52,11 @@ export async function createDealerStudioLead(
     const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
     return {
       ok: false,
-      kind: 'retryable',
+      kind: 'ambiguous',
       status: null,
-      error: timedOut ? 'Dealer Studio request timed out' : 'Dealer Studio request could not be completed',
+      error: timedOut
+        ? 'Dealer Studio request timed out; delivery outcome is unknown'
+        : 'Dealer Studio request outcome is unknown',
     };
   }
 
@@ -141,4 +143,3 @@ function positiveInteger(value: unknown): number | null {
 function cleanString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
-

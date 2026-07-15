@@ -327,6 +327,32 @@ export const realtimeEventOutbox = pgTable('realtime_event_outbox', {
 }));
 
 // ============================================================================
+// EXTERNAL LEAD EXPORT DELIVERY OUTBOX
+// ============================================================================
+
+export const leadExportDeliveries = pgTable('lead_export_deliveries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  enquiryId: uuid('enquiry_id').notNull().references(() => enquiries.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 50 }).notNull(),
+  status: varchar('status', { length: 30 }).default('pending').notNull(),
+  attempts: integer('attempts').default(0).notNull(),
+  providerLeadId: varchar('provider_lead_id', { length: 100 }),
+  providerClusterId: varchar('provider_cluster_id', { length: 100 }),
+  lastHttpStatus: integer('last_http_status'),
+  lastError: text('last_error'),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+  lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
+  syncedAt: timestamp('synced_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueProviderEnquiry: uniqueIndex('lead_export_deliveries_provider_enquiry_key').on(table.provider, table.enquiryId),
+  dealerCreatedIdx: index('idx_lead_export_deliveries_dealer_created').on(table.dealerId, table.createdAt.desc()),
+  dueIdx: index('idx_lead_export_deliveries_due').on(table.status, table.nextAttemptAt),
+}));
+
+// ============================================================================
 // EMAIL LOGS
 // ============================================================================
 
@@ -1240,6 +1266,5 @@ export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert
 
 export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
 export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
-
 
 

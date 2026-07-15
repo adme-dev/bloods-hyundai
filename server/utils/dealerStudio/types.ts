@@ -39,8 +39,7 @@ export type DealerStudioCreateResult =
   | { ok: true; leadId: number; leadClusterId: number }
   | {
       ok: false;
-      kind: 'validation' | 'configuration' | 'retryable' | 'permanent';
+      kind: 'validation' | 'configuration' | 'retryable' | 'ambiguous' | 'permanent';
       status: number | null;
       error: string;
     };
-
