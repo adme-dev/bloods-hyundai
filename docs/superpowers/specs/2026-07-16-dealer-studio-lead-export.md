@@ -94,3 +94,33 @@ status without returning request PII or credentials.
 Dealer Studio does not document idempotency or rate limits. `provider_id` is set
 to the local enquiry UUID for traceability, but ambiguous timeout retries remain
 conservative until Dealer Studio confirms duplicate handling.
+
+## Production Activation Runbook
+
+1. Ask Dealer Studio for a least-privilege API key with `create:lead`, restricted
+   to the Bloods Hyundai dealership, required location, and intended users. If
+   Dealer Studio IP allowlisting is enabled, confirm the production deployment's
+   outbound access with Dealer Studio before go-live.
+2. Add `DEALER_STUDIO_API_KEY` and a separate high-entropy
+   `DEALER_STUDIO_CRON_SECRET` to the production server/function environment.
+   Never add either value to dealer settings or browser-visible runtime config.
+3. Deploy the application and apply
+   `scripts/migrations/2026-07-16-dealer-studio-lead-export.sql` through the
+   existing migration runner.
+4. Open `/admin/settings/dealer-studio`, run **Test connection**, select the
+   authorised dealership and default location, optionally select a salesperson,
+   then enable and save automatic lead delivery.
+5. Submit one clearly labelled end-to-end test enquiry with a unique email and
+   phone. Confirm the same lead exists in Dealer Studio and that the admin
+   enquiry displays the returned Dealer Studio lead ID as **Synced**.
+6. Review **Needs attention** and recent delivery activity after activation.
+   For an interrupted or timed-out delivery, check Dealer Studio for the local
+   enquiry UUID/provider reference before using manual retry.
+7. Before enabling real customer traffic, obtain the dealership's privacy and
+   vendor-management sign-off for sharing lead data with Dealer Studio, including
+   the customer notice/consent wording, access controls, retention and deletion.
+
+Rollback is immediate and non-destructive: disable automatic lead delivery on
+the settings page. Local enquiry capture continues, while already queued
+deliveries remain visible for an operator to resolve. Historical backfill is not
+performed automatically and requires a separate approved plan.
