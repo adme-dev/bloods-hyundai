@@ -13,6 +13,7 @@ import { sendFormNotifications } from '../../utils/email';
 import { ENQUIRY_STATUSES } from '~~/shared/constants/salesFunnel';
 import { normalizeEnquiryType } from '~~/shared/constants/enquiryTypes';
 import { emitEnquiryCreatedRealtimeEvent } from '../../utils/realtime/events';
+import { queueDealerStudioExport } from '../../utils/dealerStudio/delivery';
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
@@ -137,6 +138,12 @@ export default defineEventHandler(async (event) => {
       externalRef,
     },
   });
+
+  try {
+    await queueDealerStudioExport(enquiry, matched.dealer);
+  } catch (err) {
+    console.error('[Inbound Lead Email] Could not queue Dealer Studio export', err);
+  }
 
   try {
     await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'inbound-leads-email' });
