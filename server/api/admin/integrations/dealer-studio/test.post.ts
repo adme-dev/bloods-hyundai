@@ -11,6 +11,9 @@ export default defineEventHandler(async (event) => {
   const apiKey = String(config.dealerStudioApiKey || process.env.DEALER_STUDIO_API_KEY || '');
   try {
     const details = await fetchDealerStudioApiKeyDetails(apiKey);
+    if (!details.permissions.includes('create:lead')) {
+      throw new Error('Insufficient permissions: Dealer Studio key requires create:lead');
+    }
     return {
       success: true,
       permissions: details.permissions,
@@ -20,4 +23,3 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, message: error?.message || 'Dealer Studio connection failed' });
   }
 });
-

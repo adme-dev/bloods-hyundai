@@ -37,6 +37,7 @@ describe('Dealer Studio admin API contract', () => {
     assert.match(putEndpoint, /fetchDealerStudioApiKeyDetails/);
     assert.match(putEndpoint, /Insufficient permissions/);
     assert.match(testEndpoint, /fetchDealerStudioApiKeyDetails/);
+    assert.match(testEndpoint, /create:lead/);
   });
 
   it('tenant-scopes manual retries', () => {

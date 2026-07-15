@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     throw createError({ statusCode: 422, message: error?.message || 'Dealer Studio connection failed' });
   }
-  if (details.permissions.length && !details.permissions.includes('create:lead')) {
+  if (!details.permissions.includes('create:lead')) {
     throw createError({ statusCode: 422, message: 'Insufficient permissions: Dealer Studio key requires create:lead' });
   }
   const dealership = details.dealerships.find(item => item.id === dealershipId);
@@ -93,4 +93,3 @@ function positiveInteger(value: unknown): number | null {
 function optionalString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
-

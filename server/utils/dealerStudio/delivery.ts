@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   dealers,
   enquiries,
@@ -12,6 +12,8 @@ import { buildDealerStudioLeadPayload } from './mapping';
 import { readDealerStudioSettings } from './settings';
 
 const PROVIDER = 'dealer_studio';
+const STALE_SENDING_AFTER_MS = 15 * 60_000;
+const INTERRUPTED_DELIVERY_ERROR = 'Delivery was interrupted and its outcome is unknown. Check Dealer Studio and confirm whether the lead exists before retrying to avoid a duplicate.';
 
 export async function queueDealerStudioExport(enquiry: Record<string, any>, dealer: Record<string, any>) {
   const settings = readDealerStudioSettings(dealer.settings);
@@ -42,6 +44,20 @@ export async function processDueDealerStudioExports(options: {
   now?: Date;
 } = {}) {
   const now = options.now || new Date();
+  const staleConditions = [
+    eq(leadExportDeliveries.provider, PROVIDER),
+    eq(leadExportDeliveries.status, 'sending'),
+    lte(leadExportDeliveries.lastAttemptAt, new Date(now.getTime() - STALE_SENDING_AFTER_MS)),
+  ];
+  if (options.dealerId) staleConditions.push(eq(leadExportDeliveries.dealerId, options.dealerId));
+  if (options.enquiryId) staleConditions.push(eq(leadExportDeliveries.enquiryId, options.enquiryId));
+  await db.update(leadExportDeliveries).set({
+    status: 'failed_permanent',
+    lastError: INTERRUPTED_DELIVERY_ERROR,
+    nextAttemptAt: null,
+    updatedAt: now,
+  }).where(and(...staleConditions));
+
   const conditions = [
     eq(leadExportDeliveries.provider, PROVIDER),
     or(
@@ -69,7 +85,12 @@ export async function processDueDealerStudioExports(options: {
 export async function processDealerStudioDelivery(deliveryId: string) {
   const now = new Date();
   const [claimed] = await db.update(leadExportDeliveries)
-    .set({ status: 'sending', lastAttemptAt: now, updatedAt: now })
+    .set({
+      status: 'sending',
+      attempts: sql`${leadExportDeliveries.attempts} + 1`,
+      lastAttemptAt: now,
+      updatedAt: now,
+    })
     .where(and(
       eq(leadExportDeliveries.id, deliveryId),
       inArray(leadExportDeliveries.status, ['pending', 'failed_retryable']),
@@ -92,7 +113,7 @@ export async function processDealerStudioDelivery(deliveryId: string) {
   if (!record) return { id: deliveryId, status: 'missing' as const };
   const settings = readDealerStudioSettings(record.dealer.settings);
   const mapped = buildDealerStudioLeadPayload(record.enquiry as any, settings);
-  const attempts = claimed.attempts + 1;
+  const attempts = claimed.attempts;
 
   if (!settings.enabled) {
     const error = 'Dealer Studio export is disabled';

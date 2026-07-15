@@ -99,3 +99,16 @@ describe('Dealer Studio delivery migration', () => {
     assert.match(migration, /next_attempt_at/i);
   });
 });
+
+describe('Dealer Studio interrupted delivery recovery', () => {
+  const service = readFileSync(
+    new URL('../server/utils/dealerStudio/delivery.ts', import.meta.url),
+    'utf8',
+  );
+
+  it('surfaces stale sending records for manual duplicate review', () => {
+    assert.match(service, /STALE_SENDING_AFTER_MS/);
+    assert.match(service, /eq\(leadExportDeliveries\.status, 'sending'\)/);
+    assert.match(service, /confirm whether the lead exists before retrying/i);
+  });
+});
