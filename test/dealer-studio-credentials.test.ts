@@ -5,6 +5,7 @@ import {
   credentialHint,
   decryptIntegrationCredential,
   encryptIntegrationCredential,
+  integrationCredentialMasterSecret,
 } from '../server/utils/integrationCredentials.ts';
 
 const context = {
@@ -37,6 +38,22 @@ describe('integration credential encryption', () => {
     );
     assert.equal(credentialHint('dealer-studio-secret-key'), '…-key');
   });
+
+  it('uses the existing Nuxt JWT secret when a dedicated encryption root is not configured', () => {
+    const dedicated = process.env.DEALER_CREDENTIALS_ENCRYPTION_KEY;
+    const nuxtJwt = process.env.NUXT_JWT_SECRET;
+    const legacyJwt = process.env.JWT_SECRET;
+    delete process.env.DEALER_CREDENTIALS_ENCRYPTION_KEY;
+    process.env.NUXT_JWT_SECRET = context.masterSecret;
+    delete process.env.JWT_SECRET;
+    try {
+      assert.equal(integrationCredentialMasterSecret(), context.masterSecret);
+    } finally {
+      restoreEnvironment('DEALER_CREDENTIALS_ENCRYPTION_KEY', dedicated);
+      restoreEnvironment('NUXT_JWT_SECRET', nuxtJwt);
+      restoreEnvironment('JWT_SECRET', legacyJwt);
+    }
+  });
 });
 
 describe('integration credential persistence', () => {
@@ -53,3 +70,8 @@ describe('integration credential persistence', () => {
     assert.doesNotMatch(migration, /api_key text/i);
   });
 });
+
+function restoreEnvironment(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}

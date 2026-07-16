@@ -66,6 +66,7 @@ export function credentialHint(value: string): string {
 export function integrationCredentialMasterSecret(): string {
   return String(
     process.env.DEALER_CREDENTIALS_ENCRYPTION_KEY
+    || process.env.NUXT_JWT_SECRET
     || process.env.JWT_SECRET
     || '',
   );
