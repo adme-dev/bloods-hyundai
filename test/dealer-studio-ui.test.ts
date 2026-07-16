@@ -16,6 +16,10 @@ describe('Dealer Studio admin setup', () => {
     assert.match(page, /Scheduled delivery security/);
     assert.match(page, /hosting environment/);
     assert.match(page, /Test connection/);
+    assert.match(page, /Sandbox mode/);
+    assert.match(page, /Dealer Studio-provided test dealership/);
+    assert.match(page, /Send synthetic test lead/);
+    assert.match(page, /\/api\/admin\/integrations\/dealer-studio\/sandbox-leads/);
     assert.match(page, /Authorised dealership/);
     assert.match(page, /Default location/);
     assert.match(page, /Delivery activity/);
