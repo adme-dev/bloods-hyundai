@@ -23,7 +23,7 @@ reconciliation are explicitly out of scope.
 
 - `server/utils/dealerStudio/` — typed settings, payload mapping and fixed-host API client.
 - `server/api/admin/integrations/dealer-studio/` — authenticated setup, test and retry APIs.
-- `server/database/schema.ts` — durable delivery rows and provider identifiers.
+- `server/database/schema.ts` — durable delivery rows, encrypted credentials and audit metadata.
 - `scripts/migrations/` — production migration applied by the existing build runner.
 - `app/pages/admin/settings/dealer-studio.vue` — connection and delivery-health UI.
 - `test/dealer-studio-*.test.ts` — mapping, validation, retry and UI contract tests.
@@ -69,7 +69,7 @@ status without returning request PII or credentials.
   admin APIs; validate settings and provider responses; redact secrets.
 - Always: exclude archived live tests and duplicate/spam submissions.
 - Ask first: enable historical backfill or two-way status synchronisation.
-- Never: put the Dealer Studio key in `dealers.settings`, browser payloads or logs.
+- Never: put the Dealer Studio key in `dealers.settings`, browser responses or logs.
 - Never: invent missing phone/email values or mark a rejected lead as synced.
 
 ## Success Criteria
@@ -101,22 +101,34 @@ conservative until Dealer Studio confirms duplicate handling.
    to the Bloods Hyundai dealership, required location, and intended users. If
    Dealer Studio IP allowlisting is enabled, confirm the production deployment's
    outbound access with Dealer Studio before go-live.
-2. Add `DEALER_STUDIO_API_KEY` and a separate high-entropy
-   `DEALER_STUDIO_CRON_SECRET` to the production server/function environment.
-   Never add either value to dealer settings or browser-visible runtime config.
-3. Deploy the application and apply
-   `scripts/migrations/2026-07-16-dealer-studio-lead-export.sql` through the
+2. Add a dedicated, stable `DEALER_CREDENTIALS_ENCRYPTION_KEY` of at least 32
+   random characters to the production application environment. This is the
+   root used to encrypt admin-managed integration credentials and must be backed
+   up and preserved across deploys. Do not rotate it without a credential
+   re-encryption plan.
+3. Add a separate high-entropy `DEALER_STUDIO_CRON_SECRET` to both the production
+   application and Netlify scheduled-function environments. It remains
+   hosting-managed because the external scheduler must possess it before calling
+   the application. Never place it in dealer settings or browser-visible config.
+4. Deploy the application and apply both
+   `scripts/migrations/2026-07-16-dealer-studio-lead-export.sql` and
+   `scripts/migrations/2026-07-16-dealer-integration-credentials.sql` through the
    existing migration runner.
-4. Open `/admin/settings/dealer-studio`, run **Test connection**, select the
-   authorised dealership and default location, optionally select a salesperson,
-   then enable and save automatic lead delivery.
-5. Submit one clearly labelled end-to-end test enquiry with a unique email and
+5. Open `/admin/settings/dealer-studio`, paste the Dealer Studio API key into
+   **API credential**, then choose **Save & verify key**. The key is verified for
+   `create:lead`, encrypted and never returned to the browser after saving.
+   `DEALER_STUDIO_API_KEY` may instead be set in the production environment as a
+   deployment-wide fallback, but the tenant-scoped admin credential takes precedence.
+6. Select the authorised dealership and default location, optionally select a
+   salesperson, then enable and save automatic lead delivery. Confirm the page
+   reports scheduled delivery security as **Configured**.
+7. Submit one clearly labelled end-to-end test enquiry with a unique email and
    phone. Confirm the same lead exists in Dealer Studio and that the admin
    enquiry displays the returned Dealer Studio lead ID as **Synced**.
-6. Review **Needs attention** and recent delivery activity after activation.
+8. Review **Needs attention** and recent delivery activity after activation.
    For an interrupted or timed-out delivery, check Dealer Studio for the local
    enquiry UUID/provider reference before using manual retry.
-7. Before enabling real customer traffic, obtain the dealership's privacy and
+9. Before enabling real customer traffic, obtain the dealership's privacy and
    vendor-management sign-off for sharing lead data with Dealer Studio, including
    the customer notice/consent wording, access controls, retention and deletion.
 
