@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
   const sentAt = new Date();
   const result = await createDealerStudioLead(
     apiKey,
-    buildDealerStudioSandboxLead(settings, user.dealerId, sentAt),
+    buildDealerStudioSandboxLead(settings, sentAt),
   );
   if (!result.ok) {
     const statusCode = result.kind === 'retryable' ? 503 : result.kind === 'ambiguous' ? 502 : 422;
@@ -82,15 +82,25 @@ export default defineEventHandler(async (event) => {
     sandboxLastLeadId: String(result.leadId),
     sandboxLastLeadClusterId: String(result.leadClusterId),
   };
-  await db.update(dealers).set({
-    settings: writeDealerStudioSettings(dealer.settings, nextSettings),
-    updatedAt: new Date(),
-  }).where(eq(dealers.id, user.dealerId));
+  let recorded = true;
+  try {
+    await db.update(dealers).set({
+      settings: writeDealerStudioSettings(dealer.settings, nextSettings),
+      updatedAt: new Date(),
+    }).where(eq(dealers.id, user.dealerId));
+  } catch {
+    recorded = false;
+    console.error('[dealer-studio-sandbox] Lead created but local status could not be recorded', {
+      dealerId: user.dealerId,
+      leadId: result.leadId,
+    });
+  }
 
   return {
     success: true,
     leadId: result.leadId,
     leadClusterId: result.leadClusterId,
     sentAt,
+    recorded,
   };
 });

@@ -798,12 +798,14 @@ const sendSandboxLead = async () => {
   sandboxSending.value = true;
   sandboxMessage.value = '';
   try {
-    const result = await $fetch<{ leadId: number; leadClusterId: number }>('/api/admin/integrations/dealer-studio/sandbox-leads', {
+    const result = await $fetch<{ leadId: number; leadClusterId: number; recorded: boolean }>('/api/admin/integrations/dealer-studio/sandbox-leads', {
       method: 'POST',
     });
     await refresh();
     sandboxSucceeded.value = true;
-    sandboxMessage.value = `Synthetic lead created successfully. Dealer Studio lead ${result.leadId}, cluster ${result.leadClusterId}.`;
+    sandboxMessage.value = result.recorded
+      ? `Synthetic lead created successfully. Dealer Studio lead ${result.leadId}, cluster ${result.leadClusterId}.`
+      : `Dealer Studio created lead ${result.leadId}, but local test history could not be updated. Do not resend; check the test dealership.`;
     toast.success('Dealer Studio sandbox lead created');
   } catch (err: any) {
     sandboxSucceeded.value = false;

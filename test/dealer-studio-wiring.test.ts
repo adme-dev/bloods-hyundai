@@ -63,6 +63,7 @@ describe('Dealer Studio admin API contract', () => {
     assert.match(endpoint, /buildDealerStudioSandboxLead/);
     assert.match(endpoint, /createDealerStudioLead/);
     assert.match(endpoint, /sandboxMode/);
+    assert.match(endpoint, /recorded/);
     assert.doesNotMatch(endpoint, /readBody/);
     assert.match(settingsEndpoint, /sandboxConfirmed/);
     assert.match(settingsEndpoint, /sandboxDealershipId/);

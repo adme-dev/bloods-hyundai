@@ -116,7 +116,7 @@ describe('Dealer Studio sandbox lead', () => {
       sandboxLocationName: 'Sandbox Sales',
       sandboxDefaultUserEmail: 'sandbox-agent@example.com',
       sandboxConfirmedAt: '2026-07-16T00:00:00.000Z',
-    }, '7f013aa8-fe82-4d98-8685-2947cf1b3d78', new Date('2026-07-16T01:02:03.000Z'));
+    }, new Date('2026-07-16T01:02:03.000Z'));
 
     assert.equal(payload.lead.dealership_id, 987);
     assert.equal(payload.lead.location_id, 654);
@@ -126,6 +126,7 @@ describe('Dealer Studio sandbox lead', () => {
     assert.match(String(payload.lead.message), /do not contact/i);
     assert.match(String(payload.lead.provider_id), /^sandbox-/);
     assert.doesNotMatch(JSON.stringify(payload), /Jane|Citizen|0412345678|jane@example\.com/);
+    assert.doesNotMatch(JSON.stringify(payload), /7f013aa8-fe82-4d98-8685-2947cf1b3d78/);
   });
 });
 
