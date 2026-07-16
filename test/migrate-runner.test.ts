@@ -1,7 +1,13 @@
 // test/migrate-runner.test.ts
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { parseStatements, isNonTransactional, pendingMigrations, shouldRunMigrations } from '../scripts/migrate.ts';
+import {
+  parseStatements,
+  isNonTransactional,
+  pendingMigrations,
+  shouldRunMigrations,
+  withMigrationLock,
+} from '../scripts/migrate.ts';
 
 describe('migrate runner helpers', () => {
   it('splits SQL into statements, ignoring comments and blank lines', () => {
@@ -46,5 +52,24 @@ describe('migrate runner helpers', () => {
   it('runs locally with no CONTEXT when a database URL is deliberately provided', () => {
     const decision = shouldRunMigrations({ NEON_DATABASE_URL: 'postgres://x' });
     assert.equal(decision.run, true);
+  });
+
+  it('serializes migration runners with a session advisory lock and always releases it', async () => {
+    const events: string[] = [];
+    const client = {
+      async query(sql: string) {
+        events.push(sql.includes('pg_advisory_unlock') ? 'unlock' : 'lock');
+      },
+    };
+
+    await assert.rejects(
+      withMigrationLock(client, async () => {
+        events.push('migrate');
+        throw new Error('migration failed');
+      }),
+      /migration failed/,
+    );
+
+    assert.deepEqual(events, ['lock', 'migrate', 'unlock']);
   });
 });

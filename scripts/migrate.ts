@@ -45,6 +45,27 @@ export function shouldRunMigrations(env: { CONTEXT?: string; NEON_DATABASE_URL?:
   return { run: true, reason: 'production build with database URL' };
 }
 
+type MigrationLockClient = {
+  query(sql: string, values?: unknown[]): Promise<unknown>;
+};
+
+const MIGRATION_LOCK_NAME = 'bloods-hyundai-schema-migrations:v1';
+
+/** Serialize migration runners across every deployment connected to the same
+ * database. This matters because both Netlify sites build from `main`, and
+ * PostgreSQL `IF NOT EXISTS` DDL can still race while creating catalog types. */
+export async function withMigrationLock<T>(
+  client: MigrationLockClient,
+  migrate: () => Promise<T>,
+): Promise<T> {
+  await client.query('SELECT pg_advisory_lock(hashtext($1))', [MIGRATION_LOCK_NAME]);
+  try {
+    return await migrate();
+  } finally {
+    await client.query('SELECT pg_advisory_unlock(hashtext($1))', [MIGRATION_LOCK_NAME]);
+  }
+}
+
 async function main() {
   const decision = shouldRunMigrations(process.env);
   if (!decision.run) {
@@ -57,38 +78,45 @@ async function main() {
   neonConfig.webSocketConstructor = ws;
   const pool = new Pool({ connectionString });
   try {
-    await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
-      filename varchar(255) PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
-    const appliedRows = await pool.query('SELECT filename FROM schema_migrations');
-    const applied = new Set<string>(appliedRows.rows.map((r: any) => r.filename));
-    const all = readdirSync(MIGRATIONS_DIR);
-    const pending = pendingMigrations(all, applied);
-    if (!pending.length) { console.log('[migrate] up to date.'); return; }
-    for (const file of pending) {
-      const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
-      console.log(`[migrate] applying ${file}`);
-      const statements = parseStatements(sql);
-      const record = 'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING';
-      if (isNonTransactional(sql)) {
-        // Must run OUTSIDE a transaction (e.g. CREATE INDEX CONCURRENTLY). One
-        // dedicated connection so session-level SETs apply to later statements.
-        const client = await pool.connect();
-        try {
-          for (const stmt of statements) await client.query(stmt);
-          await client.query(record, [file]);
-        } finally { client.release(); }
-      } else {
-        const client = await pool.connect();
-        try {
-          await client.query('BEGIN');
-          for (const stmt of statements) await client.query(stmt);
-          // Ledger row commits atomically with the migration it records.
-          await client.query(record, [file]);
-          await client.query('COMMIT');
-        } catch (e) { await client.query('ROLLBACK'); throw e; }
-        finally { client.release(); }
-      }
-      console.log(`[migrate] ✓ ${file}`);
+    const lockClient = await pool.connect();
+    try {
+      await withMigrationLock(lockClient, async () => {
+        await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
+          filename varchar(255) PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
+        const appliedRows = await pool.query('SELECT filename FROM schema_migrations');
+        const applied = new Set<string>(appliedRows.rows.map((r: any) => r.filename));
+        const all = readdirSync(MIGRATIONS_DIR);
+        const pending = pendingMigrations(all, applied);
+        if (!pending.length) { console.log('[migrate] up to date.'); return; }
+        for (const file of pending) {
+          const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+          console.log(`[migrate] applying ${file}`);
+          const statements = parseStatements(sql);
+          const record = 'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING';
+          if (isNonTransactional(sql)) {
+            // Must run OUTSIDE a transaction (e.g. CREATE INDEX CONCURRENTLY). One
+            // dedicated connection so session-level SETs apply to later statements.
+            const client = await pool.connect();
+            try {
+              for (const stmt of statements) await client.query(stmt);
+              await client.query(record, [file]);
+            } finally { client.release(); }
+          } else {
+            const client = await pool.connect();
+            try {
+              await client.query('BEGIN');
+              for (const stmt of statements) await client.query(stmt);
+              // Ledger row commits atomically with the migration it records.
+              await client.query(record, [file]);
+              await client.query('COMMIT');
+            } catch (e) { await client.query('ROLLBACK'); throw e; }
+            finally { client.release(); }
+          }
+          console.log(`[migrate] ✓ ${file}`);
+        }
+      });
+    } finally {
+      lockClient.release();
     }
   } finally { await pool.end(); }
 }
