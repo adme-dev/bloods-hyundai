@@ -97,10 +97,11 @@ conservative until Dealer Studio confirms duplicate handling.
 
 ## Production Activation Runbook
 
-1. Ask Dealer Studio for a least-privilege API key with `create:lead`, restricted
-   to the Bloods Hyundai dealership, required location, and intended users. If
-   Dealer Studio IP allowlisting is enabled, confirm the production deployment's
-   outbound access with Dealer Studio before go-live.
+1. Ask Dealer Studio for a least-privilege API key with `create:lead`, including
+   the Bloods Hyundai production dealership and a Dealer Studio-provided test
+   dealership for sandbox validation. Restrict each dealership to its required
+   locations and intended users. If Dealer Studio IP allowlisting is enabled,
+   confirm the production deployment's outbound access before go-live.
 2. Add a dedicated, stable `DEALER_CREDENTIALS_ENCRYPTION_KEY` of at least 32
    random characters to the production application environment. This is the
    root used to encrypt admin-managed integration credentials and must be backed
@@ -119,16 +120,24 @@ conservative until Dealer Studio confirms duplicate handling.
    `create:lead`, encrypted and never returned to the browser after saving.
    `DEALER_STUDIO_API_KEY` may instead be set in the production environment as a
    deployment-wide fallback, but the tenant-scoped admin credential takes precedence.
-6. Select the authorised dealership and default location, optionally select a
-   salesperson, then enable and save automatic lead delivery. Confirm the page
-   reports scheduled delivery security as **Configured**.
-7. Submit one clearly labelled end-to-end test enquiry with a unique email and
-   phone. Confirm the same lead exists in Dealer Studio and that the admin
-   enquiry displays the returned Dealer Studio lead ID as **Synced**.
-8. Review **Needs attention** and recent delivery activity after activation.
+6. Choose **Sandbox mode**, run **Test connection**, select the Dealer
+   Studio-provided test dealership and location, confirm the destination, and
+   save it. Sandbox mode forces automatic real-enquiry delivery off and cannot
+   reuse the configured production dealership.
+7. Choose **Send synthetic test lead**. Confirm the labelled `SANDBOX
+   Integration Test` lead and returned lead ID exist in the test dealership.
+   The payload is generated server-side, contains no customer data, and sets
+   `send_customer_email=false`.
+8. Return to **Production**, select the authorised production dealership and
+   default location, optionally select a salesperson, then enable and save
+   automatic lead delivery. Confirm scheduled delivery security is **Configured**.
+9. Submit one clearly labelled end-to-end test enquiry with a unique email and
+   phone. Confirm the same lead exists in the production Dealer Studio account
+   and the admin enquiry displays its Dealer Studio lead ID as **Synced**.
+10. Review **Needs attention** and recent delivery activity after activation.
    For an interrupted or timed-out delivery, check Dealer Studio for the local
    enquiry UUID/provider reference before using manual retry.
-9. Before enabling real customer traffic, obtain the dealership's privacy and
+11. Before enabling real customer traffic, obtain the dealership's privacy and
    vendor-management sign-off for sharing lead data with Dealer Studio, including
    the customer notice/consent wording, access controls, retention and deletion.
 
