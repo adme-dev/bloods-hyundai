@@ -1,4 +1,5 @@
 import { fetchDealerStudioApiKeyDetails } from '../../../../utils/dealerStudio/client';
+import { resolveDealerStudioApiKey } from '../../../../utils/dealerStudio/credential';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -7,9 +8,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Insufficient permissions' });
   }
 
-  const config = useRuntimeConfig();
-  const apiKey = String(config.dealerStudioApiKey || process.env.DEALER_STUDIO_API_KEY || '');
   try {
+    const apiKey = await resolveDealerStudioApiKey(user.dealerId);
     const details = await fetchDealerStudioApiKeyDetails(apiKey);
     if (!details.permissions.includes('create:lead')) {
       throw new Error('Insufficient permissions: Dealer Studio key requires create:lead');

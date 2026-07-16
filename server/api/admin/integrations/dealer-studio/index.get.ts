@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { dealers, enquiries, leadExportDeliveries } from '../../../../database/schema';
 import { db } from '../../../../utils/db';
+import { dealerStudioCredentialStatus } from '../../../../utils/dealerStudio/credential';
 import { readDealerStudioSettings } from '../../../../utils/dealerStudio/settings';
 
 export default defineEventHandler(async (event) => {
@@ -48,12 +49,11 @@ export default defineEventHandler(async (event) => {
     .orderBy(desc(leadExportDeliveries.updatedAt))
     .limit(25);
 
-  const config = useRuntimeConfig();
+  const credential = await dealerStudioCredentialStatus(user.dealerId);
   return {
-    credentialConfigured: Boolean(config.dealerStudioApiKey || process.env.DEALER_STUDIO_API_KEY),
+    ...credential,
     settings: readDealerStudioSettings(dealer.settings),
     summary: summary || { total: 0, pending: 0, synced: 0, failed: 0 },
     recent,
   };
 });
-

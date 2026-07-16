@@ -40,6 +40,20 @@ describe('Dealer Studio admin API contract', () => {
     assert.match(testEndpoint, /create:lead/);
   });
 
+  it('supports write-only encrypted credential rotation for dealer admins', () => {
+    const putCredential = source('server/api/admin/integrations/dealer-studio/credential.put.ts');
+    const deleteCredential = source('server/api/admin/integrations/dealer-studio/credential.delete.ts');
+    const resolver = source('server/utils/dealerStudio/credential.ts');
+
+    assert.match(putCredential, /fetchDealerStudioApiKeyDetails/);
+    assert.match(putCredential, /encryptIntegrationCredential/);
+    assert.match(putCredential, /dealerIntegrationCredentialAudit/);
+    assert.doesNotMatch(putCredential, /apiKey\s*:/);
+    assert.match(deleteCredential, /dealerIntegrationCredentialAudit/);
+    assert.match(resolver, /DEALER_STUDIO_API_KEY/);
+    assert.match(resolver, /decryptIntegrationCredential/);
+  });
+
   it('tenant-scopes manual retries', () => {
     const retryEndpoint = source('server/api/admin/integrations/dealer-studio/[enquiryId]/retry.post.ts');
     assert.match(retryEndpoint, /user\.dealerId/);

@@ -7,6 +7,7 @@ import {
 } from '../../database/schema';
 import { db } from '../db';
 import { createDealerStudioLead } from './client';
+import { resolveDealerStudioApiKey } from './credential';
 import { deliveryFailureUpdate, planDealerStudioQueue } from './deliveryPolicy';
 import { buildDealerStudioLeadPayload } from './mapping';
 import { readDealerStudioSettings } from './settings';
@@ -141,7 +142,24 @@ export async function processDealerStudioDelivery(deliveryId: string) {
     return { id: deliveryId, status, error };
   }
 
-  const result = await createDealerStudioLead(process.env.DEALER_STUDIO_API_KEY || '', mapped.payload);
+  let apiKey: string;
+  try {
+    apiKey = await resolveDealerStudioApiKey(record.dealer.id);
+  } catch {
+    const failure = deliveryFailureUpdate({
+      ok: false,
+      kind: 'configuration',
+      status: null,
+      error: 'The stored Dealer Studio credential is unavailable or cannot be decrypted',
+    }, attempts, now);
+    await db.update(leadExportDeliveries).set({
+      ...failure,
+      attempts,
+      updatedAt: new Date(),
+    }).where(eq(leadExportDeliveries.id, deliveryId));
+    return { id: deliveryId, status: failure.status, error: failure.lastError };
+  }
+  const result = await createDealerStudioLead(apiKey, mapped.payload);
   if (!result.ok) {
     const failure = deliveryFailureUpdate(result, attempts, now);
     await db.update(leadExportDeliveries).set({

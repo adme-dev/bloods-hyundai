@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { dealers } from '../../../../database/schema';
 import { db } from '../../../../utils/db';
 import { fetchDealerStudioApiKeyDetails } from '../../../../utils/dealerStudio/client';
+import { resolveDealerStudioApiKey } from '../../../../utils/dealerStudio/credential';
 import { writeDealerStudioSettings } from '../../../../utils/dealerStudio/settings';
 
 export default defineEventHandler(async (event) => {
@@ -50,10 +51,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, message: 'Dealership and location are required' });
   }
 
-  const config = useRuntimeConfig();
-  const apiKey = String(config.dealerStudioApiKey || process.env.DEALER_STUDIO_API_KEY || '');
   let details;
   try {
+    const apiKey = await resolveDealerStudioApiKey(user.dealerId);
     details = await fetchDealerStudioApiKeyDetails(apiKey);
   } catch (error: any) {
     throw createError({ statusCode: 422, message: error?.message || 'Dealer Studio connection failed' });
