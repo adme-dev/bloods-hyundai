@@ -18,6 +18,7 @@ import { sanitizeIpAddress } from '../utils/intakeValidation';
 import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/intakeAbuse';
 import { inferLeadAttribution } from '../utils/metrics/attribution';
 import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
+import { queueDealerStudioExport } from '../utils/dealerStudio/delivery';
 
 interface SellMyCarSubmission {
   // Personal details
@@ -306,6 +307,12 @@ export default defineEventHandler(async (event) => {
         liveTest: Boolean(liveTestOverride),
       },
     });
+
+    try {
+      await queueDealerStudioExport(enquiry, dealer);
+    } catch (exportError) {
+      console.error('[Sell My Car] Could not queue Dealer Studio export', exportError);
+    }
 
     // 9. Evaluate routing rules and send notifications
     try {

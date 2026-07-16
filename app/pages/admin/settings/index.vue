@@ -137,6 +137,19 @@
           </CardContent>
         </Card>
       </NuxtLink>
+      <NuxtLink to="/admin/settings/dealer-studio" class="group">
+        <Card class="h-full transition-shadow hover:shadow-md">
+          <CardContent class="flex items-center gap-4 p-6">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20">
+              <PlugZap class="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-semibold">Dealer Studio LMS</h3>
+              <p class="text-sm text-muted-foreground">Connection, delivery health & retries</p>
+            </div>
+          </CardContent>
+        </Card>
+      </NuxtLink>
       <NuxtLink to="/admin/settings/service-booking" class="group">
         <Card class="h-full transition-shadow hover:shadow-md">
           <CardContent class="flex items-center gap-4 p-6">
@@ -301,7 +314,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
-import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw, Palette, Mail, MailPlus, GitBranch, Wrench, Banknote, MessageSquare, Star } from 'lucide-vue-next';
+import { Copy, Eye, EyeOff, KeyRound, Loader2, AlertCircle, RefreshCw, Palette, Mail, MailPlus, GitBranch, Wrench, Banknote, MessageSquare, PlugZap, Star } from 'lucide-vue-next';
 import { Switch } from '~/components/ui/switch';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';

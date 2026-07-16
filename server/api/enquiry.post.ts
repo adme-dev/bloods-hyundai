@@ -10,6 +10,7 @@ import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/
 import { inferLeadAttribution } from '../utils/metrics/attribution';
 import { emitEnquiryCreatedRealtimeEvent } from '../utils/realtime/events';
 import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
+import { queueDealerStudioExport } from '../utils/dealerStudio/delivery';
 
 /**
  * Public Enquiry Submission Endpoint
@@ -264,6 +265,12 @@ export default defineEventHandler(async (event) => {
       },
     });
 
+    try {
+      await queueDealerStudioExport(enquiry, dealer);
+    } catch (exportError) {
+      console.error('[Enquiry API] Could not queue Dealer Studio export', exportError);
+    }
+
     if (!liveTestOverride) {
       try {
         await emitEnquiryCreatedRealtimeEvent(enquiry, { source: 'enquiry-api' });
@@ -343,7 +350,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 
 

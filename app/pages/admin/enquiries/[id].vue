@@ -621,12 +621,12 @@
           <CardHeader class="space-y-1">
             <div class="crm-card__header flex items-start justify-between gap-3">
               <div class="min-w-0">
-                <CardTitle>External CRM sync</CardTitle>
-                <CardDescription>Push to the external dealer CRM/export when ready.</CardDescription>
+                <CardTitle>Dealer Studio LMS</CardTitle>
+                <CardDescription>Automatic lead delivery and provider acknowledgement.</CardDescription>
               </div>
               <Badge :class="crmBadgeClass" class="crm-card__status shrink-0 gap-1 text-xs">
-                <component :is="enquiry.syncedToCrm ? CheckCircle2 : AlertTriangle" class="h-3.5 w-3.5" />
-                {{ enquiry.syncedToCrm ? 'Synced' : 'Not synced' }}
+                <component :is="crmStatusIcon" class="h-3.5 w-3.5" />
+                {{ crmStatusLabel }}
               </Badge>
             </div>
           </CardHeader>
@@ -634,31 +634,51 @@
             <dl class="space-y-3 text-sm">
               <div class="flex items-start justify-between gap-2">
                 <div>
-                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">External CRM record</dt>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Dealer Studio lead ID</dt>
                   <dd class="mt-1 font-medium">
-                    {{ enquiry.crmRef || 'Not linked' }}
+                    {{ dealerStudioDelivery?.providerLeadId || enquiry.crmRef || 'Not acknowledged' }}
                   </dd>
                 </div>
                 <Button
-                  v-if="enquiry.crmRef"
+                  v-if="dealerStudioDelivery?.providerLeadId || enquiry.crmRef"
                   variant="ghost"
                   size="icon"
                   class="h-8 w-8"
-                  @click="copyValue(enquiry.crmRef, 'External CRM record ID')"
+                  @click="copyValue(dealerStudioDelivery?.providerLeadId || enquiry.crmRef, 'Dealer Studio lead ID')"
                 >
                   <Copy class="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <div>
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">External reference</dt>
-                <dd class="mt-1">{{ enquiry.externalRef || 'Not set' }}</dd>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Attempts</dt>
+                  <dd class="mt-1 tabular-nums">{{ dealerStudioDelivery?.attempts ?? 0 }}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Last updated</dt>
+                  <dd class="mt-1">{{ dealerStudioDelivery?.updatedAt ? formatDate(dealerStudioDelivery.updatedAt) : 'Not queued' }}</dd>
+                </div>
               </div>
             </dl>
-            <Button class="w-full" variant="default" @click="openCrmModal">
-              {{ enquiry.syncedToCrm ? 'Update CRM link' : 'Sync to CRM' }}
+            <Alert v-if="dealerStudioDelivery?.lastError" variant="destructive">
+              <AlertTriangle class="h-4 w-4" />
+              <AlertDescription>{{ dealerStudioDelivery.lastError }}</AlertDescription>
+            </Alert>
+            <Button
+              v-if="canRetryDealerStudio"
+              class="w-full"
+              variant="default"
+              :disabled="retryingCrm"
+              @click="retryDealerStudioDelivery"
+            >
+              <RefreshCcw class="mr-2 h-4 w-4" :class="{ 'animate-spin': retryingCrm }" />
+              {{ retryingCrm ? 'Retrying…' : 'Retry delivery' }}
             </Button>
-            <p class="text-xs text-muted-foreground">
-              Tip: once synced, you can paste the CRM deal link here for quick access.
+            <Button v-else class="w-full" variant="outline" as-child>
+              <NuxtLink to="/admin/settings/dealer-studio">View integration health</NuxtLink>
+            </Button>
+            <p v-if="!dealerStudioDelivery" class="text-xs text-muted-foreground">
+              This enquiry predates the delivery queue or the integration is disabled.
             </p>
           </CardContent>
         </Card>
@@ -780,46 +800,16 @@
       </DialogContent>
     </Dialog>
 
-    <!-- CRM modal -->
-    <Dialog :open="crmDialogOpen" @update:open="(val) => (crmDialogOpen = val)">
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{{ enquiry.syncedToCrm ? 'Update CRM link' : 'Sync enquiry to CRM' }}</DialogTitle>
-          <DialogDescription>
-            Store the external CRM record reference so everyone can jump back into the same deal.
-          </DialogDescription>
-        </DialogHeader>
-        <div class="space-y-4 py-2">
-          <div class="space-y-2">
-            <Label for="crmRef">External CRM record ID</Label>
-            <Input id="crmRef" v-model="crmForm.crmRef" placeholder="e.g. DEAL-001234" />
-          </div>
-          <div class="space-y-2">
-            <Label for="externalRef">External reference</Label>
-            <Input id="externalRef" v-model="crmForm.externalRef" placeholder="Optional - DMS, DQC, etc." />
-          </div>
-          <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" v-model="crmForm.synced" class="h-4 w-4 rounded border" />
-            Mark as synced in CRM
-          </label>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="crmDialogOpen = false">Cancel</Button>
-          <Button :disabled="savingCrm" @click="submitCrmSync">
-            {{ savingCrm ? 'Saving…' : 'Save changes' }}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch, onMounted } from 'vue';
-import { AlertTriangle, Car, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, Globe, ImageIcon, Mail, MapPin, Phone, RefreshCcw, ShoppingCart, X, ZoomIn } from 'lucide-vue-next';
+import { computed, ref, watch, onMounted } from 'vue';
+import { AlertCircle, AlertTriangle, Car, CheckCircle2, ChevronLeft, ChevronRight, Clock, Copy, ExternalLink, Globe, ImageIcon, Mail, MapPin, Phone, RefreshCcw, ShoppingCart, X, ZoomIn } from 'lucide-vue-next';
 
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
+import { Alert, AlertDescription } from '~/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Separator } from '~/components/ui/separator';
 import { Textarea } from '~/components/ui/textarea';
@@ -837,10 +827,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from '~/components/ui/dialog';
 import { useToast } from '~/composables/useToast';
 import {
@@ -865,6 +851,7 @@ const { data, pending, error, refresh } = await useFetch<any>(`/api/admin/enquir
 const enquiry = computed(() => data.value?.enquiry);
 const notes = computed(() => data.value?.notes ?? []);
 const activityLog = computed(() => data.value?.activityLog ?? []);
+const dealerStudioDelivery = computed(() => data.value?.dealerStudioDelivery || null);
 
 const isClient = ref(false);
 onMounted(() => {
@@ -1287,48 +1274,46 @@ const sourceDomain = computed(() => {
   }
 });
 
-const crmBadgeClass = computed(() =>
-  enquiry.value?.syncedToCrm
-    ? 'bg-green-100 text-green-900'
-    : 'bg-amber-100 text-amber-900'
-);
-
-const crmDialogOpen = ref(false);
-const savingCrm = ref(false);
-const crmForm = reactive({
-  crmRef: '',
-  externalRef: '',
-  synced: true,
+const crmStatus = computed(() => dealerStudioDelivery.value?.status || (enquiry.value?.syncedToCrm ? 'synced' : 'not_queued'));
+const crmStatusLabel = computed(() => ({
+  pending: 'Pending',
+  sending: 'Sending',
+  synced: 'Synced',
+  failed_validation: 'Invalid lead',
+  failed_retryable: 'Retry scheduled',
+  failed_permanent: 'Manual review',
+  not_queued: 'Not queued',
+}[crmStatus.value as string] || String(crmStatus.value).replaceAll('_', ' ')));
+const crmStatusIcon = computed(() => {
+  if (crmStatus.value === 'synced') return CheckCircle2;
+  if (String(crmStatus.value).startsWith('failed_')) return AlertTriangle;
+  return AlertCircle;
 });
+const crmBadgeClass = computed(() => {
+  if (crmStatus.value === 'synced') return 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200';
+  if (String(crmStatus.value).startsWith('failed_')) return 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200';
+  return 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200';
+});
+const canRetryDealerStudio = computed(() => [
+  'failed_validation',
+  'failed_retryable',
+  'failed_permanent',
+].includes(dealerStudioDelivery.value?.status));
+const retryingCrm = ref(false);
 
-const openCrmModal = () => {
-  if (enquiry.value) {
-    crmForm.crmRef = enquiry.value.crmRef || '';
-    crmForm.externalRef = enquiry.value.externalRef || '';
-    crmForm.synced = enquiry.value.syncedToCrm ?? false;
-  }
-  crmDialogOpen.value = true;
-};
-
-const submitCrmSync = async () => {
-  savingCrm.value = true;
+const retryDealerStudioDelivery = async () => {
+  retryingCrm.value = true;
   try {
-    await $fetch(`/api/admin/enquiries/${enquiryId}/crm`, {
+    await $fetch(`/api/admin/integrations/dealer-studio/${enquiryId}/retry`, {
       method: 'POST',
-      body: {
-        crmRef: crmForm.crmRef.trim() || null,
-        externalRef: crmForm.externalRef.trim() || null,
-        synced: crmForm.synced,
-      },
     });
-    toast.success('External CRM details saved');
-    crmDialogOpen.value = false;
+    toast.success('Dealer Studio delivery retried');
     await refresh();
-  } catch (err) {
-    console.error('External CRM sync failed', err);
-    toast.error('Unable to save external CRM details');
+  } catch (err: any) {
+    console.error('Dealer Studio retry failed', err);
+    toast.error(err?.data?.message || err?.message || 'Unable to retry Dealer Studio delivery');
   } finally {
-    savingCrm.value = false;
+    retryingCrm.value = false;
   }
 };
 </script>

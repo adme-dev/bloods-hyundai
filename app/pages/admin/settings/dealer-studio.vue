@@ -1,0 +1,859 @@
+<template>
+  <div class="space-y-6">
+    <AdminPageHeader
+      title="Dealer Studio LMS"
+      description="Send every valid website and inbound lead to Dealer Studio, with delivery tracking and safe retries."
+      eyebrow="Integrations"
+    >
+      <template #actions>
+        <Button variant="outline" :disabled="pending" @click="refresh">
+          <RefreshCw class="mr-2 h-4 w-4" /> Refresh
+        </Button>
+      </template>
+    </AdminPageHeader>
+
+    <div v-if="pending" class="flex min-h-64 items-center justify-center rounded-xl border bg-card">
+      <div class="text-center">
+        <Loader2 class="mx-auto h-7 w-7 animate-spin text-muted-foreground" />
+        <p class="mt-3 text-sm text-muted-foreground">Loading integration status…</p>
+      </div>
+    </div>
+
+    <Alert v-else-if="error" variant="destructive">
+      <AlertTriangle class="h-4 w-4" />
+      <AlertTitle>Could not load Dealer Studio</AlertTitle>
+      <AlertDescription class="space-y-3">
+        <p>{{ error.message || 'The integration status is unavailable.' }}</p>
+        <Button variant="outline" size="sm" @click="refresh">Try again</Button>
+      </AlertDescription>
+    </Alert>
+
+    <template v-else>
+      <Alert v-if="!integration?.credentialConfigured" variant="destructive">
+        <KeyRound class="h-4 w-4" />
+        <AlertTitle>Dealer Studio API key required</AlertTitle>
+        <AlertDescription>
+          Save and verify the dealer's key below before enabling lead delivery. An existing
+          <code>DEALER_STUDIO_API_KEY</code> in the server environment also remains supported as a fallback.
+        </AlertDescription>
+      </Alert>
+
+      <Alert v-else-if="integration?.settings.sandboxMode" class="border-amber-500/40 bg-amber-500/10">
+        <FlaskConical class="h-4 w-4 text-amber-700 dark:text-amber-400" />
+        <AlertTitle>Sandbox mode is active</AlertTitle>
+        <AlertDescription>
+          Automatic delivery of real enquiries is locked off. Only an explicit synthetic test lead can be sent to
+          {{ integration.settings.sandboxDealershipName || 'the saved test dealership' }}.
+        </AlertDescription>
+      </Alert>
+
+      <Alert v-else-if="integration?.settings.enabled" class="border-emerald-500/30 bg-emerald-500/5">
+        <CircleCheckBig class="h-4 w-4 text-emerald-600" />
+        <AlertTitle>Lead delivery is active</AlertTitle>
+        <AlertDescription>
+          New leads are queued automatically for {{ integration.settings.dealershipName }} · {{ integration.settings.locationName }}.
+        </AlertDescription>
+      </Alert>
+
+      <Alert v-else>
+        <CirclePause class="h-4 w-4" />
+        <AlertTitle>Lead delivery is paused</AlertTitle>
+        <AlertDescription>Test the credential, choose the authorised destination, then enable delivery.</AlertDescription>
+      </Alert>
+
+      <section aria-label="Dealer Studio delivery summary" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardContent class="p-5">
+            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total queued</p>
+            <p class="mt-2 text-3xl font-semibold tabular-nums">{{ integration?.summary.total ?? 0 }}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent class="p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Synced</p>
+                <p class="mt-2 text-3xl font-semibold tabular-nums">{{ integration?.summary.synced ?? 0 }}</p>
+              </div>
+              <CircleCheckBig class="h-5 w-5 text-emerald-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent class="p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Pending</p>
+                <p class="mt-2 text-3xl font-semibold tabular-nums">{{ integration?.summary.pending ?? 0 }}</p>
+              </div>
+              <Clock3 class="h-5 w-5 text-amber-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent class="p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Needs attention</p>
+                <p class="mt-2 text-3xl font-semibold tabular-nums">{{ integration?.summary.failed ?? 0 }}</p>
+              </div>
+              <TriangleAlert class="h-5 w-5 text-destructive" />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-label="Dealer Studio credentials" class="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>API credential</CardTitle>
+                <CardDescription>Securely connect this dealer to their Dealer Studio account.</CardDescription>
+              </div>
+              <Badge :variant="credentialBadgeVariant">{{ credentialSourceLabel }}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-5">
+            <Alert v-if="!integration?.credentialStorageReady && integration?.credentialSource !== 'environment'" variant="destructive">
+              <AlertTriangle class="h-4 w-4" />
+              <AlertDescription>
+                Secure key storage is unavailable. Configure <code>DEALER_CREDENTIALS_ENCRYPTION_KEY</code>
+                in the hosting environment before saving a key here.
+              </AlertDescription>
+            </Alert>
+
+            <div v-if="integration?.credentialConfigured" class="rounded-lg border bg-muted/30 p-4">
+              <p class="text-sm font-medium">
+                {{ integration.credentialSource === 'admin' ? 'Admin-managed credential' : 'Environment-managed credential' }}
+              </p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                <template v-if="integration.credentialSource === 'admin'">
+                  Stored encrypted {{ integration.credentialHint || '' }} · updated {{ formatDate(integration.credentialUpdatedAt) }}
+                </template>
+                <template v-else>
+                  Supplied by <code>DEALER_STUDIO_API_KEY</code> in the hosting environment.
+                </template>
+              </p>
+            </div>
+
+            <form class="space-y-3" @submit.prevent="saveCredential">
+              <div class="space-y-2">
+                <Label for="dealer-studio-api-key">
+                  {{ integration?.credentialSource === 'admin' ? 'Replace API key' : 'Dealer Studio API key' }}
+                </Label>
+                <Input
+                  id="dealer-studio-api-key"
+                  v-model="credentialDraft"
+                  type="password"
+                  autocomplete="new-password"
+                  spellcheck="false"
+                  placeholder="Paste the dealer's API key"
+                  :disabled="credentialSaving || !integration?.credentialStorageReady"
+                />
+                <p class="text-xs text-muted-foreground">
+                  The key is verified, encrypted at rest and never displayed again after saving.
+                </p>
+              </div>
+
+              <Alert v-if="credentialError" variant="destructive">
+                <AlertTriangle class="h-4 w-4" />
+                <AlertDescription>{{ credentialError }}</AlertDescription>
+              </Alert>
+
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <Button
+                  v-if="integration?.credentialSource === 'admin'"
+                  type="button"
+                  variant="ghost"
+                  class="text-destructive hover:text-destructive"
+                  :disabled="credentialSaving"
+                  @click="removeCredential"
+                >
+                  <Trash2 class="mr-2 h-4 w-4" /> Remove admin key
+                </Button>
+                <span v-else />
+                <Button
+                  type="submit"
+                  :disabled="credentialSaving || credentialDraft.trim().length < 8 || !integration?.credentialStorageReady"
+                >
+                  <Loader2 v-if="credentialSaving" class="mr-2 h-4 w-4 animate-spin" />
+                  <ShieldCheck v-else class="mr-2 h-4 w-4" />
+                  {{ credentialSaving ? 'Verifying…' : 'Save & verify key' }}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>Scheduled delivery security</CardTitle>
+                <CardDescription>Protects the background job that sends queued leads.</CardDescription>
+              </div>
+              <Badge :variant="integration?.cronSecretConfigured ? 'default' : 'destructive'">
+                {{ integration?.cronSecretConfigured ? 'Configured' : 'Required' }}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="flex gap-3 rounded-lg border bg-muted/30 p-4">
+              <ServerCog class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p class="text-sm font-medium"><code>DEALER_STUDIO_CRON_SECRET</code></p>
+                <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  This secret remains in the hosting environment because the external scheduled function must possess it
+                  before it can securely call this application. It is intentionally not editable or visible in the admin.
+                </p>
+              </div>
+            </div>
+            <Alert v-if="!integration?.cronSecretConfigured" variant="destructive">
+              <AlertTriangle class="h-4 w-4" />
+              <AlertDescription>
+                Add a strong, unique cron secret to the application and scheduled-function environments before activating delivery.
+              </AlertDescription>
+            </Alert>
+            <p v-else class="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+              <CircleCheckBig class="h-4 w-4" /> Scheduled delivery authentication is configured.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>{{ form.sandboxMode ? 'Sandbox setup' : 'Connection setup' }}</CardTitle>
+                <CardDescription>Only dealerships, locations and users authorised for this API key can be selected.</CardDescription>
+              </div>
+              <Badge :variant="form.sandboxMode ? 'outline' : integration?.settings.enabled ? 'default' : 'secondary'">
+                {{ form.sandboxMode ? 'Sandbox' : integration?.settings.enabled ? 'Enabled' : 'Disabled' }}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-6">
+            <div>
+              <p class="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Environment</p>
+              <div class="inline-flex rounded-lg border bg-muted/30 p-1" role="group" aria-label="Dealer Studio environment">
+                <Button
+                  type="button"
+                  size="sm"
+                  :variant="form.sandboxMode ? 'ghost' : 'default'"
+                  :aria-pressed="!form.sandboxMode"
+                  @click="setMode(false)"
+                >
+                  <RadioTower class="mr-2 h-4 w-4" /> Production
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  :variant="form.sandboxMode ? 'default' : 'ghost'"
+                  :aria-pressed="form.sandboxMode"
+                  @click="setMode(true)"
+                >
+                  <FlaskConical class="mr-2 h-4 w-4" /> Sandbox mode
+                </Button>
+              </div>
+            </div>
+
+            <Alert v-if="form.sandboxMode" class="border-amber-500/40 bg-amber-500/10">
+              <ShieldCheck class="h-4 w-4 text-amber-700 dark:text-amber-400" />
+              <AlertTitle>Real customer leads are isolated</AlertTitle>
+              <AlertDescription>
+                Sandbox mode forces automatic delivery off. The test action below generates a labelled synthetic lead
+                on the server and never reads from the customer or enquiry database.
+              </AlertDescription>
+            </Alert>
+
+            <div class="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm font-medium">Verify API access</p>
+                <p class="mt-1 text-xs text-muted-foreground">Checks authentication, <code>create:lead</code> permission and authorised dealerships.</p>
+              </div>
+              <Button
+                variant="outline"
+                :disabled="testing || !integration?.credentialConfigured"
+                @click="testConnection"
+              >
+                <Loader2 v-if="testing" class="mr-2 h-4 w-4 animate-spin" />
+                <PlugZap v-else class="mr-2 h-4 w-4" />
+                {{ testing ? 'Testing…' : 'Test connection' }}
+              </Button>
+            </div>
+
+            <Alert v-if="connectionMessage" :variant="connectionSucceeded ? 'default' : 'destructive'">
+              <CircleCheckBig v-if="connectionSucceeded" class="h-4 w-4" />
+              <AlertTriangle v-else class="h-4 w-4" />
+              <AlertDescription>{{ connectionMessage }}</AlertDescription>
+            </Alert>
+
+            <div class="grid gap-5 md:grid-cols-2">
+              <div class="space-y-2">
+                <Label for="dealership">{{ form.sandboxMode ? 'Sandbox dealership' : 'Authorised dealership' }}</Label>
+                <Select
+                  :model-value="form.dealershipId"
+                  :disabled="!authorisedDealerships.length"
+                  @update:model-value="selectDealership"
+                >
+                  <SelectTrigger id="dealership">
+                    <SelectValue :placeholder="storedDealershipLabel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="dealership in authorisedDealerships" :key="dealership.id" :value="String(dealership.id)">
+                      {{ dealership.name }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p class="text-xs text-muted-foreground">
+                  {{ form.sandboxMode ? 'Choose the test dealership supplied by Dealer Studio.' : 'Run the connection test to refresh authorised choices.' }}
+                </p>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="location">Default location</Label>
+                <Select :model-value="form.locationId" :disabled="!selectedDealership" @update:model-value="selectLocation">
+                  <SelectTrigger id="location">
+                    <SelectValue :placeholder="storedLocationLabel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="location in availableLocations" :key="location.id" :value="String(location.id)">
+                      {{ location.name }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p class="text-xs text-muted-foreground">
+                  {{ form.sandboxMode ? 'Synthetic test leads are delivered only to this location.' : 'Every lead is delivered to this Dealer Studio location.' }}
+                </p>
+              </div>
+
+              <div class="space-y-2 md:col-span-2">
+                <Label for="salesperson">Default salesperson (optional)</Label>
+                <Select v-model="form.defaultUserEmail" :disabled="!selectedDealership">
+                  <SelectTrigger id="salesperson">
+                    <SelectValue placeholder="Leave unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Leave unassigned</SelectItem>
+                    <SelectItem v-for="person in availableUsers" :key="person.id" :value="person.email">
+                      {{ person.name }} · {{ person.email }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div v-if="form.sandboxMode" class="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+              <Checkbox
+                id="sandbox-confirmed"
+                :checked="form.sandboxConfirmed"
+                @update:checked="(checked) => (form.sandboxConfirmed = checked === true)"
+              />
+              <div class="space-y-1">
+                <Label for="sandbox-confirmed">I confirm this is a Dealer Studio-provided test dealership</Label>
+                <p class="text-xs text-muted-foreground">
+                  Dealer Studio must add the sandbox dealership to this API key. The configured production dealership cannot be reused here.
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <Alert v-if="form.sandboxMode">
+              <CirclePause class="h-4 w-4" />
+              <AlertDescription>Automatic lead delivery is locked off until Production mode is restored and explicitly enabled.</AlertDescription>
+            </Alert>
+
+            <div v-else class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="space-y-1">
+                <Label for="delivery-enabled">Automatic lead delivery</Label>
+                <p class="text-xs text-muted-foreground">When enabled, every new valid lead is queued immediately.</p>
+              </div>
+              <Switch
+                id="delivery-enabled"
+                :model-value="form.enabled"
+                :disabled="!integration?.credentialConfigured"
+                @update:model-value="(value) => (form.enabled = value)"
+              />
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t pt-5">
+              <p class="text-xs text-muted-foreground">
+                {{ form.sandboxMode ? 'Sandbox confirmed' : 'Last verified' }}:
+                {{ formatDate(form.sandboxMode ? integration?.settings.sandboxConfirmedAt : integration?.settings.lastTestedAt) }}
+              </p>
+              <Button :disabled="saving || !canSave" @click="saveSettings">
+                <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
+                <Save v-else class="mr-2 h-4 w-4" />
+                {{ saving ? 'Saving…' : form.sandboxMode ? 'Save sandbox destination' : 'Save connection' }}
+              </Button>
+            </div>
+
+            <div v-if="form.sandboxMode" class="space-y-4 border-t pt-5">
+              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p class="text-sm font-medium">Synthetic lead test</p>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    Sends “SANDBOX Integration Test” with no customer data and customer email disabled.
+                  </p>
+                </div>
+                <Button variant="outline" :disabled="sandboxSending || !sandboxReady" @click="sendSandboxLead">
+                  <Loader2 v-if="sandboxSending" class="mr-2 h-4 w-4 animate-spin" />
+                  <FlaskConical v-else class="mr-2 h-4 w-4" />
+                  {{ sandboxSending ? 'Sending…' : 'Send synthetic test lead' }}
+                </Button>
+              </div>
+              <Alert v-if="sandboxMessage" :variant="sandboxSucceeded ? 'default' : 'destructive'">
+                <CircleCheckBig v-if="sandboxSucceeded" class="h-4 w-4" />
+                <AlertTriangle v-else class="h-4 w-4" />
+                <AlertDescription>{{ sandboxMessage }}</AlertDescription>
+              </Alert>
+              <p v-else-if="!sandboxReady" class="text-xs text-muted-foreground">
+                Save the confirmed sandbox destination before sending a synthetic lead.
+              </p>
+              <p v-else class="text-xs text-muted-foreground">
+                Last sandbox lead: {{ integration?.settings.sandboxLastLeadId || 'Not yet' }} ·
+                {{ formatDate(integration?.settings.sandboxLastSentAt) }}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card class="h-fit">
+          <CardHeader>
+            <CardTitle>Delivery rules</CardTitle>
+            <CardDescription>Controls that prevent silent lead loss and accidental duplicates.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul class="space-y-4 text-sm">
+              <li class="flex gap-3">
+                <ShieldCheck class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>API credentials remain server-only and are never returned to this dashboard.</span>
+              </li>
+              <li class="flex gap-3">
+                <DatabaseZap class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>Leads are stored locally before export, so Dealer Studio downtime cannot lose the enquiry.</span>
+              </li>
+              <li class="flex gap-3">
+                <RefreshCw class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>Rate limits and server errors retry automatically. Ambiguous timeouts stop for manual review.</span>
+              </li>
+              <li class="flex gap-3">
+                <CircleAlert class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>Email and phone are required by Dealer Studio; invalid leads appear below with the exact issue.</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Delivery activity</CardTitle>
+          <CardDescription>The latest 25 Dealer Studio deliveries. Failed items remain visible until resolved.</CardDescription>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Enquiry</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Attempts</TableHead>
+                  <TableHead>Dealer Studio ID</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead class="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="delivery in integration?.recent || []" :key="delivery.id">
+                  <TableCell>
+                    <NuxtLink :to="`/admin/enquiries/${delivery.enquiryId}`" class="font-medium hover:underline">
+                      {{ customerName(delivery) }}
+                    </NuxtLink>
+                    <p v-if="delivery.lastError" class="mt-1 max-w-72 text-xs text-destructive" :title="delivery.lastError">
+                      {{ delivery.lastError }}
+                    </p>
+                  </TableCell>
+                  <TableCell class="capitalize">{{ formatEnquiryType(delivery.enquiryType) }}</TableCell>
+                  <TableCell>
+                    <Badge :variant="deliveryVariant(delivery.status)">{{ deliveryLabel(delivery.status) }}</Badge>
+                  </TableCell>
+                  <TableCell class="tabular-nums">{{ delivery.attempts }}</TableCell>
+                  <TableCell class="font-mono text-xs">{{ delivery.providerLeadId || '—' }}</TableCell>
+                  <TableCell class="whitespace-nowrap text-muted-foreground">{{ formatDate(delivery.updatedAt) }}</TableCell>
+                  <TableCell class="text-right">
+                    <Button
+                      v-if="isRetryableByOperator(delivery.status)"
+                      variant="outline"
+                      size="sm"
+                      :disabled="retryingId === delivery.enquiryId"
+                      @click="retryDelivery(delivery.enquiryId)"
+                    >
+                      <Loader2 v-if="retryingId === delivery.enquiryId" class="mr-2 h-3.5 w-3.5 animate-spin" />
+                      <RotateCcw v-else class="mr-2 h-3.5 w-3.5" />
+                      Retry
+                    </Button>
+                    <span v-else class="text-xs text-muted-foreground">—</span>
+                  </TableCell>
+                </TableRow>
+                <TableRow v-if="!(integration?.recent?.length)">
+                  <TableCell colspan="7" class="h-28 text-center text-muted-foreground">
+                    No delivery attempts yet. New leads will appear here after the integration is enabled.
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, reactive, ref, watch } from 'vue';
+import {
+  AlertTriangle,
+  CircleAlert,
+  CircleCheckBig,
+  CirclePause,
+  Clock3,
+  DatabaseZap,
+  FlaskConical,
+  KeyRound,
+  Loader2,
+  PlugZap,
+  RadioTower,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  ServerCog,
+  ShieldCheck,
+  Trash2,
+  TriangleAlert,
+} from 'lucide-vue-next';
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Checkbox } from '~/components/ui/checkbox';
+import { Input } from '~/components/ui/input';
+import { Label } from '~/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
+import { Separator } from '~/components/ui/separator';
+import { Switch } from '~/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { useToast } from '~/composables/useToast';
+
+definePageMeta({ layout: 'admin', middleware: 'auth' });
+
+type Dealership = {
+  id: number;
+  name: string;
+  slug: string;
+  locations: Array<{ id: number; name: string; locationType: string | null }>;
+  users: Array<{ id: number; name: string; email: string }>;
+};
+
+type Delivery = {
+  id: string;
+  enquiryId: string;
+  status: string;
+  attempts: number;
+  providerLeadId: string | null;
+  lastError: string | null;
+  updatedAt: string;
+  customerFirstName: string | null;
+  customerLastName: string | null;
+  enquiryType: string;
+};
+
+type IntegrationResponse = {
+  credentialConfigured: boolean;
+  credentialSource: 'admin' | 'environment' | 'none';
+  credentialHint: string | null;
+  credentialUpdatedAt: string | null;
+  credentialStorageReady: boolean;
+  cronSecretConfigured: boolean;
+  settings: {
+    enabled: boolean;
+    dealershipId: number | null;
+    dealershipName: string | null;
+    locationId: number | null;
+    locationName: string | null;
+    defaultUserEmail: string | null;
+    lastTestedAt: string | null;
+    sandboxMode: boolean;
+    sandboxDealershipId: number | null;
+    sandboxDealershipName: string | null;
+    sandboxLocationId: number | null;
+    sandboxLocationName: string | null;
+    sandboxDefaultUserEmail: string | null;
+    sandboxConfirmedAt: string | null;
+    sandboxLastSentAt: string | null;
+    sandboxLastLeadId: string | null;
+    sandboxLastLeadClusterId: string | null;
+  };
+  summary: { total: number; pending: number; synced: number; failed: number };
+  recent: Delivery[];
+};
+
+const { toast } = useToast();
+const { data: integration, pending, error, refresh } = await useFetch<IntegrationResponse>('/api/admin/integrations/dealer-studio');
+
+const form = reactive({
+  sandboxMode: false,
+  sandboxConfirmed: false,
+  enabled: false,
+  dealershipId: '',
+  locationId: '',
+  defaultUserEmail: '__none__',
+});
+const authorisedDealerships = ref<Dealership[]>([]);
+const credentialDraft = ref('');
+const credentialSaving = ref(false);
+const credentialError = ref('');
+const testing = ref(false);
+const saving = ref(false);
+const sandboxSending = ref(false);
+const sandboxMessage = ref('');
+const sandboxSucceeded = ref(false);
+const retryingId = ref('');
+const connectionMessage = ref('');
+const connectionSucceeded = ref(false);
+
+watch(() => integration.value?.settings, (settings) => {
+  if (!settings) return;
+  loadMode(settings.sandboxMode);
+}, { immediate: true });
+
+const selectedDealership = computed(() =>
+  authorisedDealerships.value.find(item => item.id === Number(form.dealershipId)) || null,
+);
+const availableLocations = computed(() => selectedDealership.value?.locations || []);
+const availableUsers = computed(() => selectedDealership.value?.users || []);
+const storedDealershipLabel = computed(() => {
+  const settings = integration.value?.settings;
+  return (form.sandboxMode ? settings?.sandboxDealershipName : settings?.dealershipName) || 'Test connection to choose';
+});
+const storedLocationLabel = computed(() => {
+  const settings = integration.value?.settings;
+  return (form.sandboxMode ? settings?.sandboxLocationName : settings?.locationName) || 'Choose a location';
+});
+const credentialSourceLabel = computed(() => ({
+  admin: 'Admin managed',
+  environment: 'Environment managed',
+  none: 'Not configured',
+}[integration.value?.credentialSource || 'none']));
+const credentialBadgeVariant = computed<'default' | 'secondary' | 'destructive'>(() => {
+  if (integration.value?.credentialSource === 'admin') return 'default';
+  if (integration.value?.credentialSource === 'environment') return 'secondary';
+  return 'destructive';
+});
+const canSave = computed(() => {
+  if (form.sandboxMode) {
+    return Boolean(integration.value?.credentialConfigured
+      && form.dealershipId
+      && form.locationId
+      && form.sandboxConfirmed);
+  }
+  if (!form.enabled) return true;
+  return Boolean(integration.value?.credentialConfigured && form.dealershipId && form.locationId);
+});
+const sandboxReady = computed(() => {
+  const settings = integration.value?.settings;
+  return Boolean(settings?.sandboxMode
+    && integration.value?.credentialConfigured
+    && settings.sandboxConfirmedAt
+    && String(settings.sandboxDealershipId || '') === form.dealershipId
+    && String(settings.sandboxLocationId || '') === form.locationId
+    && (settings.sandboxDefaultUserEmail || '__none__') === form.defaultUserEmail);
+});
+
+function loadMode(sandboxMode: boolean) {
+  const settings = integration.value?.settings;
+  if (!settings) return;
+  form.sandboxMode = sandboxMode;
+  form.enabled = sandboxMode ? false : settings.enabled;
+  form.dealershipId = String(sandboxMode ? settings.sandboxDealershipId || '' : settings.dealershipId || '');
+  form.locationId = String(sandboxMode ? settings.sandboxLocationId || '' : settings.locationId || '');
+  form.defaultUserEmail = (sandboxMode ? settings.sandboxDefaultUserEmail : settings.defaultUserEmail) || '__none__';
+  form.sandboxConfirmed = sandboxMode && Boolean(settings.sandboxConfirmedAt);
+  sandboxMessage.value = '';
+}
+
+const setMode = (sandboxMode: boolean) => {
+  loadMode(sandboxMode);
+  connectionMessage.value = '';
+};
+
+const selectDealership = (value: unknown) => {
+  form.dealershipId = typeof value === 'string' ? value : '';
+  if (form.sandboxMode) form.sandboxConfirmed = false;
+  const dealership = authorisedDealerships.value.find(item => item.id === Number(form.dealershipId));
+  if (!dealership?.locations.some(item => item.id === Number(form.locationId))) {
+    const onlyLocation = dealership?.locations.length === 1 ? dealership.locations.at(0) : null;
+    form.locationId = onlyLocation ? String(onlyLocation.id) : '';
+  }
+  if (form.defaultUserEmail !== '__none__' && !dealership?.users.some(item => item.email === form.defaultUserEmail)) {
+    form.defaultUserEmail = '__none__';
+  }
+};
+
+const selectLocation = (value: unknown) => {
+  form.locationId = typeof value === 'string' ? value : '';
+  if (form.sandboxMode) form.sandboxConfirmed = false;
+};
+
+const saveCredential = async () => {
+  credentialSaving.value = true;
+  credentialError.value = '';
+  try {
+    const result = await $fetch<{ dealerships: Dealership[] }>('/api/admin/integrations/dealer-studio/credential', {
+      method: 'PUT',
+      body: { apiKey: credentialDraft.value },
+    });
+    credentialDraft.value = '';
+    authorisedDealerships.value = result.dealerships;
+    const onlyDealership = result.dealerships.length === 1 ? result.dealerships.at(0) : null;
+    if (onlyDealership && !form.dealershipId) selectDealership(String(onlyDealership.id));
+    toast.success('Dealer Studio API key verified and saved');
+    await refresh();
+  } catch (err: any) {
+    credentialError.value = err?.data?.message || err?.message || 'Unable to verify and save this API key';
+  } finally {
+    credentialSaving.value = false;
+  }
+};
+
+const removeCredential = async () => {
+  if (!window.confirm('Remove the admin-managed Dealer Studio key? Disable delivery first unless an environment fallback is configured.')) return;
+  credentialSaving.value = true;
+  credentialError.value = '';
+  try {
+    await $fetch('/api/admin/integrations/dealer-studio/credential', { method: 'DELETE' });
+    credentialDraft.value = '';
+    authorisedDealerships.value = [];
+    toast.success('Admin-managed Dealer Studio key removed');
+    await refresh();
+  } catch (err: any) {
+    credentialError.value = err?.data?.message || err?.message || 'Unable to remove the Dealer Studio key';
+  } finally {
+    credentialSaving.value = false;
+  }
+};
+
+const testConnection = async () => {
+  testing.value = true;
+  connectionMessage.value = '';
+  try {
+    const result = await $fetch<{ permissions: string[]; dealerships: Dealership[] }>('/api/admin/integrations/dealer-studio/test', {
+      method: 'POST',
+    });
+    authorisedDealerships.value = result.dealerships;
+    const onlyDealership = result.dealerships.length === 1 ? result.dealerships.at(0) : null;
+    if (onlyDealership && !form.dealershipId) selectDealership(String(onlyDealership.id));
+    connectionSucceeded.value = true;
+    connectionMessage.value = `Connection verified. ${result.dealerships.length} authorised dealership${result.dealerships.length === 1 ? '' : 's'} available.`;
+  } catch (err: any) {
+    connectionSucceeded.value = false;
+    connectionMessage.value = err?.data?.message || err?.message || 'Dealer Studio rejected the connection test.';
+  } finally {
+    testing.value = false;
+  }
+};
+
+const saveSettings = async () => {
+  saving.value = true;
+  try {
+    await $fetch('/api/admin/integrations/dealer-studio', {
+      method: 'PUT',
+      body: {
+        enabled: form.sandboxMode ? false : form.enabled,
+        sandboxMode: form.sandboxMode,
+        sandboxConfirmed: form.sandboxMode ? form.sandboxConfirmed : undefined,
+        dealershipId: form.dealershipId ? Number(form.dealershipId) : null,
+        locationId: form.locationId ? Number(form.locationId) : null,
+        defaultUserEmail: form.defaultUserEmail === '__none__' ? null : form.defaultUserEmail,
+      },
+    });
+    const successMessage = form.sandboxMode
+      ? 'Dealer Studio sandbox destination saved'
+      : form.enabled ? 'Dealer Studio delivery enabled' : 'Dealer Studio delivery paused';
+    toast.success(successMessage);
+    await refresh();
+  } catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Unable to save Dealer Studio settings');
+  } finally {
+    saving.value = false;
+  }
+};
+
+const sendSandboxLead = async () => {
+  sandboxSending.value = true;
+  sandboxMessage.value = '';
+  try {
+    const result = await $fetch<{ leadId: number; leadClusterId: number; recorded: boolean }>('/api/admin/integrations/dealer-studio/sandbox-leads', {
+      method: 'POST',
+    });
+    await refresh();
+    sandboxSucceeded.value = true;
+    sandboxMessage.value = result.recorded
+      ? `Synthetic lead created successfully. Dealer Studio lead ${result.leadId}, cluster ${result.leadClusterId}.`
+      : `Dealer Studio created lead ${result.leadId}, but local test history could not be updated. Do not resend; check the test dealership.`;
+    toast.success('Dealer Studio sandbox lead created');
+  } catch (err: any) {
+    sandboxSucceeded.value = false;
+    sandboxMessage.value = err?.data?.message || err?.message || 'Unable to send the sandbox lead';
+  } finally {
+    sandboxSending.value = false;
+  }
+};
+
+const retryDelivery = async (enquiryId: string) => {
+  retryingId.value = enquiryId;
+  try {
+    await $fetch(`/api/admin/integrations/dealer-studio/${enquiryId}/retry`, { method: 'POST' });
+    toast.success('Dealer Studio delivery retried');
+    await refresh();
+  } catch (err: any) {
+    toast.error(err?.data?.message || err?.message || 'Unable to retry this delivery');
+  } finally {
+    retryingId.value = '';
+  }
+};
+
+const isRetryableByOperator = (status: string) => [
+  'failed_validation',
+  'failed_retryable',
+  'failed_permanent',
+].includes(status);
+
+const deliveryLabel = (status: string) => ({
+  pending: 'Pending',
+  sending: 'Sending',
+  synced: 'Synced',
+  failed_validation: 'Invalid lead',
+  failed_retryable: 'Retry scheduled',
+  failed_permanent: 'Manual review',
+}[status] || status.replaceAll('_', ' '));
+
+const deliveryVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  if (status === 'synced') return 'default';
+  if (status.startsWith('failed_')) return 'destructive';
+  if (status === 'pending' || status === 'sending') return 'secondary';
+  return 'outline';
+};
+
+const customerName = (delivery: Delivery) =>
+  [delivery.customerFirstName, delivery.customerLastName].filter(Boolean).join(' ') || 'Unnamed customer';
+const formatEnquiryType = (value: string) => value.replaceAll('_', ' ');
+const formatDate = (value?: string | null) => value
+  ? new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  : 'Not yet';
+</script>
