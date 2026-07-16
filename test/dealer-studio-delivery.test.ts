@@ -5,6 +5,7 @@ import {
   deliveryFailureUpdate,
   planDealerStudioQueue,
 } from '../server/utils/dealerStudio/deliveryPolicy.ts';
+import { buildDealerStudioSandboxLead } from '../server/utils/dealerStudio/sandbox.ts';
 
 const configured = {
   enabled: true,
@@ -15,6 +16,17 @@ const configured = {
   locationName: 'Sales',
   defaultUserEmail: null,
   lastTestedAt: null,
+  sandboxMode: false,
+  sandboxDealershipId: null,
+  sandboxDealershipSlug: null,
+  sandboxDealershipName: null,
+  sandboxLocationId: null,
+  sandboxLocationName: null,
+  sandboxDefaultUserEmail: null,
+  sandboxConfirmedAt: null,
+  sandboxLastSentAt: null,
+  sandboxLastLeadId: null,
+  sandboxLastLeadClusterId: null,
 };
 
 const validEnquiry = {
@@ -33,6 +45,13 @@ describe('Dealer Studio delivery policy', () => {
     assert.deepEqual(planDealerStudioQueue(validEnquiry, configured), { status: 'pending', error: null });
     assert.deepEqual(planDealerStudioQueue(validEnquiry, { ...configured, enabled: false }), { status: 'skipped', error: null });
     assert.deepEqual(planDealerStudioQueue({ ...validEnquiry, archivedAt: new Date() }, configured), { status: 'skipped', error: null });
+  });
+
+  it('never queues real enquiries while sandbox mode is active', () => {
+    assert.deepEqual(planDealerStudioQueue(validEnquiry, {
+      ...configured,
+      sandboxMode: true,
+    }), { status: 'skipped', error: null });
   });
 
   it('records missing required fields as validation failures without dropping the local lead', () => {
@@ -81,6 +100,32 @@ describe('Dealer Studio delivery policy', () => {
       error: 'Unauthorized',
     }, 1, now);
     assert.equal(config.status, 'failed_permanent');
+  });
+});
+
+describe('Dealer Studio sandbox lead', () => {
+  it('uses only server-generated synthetic identity data and the confirmed sandbox destination', () => {
+    const payload = buildDealerStudioSandboxLead({
+      ...configured,
+      enabled: false,
+      sandboxMode: true,
+      sandboxDealershipId: 987,
+      sandboxDealershipSlug: 'integration-test-dealer',
+      sandboxDealershipName: 'Integration Test Dealer',
+      sandboxLocationId: 654,
+      sandboxLocationName: 'Sandbox Sales',
+      sandboxDefaultUserEmail: 'sandbox-agent@example.com',
+      sandboxConfirmedAt: '2026-07-16T00:00:00.000Z',
+    }, '7f013aa8-fe82-4d98-8685-2947cf1b3d78', new Date('2026-07-16T01:02:03.000Z'));
+
+    assert.equal(payload.lead.dealership_id, 987);
+    assert.equal(payload.lead.location_id, 654);
+    assert.equal(payload.lead.send_customer_email, false);
+    assert.equal(payload.lead.user_email, 'sandbox-agent@example.com');
+    assert.match(String(payload.lead.name), /sandbox/i);
+    assert.match(String(payload.lead.message), /do not contact/i);
+    assert.match(String(payload.lead.provider_id), /^sandbox-/);
+    assert.doesNotMatch(JSON.stringify(payload), /Jane|Citizen|0412345678|jane@example\.com/);
   });
 });
 

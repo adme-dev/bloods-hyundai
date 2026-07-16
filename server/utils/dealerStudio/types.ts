@@ -15,6 +15,17 @@ export interface DealerStudioSettings {
   locationName: string | null;
   defaultUserEmail: string | null;
   lastTestedAt: string | null;
+  sandboxMode: boolean;
+  sandboxDealershipId: number | null;
+  sandboxDealershipSlug: string | null;
+  sandboxDealershipName: string | null;
+  sandboxLocationId: number | null;
+  sandboxLocationName: string | null;
+  sandboxDefaultUserEmail: string | null;
+  sandboxConfirmedAt: string | null;
+  sandboxLastSentAt: string | null;
+  sandboxLastLeadId: string | null;
+  sandboxLastLeadClusterId: string | null;
 }
 
 export interface DealerStudioDealership {

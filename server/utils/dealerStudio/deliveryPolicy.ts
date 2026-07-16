@@ -11,7 +11,7 @@ export function planDealerStudioQueue(
   enquiry: Record<string, any>,
   settings: DealerStudioSettings,
 ): { status: 'pending' | 'failed_validation' | 'skipped'; error: string | null } {
-  if (!settings.enabled || enquiry.archivedAt) return { status: 'skipped', error: null };
+  if (settings.sandboxMode || !settings.enabled || enquiry.archivedAt) return { status: 'skipped', error: null };
   const mapped = buildDealerStudioLeadPayload(enquiry as any, settings);
   if (!mapped.ok) return { status: 'failed_validation', error: mapped.errors.join('; ') };
   return { status: 'pending', error: null };
@@ -47,4 +47,3 @@ export function deliveryFailureUpdate(
     nextAttemptAt: null,
   };
 }
-

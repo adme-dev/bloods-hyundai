@@ -54,6 +54,20 @@ describe('Dealer Studio admin API contract', () => {
     assert.match(resolver, /decryptIntegrationCredential/);
   });
 
+  it('provides an admin-only, rate-limited synthetic sandbox lead resource', () => {
+    const endpoint = source('server/api/admin/integrations/dealer-studio/sandbox-leads.post.ts');
+    const settingsEndpoint = source('server/api/admin/integrations/dealer-studio/index.put.ts');
+
+    assert.match(endpoint, /\['admin', 'dealer_admin'\]/);
+    assert.match(endpoint, /checkRateLimit/);
+    assert.match(endpoint, /buildDealerStudioSandboxLead/);
+    assert.match(endpoint, /createDealerStudioLead/);
+    assert.match(endpoint, /sandboxMode/);
+    assert.doesNotMatch(endpoint, /readBody/);
+    assert.match(settingsEndpoint, /sandboxConfirmed/);
+    assert.match(settingsEndpoint, /sandboxDealershipId/);
+  });
+
   it('tenant-scopes manual retries', () => {
     const retryEndpoint = source('server/api/admin/integrations/dealer-studio/[enquiryId]/retry.post.ts');
     assert.match(retryEndpoint, /user\.dealerId/);

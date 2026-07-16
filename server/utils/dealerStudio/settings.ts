@@ -9,6 +9,17 @@ export const DEFAULT_DEALER_STUDIO_SETTINGS: DealerStudioSettings = {
   locationName: null,
   defaultUserEmail: null,
   lastTestedAt: null,
+  sandboxMode: false,
+  sandboxDealershipId: null,
+  sandboxDealershipSlug: null,
+  sandboxDealershipName: null,
+  sandboxLocationId: null,
+  sandboxLocationName: null,
+  sandboxDefaultUserEmail: null,
+  sandboxConfirmedAt: null,
+  sandboxLastSentAt: null,
+  sandboxLastLeadId: null,
+  sandboxLastLeadClusterId: null,
 };
 
 export function readDealerStudioSettings(settings: unknown): DealerStudioSettings {
@@ -26,6 +37,17 @@ export function readDealerStudioSettings(settings: unknown): DealerStudioSetting
     locationName: optionalString(stored.locationName),
     defaultUserEmail: optionalString(stored.defaultUserEmail),
     lastTestedAt: optionalString(stored.lastTestedAt),
+    sandboxMode: stored.sandboxMode === true,
+    sandboxDealershipId: positiveInteger(stored.sandboxDealershipId),
+    sandboxDealershipSlug: optionalString(stored.sandboxDealershipSlug),
+    sandboxDealershipName: optionalString(stored.sandboxDealershipName),
+    sandboxLocationId: positiveInteger(stored.sandboxLocationId),
+    sandboxLocationName: optionalString(stored.sandboxLocationName),
+    sandboxDefaultUserEmail: optionalString(stored.sandboxDefaultUserEmail),
+    sandboxConfirmedAt: optionalString(stored.sandboxConfirmedAt),
+    sandboxLastSentAt: optionalString(stored.sandboxLastSentAt),
+    sandboxLastLeadId: optionalString(stored.sandboxLastLeadId),
+    sandboxLastLeadClusterId: optionalString(stored.sandboxLastLeadClusterId),
   };
 }
 
@@ -44,10 +66,19 @@ export function writeDealerStudioSettings(
 }
 
 export function validateDealerStudioSettings(value: DealerStudioSettings): string[] {
-  if (!value.enabled) return [];
+  if (!value.enabled || value.sandboxMode) return [];
   const errors: string[] = [];
   if (!value.dealershipId || !value.dealershipSlug) errors.push('An authorised dealership is required');
   if (!value.locationId) errors.push('A dealership location is required');
+  return errors;
+}
+
+export function validateDealerStudioSandboxSettings(value: DealerStudioSettings): string[] {
+  const errors: string[] = [];
+  if (!value.sandboxMode) errors.push('Sandbox mode is not active');
+  if (!value.sandboxDealershipId || !value.sandboxDealershipSlug) errors.push('A confirmed sandbox dealership is required');
+  if (!value.sandboxLocationId) errors.push('A sandbox dealership location is required');
+  if (!value.sandboxConfirmedAt) errors.push('The sandbox dealership confirmation is required');
   return errors;
 }
 
@@ -64,4 +95,3 @@ function optionalString(value: unknown): string | null {
 function positiveInteger(value: unknown): number | null {
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
 }
-

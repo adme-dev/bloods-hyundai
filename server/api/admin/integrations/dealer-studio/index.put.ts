@@ -3,7 +3,11 @@ import { dealers } from '../../../../database/schema';
 import { db } from '../../../../utils/db';
 import { fetchDealerStudioApiKeyDetails } from '../../../../utils/dealerStudio/client';
 import { resolveDealerStudioApiKey } from '../../../../utils/dealerStudio/credential';
-import { writeDealerStudioSettings } from '../../../../utils/dealerStudio/settings';
+import {
+  readDealerStudioSettings,
+  writeDealerStudioSettings,
+} from '../../../../utils/dealerStudio/settings';
+import type { DealerStudioApiKeyDetails } from '../../../../utils/dealerStudio/types';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -14,6 +18,8 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<{
     enabled?: boolean;
+    sandboxMode?: boolean;
+    sandboxConfirmed?: boolean;
     dealershipId?: number | null;
     locationId?: number | null;
     defaultUserEmail?: string | null;
@@ -21,24 +27,23 @@ export default defineEventHandler(async (event) => {
   if (typeof body?.enabled !== 'boolean') {
     throw createError({ statusCode: 422, message: 'Enabled state is required' });
   }
+  const sandboxMode = body.sandboxMode === true;
+  if (sandboxMode && body.enabled) {
+    throw createError({ statusCode: 422, message: 'Automatic lead delivery cannot be enabled in sandbox mode' });
+  }
 
   const [dealer] = await db.select({ settings: dealers.settings })
     .from(dealers)
     .where(eq(dealers.id, user.dealerId))
     .limit(1);
   if (!dealer) throw createError({ statusCode: 404, message: 'Dealer not found' });
+  const current = readDealerStudioSettings(dealer.settings);
 
-  if (!body.enabled) {
-    const current = (dealer.settings as Record<string, any>)?.externalCrm || {};
+  if (!sandboxMode && !body.enabled) {
     const updatedSettings = writeDealerStudioSettings(dealer.settings, {
+      ...current,
       enabled: false,
-      dealershipId: positiveInteger(current.dealershipId),
-      dealershipSlug: optionalString(current.dealershipSlug),
-      dealershipName: optionalString(current.dealershipName),
-      locationId: positiveInteger(current.locationId),
-      locationName: optionalString(current.locationName),
-      defaultUserEmail: optionalString(current.defaultUserEmail),
-      lastTestedAt: optionalString(current.lastTestedAt),
+      sandboxMode: false,
     });
     await db.update(dealers).set({ settings: updatedSettings, updatedAt: new Date() })
       .where(eq(dealers.id, user.dealerId));
@@ -51,7 +56,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, message: 'Dealership and location are required' });
   }
 
-  let details;
+  let details: DealerStudioApiKeyDetails;
   try {
     const apiKey = await resolveDealerStudioApiKey(user.dealerId);
     details = await fetchDealerStudioApiKeyDetails(apiKey);
@@ -70,8 +75,41 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 422, message: 'Selected salesperson does not belong to the dealership' });
   }
 
+  if (sandboxMode) {
+    if (body.sandboxConfirmed !== true) {
+      throw createError({ statusCode: 422, message: 'Confirm that the selected dealership is a Dealer Studio-provided test dealership' });
+    }
+    if (current.dealershipId && current.dealershipId === dealership.id) {
+      throw createError({ statusCode: 422, message: 'The production dealership cannot also be used as the sandbox destination' });
+    }
+
+    const destinationChanged = current.sandboxDealershipId !== dealership.id
+      || current.sandboxLocationId !== location.id;
+    const settings = {
+      ...current,
+      enabled: false,
+      sandboxMode: true,
+      sandboxDealershipId: dealership.id,
+      sandboxDealershipSlug: dealership.slug,
+      sandboxDealershipName: dealership.name,
+      sandboxLocationId: location.id,
+      sandboxLocationName: location.name,
+      sandboxDefaultUserEmail: defaultUserEmail,
+      sandboxConfirmedAt: new Date().toISOString(),
+      sandboxLastSentAt: destinationChanged ? null : current.sandboxLastSentAt,
+      sandboxLastLeadId: destinationChanged ? null : current.sandboxLastLeadId,
+      sandboxLastLeadClusterId: destinationChanged ? null : current.sandboxLastLeadClusterId,
+    };
+    const updatedSettings = writeDealerStudioSettings(dealer.settings, settings);
+    await db.update(dealers).set({ settings: updatedSettings, updatedAt: new Date() })
+      .where(eq(dealers.id, user.dealerId));
+    return { success: true, settings };
+  }
+
   const settings = {
+    ...current,
     enabled: true,
+    sandboxMode: false,
     dealershipId: dealership.id,
     dealershipSlug: dealership.slug,
     dealershipName: dealership.name,
