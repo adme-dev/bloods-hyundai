@@ -353,6 +353,42 @@ export const leadExportDeliveries = pgTable('lead_export_deliveries', {
 }));
 
 // ============================================================================
+// ENCRYPTED DEALER INTEGRATION CREDENTIALS
+// ============================================================================
+
+export const dealerIntegrationCredentials = pgTable('dealer_integration_credentials', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 50 }).notNull(),
+  credentialKind: varchar('credential_kind', { length: 50 }).notNull(),
+  encryptedValue: text('encrypted_value').notNull(),
+  credentialHint: varchar('credential_hint', { length: 20 }).notNull(),
+  keyVersion: integer('key_version').default(1).notNull(),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueDealerProviderKind: uniqueIndex('dealer_integration_credentials_dealer_provider_kind_key')
+    .on(table.dealerId, table.provider, table.credentialKind),
+  dealerProviderIdx: index('idx_dealer_integration_credentials_dealer_provider')
+    .on(table.dealerId, table.provider),
+}));
+
+export const dealerIntegrationCredentialAudit = pgTable('dealer_integration_credential_audit', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  dealerId: uuid('dealer_id').notNull().references(() => dealers.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 50 }).notNull(),
+  credentialKind: varchar('credential_kind', { length: 50 }).notNull(),
+  action: varchar('action', { length: 30 }).notNull(),
+  credentialHint: varchar('credential_hint', { length: 20 }),
+  actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  dealerCreatedIdx: index('idx_dealer_integration_credential_audit_dealer_created')
+    .on(table.dealerId, table.createdAt.desc()),
+}));
+
+// ============================================================================
 // EMAIL LOGS
 // ============================================================================
 
@@ -1266,5 +1302,4 @@ export type NewMarketingMetricsDaily = typeof marketingMetricsDaily.$inferInsert
 
 export type MarketingSyncRuns = typeof marketingSyncRuns.$inferSelect;
 export type NewMarketingSyncRuns = typeof marketingSyncRuns.$inferInsert;
-
 
