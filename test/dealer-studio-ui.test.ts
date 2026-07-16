@@ -10,6 +10,11 @@ describe('Dealer Studio admin setup', () => {
 
     assert.match(page, /Dealer Studio LMS/);
     assert.match(page, /DEALER_STUDIO_API_KEY/);
+    assert.match(page, /Save & verify key/);
+    assert.match(page, /type="password"/);
+    assert.match(page, /credentialSource/);
+    assert.match(page, /Scheduled delivery security/);
+    assert.match(page, /hosting environment/);
     assert.match(page, /Test connection/);
     assert.match(page, /Authorised dealership/);
     assert.match(page, /Default location/);

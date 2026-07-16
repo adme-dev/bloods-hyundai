@@ -31,10 +31,10 @@
     <template v-else>
       <Alert v-if="!integration?.credentialConfigured" variant="destructive">
         <KeyRound class="h-4 w-4" />
-        <AlertTitle>API credential required</AlertTitle>
+        <AlertTitle>Dealer Studio API key required</AlertTitle>
         <AlertDescription>
-          Add <code>DEALER_STUDIO_API_KEY</code> to the server environment, then redeploy before enabling lead delivery.
-          The credential is server-only and is never displayed or stored in dealer settings.
+          Save and verify the dealer's key below before enabling lead delivery. An existing
+          <code>DEALER_STUDIO_API_KEY</code> in the server environment also remains supported as a fallback.
         </AlertDescription>
       </Alert>
 
@@ -90,6 +90,125 @@
               </div>
               <TriangleAlert class="h-5 w-5 text-destructive" />
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-label="Dealer Studio credentials" class="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>API credential</CardTitle>
+                <CardDescription>Securely connect this dealer to their Dealer Studio account.</CardDescription>
+              </div>
+              <Badge :variant="credentialBadgeVariant">{{ credentialSourceLabel }}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-5">
+            <Alert v-if="!integration?.credentialStorageReady && integration?.credentialSource !== 'environment'" variant="destructive">
+              <AlertTriangle class="h-4 w-4" />
+              <AlertDescription>
+                Secure key storage is unavailable. Configure <code>DEALER_CREDENTIALS_ENCRYPTION_KEY</code>
+                in the hosting environment before saving a key here.
+              </AlertDescription>
+            </Alert>
+
+            <div v-if="integration?.credentialConfigured" class="rounded-lg border bg-muted/30 p-4">
+              <p class="text-sm font-medium">
+                {{ integration.credentialSource === 'admin' ? 'Admin-managed credential' : 'Environment-managed credential' }}
+              </p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                <template v-if="integration.credentialSource === 'admin'">
+                  Stored encrypted {{ integration.credentialHint || '' }} · updated {{ formatDate(integration.credentialUpdatedAt) }}
+                </template>
+                <template v-else>
+                  Supplied by <code>DEALER_STUDIO_API_KEY</code> in the hosting environment.
+                </template>
+              </p>
+            </div>
+
+            <form class="space-y-3" @submit.prevent="saveCredential">
+              <div class="space-y-2">
+                <Label for="dealer-studio-api-key">
+                  {{ integration?.credentialSource === 'admin' ? 'Replace API key' : 'Dealer Studio API key' }}
+                </Label>
+                <Input
+                  id="dealer-studio-api-key"
+                  v-model="credentialDraft"
+                  type="password"
+                  autocomplete="new-password"
+                  spellcheck="false"
+                  placeholder="Paste the dealer's API key"
+                  :disabled="credentialSaving || !integration?.credentialStorageReady"
+                />
+                <p class="text-xs text-muted-foreground">
+                  The key is verified, encrypted at rest and never displayed again after saving.
+                </p>
+              </div>
+
+              <Alert v-if="credentialError" variant="destructive">
+                <AlertTriangle class="h-4 w-4" />
+                <AlertDescription>{{ credentialError }}</AlertDescription>
+              </Alert>
+
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <Button
+                  v-if="integration?.credentialSource === 'admin'"
+                  type="button"
+                  variant="ghost"
+                  class="text-destructive hover:text-destructive"
+                  :disabled="credentialSaving"
+                  @click="removeCredential"
+                >
+                  <Trash2 class="mr-2 h-4 w-4" /> Remove admin key
+                </Button>
+                <span v-else />
+                <Button
+                  type="submit"
+                  :disabled="credentialSaving || credentialDraft.trim().length < 8 || !integration?.credentialStorageReady"
+                >
+                  <Loader2 v-if="credentialSaving" class="mr-2 h-4 w-4 animate-spin" />
+                  <ShieldCheck v-else class="mr-2 h-4 w-4" />
+                  {{ credentialSaving ? 'Verifying…' : 'Save & verify key' }}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <CardTitle>Scheduled delivery security</CardTitle>
+                <CardDescription>Protects the background job that sends queued leads.</CardDescription>
+              </div>
+              <Badge :variant="integration?.cronSecretConfigured ? 'default' : 'destructive'">
+                {{ integration?.cronSecretConfigured ? 'Configured' : 'Required' }}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="flex gap-3 rounded-lg border bg-muted/30 p-4">
+              <ServerCog class="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <p class="text-sm font-medium"><code>DEALER_STUDIO_CRON_SECRET</code></p>
+                <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  This secret remains in the hosting environment because the external scheduled function must possess it
+                  before it can securely call this application. It is intentionally not editable or visible in the admin.
+                </p>
+              </div>
+            </div>
+            <Alert v-if="!integration?.cronSecretConfigured" variant="destructive">
+              <AlertTriangle class="h-4 w-4" />
+              <AlertDescription>
+                Add a strong, unique cron secret to the application and scheduled-function environments before activating delivery.
+              </AlertDescription>
+            </Alert>
+            <p v-else class="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+              <CircleCheckBig class="h-4 w-4" /> Scheduled delivery authentication is configured.
+            </p>
           </CardContent>
         </Card>
       </section>
@@ -317,13 +436,16 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
+  ServerCog,
   ShieldCheck,
+  Trash2,
   TriangleAlert,
 } from 'lucide-vue-next';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { Separator } from '~/components/ui/separator';
@@ -356,6 +478,11 @@ type Delivery = {
 
 type IntegrationResponse = {
   credentialConfigured: boolean;
+  credentialSource: 'admin' | 'environment' | 'none';
+  credentialHint: string | null;
+  credentialUpdatedAt: string | null;
+  credentialStorageReady: boolean;
+  cronSecretConfigured: boolean;
   settings: {
     enabled: boolean;
     dealershipId: number | null;
@@ -379,6 +506,9 @@ const form = reactive({
   defaultUserEmail: '__none__',
 });
 const authorisedDealerships = ref<Dealership[]>([]);
+const credentialDraft = ref('');
+const credentialSaving = ref(false);
+const credentialError = ref('');
 const testing = ref(false);
 const saving = ref(false);
 const retryingId = ref('');
@@ -400,6 +530,16 @@ const availableLocations = computed(() => selectedDealership.value?.locations ||
 const availableUsers = computed(() => selectedDealership.value?.users || []);
 const storedDealershipLabel = computed(() => integration.value?.settings.dealershipName || 'Test connection to choose');
 const storedLocationLabel = computed(() => integration.value?.settings.locationName || 'Choose a location');
+const credentialSourceLabel = computed(() => ({
+  admin: 'Admin managed',
+  environment: 'Environment managed',
+  none: 'Not configured',
+}[integration.value?.credentialSource || 'none']));
+const credentialBadgeVariant = computed<'default' | 'secondary' | 'destructive'>(() => {
+  if (integration.value?.credentialSource === 'admin') return 'default';
+  if (integration.value?.credentialSource === 'environment') return 'secondary';
+  return 'destructive';
+});
 const canSave = computed(() => {
   if (!form.enabled) return true;
   return Boolean(integration.value?.credentialConfigured && form.dealershipId && form.locationId);
@@ -414,6 +554,44 @@ const selectDealership = (value: unknown) => {
   }
   if (form.defaultUserEmail !== '__none__' && !dealership?.users.some(item => item.email === form.defaultUserEmail)) {
     form.defaultUserEmail = '__none__';
+  }
+};
+
+const saveCredential = async () => {
+  credentialSaving.value = true;
+  credentialError.value = '';
+  try {
+    const result = await $fetch<{ dealerships: Dealership[] }>('/api/admin/integrations/dealer-studio/credential', {
+      method: 'PUT',
+      body: { apiKey: credentialDraft.value },
+    });
+    credentialDraft.value = '';
+    authorisedDealerships.value = result.dealerships;
+    const onlyDealership = result.dealerships.length === 1 ? result.dealerships.at(0) : null;
+    if (onlyDealership && !form.dealershipId) selectDealership(String(onlyDealership.id));
+    toast.success('Dealer Studio API key verified and saved');
+    await refresh();
+  } catch (err: any) {
+    credentialError.value = err?.data?.message || err?.message || 'Unable to verify and save this API key';
+  } finally {
+    credentialSaving.value = false;
+  }
+};
+
+const removeCredential = async () => {
+  if (!window.confirm('Remove the admin-managed Dealer Studio key? Disable delivery first unless an environment fallback is configured.')) return;
+  credentialSaving.value = true;
+  credentialError.value = '';
+  try {
+    await $fetch('/api/admin/integrations/dealer-studio/credential', { method: 'DELETE' });
+    credentialDraft.value = '';
+    authorisedDealerships.value = [];
+    toast.success('Admin-managed Dealer Studio key removed');
+    await refresh();
+  } catch (err: any) {
+    credentialError.value = err?.data?.message || err?.message || 'Unable to remove the Dealer Studio key';
+  } finally {
+    credentialSaving.value = false;
   }
 };
 
