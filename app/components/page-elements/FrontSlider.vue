@@ -73,6 +73,30 @@
         </div>
       </div>
 
+      <!-- Previous/next controls -->
+      <template v-if="homeSlides.length > 1">
+        <button
+          type="button"
+          class="hero-nav-button hero-nav-button--previous"
+          aria-label="Previous slide"
+          @click.stop="scrollPrevious"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="hero-nav-button hero-nav-button--next"
+          aria-label="Next slide"
+          @click.stop="scrollNext"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </template>
+
       <!-- Pagination dots -->
       <div v-if="homeSlides.length > 1" class="hero-pagination">
         <button
@@ -204,6 +228,14 @@ useHead(() => ({
 // Navigation methods
 const scrollTo = (index: number) => {
   emblaApi?.scrollTo(index);
+};
+
+const scrollPrevious = () => {
+  emblaApi?.scrollPrev();
+};
+
+const scrollNext = () => {
+  emblaApi?.scrollNext();
 };
 
 // Update selected index on slide change
@@ -455,6 +487,60 @@ onUnmounted(() => {
   background: var(--color-primary-dark, #001e3c);
 }
 
+/* Hyundai-style previous/next controls */
+.hero-nav-button {
+  position: absolute;
+  top: 50%;
+  z-index: 6;
+  display: grid;
+  width: 52px;
+  height: 64px;
+  padding: 0;
+  place-items: center;
+  color: #fff;
+  background: rgba(0, 44, 95, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 0;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.hero-slider:hover .hero-nav-button,
+.hero-nav-button:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hero-nav-button:hover {
+  background: #002c5f;
+}
+
+.hero-nav-button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -5px;
+}
+
+.hero-nav-button--previous {
+  inset-inline-start: clamp(12px, 2vw, 32px);
+}
+
+.hero-nav-button--next {
+  inset-inline-end: clamp(12px, 2vw, 32px);
+}
+
+.hero-nav-button svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
 /* Pagination styling */
 .hero-pagination {
   position: absolute;
@@ -531,6 +617,18 @@ onUnmounted(() => {
     height: 48px;
     font-size: 15px;
     line-height: 48px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hero-nav-button {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-nav-button {
+    transition: none;
   }
 }
 </style>
