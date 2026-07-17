@@ -457,11 +457,13 @@ onUnmounted(() => {
 
 /* Pagination styling */
 .hero-pagination {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 12px;
+  margin-top: 0;
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 20px;
-  position: relative;
   z-index: 5;
 }
 
@@ -475,6 +477,7 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   border-radius: 50%;
   cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
 }
 
 .pagination-dot:hover {
