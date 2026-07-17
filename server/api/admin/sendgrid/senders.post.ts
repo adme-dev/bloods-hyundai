@@ -29,10 +29,21 @@ export default defineEventHandler(async (event) => {
     country 
   } = body;
 
-  if (!fromEmail || !fromName || !nickname) {
+  const hasRequiredSenderDetails = [
+    nickname,
+    fromEmail,
+    fromName,
+    address,
+    city,
+    state,
+    zip,
+    country,
+  ].every(value => typeof value === 'string' && value.trim().length > 0);
+
+  if (!hasRequiredSenderDetails) {
     throw createError({ 
       statusCode: 400, 
-      message: 'Nickname, from email and from name are required' 
+      message: 'Sender identity and business address fields are required'
     });
   }
 
@@ -45,16 +56,16 @@ export default defineEventHandler(async (event) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        nickname,
-        from_email: fromEmail,
-        from_name: fromName,
-        reply_to: replyToEmail || fromEmail,
-        reply_to_name: replyToName || fromName,
-        address: address || '123 Main Street',
-        city: city || 'Sydney',
-        state: state || 'NSW',
-        zip: zip || '2000',
-        country: country || 'Australia',
+        nickname: nickname.trim(),
+        from_email: fromEmail.trim(),
+        from_name: fromName.trim(),
+        reply_to: replyToEmail?.trim() || fromEmail.trim(),
+        reply_to_name: replyToName?.trim() || fromName.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        zip: zip.trim(),
+        country: country.trim(),
       }),
     });
 
@@ -81,8 +92,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
-
 
 
 

@@ -25,6 +25,14 @@
           <span class="ml-2 text-muted-foreground">Loading senders...</span>
         </div>
 
+        <Alert v-else-if="sendersError" variant="destructive" role="alert">
+          <AlertCircle class="h-4 w-4" />
+          <AlertDescription class="flex items-center justify-between gap-4">
+            <span>Could not load verified senders. No connection status is being inferred.</span>
+            <Button variant="outline" size="sm" @click="fetchSenders">Retry</Button>
+          </AlertDescription>
+        </Alert>
+
         <div v-else-if="senders.length === 0" class="text-center py-8">
           <Mail class="mx-auto h-12 w-12 text-muted-foreground/50" />
           <h3 class="mt-4 text-lg font-medium">No verified senders</h3>
@@ -100,6 +108,14 @@
           <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
           <span class="ml-2 text-muted-foreground">Loading domains...</span>
         </div>
+
+        <Alert v-else-if="domainsError" variant="destructive" role="alert">
+          <AlertCircle class="h-4 w-4" />
+          <AlertDescription class="flex items-center justify-between gap-4">
+            <span>Could not load authenticated domains. No connection status is being inferred.</span>
+            <Button variant="outline" size="sm" @click="fetchDomains">Retry</Button>
+          </AlertDescription>
+        </Alert>
 
         <div v-else-if="domains.length === 0" class="rounded-lg border border-dashed p-6">
           <div class="flex items-start gap-4">
@@ -372,6 +388,8 @@ const { siteName } = useSiteIdentity();
 // State
 const loadingSenders = ref(true);
 const loadingDomains = ref(true);
+const sendersError = ref(false);
+const domainsError = ref(false);
 const senders = ref<any[]>([]);
 const domains = ref<any[]>([]);
 
@@ -406,11 +424,14 @@ onMounted(async () => {
 
 const fetchSenders = async () => {
   loadingSenders.value = true;
+  sendersError.value = false;
   try {
     const data = await $fetch<{ senders: any[] }>('/api/admin/sendgrid/senders');
     senders.value = data.senders || [];
   } catch (error: any) {
     console.error('Failed to fetch senders:', error);
+    senders.value = [];
+    sendersError.value = true;
   } finally {
     loadingSenders.value = false;
   }
@@ -418,11 +439,16 @@ const fetchSenders = async () => {
 
 const fetchDomains = async () => {
   loadingDomains.value = true;
+  domainsError.value = false;
   try {
     const data = await $fetch<{ domains: any[] }>('/api/admin/sendgrid/domains');
-    domains.value = (data.domains || []).filter((d: any) => d.valid);
+    domains.value = (data.domains || []).filter(
+      (domain: any) => domain.valid && domain.domain !== 'cdmg.com.au',
+    );
   } catch (error: any) {
     console.error('Failed to fetch domains:', error);
+    domains.value = [];
+    domainsError.value = true;
   } finally {
     loadingDomains.value = false;
   }
@@ -507,8 +533,6 @@ const resendVerification = async (senderId: number) => {
   }
 };
 </script>
-
-
 
 
 
