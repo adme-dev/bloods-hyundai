@@ -9,6 +9,7 @@
  */
 import { getInventoryFeedSources, type InventoryFeedSource } from '../utils/inventory-config';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveTenantCacheKey } from '../utils/tenant';
+import { invalidateNitroFunctionCache } from '../utils/cache-refresh';
 
 type FeedDisplayField = {
   value?: string[];
@@ -334,13 +335,9 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
   if (query.refresh === 'true') {
-    try {
-      const storage = useStorage('cache');
-      await storage.removeItem(`nitro:functions:carsales-feed:${tenantKey}.json`);
-    } catch (err: any) {
-      console.warn('[Carsales Feed] cache bust failed:', err?.message);
-    }
+    await invalidateNitroFunctionCache(useStorage('cache'), 'carsales-feed', tenantKey);
   }
 
+  setResponseHeader(event, 'Cache-Control', 'no-store');
   return await buildFeed(tenantKey, dealerSlug);
 });

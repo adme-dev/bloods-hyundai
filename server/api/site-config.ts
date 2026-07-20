@@ -17,6 +17,7 @@ import { eq } from 'drizzle-orm';
 import { getRequestURL } from 'h3';
 import { DEFAULT_DEALER_SLUG, resolveDealerSiteUrl, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
 import { buildTenantCdnUrls } from '../utils/tenant-cdn';
+import { invalidateNitroFunctionCache } from '../utils/cache-refresh';
 
 interface SiteConfig {
   name: string;
@@ -265,9 +266,13 @@ export default defineEventHandler(async (event) => {
   const forceRefresh = getQuery(event).refresh === 'true';
 
   try {
-    const siteConfig = forceRefresh
-      ? await buildFullSiteConfig(ctx)
-      : await getCachedSiteConfig(cacheKey, ctx);
+    if (forceRefresh) {
+      await invalidateNitroFunctionCache(useStorage('cache'), 'site-config', cacheKey);
+    }
+
+    const siteConfig = await getCachedSiteConfig(cacheKey, ctx);
+    setResponseHeader(event, 'Cache-Control', 'no-store');
+
     return {
       config: siteConfig,
       _cached: !forceRefresh,

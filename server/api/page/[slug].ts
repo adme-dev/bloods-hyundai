@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { DEFAULT_DEALER_SLUG, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey } from '../../utils/tenant';
 import { buildTenantCdnUrls } from '../../utils/tenant-cdn';
+import { invalidateNitroFunctionCache } from '../../utils/cache-refresh';
 
 type PageApiResponse = {
   success: boolean;
@@ -40,25 +41,17 @@ function loadLocalPageFallback(slug: string, dealerSlug: string): unknown | null
 const CACHE_MAX_AGE = 60 * 10;
 const CACHE_STALE_MAX_AGE = 60 * 30;
 
-export default defineCachedEventHandler(async (event): Promise<PageApiResponse> => {
-  const config = useRuntimeConfig();
-  const slug = getRouterParam(event, 'slug');
-
-  if (!slug) {
-    throw createError({
-      statusCode: 400,
-      message: 'Page slug is required',
-    });
-  }
-
-  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
-  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
-
+async function buildPageSource(
+  slug: string,
+  dealerSlug: string,
+  cdnUrl: string,
+  apiUrl: string,
+): Promise<PageApiResponse> {
   // Try fetching from CDN first (WordPress exported JSON)
-  if (config.public.cdnUrl) {
-    for (const cdnUrl of buildTenantCdnUrls(config.public.cdnUrl, dealerSlug, `pages/${slug}.json`)) {
+  if (cdnUrl) {
+    for (const tenantCdnUrl of buildTenantCdnUrls(cdnUrl, dealerSlug, `pages/${slug}.json`)) {
       try {
-        const response = await $fetch<unknown[]>(cdnUrl, {
+        const response = await $fetch<unknown[]>(tenantCdnUrl, {
           headers: {
             'Accept': 'application/json',
           },
@@ -91,9 +84,9 @@ export default defineCachedEventHandler(async (event): Promise<PageApiResponse> 
   }
 
   // Fallback to API if configured
-  if (config.public.apiUrl) {
+  if (apiUrl) {
     try {
-      const url = `${config.public.apiUrl}/page/${slug}`;
+      const url = `${apiUrl}/page/${slug}`;
 
       const response = await $fetch<unknown>(url, {
         headers: {
@@ -119,12 +112,52 @@ export default defineCachedEventHandler(async (event): Promise<PageApiResponse> 
       slug: slug,
     },
   };
-}, {
-  maxAge: CACHE_MAX_AGE,
-  staleMaxAge: CACHE_STALE_MAX_AGE,
-  name: 'page-content',
-  getKey: (event) => resolveTenantCacheKey(event, `page:${getRouterParam(event, 'slug') || 'unknown'}`),
-  shouldBypassCache: (event) => getQuery(event).refresh === 'true',
+}
+
+const getCachedPage = defineCachedFunction(
+  async (
+    _cacheKey: string,
+    slug: string,
+    dealerSlug: string,
+    cdnUrl: string,
+    apiUrl: string,
+  ) => buildPageSource(slug, dealerSlug, cdnUrl, apiUrl),
+  {
+    maxAge: CACHE_MAX_AGE,
+    staleMaxAge: CACHE_STALE_MAX_AGE,
+    name: 'page-content',
+    getKey: (cacheKey: string) => cacheKey,
+  },
+);
+
+export default defineEventHandler(async (event): Promise<PageApiResponse> => {
+  const config = useRuntimeConfig();
+  const slug = getRouterParam(event, 'slug');
+
+  if (!slug) {
+    throw createError({
+      statusCode: 400,
+      message: 'Page slug is required',
+    });
+  }
+
+  const fallbackSlug = config.public.dealerSlug || process.env.DEALER_SLUG || DEFAULT_DEALER_SLUG;
+  const dealerSlug = resolveDealerSlug(event, fallbackSlug);
+  const cacheKey = resolveTenantCacheKey(event, `page:${slug}`);
+  const query = getQuery(event);
+
+  if (query.refresh === 'true') {
+    await invalidateNitroFunctionCache(useStorage('cache'), 'page-content', cacheKey);
+  }
+
+  setResponseHeader(event, 'Cache-Control', 'no-store');
+  return await getCachedPage(
+    cacheKey,
+    slug,
+    dealerSlug,
+    config.public.cdnUrl || '',
+    config.public.apiUrl || '',
+  );
 });
 
 function getPagePayload(response: unknown) {
