@@ -18,16 +18,16 @@
                   <source
                     v-if="slide.mobile"
                     media="(max-width: 768px)"
-                    :srcset="optimizedSlideImage(slide.mobile, 900, 1200)"
-                    width="900"
-                    height="1200"
+                    :srcset="optimizedSlideImage(slide.mobile, 767, 975)"
+                    width="767"
+                    height="975"
                   />
                   <img
-                    :src="optimizedSlideImage(slide.desktop || slide.mobile, 1600, 600)"
+                    :src="optimizedSlideImage(slide.desktop || slide.mobile, 1920, 720)"
                     :alt="strippedHeadingContent(slide.heading_content) || siteName"
                     class="slide-image"
-                    width="1600"
-                    height="600"
+                    width="1920"
+                    height="720"
                     :loading="index === 0 ? 'eager' : 'lazy'"
                     :fetchpriority="index === 0 ? 'high' : 'auto'"
                     :decoding="index === 0 ? 'sync' : 'async'"
@@ -191,10 +191,10 @@ const firstSlidePreloadLinks = computed(() => {
   const mobileImage = firstSlide.mobile || firstSlide.tablet;
   const desktopImage = firstSlide.desktop || mobileImage;
   const optimizedMobileImage = mobileImage
-    ? optimizedSlideImage(mobileImage, 900, 1200)
+    ? optimizedSlideImage(mobileImage, 767, 975)
     : null;
   const optimizedDesktopImage = desktopImage
-    ? optimizedSlideImage(desktopImage, 1600, 600)
+    ? optimizedSlideImage(desktopImage, 1920, 720)
     : null;
   const links: Record<string, string>[] = [];
 
@@ -393,7 +393,7 @@ onUnmounted(() => {
 
 .slide-media {
   position: relative;
-  background-color: #fff;
+  background-color: transparent;
 }
 
 .slide-image-wrapper {
@@ -404,29 +404,17 @@ onUnmounted(() => {
 .slide-image {
   width: 100%;
   height: auto;
+  aspect-ratio: 2.2 / 1;
   display: block;
-  object-fit: contain;
-  object-position: center center;
+  object-fit: cover;
+  object-position: center top;
 }
 
 @media (max-width: 768px) {
-  .slide-media,
-  .slide-image-wrapper {
-    height: 100%;
-  }
-
-  .slide-panel {
-    min-height: 70vh;
-  }
-
-  .slide-media {
-    position: absolute;
-    inset: 0;
-  }
-
   .slide-image {
     width: 100%;
-    height: 100%;
+    height: auto;
+    aspect-ratio: 767 / 975;
     object-fit: cover;
     object-position: center center;
   }
