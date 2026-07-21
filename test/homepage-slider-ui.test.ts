@@ -12,6 +12,17 @@ describe('homepage slider admin UI', () => {
     assert.match(page, /body: \{ enabled: true, slides: slides\.value \}/);
   });
 
+  it('keeps the dashboard status icon large and vertically centred beside its copy', () => {
+    const page = readFileSync('app/pages/admin/settings/homepage-slider.vue', 'utf8');
+
+    assert.match(page, /class="slider-status-alert/);
+    assert.match(page, /class="slider-status-icon\b/);
+    assert.match(page, /Alert's base styles absolutely position direct-child SVGs/);
+    assert.match(page, /\.slider-status-alert\s*\{[^}]*display:\s*grid;[^}]*align-items:\s*center;/s);
+    assert.match(page, /\.slider-status-icon\s*\{[^}]*width:\s*40px;[^}]*height:\s*40px;/s);
+    assert.match(page, /<CircleCheckBig class="h-6 w-6/);
+  });
+
   it('allows saving an empty dashboard-managed slider', () => {
     const page = readFileSync('app/pages/admin/settings/homepage-slider.vue', 'utf8');
 

@@ -32,12 +32,17 @@
     </Alert>
 
     <template v-else>
-      <Alert class="border-emerald-500/30 bg-emerald-500/5">
-        <CircleCheckBig class="h-4 w-4 text-emerald-600" />
-        <AlertTitle>This dashboard controls the live homepage slider</AlertTitle>
-        <AlertDescription>
-          Saving replaces only the hero slides. Existing homepage tiles, footer banners and other promotional content remain untouched.
-        </AlertDescription>
+      <Alert class="slider-status-alert border-emerald-500/30 bg-emerald-500/5">
+        <!-- Keep the icon wrapped: Alert's base styles absolutely position direct-child SVGs. -->
+        <div class="slider-status-icon bg-emerald-500/10" aria-hidden="true">
+          <CircleCheckBig class="h-6 w-6 text-emerald-600" />
+        </div>
+        <div class="min-w-0">
+          <AlertTitle>This dashboard controls the live homepage slider</AlertTitle>
+          <AlertDescription>
+            Saving replaces only the hero slides. Existing homepage tiles, footer banners and other promotional content remain untouched.
+          </AlertDescription>
+        </div>
       </Alert>
 
       <section aria-label="Homepage slider summary" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -316,6 +321,20 @@ function parseIsoDate(value: string) {
 
 <style scoped>
 .homepage-slider-admin { max-width: 1200px; margin: 0 auto; color: var(--admin-ink); }
+.slider-status-alert {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.slider-status-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+}
 .slider-section-head {
   display: flex;
   align-items: flex-end;
