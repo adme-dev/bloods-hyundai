@@ -26,6 +26,7 @@ const validSlide = {
   link: '/special-offers',
   button_text: 'View offer',
   button_colour: 'uk-light',
+  duration_seconds: 6,
   start: '2026-07-20',
   end: '2026-08-31',
 };
@@ -42,8 +43,33 @@ describe('homepage slider settings contract', () => {
     assert.equal(result.value.version, 1);
     assert.equal(result.value.slides[0]?.desktop, validSlide.desktop);
     assert.equal(result.value.slides[0]?.mobile, validSlide.mobile);
+    assert.equal(result.value.slides[0]?.duration_seconds, 6);
     assert.equal(result.value.slides[0]?.start, '20-07-2026');
     assert.equal(result.value.slides[0]?.end, '31-08-2026');
+  });
+
+  it('defaults legacy slides to 3.5 seconds and rejects unsafe transition timing', () => {
+    const legacyResult = parseHomepageSliderInput({
+      enabled: true,
+      slides: [{ ...validSlide, duration_seconds: undefined }],
+    }, { allowedImageHosts });
+
+    assert.equal(legacyResult.ok, true);
+    if (legacyResult.ok) {
+      assert.equal(legacyResult.value.slides[0]?.duration_seconds, 3.5);
+    }
+
+    for (const duration_seconds of [1.5, 30.5, Number.NaN, 'fast']) {
+      const invalidResult = parseHomepageSliderInput({
+        enabled: true,
+        slides: [{ ...validSlide, duration_seconds }],
+      }, { allowedImageHosts });
+
+      assert.equal(invalidResult.ok, false);
+      if (!invalidResult.ok) {
+        assert.match(invalidResult.errors.join(' '), /duration must be between 2 and 30 seconds/i);
+      }
+    }
   });
 
   it('rejects unsafe image hosts, links, markup, invalid ranges, and excess slides', () => {

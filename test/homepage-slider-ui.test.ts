@@ -11,6 +11,11 @@ describe('homepage slider admin UI', () => {
     assert.match(editor, /Desktop image/);
     assert.match(editor, /Mobile image/);
     assert.match(editor, /AdminDatePicker/);
+    assert.match(editor, /Time on screen/);
+    assert.match(editor, /duration_seconds/);
+    assert.match(editor, /<Select v-model="contrastModel"/);
+    assert.match(editor, /SelectTrigger/);
+    assert.doesNotMatch(editor, /<select\b/);
     assert.match(page, /MediaLibraryDialog/);
     assert.match(editor, /Move slide up/);
     assert.match(page, /Preview homepage/);

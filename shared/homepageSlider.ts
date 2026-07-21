@@ -1,4 +1,7 @@
 export const HOMEPAGE_SLIDER_MAX_SLIDES = 12;
+export const HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS = 3.5;
+export const HOMEPAGE_SLIDE_MIN_DURATION_SECONDS = 2;
+export const HOMEPAGE_SLIDE_MAX_DURATION_SECONDS = 30;
 
 export interface HomepageSlide {
   id: string;
@@ -15,6 +18,7 @@ export interface HomepageSlide {
   link: string;
   button_text: string;
   button_colour: '' | 'uk-light' | 'uk-dark';
+  duration_seconds: number;
   start: string;
   end: string;
 }
@@ -99,6 +103,7 @@ export function readHomepageSliderSettings(settings: unknown): HomepageSliderSet
       link: stringValue(slide.link),
       button_text: stringValue(slide.button_text),
       button_colour: normalizeContrast(slide.button_colour),
+      duration_seconds: normalizeStoredDuration(slide.duration_seconds),
       start: stringValue(slide.start),
       end: stringValue(slide.end),
     })),
@@ -141,6 +146,7 @@ function parseSlide(
   const heading = plainTextValue(slide.heading_content, MAX_COPY_LENGTHS.heading_content, `${label} heading`, errors);
   const subHeading = plainTextValue(slide.sub_heading, MAX_COPY_LENGTHS.sub_heading, `${label} subheading`, errors);
   const buttonText = plainTextValue(slide.button_text, MAX_COPY_LENGTHS.button_text, `${label} button text`, errors);
+  const durationSeconds = parseDurationSeconds(slide.duration_seconds, label, errors);
   const start = normalizeDate(stringValue(slide.start));
   const end = normalizeDate(stringValue(slide.end));
 
@@ -170,6 +176,7 @@ function parseSlide(
     link,
     button_text: buttonText,
     button_colour: normalizeContrast(slide.button_colour),
+    duration_seconds: durationSeconds,
     start,
     end,
   };
@@ -189,6 +196,7 @@ function toPublicSlide(slide: HomepageSlide) {
     link: slide.link,
     button_text: slide.button_text,
     button_colour: slide.button_colour,
+    duration_seconds: slide.duration_seconds,
     start: slide.start,
     end: slide.end,
   };
@@ -287,6 +295,40 @@ function normalizeContrast(value: unknown): HomepageSlide['contrast'] {
 
 function normalizePosition(value: unknown): HomepageSlide['postion'] {
   return value === 'uk-position-center' ? 'uk-position-center' : 'uk-position-cover';
+}
+
+function parseDurationSeconds(value: unknown, label: string, errors: string[]) {
+  if (value === undefined || value === null || value === '') {
+    return HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS;
+  }
+
+  const duration = typeof value === 'number'
+    ? value
+    : typeof value === 'string'
+      ? Number(value.trim())
+      : Number.NaN;
+
+  if (
+    !Number.isFinite(duration)
+    || duration < HOMEPAGE_SLIDE_MIN_DURATION_SECONDS
+    || duration > HOMEPAGE_SLIDE_MAX_DURATION_SECONDS
+  ) {
+    errors.push(
+      `${label} duration must be between ${HOMEPAGE_SLIDE_MIN_DURATION_SECONDS} and ${HOMEPAGE_SLIDE_MAX_DURATION_SECONDS} seconds.`,
+    );
+    return HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS;
+  }
+
+  return Math.round(duration * 10) / 10;
+}
+
+function normalizeStoredDuration(value: unknown) {
+  const duration = typeof value === 'number' ? value : Number.NaN;
+  return Number.isFinite(duration)
+    && duration >= HOMEPAGE_SLIDE_MIN_DURATION_SECONDS
+    && duration <= HOMEPAGE_SLIDE_MAX_DURATION_SECONDS
+    ? Math.round(duration * 10) / 10
+    : HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS;
 }
 
 function stringValue(value: unknown) {

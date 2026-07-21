@@ -169,7 +169,11 @@ import {
 import type { FrontSlide } from '~/utils/frontSlides';
 import { getConfiguredFrontSlides } from '~/utils/frontSlides';
 import { isDateInRangeAt } from '~/utils/date';
-import type { HomepageSlide, HomepageSliderSettings } from '~~/shared/homepageSlider';
+import {
+  HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS,
+  type HomepageSlide,
+  type HomepageSliderSettings,
+} from '~~/shared/homepageSlider';
 import HomepageSlideEditor from '~/components/admin/settings/HomepageSlideEditor.vue';
 import MediaLibraryDialog from '~/components/media/MediaLibraryDialog.vue';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
@@ -258,6 +262,9 @@ function toEditorSlide(slide: HomepageSlide | FrontSlide): HomepageSlide {
     link: slide.link || '',
     button_text: slide.button_text || '',
     button_colour: slide.button_colour === 'uk-dark' ? 'uk-dark' : slide.button_colour === 'uk-light' ? 'uk-light' : '',
+    duration_seconds: typeof slide.duration_seconds === 'number'
+      ? slide.duration_seconds
+      : HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS,
     start: toIsoDate(slide.start || ''),
     end: toIsoDate(slide.end || ''),
   };

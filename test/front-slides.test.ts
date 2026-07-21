@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { getConfiguredFrontSlides, resolveHomeSlides, shouldFetchOffersHero } from '../app/utils/frontSlides.ts';
+import {
+  getConfiguredFrontSlides,
+  getFrontSlideDurationMs,
+  resolveHomeSlides,
+  shouldFetchOffersHero,
+} from '../app/utils/frontSlides.ts';
 
 describe('front slide resolution', () => {
   it('reads slides from the site promotional config prop and filters by date', () => {
@@ -26,6 +31,17 @@ describe('front slide resolution', () => {
       }).map((slide) => slide.desktop),
       ['https://example.com/active.jpg']
     );
+  });
+
+  it('maps per-slide timing to milliseconds with a backward-compatible default', () => {
+    const slides = getConfiguredFrontSlides([{ slides: [
+      { desktop: 'https://example.com/default.jpg' },
+      { desktop: 'https://example.com/custom.jpg', duration_seconds: 7.5 },
+    ] }]);
+
+    assert.equal(getFrontSlideDurationMs(slides[0]), 3500);
+    assert.equal(getFrontSlideDurationMs(slides[1]), 7500);
+    assert.equal(getFrontSlideDurationMs({ duration_seconds: 90 }), 3500);
   });
 
   it('falls back to the fresh offers hero for Blood Hyundai when all configured slides are expired', () => {

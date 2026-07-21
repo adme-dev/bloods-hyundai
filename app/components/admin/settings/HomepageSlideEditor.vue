@@ -120,7 +120,7 @@
         </div>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <div class="space-y-2">
           <Label :for="fieldId('start')">Start date</Label>
           <AdminDatePicker
@@ -148,18 +148,39 @@
           />
         </div>
         <div class="space-y-2">
+          <Label :for="fieldId('duration')">Time on screen</Label>
+          <div class="relative">
+            <Input
+              :id="fieldId('duration')"
+              type="number"
+              min="2"
+              max="30"
+              step="0.5"
+              inputmode="decimal"
+              class="pr-16"
+              :model-value="slide.duration_seconds"
+              :disabled="disabled"
+              :aria-describedby="fieldId('duration-help')"
+              @update:model-value="updateDuration($event)"
+            />
+            <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-muted-foreground">
+              seconds
+            </span>
+          </div>
+          <p :id="fieldId('duration-help')" class="text-xs text-muted-foreground">Before moving to the next slide · 2–30 seconds</p>
+        </div>
+        <div class="space-y-2">
           <Label :for="fieldId('contrast')">Text treatment</Label>
-          <select
-            :id="fieldId('contrast')"
-            class="slider-select"
-            :value="slide.contrast"
-            :disabled="disabled"
-            @change="updateContrast(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="">Default</option>
-            <option value="uk-light">Light text</option>
-            <option value="uk-dark">Dark text</option>
-          </select>
+          <Select v-model="contrastModel" :disabled="disabled">
+            <SelectTrigger :id="fieldId('contrast')" class="w-full">
+              <SelectValue placeholder="Select text treatment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="uk-light">Light text</SelectItem>
+              <SelectItem value="uk-dark">Dark text</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div class="flex items-end">
           <div class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border px-3">
@@ -190,6 +211,7 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import { Switch } from '~/components/ui/switch';
 import { Textarea } from '~/components/ui/textarea';
 import { isDateInRangeAt } from '~/utils/date';
@@ -212,8 +234,16 @@ const fieldId = (field: string) => `homepage-slide-${props.slide.id}-${field}`;
 const update = <K extends keyof HomepageSlide>(field: K, value: HomepageSlide[K]) => {
   emit('update:slide', { ...props.slide, [field]: value });
 };
-const updateContrast = (value: string) => {
-  update('contrast', value === 'uk-light' || value === 'uk-dark' ? value : '');
+const contrastModel = computed({
+  get: () => props.slide.contrast || 'default',
+  set: (value: string) => update(
+    'contrast',
+    value === 'uk-light' || value === 'uk-dark' ? value : '',
+  ),
+});
+const updateDuration = (value: string | number) => {
+  const duration = Number(value);
+  if (Number.isFinite(duration)) update('duration_seconds', duration);
 };
 
 const scheduleLabel = computed(() => {
@@ -229,18 +259,3 @@ function parseDate(value: string) {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 </script>
-
-<style scoped>
-.slider-select {
-  display: flex;
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid var(--admin-line);
-  border-radius: 8px;
-  padding: 0 12px;
-  background: var(--admin-surface);
-  color: var(--admin-ink);
-  font-size: 14px;
-}
-.slider-select:focus-visible { outline: 2px solid var(--admin-accent); outline-offset: 2px; }
-</style>
