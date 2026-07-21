@@ -18,6 +18,7 @@ import { getRequestURL } from 'h3';
 import { DEFAULT_DEALER_SLUG, resolveDealerSiteUrl, resolveDealerSlug, resolveDealerSlugAliases, resolveTenantCacheKey, resolveTenantFromHostname } from '../utils/tenant';
 import { buildTenantCdnUrls } from '../utils/tenant-cdn';
 import { invalidateNitroFunctionCache } from '../utils/cache-refresh';
+import { applyHomepageSliderOverride, readHomepageSliderSettings } from '../../shared/homepageSlider';
 
 interface SiteConfig {
   name: string;
@@ -116,7 +117,7 @@ async function fetchTenantConfig(cdnUrl: string, dealerSlug: string): Promise<Si
 function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigin: string): SiteConfig {
   const siteUrl = dealer.websiteUrl || requestOrigin || baseConfig.websiteUrl || '';
 
-  return {
+  const mergedConfig = {
     ...baseConfig,
     name: dealer.name || baseConfig.name,
     logo: dealer.logoUrl || baseConfig.logo,
@@ -129,6 +130,11 @@ function mergeSiteConfig(baseConfig: SiteConfig, dealer: DealerRow, requestOrigi
       ? dealer.settings.siteConfig
       : {}),
   };
+
+  return applyHomepageSliderOverride(
+    mergedConfig,
+    readHomepageSliderSettings(dealer.settings),
+  ) as SiteConfig;
 }
 
 function normalizeSiteConfig(siteConfig: SiteConfig, dealerSlug: string): SiteConfig {
