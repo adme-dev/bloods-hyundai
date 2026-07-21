@@ -52,6 +52,8 @@ type WebsiteRow = {
 
 export interface ReportBuilderInput {
   campaigns: CampaignRow[];
+  summary: { totalCrmLeads: number };
+  platformMetrics: Record<'meta_ads' | 'google_ads', { crmLeads: number }>;
   audienceBreakdowns: Record<'age' | 'area' | 'device', AudienceRow[]>;
   websiteAnalytics: {
     topLandingPages: WebsiteRow[];
@@ -139,7 +141,12 @@ export function buildReportBuilderRows(
   const accumulators = new Map<string, Accumulator>();
 
   if (!detail || detail === 'campaign') {
+    const matchedCampaignLeads = { meta_ads: 0, google_ads: 0 };
     for (const campaign of report.campaigns) {
+      if (campaign.platform === 'crm') continue;
+      if (campaign.platform === 'meta_ads' || campaign.platform === 'google_ads') {
+        matchedCampaignLeads[campaign.platform] += finite(campaign.crmLeads);
+      }
       add(accumulators, selection.dimensions, 'paid', {
         platform: normalizedLabel(campaign.platform),
         campaign: normalizedLabel(campaign.campaignName),
@@ -149,6 +156,9 @@ export function buildReportBuilderRows(
         clicks: campaign.clicks,
         impressions: campaign.impressions,
       });
+    }
+    if (selection.metrics.includes('crm_leads')) {
+      addCrmAttributionGaps(accumulators, report, selection.dimensions, matchedCampaignLeads);
     }
   } else if (detail === 'age' || detail === 'area' || detail === 'ad_device') {
     const source = detail === 'ad_device' ? report.audienceBreakdowns.device : report.audienceBreakdowns[detail];
@@ -209,7 +219,7 @@ export function sortReportBuilderRows(
 
 type Accumulator = {
   key: string;
-  source: 'paid' | 'website';
+  source: 'paid' | 'website' | 'crm';
   dimensions: Partial<Record<ReportBuilderDimension, string>>;
   spend: number;
   crmLeads: number;
@@ -223,7 +233,7 @@ type Accumulator = {
 function add(
   rows: Map<string, Accumulator>,
   selectedDimensions: ReportBuilderDimension[],
-  source: 'paid' | 'website',
+  source: Accumulator['source'],
   dimensions: Partial<Record<ReportBuilderDimension, string>>,
   values: Partial<Omit<Accumulator, 'key' | 'source' | 'dimensions'>>,
 ) {
@@ -258,7 +268,7 @@ function toBuilderRow(
 ): ReportBuilderRow {
   const values: Record<ReportBuilderMetric, number | null> = {
     spend: row.source === 'paid' ? row.spend : null,
-    crm_leads: row.source === 'paid' ? row.crmLeads : null,
+    crm_leads: row.source === 'paid' || row.source === 'crm' ? row.crmLeads : null,
     cpl: row.source === 'paid' && row.crmLeads > 0 ? row.spend / row.crmLeads : null,
     clicks: row.source === 'paid' ? row.clicks : null,
     ctr: row.source === 'paid' && row.impressions > 0 ? row.clicks / row.impressions * 100 : null,
@@ -294,6 +304,36 @@ function finite(value: number | undefined) {
   return Number.isFinite(value) ? Number(value) : 0;
 }
 
-function metricBelongsToSource(metric: ReportBuilderMetric, source: 'paid' | 'website') {
+function addCrmAttributionGaps(
+  rows: Map<string, Accumulator>,
+  report: ReportBuilderInput,
+  dimensions: ReportBuilderDimension[],
+  matchedCampaignLeads: Record<'meta_ads' | 'google_ads', number>,
+) {
+  const paidPlatformLeads = { meta_ads: 0, google_ads: 0 };
+  for (const platform of ['meta_ads', 'google_ads'] as const) {
+    paidPlatformLeads[platform] = finite(report.platformMetrics[platform]?.crmLeads);
+    const withoutCampaign = Math.max(0, paidPlatformLeads[platform] - matchedCampaignLeads[platform]);
+    if (!withoutCampaign) continue;
+    add(rows, dimensions, 'crm', {
+      platform,
+      campaign: 'Campaign unavailable',
+    }, { crmLeads: withoutCampaign });
+  }
+
+  const withoutPaidAttribution = Math.max(
+    0,
+    finite(report.summary.totalCrmLeads) - paidPlatformLeads.meta_ads - paidPlatformLeads.google_ads,
+  );
+  if (withoutPaidAttribution) {
+    add(rows, dimensions, 'crm', {
+      platform: 'crm',
+      campaign: 'No paid campaign attribution',
+    }, { crmLeads: withoutPaidAttribution });
+  }
+}
+
+function metricBelongsToSource(metric: ReportBuilderMetric, source: Accumulator['source']) {
+  if (source === 'crm') return metric === 'crm_leads';
   return source === 'paid' ? PAID_METRICS.includes(metric) : WEBSITE_METRICS.includes(metric);
 }

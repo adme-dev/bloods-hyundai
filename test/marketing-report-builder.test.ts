@@ -11,6 +11,11 @@ const report = {
     { platform: 'google_ads', campaignName: 'Search', spend: 120, impressions: 2_000, clicks: 100, crmLeads: 4 },
     { platform: 'meta_ads', campaignName: 'Social', spend: 60, impressions: 3_000, clicks: 90, crmLeads: 0 },
   ],
+  summary: { totalCrmLeads: 4 },
+  platformMetrics: {
+    google_ads: { crmLeads: 4 },
+    meta_ads: { crmLeads: 0 },
+  },
   audienceBreakdowns: {
     age: [
       { platform: 'google_ads', value: '25–34', spend: 50, impressions: 1_000, clicks: 40 },
@@ -46,6 +51,42 @@ describe('Marketing report builder', () => {
     });
     assert.equal(rows[1]?.metrics.cpl, null);
     assert.equal(rows[1]?.metrics.ctr, 3);
+  });
+
+  it('reconciles campaign rows to every CRM lead without fabricating unavailable spend', () => {
+    const rows = buildReportBuilderRows({
+      ...report,
+      campaigns: [
+        { platform: 'google_ads', campaignName: 'Search', spend: 120, impressions: 2_000, clicks: 100, crmLeads: 0 },
+        { platform: 'meta_ads', campaignName: 'Social', spend: 60, impressions: 3_000, clicks: 90, crmLeads: 0 },
+      ],
+      summary: { totalCrmLeads: 9 },
+      platformMetrics: {
+        google_ads: { crmLeads: 2 },
+        meta_ads: { crmLeads: 0 },
+      },
+    }, ['platform', 'campaign'], ['spend', 'crm_leads', 'cpl']);
+
+    assert.equal(
+      rows.reduce((total, row) => total + (row.metrics.crm_leads || 0), 0),
+      9,
+    );
+    assert.deepEqual(
+      rows.find(row => row.dimensions.platform === 'google_ads' && row.dimensions.campaign === 'Campaign unavailable'),
+      {
+        key: 'google_ads\u0000Campaign unavailable',
+        dimensions: { platform: 'google_ads', campaign: 'Campaign unavailable' },
+        metrics: { spend: null, crm_leads: 2, cpl: null },
+      },
+    );
+    assert.deepEqual(
+      rows.find(row => row.dimensions.platform === 'crm'),
+      {
+        key: 'crm\u0000No paid campaign attribution',
+        dimensions: { platform: 'crm', campaign: 'No paid campaign attribution' },
+        metrics: { spend: null, crm_leads: 7, cpl: null },
+      },
+    );
   });
 
   it('aggregates duplicate audience rows before calculating CTR', () => {

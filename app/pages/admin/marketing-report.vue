@@ -656,6 +656,7 @@
             </div>
             <p class="marketing-hub__example" role="status" aria-live="polite">
               {{ n(builderRows.length) }} {{ builderRows.length === 1 ? 'row' : 'rows' }} from the current report data. Metrics unavailable at the selected grain are disabled.
+              <span v-if="builderDimensions.includes('campaign') && builderMetrics.includes('crm_leads')"> Leads without exact campaign details appear as labelled reconciliation rows.</span>
             </p>
           </div>
         </article>
@@ -741,7 +742,11 @@ interface ReportResponse {
   dataStatus: Record<'ga4' | 'meta_ads' | 'google_ads', 'connected' | 'stored_data' | 'not_connected'>;
   avgSaleValue: number | null;
   summary: Record<'totalCrmLeads' | 'paidCrmLeads' | 'externalMarketplaceLeads' | 'utmCoverage' | 'campaignCoverage' | 'paidAttributionCoverage' | 'sourceCoverage' | 'clickIdCoverage' | 'backfilledAttributionCoverage', number>;
-  platformMetrics: { ga4: { sessions: number; conversions: number } };
+  platformMetrics: {
+    ga4: { sessions: number; conversions: number };
+    meta_ads: { crmLeads: number };
+    google_ads: { crmLeads: number };
+  };
   professionalMetrics: {
     ga4Website: { sessions: number; users: number; engagementRate: number | null; averageSessionDuration: number | null; screenPageViews: number; eventCount: number; eventsPerSession: number | null; conversionRate: number | null; keyEvents: number };
     paidMedia: AdMetrics;
@@ -1140,7 +1145,7 @@ function qualityClass(score: number) { return score >= 80 ? 'ok' : score >= 60 ?
 function connectionStatusLabel(status?: 'connected' | 'stored_data' | 'not_connected') {
   return status === 'connected' ? 'Connected' : status === 'stored_data' ? 'Synced data' : 'Not connected';
 }
-function platformLabel(value: string) { return value === 'meta_ads' ? 'Meta' : value === 'google_ads' ? 'Google Ads' : value === 'ga4' ? 'GA4' : value; }
+function platformLabel(value: string) { return value === 'meta_ads' ? 'Meta' : value === 'google_ads' ? 'Google Ads' : value === 'ga4' ? 'GA4' : value === 'crm' ? 'Admin CRM' : value; }
 function formatLabel(value: string) { return value.replaceAll('_', ' ').replace(/\b\w/g, char => char.toUpperCase()); }
 function hideBrokenCreativeImage(event: Event) { (event.currentTarget as HTMLImageElement).hidden = true; }
 function cleanLandingPage(value: string) { return !value || value === '(not set)' ? '/' : value; }
