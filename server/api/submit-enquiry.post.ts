@@ -10,6 +10,7 @@ import { inferLeadAttribution } from '../utils/metrics/attribution';
 import { emitEnquiryCreatedRealtimeEvent } from '../utils/realtime/events';
 import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
 import { queueDealerStudioExport } from '../utils/dealerStudio/delivery';
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 
 /**
  * Internal Enquiry Submission Endpoint
@@ -23,7 +24,7 @@ interface EnquirySubmission {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phone: string;
   postcode?: string;
   suburb?: string;
   state?: string;
@@ -270,6 +271,10 @@ export default defineEventHandler(async (event) => {
     if (isHoneypotTripped(body)) {
       return { success: true }; // silently accept; do not persist bot submissions
     }
+    const phoneValidation = validateRequiredCustomerPhone(body.phone);
+    if (!phoneValidation.ok) {
+      throw createError({ statusCode: 400, message: phoneValidation.error });
+    }
     const rateKey = `${dealer.id}:${sanitizeIpAddress(ipAddress) ?? 'noip'}`;
     if (!checkRateLimit(rateKey, Date.now())) {
       throw createError({ statusCode: 429, message: 'Too many submissions. Please try again shortly.' });
@@ -288,7 +293,7 @@ export default defineEventHandler(async (event) => {
         firstName: body.firstName,
         lastName: lastName,
         email: body.email,
-        phone: body.phone,
+        phone: phoneValidation.phone,
         postcode: body.postcode,
         suburb: body.suburb,
         state: body.state,
@@ -395,6 +400,5 @@ export default defineEventHandler(async (event) => {
     });
   }
 });
-
 
 

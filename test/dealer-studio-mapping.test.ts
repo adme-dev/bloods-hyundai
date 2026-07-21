@@ -122,6 +122,14 @@ describe('Dealer Studio lead mapping', () => {
       errors: ['Customer phone is required by Dealer Studio'],
     });
   });
+
+  it('rejects an invalid phone before calling Dealer Studio', () => {
+    const result = buildDealerStudioLeadPayload(enquiry({ phone: '12345678' }), settings);
+    assert.deepEqual(result, {
+      ok: false,
+      errors: ['Customer phone must be a valid Australian phone number'],
+    });
+  });
 });
 
 describe('Dealer Studio settings', () => {

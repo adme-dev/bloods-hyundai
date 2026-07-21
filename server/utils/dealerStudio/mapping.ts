@@ -1,4 +1,5 @@
 import type { DealerStudioLeadPayload, DealerStudioSettings } from './types';
+import { normalizeAustralianPhone } from '../../../shared/utils/customerPhone';
 
 type EnquiryLike = Record<string, any> & {
   id: string;
@@ -45,10 +46,12 @@ export function buildDealerStudioLeadPayload(
   settings: DealerStudioSettings,
 ): MappingResult {
   const email = cleanString(enquiry.email);
-  const phone = cleanString(enquiry.phone);
+  const rawPhone = cleanString(enquiry.phone);
+  const phone = normalizeAustralianPhone(rawPhone);
   const errors: string[] = [];
   if (!email) errors.push('Customer email is required by Dealer Studio');
-  if (!phone) errors.push('Customer phone is required by Dealer Studio');
+  if (!rawPhone) errors.push('Customer phone is required by Dealer Studio');
+  else if (!phone) errors.push('Customer phone must be a valid Australian phone number');
   if (!settings.dealershipId) errors.push('Dealer Studio dealership is not configured');
   if (!settings.locationId) errors.push('Dealer Studio location is not configured');
   if (errors.length) return { ok: false, errors };
@@ -116,4 +119,3 @@ function compactObject(input: Record<string, any>): Record<string, any> {
 function cleanString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
-
