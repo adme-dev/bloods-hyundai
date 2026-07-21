@@ -1,5 +1,5 @@
 <template>
-  <div class="homepage-slider-admin space-y-6">
+  <div class="mx-auto max-w-[1200px] space-y-6 text-foreground">
     <AdminPageHeader
       eyebrow="Website content"
       title="Homepage slider"
@@ -32,9 +32,9 @@
     </Alert>
 
     <template v-else>
-      <Alert class="slider-status-alert border-emerald-500/30 bg-emerald-500/5">
+      <Alert class="grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-3 border-emerald-500/30 bg-emerald-500/5 p-4">
         <!-- Keep the icon wrapped: Alert's base styles absolutely position direct-child SVGs. -->
-        <div class="slider-status-icon bg-emerald-500/10" aria-hidden="true">
+        <div class="grid size-10 place-items-center rounded-full bg-emerald-500/10" aria-hidden="true">
           <CircleCheckBig class="h-6 w-6 text-emerald-600" />
         </div>
         <div class="min-w-0">
@@ -56,10 +56,10 @@
       </section>
 
       <section aria-labelledby="slides-heading" class="space-y-4">
-        <div class="slider-section-head">
+        <div class="flex flex-col items-stretch gap-4 min-[701px]:flex-row min-[701px]:items-end min-[701px]:justify-between">
           <div>
-            <h2 id="slides-heading">Slides</h2>
-            <p>Order from first to last. Date ranges are inclusive in Australia/Melbourne time.</p>
+            <h2 id="slides-heading" class="text-[15px] font-bold tracking-[-.01em]">Slides</h2>
+            <p class="mt-1 text-xs text-muted-foreground">Order from first to last. Date ranges are inclusive in Australia/Melbourne time.</p>
           </div>
           <Button :disabled="saving || slides.length >= maxSlides" @click="addSlide">
             <Plus class="mr-2 h-4 w-4" /> Add slide
@@ -99,7 +99,7 @@
         </AlertDescription>
       </Alert>
 
-      <div class="slider-savebar">
+      <div class="sticky bottom-2 z-20 flex flex-col items-stretch gap-5 rounded-xl border bg-card/95 px-4 py-3.5 shadow-xl backdrop-blur-xl min-[701px]:bottom-4 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between">
         <div>
           <p class="text-sm font-semibold">Ready to publish?</p>
           <p class="text-xs text-muted-foreground">
@@ -318,48 +318,3 @@ function parseIsoDate(value: string) {
   return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
 }
 </script>
-
-<style scoped>
-.homepage-slider-admin { max-width: 1200px; margin: 0 auto; color: var(--admin-ink); }
-.slider-status-alert {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-}
-.slider-status-icon {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  place-items: center;
-  border-radius: 50%;
-}
-.slider-section-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-}
-.slider-section-head h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
-.slider-section-head p { margin: 4px 0 0; color: var(--admin-muted); font-size: 12px; }
-.slider-savebar {
-  position: sticky;
-  z-index: 20;
-  bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  border: 1px solid var(--admin-line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: color-mix(in srgb, var(--admin-surface) 94%, transparent);
-  box-shadow: 0 1px 2px rgba(11, 26, 43, .05), 0 8px 24px -14px rgba(11, 26, 43, .18);
-  backdrop-filter: blur(12px);
-}
-@media (max-width: 700px) {
-  .slider-section-head, .slider-savebar { align-items: stretch; flex-direction: column; }
-  .slider-savebar { bottom: 8px; }
-}
-</style>

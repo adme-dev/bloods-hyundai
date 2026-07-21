@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const appRoot = resolve(__dirname, '../app');
 const uiRoot = join(appRoot, 'components/ui');
+const adminRoots = [join(appRoot, 'components/admin'), join(appRoot, 'pages/admin')];
 const mainStyles = readFileSync(join(appRoot, 'assets/styles/main.scss'), 'utf8');
 const adminLayout = readFileSync(join(appRoot, 'layouts/admin.vue'), 'utf8');
 
@@ -35,5 +36,24 @@ describe('admin shadcn foundation', () => {
     assert.match(mainStyles, /--card:\s*0 0% (?:8|9|10)%/);
     assert.match(mainStyles, /--popover:\s*0 0% (?:8|9|10)%/);
     assert.match(adminLayout, /['"]data-admin-theme['"]:\s*['"]true['"]/);
+  });
+
+  it('keeps the current migration slice free of route-level style blocks', () => {
+    const remainingLegacyStyles = [
+      'components/admin/NotificationBell.vue',
+      'components/admin/dashboard/ActionZone.vue',
+      'components/admin/dashboard/SalesTab.vue',
+      'components/admin/dashboard/TodayKpiStrip.vue',
+      'pages/admin/enquiries/[id].vue',
+      'pages/admin/index.vue',
+      'pages/admin/marketing-report.vue',
+    ];
+    const styledAdminFiles = adminRoots
+      .flatMap(vueAndTsFiles)
+      .filter(path => /<style(?:\s|>)/.test(readFileSync(path, 'utf8')))
+      .map(path => path.replace(`${appRoot}/`, ''))
+      .sort();
+
+    assert.deepEqual(styledAdminFiles, remainingLegacyStyles.sort());
   });
 });
