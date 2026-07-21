@@ -14,7 +14,7 @@
     </Button>
   </div>
   
-  <div v-else-if="enquiry" class="enquiry-detail space-y-6">
+  <div v-else-if="enquiry" class="min-w-0 space-y-4 sm:space-y-6 [&_.rounded-xl.border]:min-w-0 [&_.rounded-xl.border]:max-w-full [&_a]:[overflow-wrap:anywhere] [&_dd]:[overflow-wrap:anywhere] [&_p]:[overflow-wrap:anywhere]">
     <!-- Header -->
     <Card class="shadow-sm">
       <CardContent class="space-y-4 p-6">
@@ -31,9 +31,9 @@
             </NuxtLink>
           </div>
           <template #actions>
-          <div class="enquiry-detail__header-actions flex flex-wrap items-center gap-3">
+          <div class="flex w-full flex-wrap items-center gap-3 sm:w-auto">
             <Select :model-value="statusDraft" @update:model-value="onStatusSelect">
-              <SelectTrigger class="w-[200px]">
+              <SelectTrigger class="w-full sm:w-[200px]">
                 <SelectValue placeholder="Set status" />
               </SelectTrigger>
               <SelectContent>
@@ -619,12 +619,12 @@
       <div class="space-y-6">
         <Card>
           <CardHeader class="space-y-1">
-            <div class="crm-card__header flex items-start justify-between gap-3">
+            <div class="flex flex-col items-start justify-between gap-3 sm:flex-row">
               <div class="min-w-0">
                 <CardTitle>Dealer Studio LMS</CardTitle>
                 <CardDescription>Automatic lead delivery and provider acknowledgement.</CardDescription>
               </div>
-              <Badge :class="crmBadgeClass" class="crm-card__status shrink-0 gap-1 text-xs">
+              <Badge :class="crmBadgeClass" class="shrink-0 self-start gap-1 text-xs">
                 <component :is="crmStatusIcon" class="h-3.5 w-3.5" />
                 {{ crmStatusLabel }}
               </Badge>
@@ -1317,40 +1317,3 @@ const retryDealerStudioDelivery = async () => {
   }
 };
 </script>
-
-<style scoped>
-.enquiry-detail {
-  min-width: 0;
-}
-
-.enquiry-detail :deep(.rounded-xl.border) {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.enquiry-detail :deep(dd),
-.enquiry-detail :deep(p),
-.enquiry-detail :deep(a) {
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 639px) {
-  .enquiry-detail {
-    gap: 1rem;
-  }
-
-  .enquiry-detail__header-actions,
-  .enquiry-detail__header-actions :deep(button[role="combobox"]) {
-    width: 100%;
-  }
-
-  .crm-card__header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .crm-card__status {
-    align-self: flex-start;
-  }
-}
-</style>

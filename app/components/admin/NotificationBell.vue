@@ -4,7 +4,7 @@
       <Button
         variant="ghost"
         size="icon"
-        class="admin-notification-trigger relative h-10 w-10 text-foreground hover:text-foreground data-[state=open]:text-primary [&_svg]:size-[18px]"
+        class="relative h-10 w-10 text-foreground hover:text-foreground data-[state=open]:text-primary [&_svg]:size-[18px]"
         :aria-label="`Notifications${totalCount > 0 ? `, ${totalCount} unread` : ''}`"
         title="Notifications"
       >
@@ -26,7 +26,7 @@
       align="end"
       :side-offset="8"
       :collision-padding="8"
-      class="admin-theme-surface admin-notifications-dropdown w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0 shadow-xl"
+      class="w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0 shadow-xl"
     >
       <div class="flex items-center justify-between border-b border-border px-3 py-2">
         <DropdownMenuLabel class="p-0 text-sm font-semibold">Notifications</DropdownMenuLabel>
@@ -185,7 +185,7 @@ function getNotificationIcon(type: string): Component {
 }
 
 function getNotificationIconClass(type: string): string {
-  return iconClassMap[type] ?? iconClassMap.default ?? 'bg-gray-100 text-gray-600';
+  return iconClassMap[type] ?? iconClassMap.default ?? 'bg-muted text-muted-foreground';
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -445,31 +445,3 @@ defineExpose({
   refresh: fetchNotifications,
 });
 </script>
-
-<style scoped>
-:global(.admin-notifications-dropdown),
-:global(.admin-notifications-dropdown *) {
-  box-sizing: border-box;
-}
-
-:global(.admin-notifications-dropdown :where(p, ul, ol, li, dl, dd, h1, h2, h3, h4, h5, h6, figure)) {
-  margin: 0;
-  padding: 0;
-}
-
-:global(.admin-notifications-dropdown :where(button, input, textarea, select)) {
-  margin: 0;
-  font: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
-  text-transform: none;
-}
-
-:global(.admin-notifications-dropdown :where(button)) {
-  appearance: none;
-}
-
-:global(.admin-notifications-dropdown :where(svg)) {
-  max-width: none;
-}
-</style>
