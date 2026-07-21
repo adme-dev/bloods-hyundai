@@ -1,4 +1,9 @@
 import { isDateInRangeAt } from './date';
+import {
+  HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS,
+  HOMEPAGE_SLIDE_MAX_DURATION_SECONDS,
+  HOMEPAGE_SLIDE_MIN_DURATION_SECONDS,
+} from '../../shared/homepageSlider';
 
 export interface FrontSlide {
   desktop?: string;
@@ -14,6 +19,7 @@ export interface FrontSlide {
   button_text?: string;
   button?: string;
   button_colour?: string;
+  duration_seconds?: number;
   start?: string;
   end?: string;
   [key: string]: unknown;
@@ -32,6 +38,7 @@ interface ResolveHomeSlidesOptions {
 }
 
 interface PromotionalEntry {
+  homepageSliderManaged?: boolean;
   slides?: unknown;
   footerbanner?: unknown;
   footerblocks?: unknown;
@@ -76,7 +83,9 @@ export function getConfiguredFrontSlides(source: unknown): FrontSlide[] {
       const item = entry as Record<string, unknown>;
 
       const legacySlides = Array.isArray(item.slides) ? item.slides : [];
-      const footerblockSlides = Array.isArray(item.footerblocks) ? item.footerblocks : [];
+      const footerblockSlides = item.homepageSliderManaged === true
+        ? []
+        : Array.isArray(item.footerblocks) ? item.footerblocks : [];
 
       const mapped = [
         ...legacySlides.map(mapSlideConfig),
@@ -112,6 +121,10 @@ export function resolveHomeSlides(source: unknown, options: ResolveHomeSlidesOpt
     return activeSlides;
   }
 
+  if (isDashboardManagedSlider(source)) {
+    return [];
+  }
+
   if (!isBloodHyundai(options.siteName)) {
     return [];
   }
@@ -122,10 +135,27 @@ export function resolveHomeSlides(source: unknown, options: ResolveHomeSlidesOpt
 
 export function shouldFetchOffersHero(source: unknown, siteName?: string | null, now: Date = new Date()): boolean {
   if (!isBloodHyundai(siteName)) return false;
+  if (isDashboardManagedSlider(source)) return false;
 
   return getConfiguredFrontSlides(source).every((slide) =>
     !isDateInRangeAt(slide.start, slide.end, now)
   );
+}
+
+function isDashboardManagedSlider(source: unknown): boolean {
+  return normalizePromotionalSource(source).some((entry) => entry.homepageSliderManaged === true);
+}
+
+export function getFrontSlideDurationMs(slide?: FrontSlide): number {
+  const duration = slide?.duration_seconds;
+  const safeDuration = typeof duration === 'number'
+    && Number.isFinite(duration)
+    && duration >= HOMEPAGE_SLIDE_MIN_DURATION_SECONDS
+    && duration <= HOMEPAGE_SLIDE_MAX_DURATION_SECONDS
+    ? duration
+    : HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS;
+
+  return Math.round(safeDuration * 1000);
 }
 
 function createOffersHeroSlide(hero?: OffersHeroImage | null): FrontSlide | null {
@@ -162,6 +192,7 @@ function mapSlideConfig(slide: unknown): FrontSlide {
     link: pickFirstString(item.link, item.page_link),
     button_text: pickFirstString(item.button_text, item.button),
     button_colour: pickFirstString(item.button_colour, item.button_color),
+    duration_seconds: pickFirstNumber(item.duration_seconds),
     start: pickFirstString(item.start, item.start_date),
     end: pickFirstString(item.end, item.end_date),
   };
@@ -181,6 +212,7 @@ function mapFooterBlockSlide(slide: unknown): FrontSlide {
     link: pickFirstString(item.link, item.page_link),
     button_text: pickFirstString(item.button),
     button_colour: pickFirstString(item.text_contrast, item.contrast),
+    duration_seconds: pickFirstNumber(item.duration_seconds),
     start: pickFirstString(item.start_date, item.start),
     end: pickFirstString(item.end_date, item.end),
   };
@@ -215,6 +247,10 @@ function pickFirstString(...values: unknown[]): string | undefined {
     }
   }
   return undefined;
+}
+
+function pickFirstNumber(...values: unknown[]): number | undefined {
+  return values.find((value): value is number => typeof value === 'number' && Number.isFinite(value));
 }
 
 function isRenderableThumb(thumb: unknown): thumb is FrontThumb {

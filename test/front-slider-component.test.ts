@@ -36,4 +36,18 @@ describe('FrontSlider component', () => {
     assert.match(componentSource, /background:\s*rgba\(0, 44, 95,/);
     assert.match(componentSource, /@media \(hover: none\), \(pointer: coarse\)/);
   });
+
+  it('uses each slide duration for the autoplay delay', () => {
+    assert.match(componentSource, /getFrontSlideDurationMs/);
+    assert.match(componentSource, /delay:\s*\(scrollSnaps\)\s*=>\s*scrollSnaps\.map/);
+    assert.doesNotMatch(componentSource, /delay:\s*3500/);
+  });
+
+  it('hides an empty button without suppressing other slide copy', () => {
+    assert.match(
+      componentSource,
+      /v-if="slide\.heading_content \|\| slide\.sub_heading \|\| slide\.button_text" class="slide-content"/,
+    );
+    assert.match(componentSource, /<div v-if="slide\.button_text" class="slide-cta">/);
+  });
 });

@@ -343,14 +343,15 @@ export default {
     '/api/service-booking-settings': { swr: 300 },
     '/api/popup-settings':           { swr: 300 },
     '/api/header-settings':          { swr: 600 },
-    '/api/site-config':              { swr: 600 },
+    // /api/site-config manages its own tenant cache and explicit refresh.
+    // Do not wrap it in a second edge cache that varies by query string.
     '/api/homepage-filters':         { swr: 600 },
     '/api/all-variants':             { swr: 1800 },
     '/api/model-summaries':          { swr: 1800 },
     '/api/hyundai-offers/hero-banner': { swr: 900 },
-    '/api/carsales-feed':            { swr: 600 },
+    // /api/carsales-feed manages its own tenant cache and explicit refresh.
     '/api/featured-accessories':     { swr: 1800 },
-    '/api/page/**':                  { swr: 600 },
+    // /api/page/** manages its own tenant cache and explicit refresh.
   },
 
   // App config

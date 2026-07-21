@@ -48,13 +48,15 @@
               </div>
 
               <!-- Slide content overlay -->
-              <div v-if="slide.button_text" class="slide-content">
+              <div v-if="slide.heading_content || slide.sub_heading || slide.button_text" class="slide-content">
                 <h2
+                  v-if="slide.heading_content"
                   :class="slide.contrast"
                   class="slide-heading"
                   v-html="slide.heading_content"
                 ></h2>
                 <p
+                  v-if="slide.sub_heading"
                   :class="slide.contrast"
                   class="slide-subheading"
                   v-html="slide.sub_heading"
@@ -114,7 +116,12 @@
 <script setup lang="ts">
 import EmblaCarousel from 'embla-carousel';
 import Autoplay from 'embla-carousel-autoplay';
-import { resolveHomeSlides, shouldFetchOffersHero, type OffersHeroImage } from '~/utils/frontSlides';
+import {
+  getFrontSlideDurationMs,
+  resolveHomeSlides,
+  shouldFetchOffersHero,
+  type OffersHeroImage,
+} from '~/utils/frontSlides';
 
 const mainStore = useMainStore();
 const props = defineProps<{
@@ -288,7 +295,12 @@ const initEmbla = () => {
       containScroll: false,
       slidesToScroll: 1,
     },
-    [Autoplay({ delay: 3500, stopOnInteraction: false })]
+    [Autoplay({
+      delay: (scrollSnaps) => scrollSnaps.map((_, index) =>
+        getFrontSlideDurationMs(homeSlides.value[index])
+      ),
+      stopOnInteraction: false,
+    })]
   );
 
   emblaApi.on('select', onSelect);
