@@ -12,7 +12,7 @@
                 <span class="sr-only">Open navigation</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" class="w-64 p-0">
+            <SheetContent side="left" class="admin-theme-surface admin-mobile-sheet w-64 p-0">
               <SheetHeader class="border-b px-6 py-4 text-left">
                 <SheetTitle class="text-lg font-semibold">{{ siteName }} Admin</SheetTitle>
                 <SheetDescription class="sr-only">Navigate between admin tools.</SheetDescription>
@@ -106,7 +106,7 @@
                 <ChevronDown class="hidden h-4 w-4 text-muted-foreground lg:block" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" :side-offset="8" :collision-padding="8" class="w-64 p-1.5">
+            <DropdownMenuContent align="end" :side-offset="8" :collision-padding="8" class="admin-theme-surface w-64 p-1.5">
               <div class="rounded-md bg-muted/60 px-2.5 py-2">
                 <div class="truncate text-sm font-semibold text-foreground">{{ displayName }}</div>
                 <div class="mt-0.5 truncate text-xs text-muted-foreground">{{ userEmail }}</div>
@@ -287,7 +287,8 @@ const handleLogout = async () => {
 </style>
 
 <style>
-.admin-layout {
+.admin-layout,
+.admin-theme-surface {
   --admin-ground: #eaeef3;
   --admin-surface: #fff;
   --admin-surface-2: #f5f8fb;
@@ -297,8 +298,30 @@ const handleLogout = async () => {
   --admin-line: #dfe6ee;
   --admin-line-2: #edf1f5;
   --admin-brand: #001e50;
+  --admin-brand-ink: #fff;
   --admin-accent: #0091b8;
   --admin-shadow: 0 1px 2px rgb(11 26 43 / 5%), 0 8px 24px -14px rgb(11 26 43 / 18%);
+  --background: 0 0% 100%;
+  --foreground: 211 59% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 211 59% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 211 59% 11%;
+  --primary: 218 100% 16%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 43% 97%;
+  --secondary-foreground: 211 59% 11%;
+  --muted: 210 43% 97%;
+  --muted-foreground: 211 15% 49%;
+  --accent: 210 43% 97%;
+  --accent-foreground: 211 59% 11%;
+  --border: 211 31% 90%;
+  --input: 211 31% 90%;
+  --ring: 193 100% 36%;
+  color-scheme: light;
+}
+
+.admin-layout {
   background: var(--admin-ground);
   color: var(--admin-ink);
 }
@@ -340,7 +363,7 @@ const handleLogout = async () => {
   flex: 0 0 auto;
   border-radius: 9px;
   background: var(--admin-brand);
-  color: #fff;
+  color: var(--admin-brand-ink);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .06em;
@@ -391,7 +414,7 @@ const handleLogout = async () => {
 
 .admin-primary-nav__link.is-active {
   background: var(--admin-brand);
-  color: #fff !important;
+  color: var(--admin-brand-ink) !important;
   box-shadow: 0 1px 3px rgb(0 30 80 / 18%);
 }
 
@@ -503,7 +526,7 @@ const handleLogout = async () => {
 
 .admin-mobile-nav__link.is-active {
   background: var(--admin-brand, #001e50);
-  color: #fff;
+  color: var(--admin-brand-ink, #fff);
 }
 
 .admin-content {
@@ -605,7 +628,7 @@ const handleLogout = async () => {
 }
 
 @media (prefers-color-scheme: dark) {
-  .admin-layout {
+  :root:not([data-theme="light"]) :where(.admin-layout, .admin-theme-surface) {
     --admin-ground: #080f18;
     --admin-surface: #101b28;
     --admin-surface-2: #152232;
@@ -615,12 +638,31 @@ const handleLogout = async () => {
     --admin-line: #213042;
     --admin-line-2: #192738;
     --admin-brand: #4d88cc;
+    --admin-brand-ink: #07101b;
     --admin-accent: #37c4e6;
     --admin-shadow: 0 1px 2px rgb(0 0 0 / 22%), 0 8px 24px -14px rgb(0 0 0 / 65%);
+    --background: 212 43% 11%;
+    --foreground: 211 45% 94%;
+    --card: 212 43% 11%;
+    --card-foreground: 211 45% 94%;
+    --popover: 212 43% 11%;
+    --popover-foreground: 211 45% 94%;
+    --primary: 211 56% 55%;
+    --primary-foreground: 212 59% 7%;
+    --secondary: 212 41% 14%;
+    --secondary-foreground: 211 45% 94%;
+    --muted: 212 41% 14%;
+    --muted-foreground: 210 15% 56%;
+    --accent: 212 41% 14%;
+    --accent-foreground: 211 45% 94%;
+    --border: 212 33% 19%;
+    --input: 212 33% 19%;
+    --ring: 192 76% 56%;
+    color-scheme: dark;
   }
 }
 
-.dark .admin-layout {
+:is(.dark, :root[data-theme="dark"]) :is(.admin-layout, .admin-theme-surface) {
   --admin-ground: #080f18;
   --admin-surface: #101b28;
   --admin-surface-2: #152232;
@@ -630,7 +672,60 @@ const handleLogout = async () => {
   --admin-line: #213042;
   --admin-line-2: #192738;
   --admin-brand: #4d88cc;
+  --admin-brand-ink: #07101b;
   --admin-accent: #37c4e6;
+  --admin-shadow: 0 1px 2px rgb(0 0 0 / 22%), 0 8px 24px -14px rgb(0 0 0 / 65%);
+  --background: 212 43% 11%;
+  --foreground: 211 45% 94%;
+  --card: 212 43% 11%;
+  --card-foreground: 211 45% 94%;
+  --popover: 212 43% 11%;
+  --popover-foreground: 211 45% 94%;
+  --primary: 211 56% 55%;
+  --primary-foreground: 212 59% 7%;
+  --secondary: 212 41% 14%;
+  --secondary-foreground: 211 45% 94%;
+  --muted: 212 41% 14%;
+  --muted-foreground: 210 15% 56%;
+  --accent: 212 41% 14%;
+  --accent-foreground: 211 45% 94%;
+  --border: 212 33% 19%;
+  --input: 212 33% 19%;
+  --ring: 192 76% 56%;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] :where(.admin-layout, .admin-theme-surface) {
+  --admin-ground: #eaeef3;
+  --admin-surface: #fff;
+  --admin-surface-2: #f5f8fb;
+  --admin-ink: #0b1a2b;
+  --admin-ink-2: #39506a;
+  --admin-muted: #6b7d90;
+  --admin-line: #dfe6ee;
+  --admin-line-2: #edf1f5;
+  --admin-brand: #001e50;
+  --admin-brand-ink: #fff;
+  --admin-accent: #0091b8;
+  --admin-shadow: 0 1px 2px rgb(11 26 43 / 5%), 0 8px 24px -14px rgb(11 26 43 / 18%);
+  --background: 0 0% 100%;
+  --foreground: 211 59% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 211 59% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 211 59% 11%;
+  --primary: 218 100% 16%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 43% 97%;
+  --secondary-foreground: 211 59% 11%;
+  --muted: 210 43% 97%;
+  --muted-foreground: 211 15% 49%;
+  --accent: 210 43% 97%;
+  --accent-foreground: 211 59% 11%;
+  --border: 211 31% 90%;
+  --input: 211 31% 90%;
+  --ring: 193 100% 36%;
+  color-scheme: light;
 }
 
 @media (max-width: 700px) {
