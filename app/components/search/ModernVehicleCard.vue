@@ -29,8 +29,30 @@
         </div>
       </component>
 
+      <!-- Promo Badge - Top Right (admin managed) -->
+      <div v-if="promoBadge" class="absolute right-3 top-3 z-10">
+        <span
+          class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md"
+          :style="{ backgroundColor: promoBadge.color }"
+        >
+          {{ promoBadge.text }}
+        </span>
+      </div>
+
+      <!-- Scrolling Promo Banner - Bottom of image (admin managed) -->
+      <div
+        v-if="marqueeText"
+        class="promo-marquee absolute bottom-0 left-0 right-0 z-10"
+        :style="{ backgroundColor: marqueeColor }"
+        aria-hidden="true"
+      >
+        <div class="promo-marquee__track">
+          <span v-for="n in 8" :key="n" class="promo-marquee__item">{{ marqueeText }}</span>
+        </div>
+      </div>
+
       <!-- Photo Count Badge - Bottom Left -->
-      <div v-if="photoCount > 0" class="absolute bottom-3 left-3 z-10">
+      <div v-if="photoCount > 0" class="absolute left-3 z-10" :class="marqueeText ? 'bottom-10' : 'bottom-3'">
         <span class="inline-flex items-center gap-1.5 rounded-lg bg-black/60 px-2.5 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -91,7 +113,13 @@
       <!-- Price Section -->
       <div class="mb-3 flex items-start justify-between gap-2">
         <div>
-          <div class="text-2xl font-bold text-slate-900">{{ priceDisplay }}</div>
+          <div v-if="wasPriceDisplay" class="text-xs leading-tight text-slate-400">
+            <span class="mr-1 font-medium">Was</span><span class="line-through">{{ wasPriceDisplay }}</span>
+            <span v-if="saveDisplay" class="ml-1.5 font-semibold text-red-600">Save {{ saveDisplay }}</span>
+          </div>
+          <div class="text-2xl font-bold text-slate-900">
+            <span v-if="wasPriceDisplay" class="mr-1 align-middle text-xs font-semibold uppercase text-red-600">Now</span>{{ priceDisplay }}
+          </div>
           <div v-if="priceDisplay !== 'POA'" class="text-[10px] text-slate-500">Drive away*</div>
         </div>
         <div v-if="perWeekDisplay" class="text-right">
@@ -391,12 +419,56 @@ const registrationDisplay = computed(() => {
 });
 
 // Price
-const priceDisplay = computed(() => {
+const numericPrice = computed(() => {
   const price = props.vehicle.price;
-  if (!price || price === '' || price === 0) return 'POA';
+  if (!price || price === '' || price === 0) return 0;
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  if (isNaN(numPrice) || numPrice === 0) return 'POA';
-  return `$${numPrice.toLocaleString()}`;
+  return isNaN(numPrice) ? 0 : numPrice;
+});
+
+const priceDisplay = computed(() => {
+  if (!numericPrice.value) return 'POA';
+  return `$${numericPrice.value.toLocaleString()}`;
+});
+
+// Admin-managed stock card promotions (was/now, badge, comment, scroller)
+const { settings: promoSettings, promoFor } = useStockCardPromo();
+const promoOffer = computed(() => promoFor(props.vehicle));
+
+const wasPriceDisplay = computed(() => {
+  if (!promoSettings.value?.wasNowEnabled) return '';
+  const wasPrice = promoOffer.value?.wasPrice;
+  if (!wasPrice || !numericPrice.value || wasPrice <= numericPrice.value) return '';
+  return `$${wasPrice.toLocaleString()}`;
+});
+
+const saveDisplay = computed(() => {
+  if (!wasPriceDisplay.value) return '';
+  const saving = (promoOffer.value?.wasPrice || 0) - numericPrice.value;
+  return saving > 0 ? `$${saving.toLocaleString()}` : '';
+});
+
+const promoBadge = computed(() => {
+  if (!promoSettings.value?.badgesEnabled) return null;
+  const offer = promoOffer.value;
+  if (!offer?.badgeText) return null;
+  return { text: offer.badgeText, color: offer.badgeColor };
+});
+
+const marqueeText = computed(() => {
+  const settings = promoSettings.value;
+  if (!settings) return '';
+  if (settings.commentsEnabled && promoOffer.value?.comment) return promoOffer.value.comment;
+  if (settings.scroller.enabled && settings.scroller.text) return settings.scroller.text;
+  return '';
+});
+
+const marqueeColor = computed(() => {
+  const settings = promoSettings.value;
+  if (settings?.commentsEnabled && promoOffer.value?.comment) {
+    return promoOffer.value.badgeColor || settings.scroller.color;
+  }
+  return settings?.scroller.color || '#e11d48';
 });
 
 const perWeekDisplay = computed(() => {
@@ -447,3 +519,37 @@ const openEnquire = () => {
   vehiclesStore.setVehicleEnquiryPopUp(true, props.vehicle);
 };
 </script>
+
+<style scoped>
+.promo-marquee {
+  overflow: hidden;
+  padding: 5px 0;
+  /* Decorative strip — clicks pass through to the image link beneath. */
+  pointer-events: none;
+}
+
+.promo-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: promo-marquee-scroll 12s linear infinite;
+}
+
+.promo-marquee__item {
+  padding: 0 1.5rem;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@keyframes promo-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-marquee__track { animation: none; }
+}
+</style>

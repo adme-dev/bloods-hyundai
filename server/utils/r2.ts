@@ -20,9 +20,11 @@ function getR2Client(): S3Client {
 
   const config = useRuntimeConfig();
 
-  const accountId = config.cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID;
-  const accessKeyId = config.r2AccessKeyId || process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = config.r2SecretAccessKey || process.env.R2_SECRET_ACCESS_KEY;
+  // CLOUDFLARE_R2_* aliases match the naming used across our other dealer
+  // projects, so a copied env block works without renaming lines.
+  const accountId = config.cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID;
+  const accessKeyId = config.r2AccessKeyId || process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY;
+  const secretAccessKey = config.r2SecretAccessKey || process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_KEY;
 
   if (!accountId || !accessKeyId || !secretAccessKey) {
     throw new Error('Cloudflare R2 credentials not configured. Set CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY');
@@ -44,13 +46,13 @@ function getR2Client(): S3Client {
 
 function getBucketName(): string {
   const config = useRuntimeConfig();
-  return config.r2BucketName || process.env.R2_BUCKET_NAME || 'dealer-assets';
+  return config.r2BucketName || process.env.R2_BUCKET_NAME || process.env.CLOUDFLARE_R2_BUCKET || 'dealer-assets';
 }
 
 function getPublicUrl(): string {
   const config = useRuntimeConfig();
   // R2 public URL can be custom domain or the R2.dev URL
-  return config.r2PublicUrl || process.env.R2_PUBLIC_URL || '';
+  return config.r2PublicUrl || process.env.R2_PUBLIC_URL || process.env.CLOUDFLARE_R2_PUBLIC_URL || '';
 }
 
 /**
@@ -294,9 +296,9 @@ export function extractKeyFromUrl(url: string): string | null {
 export function isR2Configured(): boolean {
   try {
     const config = useRuntimeConfig();
-    const accountId = config.cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID;
-    const accessKeyId = config.r2AccessKeyId || process.env.R2_ACCESS_KEY_ID;
-    const secretAccessKey = config.r2SecretAccessKey || process.env.R2_SECRET_ACCESS_KEY;
+    const accountId = config.cloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID;
+    const accessKeyId = config.r2AccessKeyId || process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY;
+    const secretAccessKey = config.r2SecretAccessKey || process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_KEY;
 
     return !!(accountId && accessKeyId && secretAccessKey);
   } catch {

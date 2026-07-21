@@ -20,6 +20,9 @@
       </div>
     </div>
 
+    <!-- Admin-managed promotional header (Stock Card Promotions settings) -->
+    <StockPageHeaderBanner />
+
     <section class="relative mx-auto w-full max-w-full px-4 py-6 lg:px-8 lg:py-10">
       <!-- Mobile overlay backdrop -->
       <div
