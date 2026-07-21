@@ -695,6 +695,7 @@ import {
 } from 'lucide-vue-next';
 import { formatCurrency } from '~/utils';
 import {
+  defaultMarketingDateRange,
   formatReportDate as displayDate,
   formatReportShortDate as displayShortDate,
   formatReportTimestamp as shortDateTime,
@@ -785,8 +786,9 @@ interface SyncResponse {
 }
 
 const today = reportDateInTimeZone();
-const from = ref(`${today.slice(0, 8)}01`);
-const to = ref(today);
+const defaultDateRange = defaultMarketingDateRange(today);
+const from = ref(defaultDateRange.from);
+const to = ref(defaultDateRange.to);
 const customRangeOpen = ref(false);
 const activeAnalyticsTab = ref<AnalyticsTabId>('website');
 const activeChartPoint = ref<number | null>(null);
