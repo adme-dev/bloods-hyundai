@@ -41,9 +41,6 @@ describe('admin shadcn foundation', () => {
   it('keeps the current migration slice free of route-level style blocks', () => {
     const remainingLegacyStyles = [
       'components/admin/NotificationBell.vue',
-      'components/admin/dashboard/ActionZone.vue',
-      'components/admin/dashboard/SalesTab.vue',
-      'components/admin/dashboard/TodayKpiStrip.vue',
       'pages/admin/enquiries/[id].vue',
       'pages/admin/index.vue',
       'pages/admin/marketing-report.vue',
