@@ -392,7 +392,7 @@ function onTabChange(value: string | number | null) {
 }
 
 @media (prefers-color-scheme: dark) {
-  .dashboard-shell {
+  :global(:root:not([data-theme="light"])) .dashboard-shell {
     --dashboard-ground: #080f18;
     --dashboard-surface: #101b28;
     --dashboard-surface-2: #152232;
