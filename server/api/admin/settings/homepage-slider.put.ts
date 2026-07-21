@@ -58,11 +58,9 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: parsed.value.enabled
-        ? parsed.value.slides.some((slide) => slide.enabled)
-          ? 'Homepage slider published successfully'
-          : 'Homepage slider cleared successfully'
-        : 'Custom homepage slider disabled; upstream slides remain active',
+      message: parsed.value.slides.some((slide) => slide.enabled)
+        ? 'Homepage slider published successfully'
+        : 'Homepage slider cleared successfully',
       settings: parsed.value,
     };
   } catch (error: any) {

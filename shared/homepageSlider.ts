@@ -51,7 +51,6 @@ export function parseHomepageSliderInput(
 ): HomepageSliderParseResult {
   const errors: string[] = [];
   const body = isRecord(input) ? input : {};
-  const enabled = body.enabled === true;
   const inputSlides = Array.isArray(body.slides) ? body.slides : [];
 
   if (inputSlides.length > HOMEPAGE_SLIDER_MAX_SLIDES) {
@@ -68,7 +67,7 @@ export function parseHomepageSliderInput(
     ok: true,
     value: {
       version: 1,
-      enabled,
+      enabled: true,
       updatedAt: (options.now || new Date()).toISOString(),
       slides,
     },
@@ -82,7 +81,7 @@ export function readHomepageSliderSettings(settings: unknown): HomepageSliderSet
 
   return {
     version: 1,
-    enabled: stored.enabled === true,
+    enabled: true,
     updatedAt: typeof stored.updatedAt === 'string' ? stored.updatedAt : null,
     slides: stored.slides.filter(isRecord).map((slide, index) => ({
       id: cleanId(slide.id, index),
@@ -110,7 +109,7 @@ export function applyHomepageSliderOverride<T extends Record<string, unknown>>(
   siteConfig: T,
   settings: HomepageSliderSettings | null,
 ): T {
-  if (!settings?.enabled) return siteConfig;
+  if (!settings) return siteConfig;
 
   const currentPromotional = Array.isArray(siteConfig.promotional)
     ? siteConfig.promotional.filter(isRecord)

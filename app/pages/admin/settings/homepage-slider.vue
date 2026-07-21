@@ -32,18 +32,11 @@
     </Alert>
 
     <template v-else>
-      <Alert v-if="customEnabled" class="border-emerald-500/30 bg-emerald-500/5">
+      <Alert class="border-emerald-500/30 bg-emerald-500/5">
         <CircleCheckBig class="h-4 w-4 text-emerald-600" />
         <AlertTitle>This dashboard controls the live homepage slider</AlertTitle>
         <AlertDescription>
           Saving replaces only the hero slides. Existing homepage tiles, footer banners and other promotional content remain untouched.
-        </AlertDescription>
-      </Alert>
-      <Alert v-else class="border-amber-500/40 bg-amber-500/10">
-        <Info class="h-4 w-4 text-amber-700 dark:text-amber-400" />
-        <AlertTitle>The upstream website feed still controls the slider</AlertTitle>
-        <AlertDescription>
-          The current website slides are shown below as a starting point. Turn on dashboard management and save when you are ready to take control.
         </AlertDescription>
       </Alert>
 
@@ -56,34 +49,6 @@
           </CardContent>
         </Card>
       </section>
-
-      <Card>
-        <CardHeader>
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <CardTitle>Publishing control</CardTitle>
-              <CardDescription>Choose whether the dashboard or the existing upstream feed supplies hero slides.</CardDescription>
-            </div>
-            <Badge :variant="customEnabled ? 'default' : 'secondary'">
-              {{ customEnabled ? 'Dashboard managed' : 'Upstream managed' }}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-muted/20 p-4">
-            <div>
-              <Label for="homepage-slider-enabled" class="text-sm font-semibold">Manage slider in this dashboard</Label>
-              <p class="mt-1 text-xs text-muted-foreground">When off, the website falls back to its existing promotional feed.</p>
-            </div>
-            <Switch
-              id="homepage-slider-enabled"
-              v-model="customEnabled"
-              aria-label="Manage homepage slider in this dashboard"
-              :disabled="saving"
-            />
-          </div>
-        </CardContent>
-      </Card>
 
       <section aria-labelledby="slides-heading" class="space-y-4">
         <div class="slider-section-head">
@@ -160,7 +125,6 @@ import {
   CircleCheckBig,
   ExternalLink,
   Images,
-  Info,
   Loader2,
   Plus,
   RefreshCw,
@@ -177,11 +141,8 @@ import {
 import HomepageSlideEditor from '~/components/admin/settings/HomepageSlideEditor.vue';
 import MediaLibraryDialog from '~/components/media/MediaLibraryDialog.vue';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
-import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import { Label } from '~/components/ui/label';
-import { Switch } from '~/components/ui/switch';
+import { Card, CardContent } from '~/components/ui/card';
 
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
@@ -210,7 +171,6 @@ const acceptedImageTypes = computed(() => settingsRequest.data.value?.limits.acc
   'image/jpeg', 'image/png', 'image/webp', 'image/gif',
 ]);
 
-const customEnabled = ref(settingsRequest.data.value?.settings.enabled || false);
 const slides = ref<HomepageSlide[]>(initialSlides());
 const saving = ref(false);
 const saveErrors = ref<string[]>([]);
@@ -318,9 +278,8 @@ async function saveSettings() {
   try {
     const response = await $fetch<{ settings: HomepageSliderSettings; message: string }>(
       '/api/admin/settings/homepage-slider',
-      { method: 'PUT', body: { enabled: customEnabled.value, slides: slides.value } },
+      { method: 'PUT', body: { enabled: true, slides: slides.value } },
     );
-    customEnabled.value = response.settings.enabled;
     slides.value = response.settings.slides.map(toEditorSlide);
     toast.success(response.message);
   } catch (error: any) {
@@ -334,7 +293,6 @@ async function saveSettings() {
 
 async function reloadFromServer() {
   await Promise.all([settingsRequest.refresh(), siteConfigRequest.refresh()]);
-  customEnabled.value = settingsRequest.data.value?.settings.enabled || false;
   slides.value = initialSlides();
   saveErrors.value = [];
 }

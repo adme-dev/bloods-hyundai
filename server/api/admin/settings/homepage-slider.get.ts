@@ -9,7 +9,7 @@ import {
 
 const emptySettings = (): HomepageSliderSettings => ({
   version: 1,
-  enabled: false,
+  enabled: true,
   updatedAt: null,
   slides: [],
 });

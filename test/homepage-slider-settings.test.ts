@@ -107,6 +107,27 @@ describe('homepage slider settings contract', () => {
     assert.deepEqual(result.value.slides, []);
   });
 
+  it('keeps dashboard management enabled for new and legacy settings', () => {
+    const parsed = parseHomepageSliderInput({
+      enabled: false,
+      slides: [validSlide],
+    }, { allowedImageHosts });
+
+    assert.equal(parsed.ok, true);
+    if (parsed.ok) assert.equal(parsed.value.enabled, true);
+
+    const stored = readHomepageSliderSettings({
+      homepageSlider: {
+        version: 1,
+        enabled: false,
+        updatedAt: '2026-07-21T01:00:00.000Z',
+        slides: [validSlide],
+      },
+    });
+
+    assert.equal(stored?.enabled, true);
+  });
+
   it('replaces only hero slides while preserving upstream thumbs and footer content', () => {
     const settings = readHomepageSliderSettings({
       homepageSlider: {
@@ -133,18 +154,23 @@ describe('homepage slider settings contract', () => {
     assert.deepEqual(promotional[0]?.footerblocks, [{ slides: 'https://driveagentmedia.b-cdn.net/footer.jpg' }]);
   });
 
-  it('leaves upstream promotional content untouched when custom management is disabled', () => {
+  it('uses dashboard slides even when legacy stored settings were disabled', () => {
     const original = {
       promotional: [{ slides: [{ desktop: 'https://driveagentmedia.b-cdn.net/original.jpg' }] }],
     };
-    const result = applyHomepageSliderOverride(original, {
-      version: 1,
-      enabled: false,
-      updatedAt: null,
-      slides: [validSlide],
+    const settings = readHomepageSliderSettings({
+      homepageSlider: {
+        version: 1,
+        enabled: false,
+        updatedAt: '2026-07-21T01:00:00.000Z',
+        slides: [validSlide],
+      },
     });
+    const result = applyHomepageSliderOverride(original, settings);
 
-    assert.deepEqual(result, original);
+    const promotional = result.promotional as Array<Record<string, unknown>>;
+    assert.equal(promotional[0]?.homepageSliderManaged, true);
+    assert.equal((promotional[0]?.slides as unknown[]).length, 1);
   });
 });
 

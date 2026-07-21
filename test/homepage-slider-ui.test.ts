@@ -3,6 +3,15 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 describe('homepage slider admin UI', () => {
+  it('always publishes from the dashboard without an upstream publishing toggle', () => {
+    const page = readFileSync('app/pages/admin/settings/homepage-slider.vue', 'utf8');
+
+    assert.doesNotMatch(page, /Publishing control/);
+    assert.doesNotMatch(page, /customEnabled/);
+    assert.doesNotMatch(page, /<Switch\b/);
+    assert.match(page, /body: \{ enabled: true, slides: slides\.value \}/);
+  });
+
   it('allows saving an empty dashboard-managed slider', () => {
     const page = readFileSync('app/pages/admin/settings/homepage-slider.vue', 'utf8');
 
