@@ -2,13 +2,14 @@
  * Composable for handling enquiry form submissions
  * Connects frontend forms to the Neon database API
  */
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 
 interface EnquiryFormData {
   // Contact details
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phone: string;
   postcode?: string;
   suburb?: string;
   state?: string;
@@ -101,6 +102,11 @@ export function useEnquiryForm() {
     
     try {
       const utmParams = getUtmParams();
+      const phoneValidation = validateRequiredCustomerPhone(data.phone);
+      if (!phoneValidation.ok) {
+        submitError.value = phoneValidation.error;
+        return { success: false, error: phoneValidation.error };
+      }
 
       // Build the payload for the API
       const payload = {
@@ -108,7 +114,7 @@ export function useEnquiryForm() {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        phone: data.phone || undefined,
+        phone: phoneValidation.phone,
         postcode: data.postcode || undefined,
         suburb: data.suburb || undefined,
         state: data.state || undefined,
@@ -220,7 +226,6 @@ export function useEnquiryForm() {
     resetState,
   };
 }
-
 
 
 

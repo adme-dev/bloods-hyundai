@@ -217,14 +217,17 @@
               </div>
 
               <div class="space-y-2">
-                <Label for="phone" class="text-gray-700">Phone Number</Label>
+                <Label for="phone" class="text-gray-700">Phone Number <span class="text-red-500">*</span></Label>
                 <Input 
                   id="phone"
                   v-model="form.phone" 
                   type="tel"
                   placeholder="Phone Number"
                   class="rounded-xl h-11"
+                  :class="{ 'border-red-500': phoneError }"
+                  required
                 />
+                <p v-if="phoneError" class="text-sm text-red-500">{{ phoneError }}</p>
               </div>
 
               <div class="space-y-2">
@@ -309,6 +312,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
@@ -358,6 +362,7 @@ const form = reactive({
 const isSubmitting = ref(false);
 const isSubmitted = ref(false);
 const hasErrors = ref(false);
+const phoneError = ref('');
 
 // Calculations
 const loanAmount = computed(() => retail.value - downPayment.value - tradeIn.value);
@@ -410,7 +415,9 @@ const setLoanTerm = (years: number) => {
 
 // Submit form
 const submitForm = async () => {
-  if (!form.firstName || !form.lastName || !form.email) {
+  const phoneValidation = validateRequiredCustomerPhone(form.phone);
+  phoneError.value = phoneValidation.ok ? '' : phoneValidation.error;
+  if (!form.firstName || !form.lastName || !form.email || !phoneValidation.ok) {
     hasErrors.value = true;
     return;
   }
@@ -427,7 +434,7 @@ const submitForm = async () => {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
-        phone: form.phone || undefined,
+        phone: phoneValidation.phone,
         message: form.message || undefined,
         financeInfo: {
           vehiclePrice: retail.value,
@@ -532,7 +539,6 @@ const submitForm = async () => {
   }
 }
 </style>
-
 
 
 
