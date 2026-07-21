@@ -50,4 +50,16 @@ describe('Dealer Studio enquiry status', () => {
     assert.match(page, /Retry delivery/);
     assert.match(page, /\/api\/admin\/integrations\/dealer-studio\/\$\{enquiryId\}\/retry/);
   });
+
+  it('lets an operator correct a missing phone and retry without fabricating data', () => {
+    const page = source('app/pages/admin/enquiries/[id].vue');
+    const endpoint = source('server/api/admin/enquiries/[id]/phone.patch.ts');
+
+    assert.match(page, /Save phone & retry/);
+    assert.match(page, /validateRequiredCustomerPhone/);
+    assert.match(page, /\/api\/admin\/enquiries\/\$\{enquiryId\}\/phone/);
+    assert.match(endpoint, /validateRequiredCustomerPhone/);
+    assert.match(endpoint, /eq\(enquiries\.dealerId, dealerId\)/);
+    assert.match(endpoint, /logEnquiryActivity/);
+  });
 });
