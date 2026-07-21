@@ -19,6 +19,7 @@ import { isHoneypotTripped, checkRateLimit, isDuplicateEnquiry } from '../utils/
 import { inferLeadAttribution } from '../utils/metrics/attribution';
 import { LIVE_TEST_EMAIL_SECRET_HEADER, resolveLiveTestEmailOverride } from '../utils/liveTestEmail';
 import { queueDealerStudioExport } from '../utils/dealerStudio/delivery';
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 
 interface SellMyCarSubmission {
   // Personal details
@@ -174,6 +175,10 @@ export default defineEventHandler(async (event) => {
     if (isHoneypotTripped(body)) {
       return { success: true };
     }
+    const phoneValidation = validateRequiredCustomerPhone(body.phone);
+    if (!phoneValidation.ok) {
+      throw createError({ statusCode: 400, message: phoneValidation.error });
+    }
     const rateKey = `${dealer.id}:${sanitizeIpAddress(ipAddress) ?? 'noip'}`;
     if (!checkRateLimit(rateKey, Date.now())) {
       throw createError({ statusCode: 429, message: 'Too many submissions. Please try again shortly.' });
@@ -255,7 +260,7 @@ export default defineEventHandler(async (event) => {
         firstName: body.firstName,
         lastName: body.lastName,
         email: body.email,
-        phone: body.phone,
+        phone: phoneValidation.phone,
         message: message,
         sellCarDetails: sellCarDetails,
         status: ENQUIRY_STATUSES.NEW_LEAD,

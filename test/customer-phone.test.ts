@@ -50,4 +50,10 @@ describe('controlled enquiry intake', () => {
     assert.match(endpoint, /validateRequiredCustomerPhone/);
     assert.match(endpoint, /phone:\s*phoneValidation\.phone/);
   });
+
+  it('enforces and stores the normalized phone on Sell My Car intake', () => {
+    const endpoint = source('server/api/sell-my-car.post.ts');
+    assert.match(endpoint, /validateRequiredCustomerPhone/);
+    assert.match(endpoint, /phone:\s*phoneValidation\.phone/);
+  });
 });
