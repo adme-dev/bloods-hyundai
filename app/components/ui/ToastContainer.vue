@@ -9,7 +9,7 @@
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="toast-item group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-xl border-2 bg-white p-4 pr-10 shadow-lg transition-all hover:shadow-xl"
+          class="toast-item group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-xl border-2 bg-background p-4 pr-10 text-foreground shadow-lg transition-all hover:shadow-xl"
           :class="toastClasses(toast.type)"
         >
           <!-- Icon -->
@@ -63,17 +63,17 @@
 
           <!-- Content -->
           <div class="flex-1 space-y-0.5 pt-0.5">
-            <p v-if="toast.title" class="text-sm font-semibold leading-tight text-slate-900">
+            <p v-if="toast.title" class="text-sm font-semibold leading-tight text-foreground">
               {{ toast.title }}
             </p>
-            <p class="text-sm leading-snug text-slate-600" :class="{ 'font-medium text-slate-900': !toast.title }">
+            <p class="text-sm leading-snug text-muted-foreground" :class="{ 'font-medium text-foreground': !toast.title }">
               {{ toast.description }}
             </p>
           </div>
 
           <!-- Close Button -->
           <button
-            class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100"
+            class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
             @click="removeToast(toast.id)"
           >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -140,7 +140,6 @@ const iconBgClasses = (type?: string) => {
   transition: transform 0.3s ease;
 }
 </style>
-
 
 
 

@@ -218,6 +218,11 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 const route = useRoute();
+useHead({
+  htmlAttrs: {
+    'data-admin-theme': 'true',
+  },
+});
 const { siteName } = useSiteIdentity();
 const mobileNavOpen = ref(false);
 const themePreference = ref<AdminThemePreference>('system');

@@ -40,7 +40,7 @@ const delegatedProps = computed(() => {
       <CalendarPrev
         data-slot="calendar-prev"
         aria-label="Previous month"
-        class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+        class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium opacity-50 ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
       >
         <ChevronLeft class="h-4 w-4" />
       </CalendarPrev>
@@ -50,7 +50,7 @@ const delegatedProps = computed(() => {
       <CalendarNext
         data-slot="calendar-next"
         aria-label="Next month"
-        class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+        class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium opacity-50 ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
       >
         <ChevronRight class="h-4 w-4" />
       </CalendarNext>
@@ -63,7 +63,7 @@ const delegatedProps = computed(() => {
             <CalendarHeadCell
               v-for="day in weekDays"
               :key="day"
-              :class="cn('rounded-md font-normal text-gray-500', props.fluid ? 'w-full py-2 text-sm' : 'w-8 text-[0.8rem]')"
+              :class="cn('rounded-md font-normal text-muted-foreground', props.fluid ? 'w-full py-2 text-sm' : 'w-8 text-[0.8rem]')"
             >
               {{ day }}
             </CalendarHeadCell>
@@ -80,12 +80,12 @@ const delegatedProps = computed(() => {
               v-for="weekDate in weekDates"
               :key="weekDate.toString()"
               :date="weekDate"
-              :class="cn('relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([data-selected])]:bg-gray-100 first:[&:has([data-selected])]:rounded-l-md last:[&:has([data-selected])]:rounded-r-md [&:has([data-selected][data-outside-month])]:bg-gray-100/50', props.fluid && 'w-full')"
+              :class="cn('relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([data-selected])]:bg-accent first:[&:has([data-selected])]:rounded-l-md last:[&:has([data-selected])]:rounded-r-md [&:has([data-selected][data-outside-month])]:bg-accent/50', props.fluid && 'w-full')"
             >
               <CalendarCellTrigger
                 :day="weekDate"
                 :month="month.value"
-                :class="cn('inline-flex items-center justify-center rounded-md p-0 font-normal ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2 aria-selected:opacity-100 data-[today]:bg-gray-100 data-[today]:text-gray-900 data-[selected]:bg-[#001E50] data-[selected]:text-white data-[selected]:hover:bg-[#001E50] data-[selected]:hover:text-white data-[selected]:focus:bg-[#001E50] data-[selected]:focus:text-white data-[disabled]:text-gray-400 data-[disabled]:opacity-50 data-[outside-month]:pointer-events-none data-[outside-month]:text-gray-400 data-[outside-month]:opacity-50 hover:bg-gray-100 hover:text-gray-900', props.fluid ? 'h-12 w-full text-base font-medium' : 'h-8 w-8 text-sm')"
+                :class="cn('inline-flex items-center justify-center rounded-md p-0 font-normal ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 aria-selected:opacity-100 data-[today]:bg-accent data-[today]:text-accent-foreground data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:hover:bg-primary data-[selected]:hover:text-primary-foreground data-[selected]:focus:bg-primary data-[selected]:focus:text-primary-foreground data-[disabled]:text-muted-foreground data-[disabled]:opacity-50 data-[outside-month]:pointer-events-none data-[outside-month]:text-muted-foreground data-[outside-month]:opacity-50', props.fluid ? 'h-12 w-full text-base font-medium' : 'h-8 w-8 text-sm')"
               />
             </CalendarCell>
           </CalendarGridRow>
@@ -94,7 +94,6 @@ const delegatedProps = computed(() => {
     </div>
   </CalendarRoot>
 </template>
-
 
 
 
