@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNull, lt, lte, notInArray, or, sql } from 'drizzle-orm';
 import { db } from '../../../utils/db';
 import { dealers, enquiries, marketingMetricsDaily, marketingSyncRuns, type MarketingMetricsDaily } from '../../../database/schema';
 import { aggregateMarketingMetrics, type CrmCampaignCount, type MetricInput } from '../../../utils/metrics/aggregate';
@@ -16,9 +16,12 @@ import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
 import { buildMarketingTrend } from '../../../utils/metrics/marketingTrend';
 import { collectCreativeMedia } from '../../../utils/metrics/creativeMedia';
 import { aggregateProviderBreakdowns } from '../../../utils/metrics/providerBreakdowns';
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_RANGE_DAYS = 366;
+import {
+  MARKETING_REPORT_TIME_ZONE,
+  SYNTHETIC_MARKETING_LEAD_SOURCES,
+  marketingReportDateForInstant,
+  resolveMarketingReportRange,
+} from '../../../utils/metrics/reportScope';
 
 export default defineEventHandler(async (event) => {
   const user = event.context.user;
@@ -28,6 +31,11 @@ export default defineEventHandler(async (event) => {
 
   const dealerId = user.dealerId;
   const { from, to, fromDate, dayAfterTo } = resolveRange(getQuery(event));
+  const crmLeadScope = reportCrmLeadScope(dealerId, fromDate, dayAfterTo);
+  // PostgreSQL must see the exact same expression in SELECT, GROUP BY and ORDER BY.
+  // A bound timezone would become a different parameter in each repeated expression.
+  const crmLeadTimeZone = sql.raw(`'${MARKETING_REPORT_TIME_ZONE}'`);
+  const crmLeadLocalDate = sql<string>`date_trunc('day', ${enquiries.createdAt} AT TIME ZONE ${crmLeadTimeZone})::date`;
 
   const [dealer] = await db.select({ settings: dealers.settings }).from(dealers).where(eq(dealers.id, dealerId));
   const dealerSettings = (dealer?.settings as Record<string, any>) || {};
@@ -75,18 +83,18 @@ export default defineEventHandler(async (event) => {
       crmRef: enquiries.crmRef,
       externalRef: enquiries.externalRef,
     }).from(enquiries)
-      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo), isNull(enquiries.archivedAt)))
+      .where(crmLeadScope)
       .orderBy(desc(enquiries.createdAt)),
     db.select({
-      date: sql<string>`date_trunc('day', ${enquiries.createdAt})::date`,
+      date: crmLeadLocalDate,
       total: sql<number>`count(*)::int`,
       withUtm: sql<number>`count(*) filter (where ${enquiries.utmSource} is not null or ${enquiries.utmMedium} is not null or ${enquiries.utmCampaign} is not null)::int`,
       withCampaign: sql<number>`count(*) filter (where ${enquiries.utmCampaign} is not null and ${enquiries.utmCampaign} <> '')::int`,
       syncedToCrm: sql<number>`count(*) filter (where ${enquiries.syncedToCrm} = true)::int`,
     }).from(enquiries)
-      .where(and(eq(enquiries.dealerId, dealerId), gte(enquiries.createdAt, fromDate), lt(enquiries.createdAt, dayAfterTo), isNull(enquiries.archivedAt)))
-      .groupBy(sql`date_trunc('day', ${enquiries.createdAt})::date`)
-      .orderBy(sql`date_trunc('day', ${enquiries.createdAt})::date`),
+      .where(crmLeadScope)
+      .groupBy(crmLeadLocalDate)
+      .orderBy(crmLeadLocalDate),
     db.select().from(marketingSyncRuns)
       .where(eq(marketingSyncRuns.dealerId, dealerId))
       .orderBy(desc(marketingSyncRuns.startedAt))
@@ -329,7 +337,7 @@ function summarizeDailyPaidLeads(
   for (const lead of leads) {
     const platform = inferredByLeadId.get(lead.id)?.platform;
     if (platform !== 'meta_ads' && platform !== 'google_ads') continue;
-    const date = lead.createdAt.toISOString().slice(0, 10);
+    const date = marketingReportDateForInstant(lead.createdAt);
     totals.set(date, (totals.get(date) || 0) + 1);
   }
   return [...totals].map(([date, total]) => ({ date, total }));
@@ -590,43 +598,25 @@ function hasExternalCrmSyncEnabled(settings: Record<string, any>) {
 }
 
 function resolveRange(query: Record<string, unknown>) {
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const defaultFrom = `${today.slice(0, 8)}01`;
-
-  const from = parseDateQuery(query.from, defaultFrom, 'from');
-  const to = parseDateQuery(query.to, today, 'to');
-  const fromDate = toUtcDate(from);
-  const toDate = toUtcDate(to);
-
-  if (from > to) {
-    throw createError({ statusCode: 400, message: 'from must be on or before to' });
+  try {
+    return resolveMarketingReportRange(query);
+  } catch (error) {
+    throw createError({
+      statusCode: 400,
+      message: error instanceof Error ? error.message : 'Invalid marketing report date range',
+    });
   }
-
-  const rangeDays = Math.floor((toDate.getTime() - fromDate.getTime()) / 86_400_000) + 1;
-  if (rangeDays > MAX_RANGE_DAYS) {
-    throw createError({ statusCode: 400, message: `Date range cannot exceed ${MAX_RANGE_DAYS} days` });
-  }
-
-  const dayAfterTo = new Date(toDate);
-  dayAfterTo.setUTCDate(dayAfterTo.getUTCDate() + 1);
-
-  return { from, to, fromDate, dayAfterTo };
 }
 
-function parseDateQuery(value: unknown, fallback: string, name: string) {
-  if (value == null || value === '') return fallback;
-  if (Array.isArray(value)) {
-    throw createError({ statusCode: 400, message: `${name} must be a single YYYY-MM-DD date` });
-  }
-  const str = String(value);
-  const parsed = toUtcDate(str);
-  if (!DATE_RE.test(str) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== str) {
-    throw createError({ statusCode: 400, message: `${name} must be a valid YYYY-MM-DD date` });
-  }
-  return str;
-}
-
-function toUtcDate(value: string) {
-  return new Date(`${value}T00:00:00Z`);
+function reportCrmLeadScope(dealerId: string, fromDate: Date, dayAfterTo: Date) {
+  return and(
+    eq(enquiries.dealerId, dealerId),
+    gte(enquiries.createdAt, fromDate),
+    lt(enquiries.createdAt, dayAfterTo),
+    isNull(enquiries.archivedAt),
+    or(
+      isNull(enquiries.source),
+      notInArray(enquiries.source, [...SYNTHETIC_MARKETING_LEAD_SOURCES]),
+    ),
+  );
 }

@@ -26,9 +26,9 @@
       align="end"
       :side-offset="8"
       :collision-padding="8"
-      class="admin-notifications-dropdown w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0 shadow-xl"
+      class="admin-theme-surface admin-notifications-dropdown w-[min(24rem,calc(100vw-1rem))] overflow-hidden p-0 shadow-xl"
     >
-      <div class="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+      <div class="flex items-center justify-between border-b border-border px-3 py-2">
         <DropdownMenuLabel class="p-0 text-sm font-semibold">Notifications</DropdownMenuLabel>
         <Button
           v-if="totalCount > 0"
@@ -55,13 +55,13 @@
         </div>
 
         <!-- Notifications list -->
-        <div v-else class="space-y-1.5 bg-slate-50/70 p-2">
+        <div v-else class="space-y-1.5 bg-muted/40 p-2">
           <button
             v-for="notification in notifications"
             :key="notification.id"
             type="button"
-            class="grid min-h-0 w-full grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left shadow-sm outline-none transition-colors hover:border-slate-300 hover:bg-white focus:border-sky-300 focus:bg-white focus:ring-2 focus:ring-sky-100 dark:border-border dark:bg-background dark:hover:bg-muted/50 dark:focus:bg-muted/50"
-            :class="{ 'border-sky-200 bg-sky-50/60 dark:bg-blue-950/20': !notification.read }"
+            class="grid min-h-0 w-full grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5 rounded-lg border border-border bg-background px-2.5 py-2 text-left shadow-sm outline-none transition-colors hover:border-primary/30 hover:bg-muted/50 focus:border-primary/40 focus:bg-muted/50 focus:ring-2 focus:ring-ring/20"
+            :class="{ 'border-primary/25 bg-primary/10': !notification.read }"
             @click="handleNotificationClick(notification)"
           >
             <div
@@ -75,7 +75,7 @@
                 <span class="truncate text-[13px] font-semibold leading-4" :class="{ 'text-foreground': !notification.read, 'text-muted-foreground': notification.read }">
                   {{ notification.title }}
                 </span>
-                <span v-if="!notification.read" class="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                <span v-if="!notification.read" class="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
               </div>
               <div class="truncate text-xs leading-4 text-muted-foreground">
                 {{ notification.message }}
@@ -93,7 +93,7 @@
       <button
         v-if="notifications.length > 0"
         type="button"
-        class="flex w-full items-center justify-center gap-1 border-0 bg-white px-3 py-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-slate-50 hover:text-foreground focus:bg-slate-50 focus:text-foreground dark:bg-background dark:hover:bg-muted/50 dark:focus:bg-muted/50"
+        class="flex w-full items-center justify-center gap-1 border-0 bg-background px-3 py-2 text-xs text-muted-foreground outline-none transition-colors hover:bg-muted/50 hover:text-foreground focus:bg-muted/50 focus:text-foreground"
         @click="viewAllNotifications"
       >
         View all enquiries
@@ -168,16 +168,16 @@ const iconMap: Record<string, Component> = {
 };
 
 const iconClassMap: Record<string, string> = {
-  contact: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  vehicle: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  finance: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-  service: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
-  parts: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  test_drive: 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
-  assignment: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
-  snooze_expired: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  system: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  default: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  contact: 'bg-primary/10 text-primary',
+  vehicle: 'bg-primary/10 text-primary',
+  finance: 'bg-primary/10 text-primary',
+  service: 'bg-primary/10 text-primary',
+  parts: 'bg-primary/10 text-primary',
+  test_drive: 'bg-primary/10 text-primary',
+  assignment: 'bg-primary/10 text-primary',
+  snooze_expired: 'bg-destructive/10 text-destructive',
+  system: 'bg-muted text-muted-foreground',
+  default: 'bg-muted text-muted-foreground',
 };
 
 function getNotificationIcon(type: string): Component {

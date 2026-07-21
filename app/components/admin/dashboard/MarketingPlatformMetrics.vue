@@ -241,6 +241,7 @@ import { Badge } from '~/components/ui/badge';
 import { Calendar } from '~/components/ui/calendar';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '~/components/ui/sheet';
 import { formatAdminDate } from '~/utils/dashboardFormat';
+import { defaultMarketingDateRange, reportDateInTimeZone } from '~/utils/marketingReportFormat';
 
 type PlatformId = 'ga4' | 'meta_ads' | 'google_ads' | 'crm';
 
@@ -295,9 +296,10 @@ type PresetId = 'mtd' | '7d' | '30d' | '90d';
 type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive';
 type DateBoundary = 'from' | 'to';
 
-const today = isoDate(new Date());
-const from = ref(`${today.slice(0, 8)}01`);
-const to = ref(today);
+const today = reportDateInTimeZone();
+const defaultDateRange = defaultMarketingDateRange(today);
+const from = ref(defaultDateRange.from);
+const to = ref(defaultDateRange.to);
 const dateSheetOpen = ref(false);
 const activeDateBoundary = ref<DateBoundary>('from');
 const dateBoundaries: { id: DateBoundary; label: string }[] = [

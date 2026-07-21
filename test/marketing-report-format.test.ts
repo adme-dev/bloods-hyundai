@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  defaultMarketingDateRange,
   formatReportDate,
   formatReportShortDate,
   formatReportTimestamp,
@@ -8,6 +9,13 @@ import {
 } from '../app/utils/marketingReportFormat.ts';
 
 describe('marketing report date formatting', () => {
+  it('defaults new dashboard sessions to an inclusive 30-day range', () => {
+    assert.deepEqual(defaultMarketingDateRange('2026-07-21'), {
+      from: '2026-06-22',
+      to: '2026-07-21',
+    });
+  });
+
   it('formats date-only values without runtime-dependent month names', () => {
     assert.equal(formatReportDate('2026-07-01'), '1 Jul 2026');
     assert.equal(formatReportShortDate('2026-07-11'), '11 Jul');

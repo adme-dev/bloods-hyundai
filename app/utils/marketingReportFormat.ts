@@ -1,6 +1,12 @@
 const DEALER_TIME_ZONE = 'Australia/Melbourne';
 const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 
+export function defaultMarketingDateRange(today: string): { from: string; to: string } {
+  const from = new Date(`${today}T00:00:00Z`);
+  from.setUTCDate(from.getUTCDate() - 29);
+  return { from: from.toISOString().slice(0, 10), to: today };
+}
+
 export function formatReportDate(value: string): string {
   const { year, month, day } = parseDateOnly(value);
   return `${day} ${SHORT_MONTHS[month - 1]} ${year}`;
