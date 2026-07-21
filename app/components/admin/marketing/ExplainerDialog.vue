@@ -42,7 +42,7 @@
         v-for="t in explainerTopics"
         :key="t.key"
         :ref="el => setSectionEl(t.key, el)"
-        class="-mx-3 space-y-2 rounded-lg p-3 transition-colors"
+        class="scroll-mt-6 space-y-2 rounded-lg px-3 py-3 transition-colors"
         :class="{ 'bg-primary/5 ring-1 ring-primary/30': highlighted === t.key }"
       >
         <h3 class="text-sm font-semibold">{{ t.title }}</h3>
@@ -102,7 +102,7 @@ watch(() => props.open, async (open) => {
   if (!props.topic) return;
   highlighted.value = props.topic;
   await nextTick();
-  sectionEls.get(props.topic)?.scrollIntoView({ block: 'start' });
+  sectionEls.get(props.topic)?.scrollIntoView({ block: 'center', inline: 'nearest' });
 });
 
 watch(() => [props.from, props.to], () => {
