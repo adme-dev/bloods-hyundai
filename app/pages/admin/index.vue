@@ -297,7 +297,8 @@ function onTabChange(value: string | number | null) {
   border-left: 3px solid var(--dashboard-crit);
   border-radius: 14px;
   padding: 15px 17px;
-  background: var(--dashboard-surface);
+  background-color: var(--dashboard-surface);
+  color: var(--dashboard-ink);
   box-shadow: var(--dashboard-shadow);
 }
 
@@ -372,7 +373,8 @@ function onTabChange(value: string | number | null) {
   max-width: 100%;
   border-color: var(--dashboard-line);
   border-radius: 14px;
-  background: var(--dashboard-surface);
+  background-color: var(--dashboard-surface);
+  color: var(--dashboard-ink);
   box-shadow: var(--dashboard-shadow);
 }
 
@@ -386,13 +388,14 @@ function onTabChange(value: string | number | null) {
 }
 
 .dashboard-shell :deep(h2),
-.dashboard-shell :deep(h3) {
+.dashboard-shell :deep(h3),
+.dashboard-shell :deep(h4) {
   color: var(--dashboard-ink);
   letter-spacing: -.01em;
 }
 
 @media (prefers-color-scheme: dark) {
-  :global(:root:not([data-theme="light"])) .dashboard-shell {
+  :global(:root:not([data-theme="light"]) .dashboard-shell) {
     --dashboard-ground: #080f18;
     --dashboard-surface: #101b28;
     --dashboard-surface-2: #152232;
@@ -407,7 +410,8 @@ function onTabChange(value: string | number | null) {
   }
 }
 
-:global(.dark) .dashboard-shell {
+:global(.dark .dashboard-shell),
+:global(:root[data-theme="dark"] .dashboard-shell) {
   --dashboard-ground: #080f18;
   --dashboard-surface: #101b28;
   --dashboard-surface-2: #152232;
