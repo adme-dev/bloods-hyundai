@@ -112,6 +112,27 @@
                 <div class="mt-0.5 truncate text-xs text-muted-foreground">{{ userEmail }}</div>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel class="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Colour mode
+              </DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                :model-value="themePreference"
+                aria-label="Colour mode"
+                @update:model-value="setThemePreference"
+              >
+                <DropdownMenuRadioItem value="system">
+                  <Monitor class="mr-2 h-4 w-4" />
+                  System
+                  <span class="ml-auto text-xs text-muted-foreground">Device</span>
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="light">
+                  <Sun class="mr-2 h-4 w-4" /> Light
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark">
+                  <Moon class="mr-2 h-4 w-4" /> Dark
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+              <DropdownMenuSeparator />
               <DropdownMenuItem @click="navigateTo('/admin/settings')">
                 <Settings class="mr-2 h-4 w-4" /> Settings
               </DropdownMenuItem>
@@ -151,12 +172,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from '#imports';
-import { Menu, LogOut, Settings, GitBranch, Mail, MailPlus, Palette, Image, ChevronDown } from 'lucide-vue-next';
+import {
+  ChevronDown,
+  GitBranch,
+  Image,
+  LogOut,
+  Mail,
+  MailPlus,
+  Menu,
+  Monitor,
+  Moon,
+  Palette,
+  Settings,
+  Sun,
+} from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import NotificationBell from '~/components/admin/NotificationBell.vue';
+import {
+  ADMIN_THEME_STORAGE_KEY,
+  normalizeAdminThemePreference,
+  resolveAdminTheme,
+  type AdminThemePreference,
+} from '~/utils/adminTheme';
 import {
   Sheet,
   SheetClose,
@@ -171,6 +211,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu';
@@ -178,6 +220,41 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
 const route = useRoute();
 const { siteName } = useSiteIdentity();
 const mobileNavOpen = ref(false);
+const themePreference = ref<AdminThemePreference>('system');
+let systemThemeQuery: MediaQueryList | null = null;
+let rootThemeBeforeAdmin: string | null = null;
+let rootWasDarkBeforeAdmin = false;
+let rootColourSchemeBeforeAdmin = '';
+
+const applyThemePreference = () => {
+  if (!import.meta.client) return;
+
+  const resolvedTheme = resolveAdminTheme(
+    themePreference.value,
+    systemThemeQuery?.matches ?? window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
+  const root = document.documentElement;
+
+  root.dataset.theme = themePreference.value;
+  root.classList.toggle('dark', resolvedTheme === 'dark');
+  root.style.colorScheme = resolvedTheme;
+};
+
+const setThemePreference = (value: unknown) => {
+  themePreference.value = normalizeAdminThemePreference(value);
+
+  try {
+    window.localStorage.setItem(ADMIN_THEME_STORAGE_KEY, themePreference.value);
+  } catch {
+    // Storage can be unavailable in locked-down browsers; the session choice still applies.
+  }
+
+  applyThemePreference();
+};
+
+const handleSystemThemeChange = () => {
+  if (themePreference.value === 'system') applyThemePreference();
+};
 
 const navLinks = [
   { label: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
@@ -254,7 +331,38 @@ const fetchUser = async () => {
   }
 };
 
-onMounted(fetchUser);
+onMounted(() => {
+  const root = document.documentElement;
+  rootThemeBeforeAdmin = root.getAttribute('data-theme');
+  rootWasDarkBeforeAdmin = root.classList.contains('dark');
+  rootColourSchemeBeforeAdmin = root.style.colorScheme;
+  systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+  try {
+    themePreference.value = normalizeAdminThemePreference(
+      window.localStorage.getItem(ADMIN_THEME_STORAGE_KEY),
+    );
+  } catch {
+    themePreference.value = 'system';
+  }
+
+  applyThemePreference();
+  systemThemeQuery.addEventListener('change', handleSystemThemeChange);
+  fetchUser();
+});
+
+onBeforeUnmount(() => {
+  systemThemeQuery?.removeEventListener('change', handleSystemThemeChange);
+
+  const root = document.documentElement;
+  if (rootThemeBeforeAdmin === null) {
+    delete root.dataset.theme;
+  } else {
+    root.dataset.theme = rootThemeBeforeAdmin;
+  }
+  root.classList.toggle('dark', rootWasDarkBeforeAdmin);
+  root.style.colorScheme = rootColourSchemeBeforeAdmin;
+});
 
 const handleLogout = async () => {
   try {
