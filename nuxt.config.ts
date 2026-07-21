@@ -143,12 +143,13 @@ export default {
     dealerStudioApiKey: process.env.DEALER_STUDIO_API_KEY || '',
     dealerStudioCronSecret: process.env.DEALER_STUDIO_CRON_SECRET || '',
 
-    // Cloudflare R2 Storage
-    cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
-    r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-    r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-    r2BucketName: process.env.R2_BUCKET_NAME || 'dealer-assets',
-    r2PublicUrl: process.env.R2_PUBLIC_URL || '',
+    // Cloudflare R2 Storage (CLOUDFLARE_R2_* aliases match the env naming
+    // used across our other dealer projects, so copied blocks work as-is)
+    cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID || '',
+    r2AccessKeyId: process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY || '',
+    r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_KEY || '',
+    r2BucketName: process.env.R2_BUCKET_NAME || process.env.CLOUDFLARE_R2_BUCKET || 'dealer-assets',
+    r2PublicUrl: process.env.R2_PUBLIC_URL || process.env.CLOUDFLARE_R2_PUBLIC_URL || '',
 
     // Public (exposed to client)
     public: {
@@ -342,6 +343,7 @@ export default {
     '/api/finance-widget-settings':  { swr: 300 },
     '/api/service-booking-settings': { swr: 300 },
     '/api/popup-settings':           { swr: 300 },
+    '/api/stock-card-promo-settings': { swr: 60 },
     '/api/header-settings':          { swr: 600 },
     // /api/site-config manages its own tenant cache and explicit refresh.
     // Do not wrap it in a second edge cache that varies by query string.

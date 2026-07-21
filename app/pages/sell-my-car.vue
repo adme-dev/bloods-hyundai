@@ -44,10 +44,10 @@
                 fetchpriority="high"
               >
             </picture>
-            <div class="absolute inset-x-0 bottom-0 bg-[#001E50]/90 p-5 text-white">
+            <figcaption class="absolute inset-x-0 bottom-0 bg-[#001E50]/90 p-5 text-white">
               <p class="text-xs font-semibold uppercase tracking-wide text-sky-200">{{ siteName }} appraisal team</p>
-              <figcaption class="mt-1 text-lg font-semibold">Fast, fair valuation with a local team.</figcaption>
-            </div>
+              <p class="mt-1 text-lg font-semibold">Fast, fair valuation with a local team.</p>
+            </figcaption>
           </figure>
         </div>
 

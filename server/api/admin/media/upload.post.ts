@@ -117,6 +117,13 @@ export default defineEventHandler(async (event) => {
       throw error;
     }
 
+    if (/credential|access key|signature|invalidaccesskeyid/i.test(String(error?.message || ''))) {
+      throw createError({
+        statusCode: 503,
+        message: 'Media storage credentials are invalid — check the R2 access keys in the server environment.',
+      });
+    }
+
     throw createError({
       statusCode: 500,
       message: error.message || 'Failed to upload file',

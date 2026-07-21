@@ -74,9 +74,21 @@ export default defineEventHandler(async (event) => {
       throw error;
     }
 
+    if (isCredentialError(error)) {
+      throw createError({
+        statusCode: 503,
+        message: 'Media storage credentials are invalid — check the R2 access keys in the server environment.',
+      });
+    }
+
     throw createError({
       statusCode: 500,
       message: error.message || 'Failed to list media files',
     });
   }
 });
+
+function isCredentialError(error: any): boolean {
+  const message = String(error?.message || '');
+  return /credential|access key|signature|invalidaccesskeyid/i.test(message);
+}
