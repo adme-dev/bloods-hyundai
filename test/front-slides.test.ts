@@ -70,6 +70,25 @@ describe('front slide resolution', () => {
     assert.equal(resolved[0].link, '/special-offers');
   });
 
+  it('keeps the homepage slider empty when dashboard management publishes no slides', () => {
+    const promotional = [{
+      homepageSliderManaged: true,
+      slides: [],
+      footerblocks: [{
+        slides: 'https://example.com/footer-content.jpg',
+        start_date: '01-01-2026',
+        end_date: '31-12-2026',
+      }],
+    }];
+
+    assert.equal(shouldFetchOffersHero(promotional, 'Blood Hyundai', new Date(2026, 6, 21)), false);
+    assert.deepEqual(resolveHomeSlides(promotional, {
+      siteName: 'Blood Hyundai',
+      now: new Date(2026, 6, 21),
+      offersHero: { desktop: 'https://www.hyundai.com/current-desktop.jpg' },
+    }), []);
+  });
+
   it('does not add the Blood Hyundai offers fallback for other sites', () => {
     const slides = [
       {

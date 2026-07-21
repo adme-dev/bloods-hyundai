@@ -3,6 +3,13 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 describe('homepage slider admin UI', () => {
+  it('allows saving an empty dashboard-managed slider', () => {
+    const page = readFileSync('app/pages/admin/settings/homepage-slider.vue', 'utf8');
+
+    assert.doesNotMatch(page, /customEnabled\s*&&\s*!enabledSlideCount/);
+    assert.match(page, /Leave the list empty to hide the homepage slider/i);
+  });
+
   it('supports responsive image selection, scheduling, ordering, and preview', () => {
     const page = readFileSync('app/pages/admin/settings/homepage-slider.vue', 'utf8');
     const editor = readFileSync('app/components/admin/settings/HomepageSlideEditor.vue', 'utf8');

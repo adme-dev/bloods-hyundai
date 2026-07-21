@@ -62,10 +62,6 @@ export function parseHomepageSliderInput(
     parseSlide(value, index, options.allowedImageHosts, errors)
   );
 
-  if (enabled && !slides.some((slide) => slide.enabled)) {
-    errors.push('At least one enabled slide is required when custom slider management is enabled.');
-  }
-
   if (errors.length) return { ok: false, errors };
 
   return {
@@ -124,7 +120,7 @@ export function applyHomepageSliderOverride<T extends Record<string, unknown>>(
     .filter((slide) => slide.enabled)
     .map(toPublicSlide);
   const promotional = [
-    { ...firstEntry, slides: publicSlides },
+    { ...firstEntry, homepageSliderManaged: true, slides: publicSlides },
     ...currentPromotional.slice(1),
   ];
 

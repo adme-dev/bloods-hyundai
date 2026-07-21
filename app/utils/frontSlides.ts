@@ -38,6 +38,7 @@ interface ResolveHomeSlidesOptions {
 }
 
 interface PromotionalEntry {
+  homepageSliderManaged?: boolean;
   slides?: unknown;
   footerbanner?: unknown;
   footerblocks?: unknown;
@@ -82,7 +83,9 @@ export function getConfiguredFrontSlides(source: unknown): FrontSlide[] {
       const item = entry as Record<string, unknown>;
 
       const legacySlides = Array.isArray(item.slides) ? item.slides : [];
-      const footerblockSlides = Array.isArray(item.footerblocks) ? item.footerblocks : [];
+      const footerblockSlides = item.homepageSliderManaged === true
+        ? []
+        : Array.isArray(item.footerblocks) ? item.footerblocks : [];
 
       const mapped = [
         ...legacySlides.map(mapSlideConfig),
@@ -118,6 +121,10 @@ export function resolveHomeSlides(source: unknown, options: ResolveHomeSlidesOpt
     return activeSlides;
   }
 
+  if (isDashboardManagedSlider(source)) {
+    return [];
+  }
+
   if (!isBloodHyundai(options.siteName)) {
     return [];
   }
@@ -128,10 +135,15 @@ export function resolveHomeSlides(source: unknown, options: ResolveHomeSlidesOpt
 
 export function shouldFetchOffersHero(source: unknown, siteName?: string | null, now: Date = new Date()): boolean {
   if (!isBloodHyundai(siteName)) return false;
+  if (isDashboardManagedSlider(source)) return false;
 
   return getConfiguredFrontSlides(source).every((slide) =>
     !isDateInRangeAt(slide.start, slide.end, now)
   );
+}
+
+function isDashboardManagedSlider(source: unknown): boolean {
+  return normalizePromotionalSource(source).some((entry) => entry.homepageSliderManaged === true);
 }
 
 export function getFrontSlideDurationMs(slide?: FrontSlide): number {

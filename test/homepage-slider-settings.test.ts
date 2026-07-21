@@ -95,15 +95,16 @@ describe('homepage slider settings contract', () => {
     assert.match(result.errors.join(' '), /start date must not be after/i);
   });
 
-  it('requires at least one enabled slide when custom management is enabled', () => {
+  it('allows custom management to publish an intentionally empty slider', () => {
     const result = parseHomepageSliderInput({
       enabled: true,
-      slides: [{ ...validSlide, enabled: false }],
+      slides: [],
     }, { allowedImageHosts });
 
-    assert.equal(result.ok, false);
-    if (result.ok) return;
-    assert.match(result.errors.join(' '), /at least one enabled slide/i);
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.value.enabled, true);
+    assert.deepEqual(result.value.slides, []);
   });
 
   it('replaces only hero slides while preserving upstream thumbs and footer content', () => {
@@ -127,6 +128,7 @@ describe('homepage slider settings contract', () => {
 
     const promotional = result.promotional as Array<Record<string, unknown>>;
     assert.equal((promotional[0]?.slides as unknown[]).length, 1);
+    assert.equal(promotional[0]?.homepageSliderManaged, true);
     assert.deepEqual(promotional[0]?.thumbs, [{ image: 'https://driveagentmedia.b-cdn.net/thumb.jpg' }]);
     assert.deepEqual(promotional[0]?.footerblocks, [{ slides: 'https://driveagentmedia.b-cdn.net/footer.jpg' }]);
   });

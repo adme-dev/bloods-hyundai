@@ -59,7 +59,9 @@ export default defineEventHandler(async (event) => {
     return {
       success: true,
       message: parsed.value.enabled
-        ? 'Homepage slider published successfully'
+        ? parsed.value.slides.some((slide) => slide.enabled)
+          ? 'Homepage slider published successfully'
+          : 'Homepage slider cleared successfully'
         : 'Custom homepage slider disabled; upstream slides remain active',
       settings: parsed.value,
     };

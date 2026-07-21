@@ -100,7 +100,7 @@
           <Images class="mx-auto h-9 w-9 text-muted-foreground" />
           <h3 class="mt-3 text-sm font-semibold">No slides configured</h3>
           <p class="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Add a slide with desktop and mobile artwork before enabling dashboard management.
+            Leave the list empty to hide the homepage slider, or add a slide with desktop and mobile artwork.
           </p>
           <Button class="mt-4" @click="addSlide"><Plus class="mr-2 h-4 w-4" /> Add first slide</Button>
         </div>
@@ -136,7 +136,7 @@
             Saving refreshes the public site-config cache immediately. No deployment is required for later slide changes.
           </p>
         </div>
-        <Button :disabled="saving || (customEnabled && !enabledSlideCount)" @click="saveSettings">
+        <Button :disabled="saving" @click="saveSettings">
           <Loader2 v-if="saving" class="mr-2 h-4 w-4 animate-spin" />
           <Save v-else class="mr-2 h-4 w-4" />
           {{ saving ? 'Publishing…' : 'Save slider' }}
