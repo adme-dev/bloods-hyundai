@@ -40,7 +40,6 @@ describe('admin shadcn foundation', () => {
 
   it('keeps the current migration slice free of route-level style blocks', () => {
     const remainingLegacyStyles = [
-      'pages/admin/index.vue',
       'pages/admin/marketing-report.vue',
     ];
     const styledAdminFiles = adminRoots
