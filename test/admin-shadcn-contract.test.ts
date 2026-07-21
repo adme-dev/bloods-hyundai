@@ -49,5 +49,6 @@ describe('admin shadcn foundation', () => {
       .sort();
 
     assert.deepEqual(styledAdminFiles, remainingLegacyStyles.sort());
+    assert.doesNotMatch(adminLayout, /<style(?:\s|>)/);
   });
 });
