@@ -152,6 +152,21 @@
   color-scheme: dark;
 }
 
+// UIkit is still loaded for the public site and applies element-level heading
+// and link colours. The admin theme boundary restores shadcn inheritance with
+// higher specificity while leaving explicit utility colours available.
+:root[data-admin-theme] :where(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+}
+
+:root[data-admin-theme] a:not([class*="text-"]) {
+  color: inherit;
+}
+
+:root[data-admin-theme] a:not(.underline) {
+  text-decoration: none;
+}
+
 // ============================================
 // HYUNDAI SANS FONTS
 // ============================================
@@ -351,8 +366,7 @@ body {
 // ============================================
 
 // Headings use Hyundai Sans Head with OEM-style sizing
-h1, h2, h3, h4, h5, h6,
-.uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6 {
+:root:not([data-admin-theme]) :where(h1, h2, h3, h4, h5, h6, .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6) {
   font-family: var(--font-family-head);
   font-weight: 500; // Hyundai uses medium weight for headings
   letter-spacing: -0.02em; // Tighter tracking like OEM
@@ -361,32 +375,32 @@ h1, h2, h3, h4, h5, h6,
 }
 
 // Specific heading sizes - Hyundai OEM scale
-h1, .uk-h1 {
+:root:not([data-admin-theme]) :where(h1, .uk-h1) {
   font-size: clamp(2rem, 5vw, 3rem); // 32px to 48px
   font-weight: 500;
 }
 
-h2, .uk-h2 {
+:root:not([data-admin-theme]) :where(h2, .uk-h2) {
   font-size: clamp(1.75rem, 4vw, 2.5rem); // 28px to 40px
   font-weight: 500;
 }
 
-h3, .uk-h3 {
+:root:not([data-admin-theme]) :where(h3, .uk-h3) {
   font-size: clamp(1.5rem, 3vw, 2rem); // 24px to 32px
   font-weight: 500;
 }
 
-h4, .uk-h4 {
+:root:not([data-admin-theme]) :where(h4, .uk-h4) {
   font-size: clamp(1.25rem, 2.5vw, 1.5rem); // 20px to 24px
   font-weight: 500;
 }
 
-h5, .uk-h5 {
+:root:not([data-admin-theme]) :where(h5, .uk-h5) {
   font-size: clamp(1.125rem, 2vw, 1.25rem); // 18px to 20px
   font-weight: 500;
 }
 
-h6, .uk-h6 {
+:root:not([data-admin-theme]) :where(h6, .uk-h6) {
   font-size: 1rem; // 16px
   font-weight: 600;
 }
@@ -398,7 +412,7 @@ body, p, span, li, td, th, label, input, textarea, select, button {
 
 // Links - Hyundai accent blue
 // Added underline for accessibility (links must not rely on color alone)
-a {
+:root:not([data-admin-theme]) a {
   color: var(--color-primary-light);
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -1003,8 +1017,6 @@ a[style*="backgroundImage"],
     }
   }
 }
-
-
 
 
 

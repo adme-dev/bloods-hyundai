@@ -36,6 +36,10 @@ describe('admin shadcn foundation', () => {
     assert.match(mainStyles, /--card:\s*0 0% (?:8|9|10)%/);
     assert.match(mainStyles, /--popover:\s*0 0% (?:8|9|10)%/);
     assert.match(adminLayout, /['"]data-admin-theme['"]:\s*['"]true['"]/);
+    assert.match(mainStyles, /:root:not\(\[data-admin-theme\]\) :where\(h1,/);
+    assert.match(mainStyles, /:root:not\(\[data-admin-theme\]\) a/);
+    assert.match(mainStyles, /:root\[data-admin-theme\] :where\(h1,/);
+    assert.match(mainStyles, /:root\[data-admin-theme\] a:not\(\[class\*="text-"\]\)/);
   });
 
   it('keeps the current migration slice free of route-level style blocks', () => {
