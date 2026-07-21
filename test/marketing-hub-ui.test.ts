@@ -16,21 +16,22 @@ const creativeDialogSource = readFileSync(
 
 describe('Marketing Hub UI', () => {
   it('uses the approved Marketing Hub information architecture', () => {
-    assert.match(pageSource, /<h1>Marketing Hub<\/h1>/);
+    assert.match(pageSource, /<AdminPageHeader[\s\S]*title="Marketing Hub"/);
     assert.match(pageSource, /Campaign CPL Reconciliation/);
-    assert.match(pageSource, /Audience &amp; delivery breakdowns/);
+    assert.match(pageSource, /Audience and delivery breakdowns/);
     assert.match(pageSource, /Ad creative/);
     assert.match(pageSource, /Report builder/);
     assert.doesNotMatch(pageSource, />Priority Actions</);
   });
 
-  it('includes the approved theme tokens and responsive layout contract', () => {
-    assert.match(pageSource, /--ground:\s*#eaeef3/);
-    assert.match(pageSource, /--surface:\s*#ffffff/);
-    assert.match(pageSource, /--brand:\s*#001e50/i);
-    assert.match(pageSource, /--accent:\s*#0091b8/);
-    assert.match(pageSource, /@media\s*\(max-width:\s*960px\)/);
-    assert.match(pageSource, /\.marketing-hub__kpis\s*\{[\s\S]*grid-template-columns:\s*repeat\(4,\s*1fr\)/);
+  it('uses the shadcn charcoal contract and responsive utility composition', () => {
+    assert.match(pageSource, /<Card/);
+    assert.match(pageSource, /<Button/);
+    assert.match(pageSource, /<Badge/);
+    assert.match(pageSource, /<Table/);
+    assert.match(pageSource, /sm:grid-cols-2 xl:grid-cols-4/);
+    assert.doesNotMatch(pageSource, /<style(?:\s|>)/);
+    assert.doesNotMatch(pageSource, /--ground|--surface|--brand|--accent/);
   });
 
   it('renders stored provider breakdowns with explicit empty states and no fabricated figures', () => {
@@ -57,31 +58,30 @@ describe('Marketing Hub UI', () => {
     assert.doesNotMatch(pageSource, /Time of day|<span>ROAS<\/span>/);
   });
 
-  it('reaches markup rendered by local child components through the scoped-style boundary', () => {
-    assert.match(pageSource, /:deep\(\.marketing-hub__panel-head\)/);
-    assert.match(pageSource, /:deep\(\.marketing-hub__metrics\)/);
-    assert.match(pageSource, /:deep\(\.marketing-hub__bar-row\)/);
-    assert.match(pageSource, /:deep\(\.marketing-hub__track\)/);
+  it('does not depend on scoped-style child-component overrides', () => {
+    assert.doesNotMatch(pageSource, /:deep\(/);
+    assert.doesNotMatch(pageSource, /defineComponent|const BarRow|const MetricPanel/);
+    assert.match(pageSource, /platformMetricPanels/);
   });
 
-  it('lets the muted report canvas bleed to the full viewport width', () => {
-    assert.match(pageSource, /\.marketing-hub\s*\{[\s\S]*?width:\s*100vw;/);
-    assert.match(pageSource, /margin-left:\s*calc\(50%\s*-\s*50vw\);/);
-    assert.match(pageSource, /\.marketing-hub\s*>\s*\*\s*\{\s*max-width:\s*1200px;/);
+  it('keeps the report in the shared admin content frame', () => {
+    assert.match(pageSource, /max-w-\[1200px\]/);
+    assert.doesNotMatch(pageSource, /100vw|calc\(50%/);
   });
 
   it('provides separate accessible charts for website, paid media, and lead performance', () => {
-    assert.match(pageSource, /role="tablist"/);
-    assert.match(pageSource, /role="tab"/);
+    assert.match(pageSource, /<Tabs/);
+    assert.match(pageSource, /<TabsList/);
+    assert.match(pageSource, /<TabsTrigger/);
     assert.match(pageSource, /Website[\s\S]*Paid media[\s\S]*Leads/);
-    assert.match(pageSource, /aria-selected/);
+    assert.match(pageSource, /:model-value="activeAnalyticsTab"/);
     assert.match(pageSource, /analyticsChartTabs/);
   });
 
   it('makes daily chart values inspectable with pointer and keyboard tooltips', () => {
     assert.match(pageSource, /@mouseenter="activeChartPoint = index"/);
-    assert.match(pageSource, /@focus="activeChartPoint = index"/);
-    assert.match(pageSource, /class="marketing-hub__chart-tooltip"/);
+    assert.match(pageSource, /@keydown\.left\.prevent="moveActiveChartPoint\(-1\)"/);
+    assert.match(pageSource, /v-if="activeChartTooltip"/);
     assert.match(pageSource, /tabindex="0"/);
     assert.match(pageSource, /:x\.attr="chartHitX\(index\)"/);
     assert.match(pageSource, /:width\.attr="chartHitWidth"/);
@@ -95,11 +95,10 @@ describe('Marketing Hub UI', () => {
   });
 
   it('keeps the website acquisition breakdowns together with explicit unavailable states', () => {
-    assert.match(pageSource, /marketing-hub__website-breakdowns/);
     assert.match(pageSource, /Top landing pages[\s\S]*Pages that started website sessions/);
     assert.match(pageSource, /Traffic channels/);
     assert.match(pageSource, /Source \/ medium[\s\S]*Where website sessions came from/);
-    assert.match(pageSource, /GA4 reporting credential is connected/);
+    assert.match(pageSource, /GA4 reporting credential/);
   });
 
   it('shows the high-level path from website visits into the admin CRM', () => {
@@ -119,7 +118,7 @@ describe('Marketing Hub UI', () => {
 
   it('opens each synced ad in an accessible creative preview dialog', () => {
     assert.match(pageSource, /@click="openCreative\(creative\)"/);
-    assert.match(pageSource, /:aria-label="`Preview ad: \$\{creative\.title\}`"/);
+    assert.match(pageSource, /:aria-label="'Preview ad: ' \+ creative\.title"/);
     assert.match(pageSource, /<CreativePreviewDialog/);
     assert.match(pageSource, /v-model:open="creativeDialogOpen"/);
     assert.match(creativeDialogSource, /<Dialog/);

@@ -564,7 +564,7 @@ function platformLabel(platform: PlatformId) {
 function platformBadgeClass(platform: PlatformId) {
   if (platform === 'meta_ads') return 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300';
   if (platform === 'google_ads') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300';
-  return 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
+  return 'bg-muted text-muted-foreground';
 }
 
 function paidPlatformCells(platform?: PaidPlatformMetrics) {

@@ -456,7 +456,7 @@ const getCalendarItemClass = (status: string) => {
     case 'no_show':
       return 'bg-red-100 text-red-900 hover:bg-red-200'
     default:
-      return 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+      return 'bg-muted text-foreground hover:bg-muted/80'
   }
 }
 </script>

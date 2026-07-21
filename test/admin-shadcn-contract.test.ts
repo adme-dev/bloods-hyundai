@@ -39,9 +39,7 @@ describe('admin shadcn foundation', () => {
   });
 
   it('keeps the current migration slice free of route-level style blocks', () => {
-    const remainingLegacyStyles = [
-      'pages/admin/marketing-report.vue',
-    ];
+    const remainingLegacyStyles: string[] = [];
     const styledAdminFiles = adminRoots
       .flatMap(vueAndTsFiles)
       .filter(path => /<style(?:\s|>)/.test(readFileSync(path, 'utf8')))
@@ -50,5 +48,20 @@ describe('admin shadcn foundation', () => {
 
     assert.deepEqual(styledAdminFiles, remainingLegacyStyles.sort());
     assert.doesNotMatch(adminLayout, /<style(?:\s|>)/);
+  });
+
+  it('builds every admin route from shadcn primitives without fixed neutral palettes', () => {
+    const adminFiles = adminRoots.flatMap(vueAndTsFiles);
+    const routeFiles = vueAndTsFiles(join(appRoot, 'pages/admin')).filter(path => extname(path) === '.vue');
+    const routesWithoutShadcn = routeFiles
+      .filter(path => !readFileSync(path, 'utf8').includes('~/components/ui/'))
+      .map(path => path.replace(`${appRoot}/`, ''));
+    const fixedNeutralPattern = /(?:bg|text|border)-gray-\d+/;
+    const fixedNeutralFiles = [...adminFiles, join(appRoot, 'layouts/admin.vue')]
+      .filter(path => fixedNeutralPattern.test(readFileSync(path, 'utf8')))
+      .map(path => path.replace(`${appRoot}/`, ''));
+
+    assert.deepEqual(routesWithoutShadcn, []);
+    assert.deepEqual(fixedNeutralFiles, []);
   });
 });

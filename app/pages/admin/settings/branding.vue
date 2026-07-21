@@ -250,7 +250,7 @@
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div class="rounded-lg border bg-white overflow-hidden">
+          <div class="rounded-lg border bg-card overflow-hidden">
             <!-- Email Header Preview -->
             <div
               class="p-6 text-center"
@@ -270,14 +270,14 @@
 
             <!-- Email Body Preview -->
             <div class="p-6">
-              <p class="text-gray-600">Hi Customer,</p>
-              <p class="mt-4 text-gray-600">
+              <p class="text-muted-foreground">Hi Customer,</p>
+              <p class="mt-4 text-muted-foreground">
                 Thank you for contacting {{ dealer?.name }}. We've received your enquiry...
               </p>
             </div>
 
             <!-- Email Footer Preview -->
-            <div class="border-t bg-gray-50 p-6">
+            <div class="border-t bg-muted/40 p-6">
               <div class="text-center">
                 <NuxtImg
                   v-if="form.logoUrl && !logoError"
@@ -293,17 +293,17 @@
 
                 <!-- Social Icons Preview -->
                 <div v-if="hasSocialLinks" class="mb-4">
-                  <p class="mb-2 text-xs uppercase tracking-wide text-gray-500">Connect With Us</p>
+                  <p class="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Connect With Us</p>
                   <div class="flex justify-center gap-3">
-                    <Facebook v-if="form.facebookUrl" class="h-6 w-6 text-gray-400" />
-                    <Instagram v-if="form.instagramUrl" class="h-6 w-6 text-gray-400" />
-                    <Linkedin v-if="form.linkedinUrl" class="h-6 w-6 text-gray-400" />
-                    <Youtube v-if="form.youtubeUrl" class="h-6 w-6 text-gray-400" />
-                    <Twitter v-if="form.twitterUrl" class="h-6 w-6 text-gray-400" />
+                    <Facebook v-if="form.facebookUrl" class="h-6 w-6 text-muted-foreground" />
+                    <Instagram v-if="form.instagramUrl" class="h-6 w-6 text-muted-foreground" />
+                    <Linkedin v-if="form.linkedinUrl" class="h-6 w-6 text-muted-foreground" />
+                    <Youtube v-if="form.youtubeUrl" class="h-6 w-6 text-muted-foreground" />
+                    <Twitter v-if="form.twitterUrl" class="h-6 w-6 text-muted-foreground" />
                   </div>
                 </div>
 
-                <p class="text-xs text-gray-400">
+                <p class="text-xs text-muted-foreground">
                   &copy; {{ new Date().getFullYear() }} {{ dealer?.name }}. All rights reserved.
                 </p>
               </div>
