@@ -36,7 +36,7 @@ describe('admin shadcn foundation', () => {
     assert.match(mainStyles, /--card:\s*0 0% (?:8|9|10)%/);
     assert.match(mainStyles, /--popover:\s*0 0% (?:8|9|10)%/);
     assert.match(adminLayout, /['"]data-admin-theme['"]:\s*['"]true['"]/);
-    assert.match(mainStyles, /:root:not\(\[data-admin-theme\]\) :where\(h1,/);
+    assert.match(mainStyles, /:where\(:root:not\(\[data-admin-theme\]\)\) :is\(h1,/);
     assert.match(mainStyles, /:root:not\(\[data-admin-theme\]\) a/);
     assert.match(mainStyles, /:root\[data-admin-theme\] :where\(h1,/);
     assert.match(mainStyles, /:root\[data-admin-theme\] a:not\(\[class\*="text-"\]\)/);
@@ -50,6 +50,11 @@ describe('admin shadcn foundation', () => {
   it('does not underline every link on the public website', () => {
     const publicLinkRule = mainStyles.match(/:root:not\(\[data-admin-theme\]\) a\s*\{([\s\S]*?)\n\}/)?.[1] || '';
     assert.doesNotMatch(publicLinkRule, /text-decoration:\s*underline/);
+  });
+
+  it('lets public component utilities override the legacy heading defaults', () => {
+    assert.doesNotMatch(mainStyles, /:root:not\(\[data-admin-theme\]\) :where\(h[1-6]/);
+    assert.match(mainStyles, /:where\(:root:not\(\[data-admin-theme\]\)\) :is\(h1, \.uk-h1\)/);
   });
 
   it('keeps the current migration slice free of route-level style blocks', () => {
