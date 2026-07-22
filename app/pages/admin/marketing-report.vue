@@ -300,13 +300,13 @@
                 @keydown.left.prevent="moveActiveChartPoint(-1)"
                 @keydown.right.prevent="moveActiveChartPoint(1)"
               >
-                <svg class="block h-[220px] w-full overflow-visible min-[701px]:h-[250px] [&_line]:stroke-border [&_path]:fill-none [&_path]:stroke-[2.4] [&_text]:fill-muted-foreground [&_text]:text-[9px]" viewBox="0 0 720 220" preserveAspectRatio="none" aria-hidden="true">
+                <svg class="block h-[220px] w-full overflow-visible min-[701px]:h-[250px] [&_line]:stroke-border [&_path]:fill-none [&_text]:fill-muted-foreground [&_text]:text-[9px]" viewBox="0 0 720 220" preserveAspectRatio="none" aria-hidden="true">
                   <g v-for="tick in chartAxisTicks" :key="tick.y">
                     <line x1="54" :y1.attr="tick.y" x2="686" :y2.attr="tick.y" />
                     <text x="48" :y.attr="tick.y + 4" text-anchor="end">{{ formatChartAxis(tick.left, 'left') }}</text>
                     <text v-if="activeChartRightMax" x="692" :y.attr="tick.y + 4">{{ formatChartAxis(tick.right, 'right') }}</text>
                   </g>
-                  <path v-for="series in visibleChartSeries" :key="series.key" :d.attr="chartLinePath(series)" :class="chartSeriesClass(series.className, 'stroke')" />
+                  <path v-for="series in visibleChartSeries" :key="series.key" :d.attr="chartLinePath(series)" stroke-width="2.4" :class="chartSeriesClass(series.className, 'stroke')" />
                   <g v-for="(row, index) in websiteTrendRows" :key="row.date" @mouseenter="activeChartPoint = index" @mouseleave="activeChartPoint = null">
                     <rect class="fill-transparent pointer-events-auto" :x.attr="chartHitX(index)" y="18" :width.attr="chartHitWidth" height="164" />
                   </g>
