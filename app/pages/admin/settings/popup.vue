@@ -311,8 +311,8 @@
             <!-- Preview -->
             <div class="space-y-2 pt-4 border-t">
               <Label>Preview</Label>
-              <div class="border rounded-lg overflow-hidden bg-gray-50">
-                <div class="p-3 bg-gray-100 border-b flex items-center justify-between">
+              <div class="border rounded-lg overflow-hidden bg-muted/40">
+                <div class="p-3 bg-muted border-b flex items-center justify-between">
                   <span class="font-medium">{{ form.title }}</span>
                   <Badge variant="outline" class="text-xs">Preview</Badge>
                 </div>
@@ -349,14 +349,14 @@
           </div>
 
           <!-- Disabled info -->
-          <div v-else class="rounded-lg bg-gray-50 p-4 border">
+          <div v-else class="rounded-lg bg-muted/40 p-4 border">
             <div class="flex items-start gap-3">
               <div class="flex-shrink-0">
-                <Info class="h-5 w-5 text-gray-500" />
+                <Info class="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <h4 class="text-sm font-medium text-gray-900">Popup Disabled</h4>
-                <p class="text-sm text-gray-600 mt-1">
+                <h4 class="text-sm font-medium text-foreground">Popup Disabled</h4>
+                <p class="text-sm text-muted-foreground mt-1">
                   Enable the popup above to configure auto-display settings.
                 </p>
               </div>

@@ -34,11 +34,11 @@
                 {{ data.marketingPerformance.channelSummary.paid.rate }}% conv
               </div>
             </div>
-            <div class="rounded-lg border bg-gray-50 dark:bg-gray-800 p-3 text-center">
-              <Globe class="h-4 w-4 mx-auto text-gray-600 mb-1" />
-              <div class="text-xl font-bold text-gray-600">{{ data.marketingPerformance.channelSummary.direct.total }}</div>
+            <div class="rounded-lg border bg-muted/40 p-3 text-center">
+              <Globe class="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+              <div class="text-xl font-bold text-muted-foreground">{{ data.marketingPerformance.channelSummary.direct.total }}</div>
               <div class="text-[10px] text-muted-foreground">Direct</div>
-              <div v-if="data.marketingPerformance.channelSummary.direct.total > 0" class="text-[10px] text-gray-600 font-medium">
+              <div v-if="data.marketingPerformance.channelSummary.direct.total > 0" class="text-[10px] text-muted-foreground font-medium">
                 {{ data.marketingPerformance.channelSummary.direct.rate }}% conv
               </div>
             </div>
@@ -149,7 +149,7 @@
               <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   class="h-full rounded-full transition-all"
-                  :class="campaign.conversionRate >= 30 ? 'bg-green-500' : campaign.conversionRate >= 15 ? 'bg-yellow-500' : 'bg-gray-400'"
+                  :class="campaign.conversionRate >= 30 ? 'bg-green-500' : campaign.conversionRate >= 15 ? 'bg-yellow-500' : 'bg-muted-foreground'"
                   :style="{ width: `${Math.min(campaign.conversionRate, 100)}%` }"
                 />
               </div>

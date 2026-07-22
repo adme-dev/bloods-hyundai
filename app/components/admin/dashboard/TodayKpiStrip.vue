@@ -1,19 +1,19 @@
 <template>
-  <div class="crm-kpi-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
     <Card
       v-for="kpi in kpis"
       :key="kpi.label"
-      class="crm-kpi cursor-pointer transition-all hover:-translate-y-px hover:border-primary/25 hover:shadow-md"
+      class="flex cursor-pointer flex-col overflow-hidden transition-all hover:-translate-y-px hover:border-primary/25 hover:shadow-md"
       @click="kpi.go()"
     >
-      <CardHeader class="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 pb-2">
-        <CardDescription class="crm-kpi__label">{{ kpi.label }}</CardDescription>
-        <CardTitle class="crm-kpi__value" :class="kpi.emphasis && Number(kpi.value) > 0 ? 'text-red-600' : ''">{{ kpi.value }}</CardTitle>
+      <CardHeader class="grid flex-1 grid-cols-[1fr_auto] grid-rows-[auto_auto] items-start gap-1.5 p-[.85rem] pb-2 sm:p-6 sm:pb-2">
+        <CardDescription class="text-xs font-semibold sm:text-[10.5px] sm:font-bold sm:uppercase sm:tracking-[.06em]">{{ kpi.label }}</CardDescription>
+        <CardTitle class="text-[23px] font-bold leading-[1.15] tracking-[-.03em] text-foreground sm:text-[27px]" :class="kpi.emphasis && Number(kpi.value) > 0 ? 'text-red-600' : ''">{{ kpi.value }}</CardTitle>
         <CardAction class="col-start-2 row-span-2 row-start-1">
-          <span class="crm-kpi__icon"><component :is="kpi.icon" class="h-3.5 w-3.5" /></span>
+          <span class="grid size-7 place-items-center rounded-lg border bg-muted text-muted-foreground"><component :is="kpi.icon" class="h-3.5 w-3.5" /></span>
         </CardAction>
       </CardHeader>
-      <CardFooter class="crm-kpi__footer flex items-center justify-between pt-0">
+      <CardFooter class="mt-auto flex items-end justify-between gap-2 pt-0 text-[11.5px] text-muted-foreground sm:mt-[5px] sm:items-center sm:text-[11px] [&_p]:m-0">
         <p>{{ kpi.hint }}</p>
         <ArrowUpRight class="h-3.5 w-3.5" aria-hidden="true" />
       </CardFooter>
@@ -64,86 +64,3 @@ const kpis = computed(() => [
   },
 ]);
 </script>
-
-<style scoped>
-.crm-kpi {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.crm-kpi__label {
-  color: var(--dashboard-muted, hsl(var(--muted-foreground)));
-  font-size: 10.5px;
-  font-weight: 750;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-
-.crm-kpi__icon {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--dashboard-line, hsl(var(--border)));
-  border-radius: 8px;
-  background: var(--dashboard-surface-2, hsl(var(--muted)));
-  color: var(--dashboard-muted, hsl(var(--muted-foreground)));
-}
-
-.crm-kpi__value {
-  color: var(--dashboard-ink, hsl(var(--foreground)));
-  font-size: 27px;
-  font-weight: 750;
-  letter-spacing: -.03em;
-  line-height: 1.15;
-}
-
-.crm-kpi__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 5px;
-  color: var(--dashboard-muted, hsl(var(--muted-foreground)));
-  font-size: 11px;
-}
-
-.crm-kpi__footer p {
-  margin: 0;
-}
-
-@media (max-width: 639px) {
-  .crm-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .crm-kpi :deep([data-slot="card-header"]),
-  .crm-kpi :deep([data-slot="card-content"]) {
-    padding: .85rem;
-  }
-
-
-  .crm-kpi :deep([data-slot="card-header"]) {
-    flex: 1;
-  }
-
-  .crm-kpi__label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
-  }
-
-  .crm-kpi__footer {
-    align-items: flex-end;
-    margin-top: auto;
-    padding-top: 0;
-    font-size: 11.5px;
-  }
-
-  .crm-kpi__value {
-    font-size: 23px;
-  }
-}
-</style>

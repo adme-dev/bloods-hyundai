@@ -36,7 +36,7 @@ const handleUpdate = (value: CheckedState) => {
     data-slot="checkbox"
     v-bind="delegatedProps"
     :class="cn(
-      'peer h-4 w-4 shrink-0 rounded-sm border border-gray-300 bg-white transition-colors hover:border-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001E50] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[#001E50] data-[state=checked]:border-[#001E50] data-[state=checked]:text-white',
+      'peer h-4 w-4 shrink-0 rounded-sm border border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground',
       props.class,
     )"
     @update:model-value="handleUpdate"
@@ -46,7 +46,6 @@ const handleUpdate = (value: CheckedState) => {
     </CheckboxIndicator>
   </CheckboxRoot>
 </template>
-
 
 
 

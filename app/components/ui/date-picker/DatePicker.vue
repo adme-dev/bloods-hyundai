@@ -94,7 +94,7 @@ const isDateDisabled = (date: DateValue) => {
         :disabled="disabled"
         :class="cn(
           'w-full justify-start text-left font-normal',
-          !modelValue && 'text-gray-500',
+          !modelValue && 'text-muted-foreground',
           props.class
         )"
       >
@@ -113,7 +113,6 @@ const isDateDisabled = (date: DateValue) => {
     </PopoverContent>
   </Popover>
 </template>
-
 
 
 

@@ -77,6 +77,96 @@
   --radius: 0.5rem;
 }
 
+// Admin routes use the shadcn semantic contract. Keeping these variables on
+// the document root lets portalled dialogs, selects and menus inherit the same
+// palette as the admin layout.
+:root[data-admin-theme] {
+  --background: 0 0% 98%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --primary: 0 0% 12%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 12%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 92%;
+  --accent-foreground: 0 0% 12%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 86%;
+  --input: 0 0% 82%;
+  --ring: 0 0% 32%;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-admin-theme]:not([data-theme="light"]) {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 0% 96%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 0 0% 17%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 0 0% 20%;
+    --input: 0 0% 22%;
+    --ring: 0 0% 70%;
+    color-scheme: dark;
+  }
+}
+
+:root.dark[data-admin-theme],
+:root[data-admin-theme][data-theme="dark"] {
+  --background: 0 0% 6%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 0% 9%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 0 0% 96%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 14%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 0 0% 64%;
+  --accent: 0 0% 17%;
+  --accent-foreground: 0 0% 96%;
+  --destructive: 0 63% 45%;
+  --destructive-foreground: 0 0% 96%;
+  --border: 0 0% 20%;
+  --input: 0 0% 22%;
+  --ring: 0 0% 70%;
+  color-scheme: dark;
+}
+
+// UIkit is still loaded for the public site and applies element-level heading
+// and link colours. The admin theme boundary restores shadcn inheritance with
+// higher specificity while leaving explicit utility colours available.
+:root[data-admin-theme] :where(h1, h2, h3, h4, h5, h6) {
+  color: inherit;
+}
+
+:root[data-admin-theme] a:not([class*="text-"]) {
+  color: inherit;
+}
+
+:root[data-admin-theme] a:not(.underline) {
+  text-decoration: none;
+}
+
 // ============================================
 // HYUNDAI SANS FONTS
 // ============================================
@@ -276,8 +366,7 @@ body {
 // ============================================
 
 // Headings use Hyundai Sans Head with OEM-style sizing
-h1, h2, h3, h4, h5, h6,
-.uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6 {
+:root:not([data-admin-theme]) :where(h1, h2, h3, h4, h5, h6, .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6) {
   font-family: var(--font-family-head);
   font-weight: 500; // Hyundai uses medium weight for headings
   letter-spacing: -0.02em; // Tighter tracking like OEM
@@ -286,32 +375,32 @@ h1, h2, h3, h4, h5, h6,
 }
 
 // Specific heading sizes - Hyundai OEM scale
-h1, .uk-h1 {
+:root:not([data-admin-theme]) :where(h1, .uk-h1) {
   font-size: clamp(2rem, 5vw, 3rem); // 32px to 48px
   font-weight: 500;
 }
 
-h2, .uk-h2 {
+:root:not([data-admin-theme]) :where(h2, .uk-h2) {
   font-size: clamp(1.75rem, 4vw, 2.5rem); // 28px to 40px
   font-weight: 500;
 }
 
-h3, .uk-h3 {
+:root:not([data-admin-theme]) :where(h3, .uk-h3) {
   font-size: clamp(1.5rem, 3vw, 2rem); // 24px to 32px
   font-weight: 500;
 }
 
-h4, .uk-h4 {
+:root:not([data-admin-theme]) :where(h4, .uk-h4) {
   font-size: clamp(1.25rem, 2.5vw, 1.5rem); // 20px to 24px
   font-weight: 500;
 }
 
-h5, .uk-h5 {
+:root:not([data-admin-theme]) :where(h5, .uk-h5) {
   font-size: clamp(1.125rem, 2vw, 1.25rem); // 18px to 20px
   font-weight: 500;
 }
 
-h6, .uk-h6 {
+:root:not([data-admin-theme]) :where(h6, .uk-h6) {
   font-size: 1rem; // 16px
   font-weight: 600;
 }
@@ -323,7 +412,7 @@ body, p, span, li, td, th, label, input, textarea, select, button {
 
 // Links - Hyundai accent blue
 // Added underline for accessibility (links must not rely on color alone)
-a {
+:root:not([data-admin-theme]) a {
   color: var(--color-primary-light);
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -928,9 +1017,6 @@ a[style*="backgroundImage"],
     }
   }
 }
-
-
-
 
 
 

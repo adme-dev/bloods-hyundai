@@ -74,10 +74,13 @@
               v-model="form.phone" 
               type="tel" 
               class="uk-input uk-form-large"
+              :class="{ 'uk-form-danger': errors.phone }"
               placeholder="Phone Number"
               maxlength="10"
+              required
             />
           </div>
+          <div v-if="errors.phone" class="uk-text-small uk-text-danger">{{ errors.phone }}</div>
         </div>
 
         <div class="uk-margin-small">
@@ -142,6 +145,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 import { useAnalytics } from '~/composables/useAnalytics';
 import { useUtmParams } from '~/composables/useUtmParams';
 import { extractSafeIframeUrl } from '~/utils/iframe';
@@ -269,7 +273,8 @@ const form = reactive({
 
 const errors = reactive({
   name: '',
-  email: ''
+  email: '',
+  phone: '',
 });
 
 const isSending = ref(false);
@@ -290,6 +295,7 @@ const validate = () => {
   let isValid = true;
   errors.name = '';
   errors.email = '';
+  errors.phone = '';
 
   if (!form.name.trim()) {
     errors.name = 'Name is required';
@@ -298,6 +304,12 @@ const validate = () => {
 
   if (!validateEmail(form.email)) {
     errors.email = 'Valid email is required';
+    isValid = false;
+  }
+
+  const phoneValidation = validateRequiredCustomerPhone(form.phone);
+  if (!phoneValidation.ok) {
+    errors.phone = phoneValidation.error;
     isValid = false;
   }
 
@@ -327,7 +339,7 @@ const submitForm = async () => {
         firstName,
         lastName,
         email: form.email,
-        phone: form.phone || undefined,
+        phone: form.phone,
         message: form.message || undefined,
         vehicleInfo: {
           condition: vehicle?.condition?.displayValue?.[0] || props.condition || undefined,
@@ -430,7 +442,6 @@ const resetForm = () => {
   }
 }
 </style>
-
 
 
 

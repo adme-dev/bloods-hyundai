@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compileStyle, parse } from '@vue/compiler-sfc';
 import {
   ADMIN_THEME_STORAGE_KEY,
   normalizeAdminThemePreference,
@@ -13,14 +12,6 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const layoutSource = readFileSync(resolve(__dirname, '../app/layouts/admin.vue'), 'utf8');
 const dashboardSource = readFileSync(resolve(__dirname, '../app/pages/admin/index.vue'), 'utf8');
-const dashboardDescriptor = parse(dashboardSource, { filename: 'app/pages/admin/index.vue' }).descriptor;
-const dashboardStyle = dashboardDescriptor.styles.find(style => style.scoped);
-const dashboardCss = compileStyle({
-  filename: 'app/pages/admin/index.vue',
-  id: 'data-v-dashboard',
-  scoped: true,
-  source: dashboardStyle?.content || '',
-}).code;
 
 describe('admin theme preference', () => {
   it('defaults missing or invalid stored values to system', () => {
@@ -53,24 +44,17 @@ describe('admin theme preference', () => {
     assert.match(layoutSource, /value="dark"/);
   });
 
-  it('compiles system and explicit dark selectors onto the dashboard shell', () => {
-    assert.match(
-      dashboardCss,
-      /:root:not\(\[data-theme="light"\]\) \.dashboard-shell/,
-    );
-    assert.match(dashboardCss, /\.dark \.dashboard-shell/);
-    assert.doesNotMatch(
-      dashboardCss,
-      /:root:not\(\[data-theme="light"\]\)\s*\{\s*--dashboard-ground/,
-    );
+  it('keeps theme selectors central instead of embedding route CSS', () => {
+    assert.doesNotMatch(dashboardSource, /<style(?:\s|>)/);
+    assert.doesNotMatch(layoutSource, /<style(?:\s|>)/);
+    assert.match(layoutSource, /bg-background text-foreground/);
   });
 
-  it('uses dashboard tokens for card surfaces and every dashboard heading level', () => {
-    assert.match(
-      dashboardCss,
-      /\[data-slot="card"\][^{]*\{[^}]*background-color:\s*var\(--dashboard-surface\)/s,
-    );
-    assert.match(dashboardCss, /\.dashboard-shell[^{}]* h4/);
+  it('uses semantic shadcn components for dashboard surfaces', () => {
+    assert.match(dashboardSource, /<AdminPageHeader/);
+    assert.match(dashboardSource, /<Alert/);
+    assert.match(dashboardSource, /<TabsList/);
+    assert.doesNotMatch(dashboardSource, /--dashboard-|#[0-9a-f]{3,8}/i);
   });
 
   it('restores the previous document theme when the admin layout is left', () => {

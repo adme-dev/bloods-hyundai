@@ -310,10 +310,13 @@
                         v-model="form.phone"
                         type="tel"
                         class="form-input"
+                        :class="{ 'has-error': errors.phone }"
                         placeholder="Phone Number"
                         maxlength="10"
+                        required
                       />
                     </div>
+                    <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
                   </div>
 
                   <!-- Message -->
@@ -427,6 +430,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 import EmblaCarousel from 'embla-carousel';
 import { extractSafeIframeUrl } from '~/utils/iframe';
 
@@ -832,7 +836,8 @@ const form = reactive({
 
 const errors = reactive({
   name: '',
-  email: ''
+  email: '',
+  phone: '',
 });
 
 const isSending = ref(false);
@@ -853,6 +858,7 @@ const validate = () => {
   let isValid = true;
   errors.name = '';
   errors.email = '';
+  errors.phone = '';
 
   if (!form.name.trim()) {
     errors.name = 'Name is required';
@@ -861,6 +867,12 @@ const validate = () => {
 
   if (!validateEmail(form.email)) {
     errors.email = 'Valid email is required';
+    isValid = false;
+  }
+
+  const phoneValidation = validateRequiredCustomerPhone(form.phone);
+  if (!phoneValidation.ok) {
+    errors.phone = phoneValidation.error;
     isValid = false;
   }
 
@@ -890,7 +902,7 @@ const submitForm = async () => {
         firstName,
         lastName,
         email: form.email,
-        phone: form.phone || undefined,
+        phone: form.phone,
         message: form.message || undefined,
         vehicleInfo: {
           // Identifiers

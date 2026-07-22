@@ -216,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 interface Props {
   activeHoursTab?: string;
   id?: string;
@@ -268,12 +269,8 @@ const formattedPhoneNumber = computed(() => {
   }
 });
 
-const isPhoneValid = computed(() => {
-  const phone = formattedPhoneNumber.value;
-  const mobileRegex = /^04\d{2}\s?\d{3}\s?\d{3}$/;
-  const landlineRegex = /^\(0\d\)\s?\d{4}\s?\d{4}$/;
-  return mobileRegex.test(phone) || landlineRegex.test(phone);
-});
+const phoneValidation = computed(() => validateRequiredCustomerPhone(form.phone));
+const isPhoneValid = computed(() => phoneValidation.value.ok);
 
 // Methods
 const handlePhoneInput = (event: Event) => {
@@ -293,8 +290,8 @@ const checkForm = () => {
     errors.value.push('Vehicle Registration required.');
   }
 
-  if (form.phone && !isPhoneValid.value) {
-    errors.value.push('Valid phone number required.');
+  if (!phoneValidation.value.ok) {
+    errors.value.push(phoneValidation.value.error);
   }
 
   if (!form.firstName) {
@@ -391,7 +388,6 @@ const submitForm = async () => {
   border: 1px solid #ff002f;
 }
 </style>
-
 
 
 

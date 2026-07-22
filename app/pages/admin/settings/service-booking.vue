@@ -87,8 +87,8 @@
             <!-- Preview -->
             <div v-if="form.externalBookingIframe" class="space-y-2">
               <Label>Preview</Label>
-              <div class="border rounded-lg overflow-hidden bg-gray-50">
-                <div class="p-2 bg-gray-100 border-b flex items-center justify-between">
+              <div class="border rounded-lg overflow-hidden bg-muted/40">
+                <div class="p-2 bg-muted border-b flex items-center justify-between">
                   <span class="text-xs text-muted-foreground">External Booking Preview</span>
                   <Badge variant="outline" class="text-xs">
                     {{ form.externalBookingProvider || 'Custom' }}

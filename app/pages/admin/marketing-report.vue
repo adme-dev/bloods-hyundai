@@ -1,685 +1,530 @@
 <template>
-  <div class="marketing-hub">
-    <header class="marketing-hub__header">
-      <div class="marketing-hub__header-row">
-        <div>
-          <p class="marketing-hub__eyebrow">Bloods Hyundai · Admin</p>
-          <h1>Marketing Hub</h1>
-          <p class="marketing-hub__subtitle">Spend, website, attribution and CRM capture — one commercial view.</p>
-        </div>
-
-        <div class="marketing-hub__range-wrap">
-          <div class="marketing-hub__daterange" aria-label="Report date range">
-            <button
+  <div class="mx-auto w-full max-w-[1200px] space-y-6 text-foreground">
+    <AdminPageHeader
+      title="Marketing Hub"
+      description="Spend, website, attribution and CRM capture — one commercial view."
+    >
+      <template #actions>
+        <div class="relative flex w-full flex-col items-stretch gap-2 min-[701px]:w-auto min-[701px]:items-end">
+          <div class="flex max-w-full items-center gap-1 overflow-x-auto rounded-lg border bg-card p-1 shadow-sm">
+            <Button
               v-for="preset in presets"
               :key="preset.id"
-              type="button"
-              :class="{ on: activePreset === preset.id }"
+              variant="ghost"
+              size="sm"
+              class="shrink-0"
+              :class="activePreset === preset.id ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''"
               :aria-pressed="activePreset === preset.id"
               @click="applyPreset(preset.id)"
             >
               {{ preset.label }}
-            </button>
-            <button
-              type="button"
-              :class="{ on: activePreset === null }"
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="shrink-0"
+              :class="activePreset === null ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''"
               :aria-expanded="customRangeOpen"
               @click="customRangeOpen = !customRangeOpen"
             >
-              {{ compactRangeLabel }} <ChevronDown aria-hidden="true" />
-            </button>
+              {{ compactRangeLabel }} <ChevronDown class="ml-1 h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" class="shrink-0" @click="openExplainer()">
+              <CircleHelp class="mr-1.5 h-4 w-4" /> Help
+            </Button>
           </div>
-          <button type="button" class="marketing-hub__help" @click="openExplainer()">
-            <CircleHelp aria-hidden="true" /> Help
-          </button>
-          <div v-if="customRangeOpen" class="marketing-hub__custom-range">
-            <div><span>From</span><AdminDatePicker v-model="from" label="Report from date" :max="to" /></div>
-            <div><span>To</span><AdminDatePicker v-model="to" label="Report to date" :min="from" :max="today" /></div>
-          </div>
-          <p class="marketing-hub__synced" :class="{ error: syncError }" role="status" aria-live="polite">
-            <span class="marketing-hub__live" />
-            {{ syncStatusText }}
-            <button type="button" :disabled="pending || syncing" aria-label="Sync provider data" title="Sync provider data" @click="syncAndRefresh">
-              <RefreshCw :class="{ spinning: pending || syncing }" aria-hidden="true" />
-            </button>
-          </p>
-        </div>
-      </div>
 
-      <div v-if="data && attributionBanner" class="marketing-hub__insight" :class="{ observed: attributionBanner.kind === 'unmatched' }" role="status">
-        <div class="marketing-hub__insight-icon"><TriangleAlert aria-hidden="true" /></div>
-        <div>
-          <h2>{{ attributionBanner.title }}</h2>
+          <Card v-if="customRangeOpen" class="absolute right-0 top-12 z-20 w-full min-w-[270px] shadow-xl min-[431px]:w-auto">
+            <CardContent class="grid gap-3 p-3 min-[431px]:grid-cols-2">
+              <div class="space-y-1.5">
+                <Label class="text-xs">From</Label>
+                <AdminDatePicker v-model="from" label="Report from date" :max="to" />
+              </div>
+              <div class="space-y-1.5">
+                <Label class="text-xs">To</Label>
+                <AdminDatePicker v-model="to" label="Report to date" :min="from" :max="today" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <div
+            class="flex items-center justify-end gap-2 text-xs"
+            :class="syncError ? 'text-destructive' : 'text-muted-foreground'"
+            role="status"
+            aria-live="polite"
+          >
+            <span class="size-2 rounded-full" :class="syncError ? 'bg-destructive' : 'bg-emerald-500'" />
+            <span class="max-w-md text-right">{{ syncStatusText }}</span>
+            <Button variant="ghost" size="icon" class="h-7 w-7" :disabled="pending || syncing" aria-label="Sync provider data" title="Sync provider data" @click="syncAndRefresh">
+              <RefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': pending || syncing }" />
+            </Button>
+          </div>
+        </div>
+      </template>
+    </AdminPageHeader>
+
+    <Alert v-if="data && attributionBanner" variant="destructive" class="grid grid-cols-[auto_minmax(0,1fr)] gap-3 border-l-[3px] min-[701px]:grid-cols-[auto_minmax(0,1fr)_auto]">
+      <div class="grid size-9 place-items-center rounded-lg bg-destructive/10">
+        <TriangleAlert class="h-4 w-4" />
+      </div>
+      <div class="min-w-0">
+        <AlertTitle>{{ attributionBanner.title }}</AlertTitle>
+        <AlertDescription class="text-foreground/80">
           <p v-if="attributionBanner.kind === 'unmatched'">
             {{ money(data.insights.executive.totalSpend) }} in ad spend is synced, but none of the
             <strong>{{ n(data.summary.totalCrmLeads) }} CRM leads carries paid-platform evidence</strong>.
-            This is the result for the selected period, not a disconnected integration.
+            This is the selected-period result, not a disconnected integration.
           </p>
           <p v-else>Paid campaign data is not connected to this dealer yet. Connect an ad platform before assessing paid attribution.</p>
-          <button type="button" class="marketing-hub__explain-link" @click="openExplainer('unmatched-banner')">
-            What does this mean?
-          </button>
-        </div>
-        <NuxtLink class="marketing-hub__action ui-button" :to="attributionBanner.to">{{ attributionBanner.action }} <ArrowRight aria-hidden="true" /></NuxtLink>
+          <Button variant="link" class="mt-1 h-auto p-0 text-destructive" @click="openExplainer('unmatched-banner')">What does this mean?</Button>
+        </AlertDescription>
       </div>
-    </header>
+      <Button variant="outline" size="sm" class="col-span-2 min-[701px]:col-span-1" as-child>
+        <NuxtLink :to="attributionBanner.to">{{ attributionBanner.action }} <ArrowRight class="ml-1 h-4 w-4" /></NuxtLink>
+      </Button>
+    </Alert>
 
-    <div v-if="pending" class="marketing-hub__state" aria-live="polite">
-      <RefreshCw class="spinning" aria-hidden="true" />
-      Loading marketing report…
-    </div>
+    <Card v-if="pending">
+      <CardContent class="flex min-h-48 items-center justify-center gap-2 text-muted-foreground">
+        <RefreshCw class="h-5 w-5 animate-spin" /> Loading marketing report…
+      </CardContent>
+    </Card>
 
-    <div v-else-if="error || !data" class="marketing-hub__state marketing-hub__state--error" role="alert">
-      <TriangleAlert aria-hidden="true" />
-      <span>Could not load the marketing report.</span>
-      <button type="button" class="marketing-hub__action ui-button" @click="refresh()">Try again</button>
-    </div>
+    <Alert v-else-if="error || !data" variant="destructive">
+      <TriangleAlert class="h-4 w-4" />
+      <AlertTitle>Could not load the marketing report</AlertTitle>
+      <AlertDescription><Button variant="outline" size="sm" class="mt-3" @click="refresh()">Try again</Button></AlertDescription>
+    </Alert>
 
     <template v-else>
-      <section aria-label="Headline metrics">
-        <div class="marketing-hub__kpis num">
-          <article
-            v-for="item in summaryCards"
-            :key="item.label"
-            class="marketing-hub__kpi"
-            :class="{ alert: item.alert }"
-          >
-            <div class="marketing-hub__kpi-label">
-              {{ item.label }}
-              <span class="marketing-hub__kpi-trailing">
-                <button
-                  type="button"
-                  class="marketing-hub__explain"
-                  :aria-label="`Explain ${item.label}`"
-                  @click="openExplainer(item.topic)"
-                >
-                  <CircleHelp aria-hidden="true" />
-                </button>
-                <component :is="item.icon" aria-hidden="true" />
-              </span>
+      <section aria-label="Headline metrics" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Card v-for="item in summaryCards" :key="item.label" :class="item.alert ? 'border-destructive/40' : ''">
+          <CardHeader class="grid grid-cols-[1fr_auto] gap-2 pb-2">
+            <CardDescription class="text-[11px] font-bold uppercase tracking-[.05em]">{{ item.label }}</CardDescription>
+            <div class="flex items-center gap-1 text-muted-foreground">
+              <Button variant="ghost" size="icon" class="h-6 w-6" :aria-label="'Explain ' + item.label" @click="openExplainer(item.topic)">
+                <CircleHelp class="h-3.5 w-3.5" />
+              </Button>
+              <component :is="item.icon" class="h-4 w-4" />
             </div>
-            <div class="marketing-hub__kpi-value">{{ item.value }}</div>
-            <p>{{ item.caption }}</p>
-          </article>
-        </div>
+            <CardTitle class="col-span-2 text-[26px] font-bold leading-none tracking-[-.02em]" :class="item.alert ? 'text-destructive' : ''">{{ item.value }}</CardTitle>
+          </CardHeader>
+          <CardContent class="text-xs text-muted-foreground">{{ item.caption }}</CardContent>
+        </Card>
       </section>
 
-      <section aria-labelledby="executive-title">
-        <article class="marketing-hub__card">
-          <header class="marketing-hub__panel-head">
-            <h2 id="executive-title">
-              <ChartNoAxesCombined aria-hidden="true" />
-              Executive Readout
-              <span class="marketing-hub__quality" :class="qualityClass(data.insights.executive.dataQualityScore)">
-                {{ data.insights.executive.dataQualityScore }}% data quality
-              </span>
-            </h2>
-            <p>Commercial view of spend, lead quality, attribution and CRM capture.</p>
-          </header>
-          <div class="marketing-hub__pad">
-            <div class="marketing-hub__funnel num">
-              <article v-for="step in data.insights.funnel" :key="step.key" class="marketing-hub__funnel-stage">
-                <p>{{ step.label }}</p>
-                <strong>{{ n(step.value) }}</strong>
-                <span class="marketing-hub__track">
-                  <i :style="{ width: `${barPercent(step.value, maxInsightFunnelValue)}%` }" />
-                </span>
-              </article>
-            </div>
-
-            <div class="marketing-hub__split2 marketing-hub__executive-detail">
-              <div class="marketing-hub__health">
-                <p class="marketing-hub__eyebrow">Data health</p>
-                <div v-for="check in data.insights.dataQuality" :key="check.key" class="marketing-hub__health-row">
-                  <div>
-                    <strong>{{ check.label }}</strong>
-                    <span :class="check.status">{{ pct(check.value) }}</span>
-                  </div>
-                  <div class="marketing-hub__track">
-                    <i :class="check.status" :style="{ width: `${Math.min(100, check.value)}%` }" />
-                    <b :style="{ left: `${Math.min(100, check.target)}%` }" />
-                  </div>
-                  <small>Target {{ pct(check.target) }}</small>
-                </div>
-              </div>
-
-              <div>
-                <p class="marketing-hub__eyebrow">Campaign opportunities</p>
-                <div v-if="data.insights.campaignDiagnostics.opportunities.length" class="marketing-hub__opportunities">
-                  <article
-                    v-for="item in data.insights.campaignDiagnostics.opportunities.slice(0, 3)"
-                    :key="`${item.platform}:${item.campaignName}`"
-                  >
-                    <h3>{{ item.campaignName }}</h3>
-                    <p class="num">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} CRM leads</p>
-                    <span>{{ item.issue }}</span>
-                  </article>
-                </div>
-                <p v-else class="marketing-hub__empty">No high-spend campaign issues detected for this period.</p>
+      <Card>
+        <CardHeader>
+          <div class="flex flex-wrap items-center gap-2">
+            <ChartNoAxesCombined class="h-5 w-5 text-primary" />
+            <CardTitle id="executive-title">Executive Readout</CardTitle>
+            <Badge :variant="data.insights.executive.dataQualityScore >= 80 ? 'default' : data.insights.executive.dataQualityScore >= 50 ? 'secondary' : 'destructive'" class="ml-auto">
+              {{ data.insights.executive.dataQualityScore }}% data quality
+            </Badge>
+          </div>
+          <CardDescription>Commercial view of spend, lead quality, attribution and CRM capture.</CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-6">
+          <div class="grid gap-3 min-[431px]:grid-cols-2 xl:grid-cols-4">
+            <div v-for="step in data.insights.funnel" :key="step.key" class="rounded-lg border bg-muted/40 p-3">
+              <p class="text-xs font-medium text-muted-foreground">{{ step.label }}</p>
+              <strong class="mt-1 block text-2xl">{{ n(step.value) }}</strong>
+              <div class="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                <div class="h-full rounded-full bg-primary transition-[width]" :style="{ width: barPercent(step.value, maxInsightFunnelValue) + '%' }" />
               </div>
             </div>
           </div>
-        </article>
-      </section>
 
-      <section aria-label="Connections and lead mix">
-        <div class="marketing-hub__split3">
-          <article class="marketing-hub__card">
-            <header class="marketing-hub__panel-head"><h2>Connections</h2><p>Platform ingestion &amp; sync state.</p></header>
-            <div class="marketing-hub__pad">
-              <div v-for="connection in connections" :key="connection.label" class="marketing-hub__connection">
-                {{ connection.label }}
-                <span :class="{ disconnected: connection.status === 'Not connected', stored: connection.status === 'Synced data' }">{{ connection.status }}</span>
-              </div>
-              <div class="marketing-hub__inset">
-                <small>External feeds (marketplace / email)</small>
-                <strong class="num">{{ n(data.summary.externalMarketplaceLeads) }} leads</strong>
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="space-y-3">
+              <p class="text-[11px] font-bold uppercase tracking-[.09em] text-muted-foreground">Data health</p>
+              <div v-for="check in data.insights.dataQuality" :key="check.key" class="space-y-1.5">
+                <div class="flex items-center justify-between text-sm">
+                  <strong>{{ check.label }}</strong>
+                  <Badge :variant="check.status === 'poor' ? 'destructive' : check.status === 'watch' ? 'secondary' : 'default'">{{ pct(check.value) }}</Badge>
+                </div>
+                <div class="relative h-2 overflow-hidden rounded-full bg-muted">
+                  <div class="h-full rounded-full" :class="check.status === 'poor' ? 'bg-destructive' : check.status === 'watch' ? 'bg-amber-500' : 'bg-emerald-500'" :style="{ width: Math.min(100, check.value) + '%' }" />
+                </div>
+                <small class="text-muted-foreground">Target {{ pct(check.target) }}</small>
               </div>
             </div>
-          </article>
 
-          <article class="marketing-hub__card">
-            <header class="marketing-hub__panel-head"><h2>Lead Types</h2><p>CRM enquiry mix for the period.</p></header>
-            <div class="marketing-hub__pad marketing-hub__bar-list">
-              <BarRow
-                v-for="row in data.crm.typeBreakdown.slice(0, 6)"
-                :key="row.key"
-                :label="formatLabel(row.key)"
-                :value="row.total"
-                :max="maxTypeTotal"
-              />
-              <p v-if="!data.crm.typeBreakdown.length" class="marketing-hub__empty">No leads in this range.</p>
+            <div class="space-y-3">
+              <p class="text-[11px] font-bold uppercase tracking-[.09em] text-muted-foreground">Campaign opportunities</p>
+              <div v-if="data.insights.campaignDiagnostics.opportunities.length" class="space-y-2">
+                <div v-for="item in data.insights.campaignDiagnostics.opportunities.slice(0, 3)" :key="item.platform + ':' + item.campaignName" class="rounded-lg border bg-muted/40 p-3">
+                  <h3 class="truncate text-sm font-semibold">{{ item.campaignName }}</h3>
+                  <p class="mt-1 text-xs text-muted-foreground">{{ platformLabel(item.platform) }} · {{ money(item.spend) }} · {{ n(item.clicks) }} clicks · {{ n(item.crmLeads) }} CRM leads</p>
+                  <Badge variant="outline" class="mt-2">{{ item.issue }}</Badge>
+                </div>
+              </div>
+              <p v-else class="text-sm text-muted-foreground">No high-spend campaign issues detected for this period.</p>
             </div>
-          </article>
+          </div>
+        </CardContent>
+      </Card>
 
-          <article class="marketing-hub__card">
-            <header class="marketing-hub__panel-head"><h2>Lead Status</h2><p>Pipeline state of period leads.</p></header>
-            <div class="marketing-hub__pad marketing-hub__bar-list">
-              <BarRow
-                v-for="row in data.crm.statusBreakdown.slice(0, 6)"
-                :key="row.key"
-                :label="formatLabel(row.key)"
-                :value="row.total"
-                :max="maxStatusTotal"
-              />
-              <p v-if="!data.crm.statusBreakdown.length" class="marketing-hub__empty">No lead statuses in this range.</p>
+      <section class="grid gap-4 lg:grid-cols-3" aria-label="Connections and lead mix">
+        <Card>
+          <CardHeader><CardTitle>Connections</CardTitle><CardDescription>Platform ingestion and sync state.</CardDescription></CardHeader>
+          <CardContent class="space-y-2">
+            <div v-for="connection in connections" :key="connection.label" class="flex items-center justify-between gap-3 rounded-lg border p-3 text-sm font-medium">
+              {{ connection.label }}
+              <Badge :variant="connection.status === 'Not connected' ? 'destructive' : connection.status === 'Synced data' ? 'secondary' : 'default'">{{ connection.status }}</Badge>
             </div>
-          </article>
-        </div>
+            <div class="rounded-lg border border-dashed bg-muted/40 p-3">
+              <small class="text-muted-foreground">External feeds (marketplace / email)</small>
+              <strong class="mt-1 block text-lg">{{ n(data.summary.externalMarketplaceLeads) }} leads</strong>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Lead Types</CardTitle><CardDescription>CRM enquiry mix for the period.</CardDescription></CardHeader>
+          <CardContent class="space-y-3">
+            <div v-for="row in data.crm.typeBreakdown.slice(0, 6)" :key="row.key" class="space-y-1.5">
+              <div class="flex justify-between text-sm"><span class="font-medium">{{ formatLabel(row.key) }}</span><strong>{{ n(row.total) }}</strong></div>
+              <div class="h-2 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-primary" :style="{ width: barPercent(row.total, maxTypeTotal) + '%' }" /></div>
+            </div>
+            <p v-if="!data.crm.typeBreakdown.length" class="text-sm text-muted-foreground">No leads in this range.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Lead Status</CardTitle><CardDescription>Pipeline state of period leads.</CardDescription></CardHeader>
+          <CardContent class="space-y-3">
+            <div v-for="row in data.crm.statusBreakdown.slice(0, 6)" :key="row.key" class="space-y-1.5">
+              <div class="flex justify-between text-sm"><span class="font-medium">{{ formatLabel(row.key) }}</span><strong>{{ n(row.total) }}</strong></div>
+              <div class="h-2 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-primary" :style="{ width: barPercent(row.total, maxStatusTotal) + '%' }" /></div>
+            </div>
+            <p v-if="!data.crm.statusBreakdown.length" class="text-sm text-muted-foreground">No lead statuses in this range.</p>
+          </CardContent>
+        </Card>
       </section>
 
-      <section aria-labelledby="campaign-title">
-        <div class="marketing-hub__section-head">
-          <h2 id="campaign-title">Campaign CPL Reconciliation<button type="button" class="marketing-hub__explain" aria-label="Explain CPL reconciliation" @click="openExplainer('cpl-reconciliation')"><CircleHelp aria-hidden="true" /></button></h2>
-          <span />
-          <p>Ad rows matched to CRM leads by UTM campaign, ID or name</p>
+      <section class="space-y-3" aria-labelledby="campaign-title">
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 id="campaign-title" class="text-base font-semibold">Campaign CPL Reconciliation</h2>
+          <Button variant="ghost" size="icon" class="h-7 w-7" aria-label="Explain CPL reconciliation" @click="openExplainer('cpl-reconciliation')"><CircleHelp class="h-4 w-4" /></Button>
+          <Separator class="min-w-8 flex-1" />
+          <p class="text-xs text-muted-foreground">Ad rows matched to CRM leads by UTM campaign, ID or name</p>
         </div>
-        <article class="marketing-hub__card marketing-hub__table-wrap">
-          <table class="num">
-            <thead>
-              <tr><th>Campaign</th><th>Platform</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>Plat. leads</th><th>Lead rate</th><th>CRM leads</th><th>CPL</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="campaign in data.campaigns" :key="`${campaign.platform}:${campaign.campaignId}`">
-                <td><span class="marketing-hub__campaign-name">{{ campaign.campaignName || campaign.campaignId }}</span></td>
-                <td><span class="marketing-hub__platform-pill" :class="campaign.platform">{{ platformLabel(campaign.platform) }}</span></td>
-                <td>{{ money(campaign.spend) }}</td>
-                <td>{{ n(campaign.impressions) }}</td>
-                <td>{{ n(campaign.clicks) }}</td>
-                <td>{{ pctOrDash(campaign.ctr) }}</td>
-                <td>{{ campaign.clicks ? money(campaign.spend / campaign.clicks) : '—' }}</td>
-                <td>{{ n(campaign.platformLeads) }}</td>
-                <td>{{ pctOrDash(campaign.platformLeadRate) }}</td>
-                <td :class="{ zero: campaign.crmLeads === 0 }">{{ n(campaign.crmLeads) }}</td>
-                <td :class="{ muted: campaign.cpl == null }">{{ moneyOrDash(campaign.cpl) }}</td>
-              </tr>
-              <tr v-if="!data.campaigns.length"><td colspan="11" class="marketing-hub__empty-cell">No campaign data in this range.</td></tr>
-            </tbody>
-          </table>
-        </article>
+        <Card class="overflow-hidden">
+          <div class="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Campaign</TableHead><TableHead>Platform</TableHead><TableHead class="text-right">Spend</TableHead><TableHead class="text-right">Impr.</TableHead><TableHead class="text-right">Clicks</TableHead><TableHead class="text-right">CTR</TableHead><TableHead class="text-right">CPC</TableHead><TableHead class="text-right">Plat. leads</TableHead><TableHead class="text-right">Lead rate</TableHead><TableHead class="text-right">CRM leads</TableHead><TableHead class="text-right">CPL</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow v-for="campaign in data.campaigns" :key="campaign.platform + ':' + campaign.campaignId">
+                  <TableCell><span class="block max-w-[300px] truncate font-mono text-xs font-semibold">{{ campaign.campaignName || campaign.campaignId }}</span></TableCell>
+                  <TableCell><Badge variant="outline">{{ platformLabel(campaign.platform) }}</Badge></TableCell>
+                  <TableCell class="text-right">{{ money(campaign.spend) }}</TableCell><TableCell class="text-right">{{ n(campaign.impressions) }}</TableCell><TableCell class="text-right">{{ n(campaign.clicks) }}</TableCell><TableCell class="text-right">{{ pctOrDash(campaign.ctr) }}</TableCell><TableCell class="text-right">{{ campaign.clicks ? money(campaign.spend / campaign.clicks) : '—' }}</TableCell><TableCell class="text-right">{{ n(campaign.platformLeads) }}</TableCell><TableCell class="text-right">{{ pctOrDash(campaign.platformLeadRate) }}</TableCell><TableCell class="text-right" :class="campaign.crmLeads === 0 ? 'font-bold text-destructive' : ''">{{ n(campaign.crmLeads) }}</TableCell><TableCell class="text-right" :class="campaign.cpl == null ? 'text-muted-foreground' : ''">{{ moneyOrDash(campaign.cpl) }}</TableCell>
+                </TableRow>
+                <TableRow v-if="!data.campaigns.length"><TableCell colspan="11" class="h-28 text-center text-muted-foreground">No campaign data in this range.</TableCell></TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       </section>
 
-      <section aria-label="Platform depth">
-        <div class="marketing-hub__split3">
-          <MetricPanel title="GA4 Website" description="Engagement quality for the period." :items="ga4Metrics" />
-          <MetricPanel title="Paid Media Efficiency" description="Meta &amp; Google blended delivery." :items="paidMediaMetrics" />
-          <MetricPanel title="Google Ads Depth" description="Campaign-level metrics from API sync." :items="googleAdsMetrics" />
-        </div>
-        <p v-if="!avgSaleValueSet && data.professionalMetrics.paidMedia.roas == null" class="marketing-hub__roas-note">
-          <NuxtLink to="/admin/settings">Set an average sale value</NuxtLink> to see modeled ROAS.
+      <section class="grid gap-4 lg:grid-cols-3" aria-label="Platform depth">
+        <Card v-for="panel in platformMetricPanels" :key="panel.title">
+          <CardHeader><CardTitle>{{ panel.title }}</CardTitle><CardDescription>{{ panel.description }}</CardDescription></CardHeader>
+          <CardContent class="grid grid-cols-2 gap-x-5 gap-y-3">
+            <div v-for="item in panel.items" :key="item.label">
+              <small class="block text-xs font-medium text-muted-foreground">{{ item.label }}</small>
+              <strong class="mt-1 block text-lg">{{ item.value }}</strong>
+            </div>
+          </CardContent>
+        </Card>
+        <p v-if="!avgSaleValueSet && data.professionalMetrics.paidMedia.roas == null" class="text-xs text-muted-foreground lg:col-span-3">
+          <NuxtLink to="/admin/settings" class="font-medium text-primary underline">Set an average sale value</NuxtLink> to see modeled ROAS.
         </p>
       </section>
 
-      <section aria-labelledby="website-title">
-        <div class="marketing-hub__section-head">
-          <h2 id="website-title">Website Analytics</h2><span />
-          <p class="marketing-hub__status-pill" :class="{ disconnected: data.websiteAnalytics.status !== 'connected' }">{{ websiteAnalyticsStatusLabel }}</p>
+      <section class="space-y-3" aria-labelledby="website-title">
+        <div class="flex items-center gap-3">
+          <h2 id="website-title" class="text-base font-semibold">Website Analytics</h2>
+          <Separator class="flex-1" />
+          <Badge :variant="data.websiteAnalytics.status === 'connected' ? 'default' : 'secondary'">{{ websiteAnalyticsStatusLabel }}</Badge>
         </div>
 
-        <div v-if="websiteAnalyticsAvailable" class="marketing-hub__website">
-          <article class="marketing-hub__card marketing-hub__analytics-card">
-            <header class="marketing-hub__analytics-head">
+        <template v-if="websiteAnalyticsAvailable">
+          <Card>
+            <CardHeader class="gap-3">
               <div>
-                <h2>{{ activeAnalyticsChart.title }}</h2>
-                <p>{{ activeAnalyticsChart.description }}</p>
+                <CardTitle>{{ activeAnalyticsChart.title }}</CardTitle>
+                <CardDescription>{{ activeAnalyticsChart.description }}</CardDescription>
               </div>
-              <div class="marketing-hub__chart-tabs" role="tablist" aria-label="Analytics chart">
-                <button
-                  v-for="tab in analyticsChartTabs"
-                  :id="`analytics-tab-${tab.id}`"
-                  :key="tab.id"
-                  type="button"
-                  role="tab"
-                  :aria-selected="activeAnalyticsTab === tab.id"
-                  :aria-controls="`analytics-panel-${tab.id}`"
-                  :tabindex="activeAnalyticsTab === tab.id ? 0 : -1"
-                  :class="{ on: activeAnalyticsTab === tab.id }"
-                  @click="selectAnalyticsTab(tab.id)"
-                  @keydown.left.prevent="selectRelativeAnalyticsTab(-1)"
-                  @keydown.right.prevent="selectRelativeAnalyticsTab(1)"
-                >
-                  {{ tab.label }}
-                </button>
-              </div>
-            </header>
-
-            <div
-              :id="`analytics-panel-${activeAnalyticsTab}`"
-              class="marketing-hub__analytics-panel"
-              role="tabpanel"
-              :aria-labelledby="`analytics-tab-${activeAnalyticsTab}`"
-            >
-              <div class="marketing-hub__chart-kpis num">
-                <article v-for="item in activeAnalyticsChart.kpis" :key="item.label">
-                  <small>{{ item.label }}</small>
-                  <strong>{{ item.value }}</strong>
-                  <span>{{ item.caption }}</span>
-                </article>
-              </div>
-
-              <div class="marketing-hub__chart-toolbar">
-                <div class="marketing-hub__legend" aria-label="Chart series">
-                  <button
-                    v-for="series in activeAnalyticsChart.series"
-                    :key="series.key"
-                    type="button"
-                    :aria-pressed="!hiddenChartSeries.has(series.key)"
-                    :class="{ muted: hiddenChartSeries.has(series.key) }"
-                    @click="toggleChartSeries(series.key)"
-                  >
-                    <i :class="series.className" />{{ series.label }}
-                  </button>
+              <Tabs :model-value="activeAnalyticsTab" @update:model-value="selectAnalyticsTab(String($event) as AnalyticsTabId)">
+                <TabsList class="w-full justify-start overflow-x-auto min-[701px]:w-auto">
+                  <TabsTrigger v-for="tab in analyticsChartTabs" :key="tab.id" :value="tab.id">{{ tab.label }}</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <div class="grid grid-cols-2 overflow-hidden rounded-lg border lg:grid-cols-4">
+                <div v-for="item in activeAnalyticsChart.kpis" :key="item.label" class="border-b border-r bg-muted/30 p-3">
+                  <small class="block text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">{{ item.label }}</small>
+                  <strong class="my-1 block text-xl">{{ item.value }}</strong>
+                  <span class="text-[10.5px] text-muted-foreground">{{ item.caption }}</span>
                 </div>
-                <p>Daily · absolute values</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1">
+                <Button
+                  v-for="series in activeAnalyticsChart.series"
+                  :key="series.key"
+                  variant="ghost"
+                  size="sm"
+                  :class="hiddenChartSeries.has(series.key) ? 'opacity-40 line-through' : ''"
+                  :aria-pressed="!hiddenChartSeries.has(series.key)"
+                  @click="toggleChartSeries(series.key)"
+                >
+                  <span class="mr-2 h-1 w-3 rounded-full" :class="chartSeriesClass(series.className, 'background')" />{{ series.label }}
+                </Button>
+                <span class="ml-auto hidden text-xs text-muted-foreground min-[701px]:inline">Daily · absolute values</span>
               </div>
 
               <div
                 v-if="activeTrendHasData"
-                class="marketing-hub__chart"
+                class="relative rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 tabindex="0"
-                :aria-label="`${activeAnalyticsChart.title}. Use left and right arrow keys to inspect daily values.`"
+                :aria-label="activeAnalyticsChart.title + '. Use left and right arrow keys to inspect daily values.'"
                 @focus="showLatestChartPoint"
                 @blur="activeChartPoint = null"
                 @keydown.left.prevent="moveActiveChartPoint(-1)"
                 @keydown.right.prevent="moveActiveChartPoint(1)"
               >
-                <svg viewBox="0 0 720 220" preserveAspectRatio="none" aria-hidden="true">
+                <svg class="block h-[220px] w-full overflow-visible min-[701px]:h-[250px] [&_line]:stroke-border [&_path]:fill-none [&_path]:stroke-[2.4] [&_text]:fill-muted-foreground [&_text]:text-[9px]" viewBox="0 0 720 220" preserveAspectRatio="none" aria-hidden="true">
                   <g v-for="tick in chartAxisTicks" :key="tick.y">
                     <line x1="54" :y1.attr="tick.y" x2="686" :y2.attr="tick.y" />
                     <text x="48" :y.attr="tick.y + 4" text-anchor="end">{{ formatChartAxis(tick.left, 'left') }}</text>
                     <text v-if="activeChartRightMax" x="692" :y.attr="tick.y + 4">{{ formatChartAxis(tick.right, 'right') }}</text>
                   </g>
-                  <path
-                    v-for="series in visibleChartSeries"
-                    :key="series.key"
-                    :d.attr="chartLinePath(series)"
-                    :class="series.className"
-                  />
-                  <g
-                    v-for="(row, index) in websiteTrendRows"
-                    :key="row.date"
-                    class="marketing-hub__chart-hit"
-                    @mouseenter="activeChartPoint = index"
-                    @mouseleave="activeChartPoint = null"
-                    @focus="activeChartPoint = index"
-                  >
-                    <rect :x.attr="chartHitX(index)" y="18" :width.attr="chartHitWidth" height="164" />
+                  <path v-for="series in visibleChartSeries" :key="series.key" :d.attr="chartLinePath(series)" :class="chartSeriesClass(series.className, 'stroke')" />
+                  <g v-for="(row, index) in websiteTrendRows" :key="row.date" @mouseenter="activeChartPoint = index" @mouseleave="activeChartPoint = null">
+                    <rect class="fill-transparent pointer-events-auto" :x.attr="chartHitX(index)" y="18" :width.attr="chartHitWidth" height="164" />
                   </g>
-                  <line
-                    v-if="activeChartPoint != null"
-                    class="marketing-hub__chart-crosshair"
-                    :x1.attr="chartPointX(activeChartPoint)"
-                    y1="18"
-                    :x2.attr="chartPointX(activeChartPoint)"
-                    y2="182"
-                  />
-                  <circle
-                    v-for="point in activeChartDots"
-                    :key="point.key"
-                    :cx.attr="point.x"
-                    :cy.attr="point.y"
-                    r="4"
-                    :class="point.className"
-                  />
+                  <line v-if="activeChartPoint != null" class="stroke-muted-foreground opacity-50 [stroke-dasharray:3_3]" :x1.attr="chartPointX(activeChartPoint)" y1="18" :x2.attr="chartPointX(activeChartPoint)" y2="182" />
+                  <circle v-for="point in activeChartDots" :key="point.key" :cx.attr="point.x" :cy.attr="point.y" r="4" :class="chartSeriesClass(point.className, 'fill')" />
                 </svg>
-                <div class="marketing-hub__chart-dates"><span>{{ chartStartLabel }}</span><span>{{ chartEndLabel }}</span></div>
-                <div
-                  v-if="activeChartTooltip"
-                  class="marketing-hub__chart-tooltip"
-                  role="status"
-                  :style="{ left: `${activeChartTooltip.left}%` }"
-                >
-                  <strong>{{ activeChartTooltip.date }}</strong>
-                  <span v-for="item in activeChartTooltip.items" :key="item.label"><i :class="item.className" />{{ item.label }} <b>{{ item.value }}</b></span>
+                <div class="-mt-4 flex justify-between px-[4.6%] text-[10px] text-muted-foreground"><span>{{ chartStartLabel }}</span><span>{{ chartEndLabel }}</span></div>
+                <div v-if="activeChartTooltip" class="pointer-events-none absolute top-9 z-10 grid min-w-[178px] -translate-x-1/2 gap-1 rounded-lg border bg-popover p-2.5 text-popover-foreground shadow-xl" role="status" :style="{ left: activeChartTooltip.left + '%' }">
+                  <strong class="text-xs">{{ activeChartTooltip.date }}</strong>
+                  <span v-for="item in activeChartTooltip.items" :key="item.label" class="grid grid-cols-[11px_1fr_auto] items-center gap-1.5 text-[10.5px] text-muted-foreground">
+                    <i class="h-1 w-3 rounded-full" :class="chartSeriesClass(item.className, 'background')" />{{ item.label }} <b class="text-foreground">{{ item.value }}</b>
+                  </span>
                 </div>
               </div>
-              <p v-else class="marketing-hub__empty marketing-hub__chart-empty">No daily {{ activeAnalyticsChart.emptyLabel }} data in this range.</p>
-            </div>
-          </article>
+              <p v-else class="grid min-h-52 place-items-center text-sm text-muted-foreground">No daily {{ activeAnalyticsChart.emptyLabel }} data in this range.</p>
+            </CardContent>
+          </Card>
 
-          <article class="marketing-hub__card marketing-hub__lead-funnel-card">
-            <header class="marketing-hub__panel-head">
-              <h2>Website to lead funnel</h2>
-              <p>High-level path from visits to this admin CRM.</p>
-            </header>
-            <ol class="marketing-hub__lead-funnel num" aria-label="Website to admin CRM stages">
-              <li v-for="(stage, index) in websiteLeadFunnelRows" :key="stage.label">
-                <small>Stage {{ index + 1 }}</small>
-                <strong>{{ n(stage.value) }}</strong>
-                <span>{{ stage.label }}</span>
-                <div class="marketing-hub__track"><i :style="{ width: `${stage.width}%` }" /></div>
-                <p>{{ stage.caption }}</p>
-              </li>
-            </ol>
-          </article>
+          <Card>
+            <CardHeader><CardTitle>Website to lead funnel</CardTitle><CardDescription>High-level path from visits to this admin CRM.</CardDescription></CardHeader>
+            <CardContent>
+              <ol class="grid list-none gap-3 p-0 lg:grid-cols-3" aria-label="Website to admin CRM stages">
+                <li v-for="(stage, index) in websiteLeadFunnelRows" :key="stage.label" class="rounded-lg border bg-muted/30 p-3">
+                  <small class="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Stage {{ index + 1 }}</small>
+                  <strong class="mt-1 block text-2xl">{{ n(stage.value) }}</strong>
+                  <span class="mb-2 block text-xs font-semibold">{{ stage.label }}</span>
+                  <div class="h-2 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-primary" :style="{ width: stage.width + '%' }" /></div>
+                  <p class="mt-1.5 text-[10.5px] text-muted-foreground">{{ stage.caption }}</p>
+                </li>
+              </ol>
+            </CardContent>
+          </Card>
 
-          <p v-if="data.websiteAnalytics.status === 'stored_data'" class="marketing-hub__preview-note marketing-hub__ga4-credential-note">
-            {{ hasCachedWebsiteBreakdowns
-              ? 'Daily GA4 totals and acquisition breakdowns are available from the production sync cache.'
-              : 'Daily GA4 totals are available from the existing sync. Live landing-page, channel and event breakdowns require the GA4 reporting credential.' }}
-          </p>
+          <Alert v-if="data.websiteAnalytics.status === 'stored_data'">
+            <Database class="h-4 w-4" />
+            <AlertDescription>{{ hasCachedWebsiteBreakdowns ? 'Daily GA4 totals and acquisition breakdowns are available from the production sync cache.' : 'Daily GA4 totals are available from the existing sync. Live landing-page, channel and event breakdowns require the GA4 reporting credential.' }}</AlertDescription>
+          </Alert>
 
-          <div class="marketing-hub__website-breakdowns">
-            <div class="marketing-hub__split marketing-hub__website-detail">
-              <article class="marketing-hub__card">
-                <header class="marketing-hub__panel-head"><h2>Top landing pages</h2><p>Pages that started website sessions.</p></header>
-                <div v-if="data.websiteAnalytics.topLandingPages.length" class="marketing-hub__table-wrap">
-                  <table class="num">
-                    <thead><tr><th>Landing page</th><th>Sessions</th><th>Users</th><th>Engaged</th><th>Key events</th></tr></thead>
-                    <tbody>
-                      <tr v-for="row in data.websiteAnalytics.topLandingPages.slice(0, 8)" :key="dimension(row, 'landingPagePlusQueryString')">
-                        <td>{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</td>
-                        <td>{{ n(metric(row, 'sessions')) }}</td>
-                        <td>{{ n(metric(row, 'totalUsers')) }}</td>
-                        <td>{{ fractionPct(metric(row, 'engagementRate')) }}</td>
-                        <td>{{ n(metric(row, 'keyEvents')) }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <p v-else class="marketing-hub__breakdown-empty">{{ websiteBreakdownEmptyMessage('landing-page') }}</p>
-              </article>
-
-              <article class="marketing-hub__card">
-                <header class="marketing-hub__panel-head"><h2>Traffic channels</h2><p>How website sessions were acquired.</p></header>
-                <div v-if="data.websiteAnalytics.trafficChannels.length" class="marketing-hub__pad marketing-hub__bar-list">
-                  <BarRow
-                    v-for="row in data.websiteAnalytics.trafficChannels.slice(0, 8)"
-                    :key="dimension(row, 'sessionDefaultChannelGroup')"
-                    :label="dimension(row, 'sessionDefaultChannelGroup') || '(not set)'"
-                    :value="metric(row, 'sessions')"
-                    :max="maxChannelSessions"
-                  />
-                </div>
-                <p v-else class="marketing-hub__breakdown-empty">{{ websiteBreakdownEmptyMessage('traffic-channel') }}</p>
-              </article>
-            </div>
-
-            <article class="marketing-hub__card marketing-hub__source-medium-card">
-              <header class="marketing-hub__panel-head"><h2>Source / medium</h2><p>Where website sessions came from.</p></header>
-              <div v-if="data.websiteAnalytics.sourceMedium.length" class="marketing-hub__table-wrap">
-                <table class="num">
-                  <thead><tr><th>Source / medium</th><th>Sessions</th><th>Users</th><th>Key events</th></tr></thead>
-                  <tbody>
-                    <tr v-for="row in data.websiteAnalytics.sourceMedium.slice(0, 8)" :key="dimension(row, 'sessionSourceMedium')">
-                      <td>{{ dimension(row, 'sessionSourceMedium') || '(not set)' }}</td>
-                      <td>{{ n(metric(row, 'sessions')) }}</td>
-                      <td>{{ n(metric(row, 'totalUsers')) }}</td>
-                      <td>{{ n(metric(row, 'keyEvents')) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader><CardTitle>Top landing pages</CardTitle><CardDescription>Pages that started website sessions.</CardDescription></CardHeader>
+              <div v-if="data.websiteAnalytics.topLandingPages.length" class="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Landing page</TableHead><TableHead class="text-right">Sessions</TableHead><TableHead class="text-right">Users</TableHead><TableHead class="text-right">Engaged</TableHead><TableHead class="text-right">Key events</TableHead></TableRow></TableHeader>
+                  <TableBody><TableRow v-for="row in data.websiteAnalytics.topLandingPages.slice(0, 8)" :key="dimension(row, 'landingPagePlusQueryString')"><TableCell>{{ cleanLandingPage(dimension(row, 'landingPagePlusQueryString')) }}</TableCell><TableCell class="text-right">{{ n(metric(row, 'sessions')) }}</TableCell><TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell><TableCell class="text-right">{{ fractionPct(metric(row, 'engagementRate')) }}</TableCell><TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell></TableRow></TableBody>
+                </Table>
               </div>
-              <p v-else class="marketing-hub__breakdown-empty">{{ websiteBreakdownEmptyMessage('source / medium') }}</p>
-            </article>
+              <CardContent v-else class="grid min-h-28 place-items-center text-sm text-muted-foreground">{{ websiteBreakdownEmptyMessage('landing-page') }}</CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Traffic channels</CardTitle><CardDescription>How website sessions were acquired.</CardDescription></CardHeader>
+              <CardContent v-if="data.websiteAnalytics.trafficChannels.length" class="space-y-3">
+                <div v-for="row in data.websiteAnalytics.trafficChannels.slice(0, 8)" :key="dimension(row, 'sessionDefaultChannelGroup')" class="space-y-1.5">
+                  <div class="flex justify-between text-sm"><span>{{ dimension(row, 'sessionDefaultChannelGroup') || '(not set)' }}</span><strong>{{ n(metric(row, 'sessions')) }}</strong></div>
+                  <div class="h-2 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-primary" :style="{ width: barPercent(metric(row, 'sessions'), maxChannelSessions) + '%' }" /></div>
+                </div>
+              </CardContent>
+              <CardContent v-else class="grid min-h-28 place-items-center text-sm text-muted-foreground">{{ websiteBreakdownEmptyMessage('traffic-channel') }}</CardContent>
+            </Card>
           </div>
-        </div>
-        <article v-else class="marketing-hub__card marketing-hub__state">{{ websiteAnalyticsUnavailableMessage }}</article>
-      </section>
 
-      <section aria-label="Tracking audit">
-        <article class="marketing-hub__card">
-            <header class="marketing-hub__panel-head">
-              <h2><Code2 aria-hidden="true" />Data Layer Audit <span class="marketing-hub__quality mid">{{ dataLayerLabel }}</span><button type="button" class="marketing-hub__explain" aria-label="Explain the Data Layer Audit" @click="openExplainer('data-layer-audit')"><CircleHelp aria-hidden="true" /></button></h2>
-              <p>Lead-tracking contract &amp; CRM field coverage.</p>
-            </header>
-            <div class="marketing-hub__pad">
-              <div class="marketing-hub__coverage num">
-                <article v-for="item in coverageMetrics" :key="item.label" :class="{ ok: item.ok, bad: !item.ok }">
-                  <small>{{ item.label }}</small><strong>{{ pct(item.value) }}</strong>
-                </article>
-              </div>
-              <p class="marketing-hub__audit-note">{{ dataLayerHelpText }}</p>
+          <Card>
+            <CardHeader><CardTitle>Source / medium</CardTitle><CardDescription>Where website sessions came from.</CardDescription></CardHeader>
+            <div v-if="data.websiteAnalytics.sourceMedium.length" class="overflow-x-auto">
+              <Table>
+                <TableHeader><TableRow><TableHead>Source / medium</TableHead><TableHead class="text-right">Sessions</TableHead><TableHead class="text-right">Users</TableHead><TableHead class="text-right">Key events</TableHead></TableRow></TableHeader>
+                <TableBody><TableRow v-for="row in data.websiteAnalytics.sourceMedium.slice(0, 8)" :key="dimension(row, 'sessionSourceMedium')"><TableCell>{{ dimension(row, 'sessionSourceMedium') || '(not set)' }}</TableCell><TableCell class="text-right">{{ n(metric(row, 'sessions')) }}</TableCell><TableCell class="text-right">{{ n(metric(row, 'totalUsers')) }}</TableCell><TableCell class="text-right">{{ n(metric(row, 'keyEvents')) }}</TableCell></TableRow></TableBody>
+              </Table>
             </div>
-        </article>
+            <CardContent v-else class="grid min-h-28 place-items-center text-sm text-muted-foreground">{{ websiteBreakdownEmptyMessage('source / medium') }}</CardContent>
+          </Card>
+        </template>
+        <Card v-else><CardContent class="grid min-h-40 place-items-center text-sm text-muted-foreground">{{ websiteAnalyticsUnavailableMessage }}</CardContent></Card>
       </section>
 
-      <section aria-labelledby="lead-source-title">
-        <article class="marketing-hub__card">
-          <header class="marketing-hub__panel-head">
-            <h2 id="lead-source-title"><ListFilter aria-hidden="true" />Lead Source Setup <span class="marketing-hub__status-pill">{{ inboundEmailData?.configured ? 'Email domain active' : 'Domain not configured' }}</span></h2>
-            <p>External lead inboxes used for attribution &amp; lead-quality checks.</p>
-          </header>
-          <div class="marketing-hub__pad">
-            <div class="marketing-hub__split3">
-              <div class="marketing-hub__inset"><small>Configured sources</small><strong class="num">{{ n(inboundEmailData?.addresses?.length || 0) }}</strong></div>
-              <div class="marketing-hub__inset"><small>Active sources</small><strong class="num">{{ n(activeInboundLeadSourceCount) }}</strong></div>
-              <div class="marketing-hub__inset"><small>Inbound domain</small><strong class="marketing-hub__domain">{{ inboundEmailData?.domain || 'Not configured' }}</strong></div>
-            </div>
-            <p class="marketing-hub__source-note">
-              {{ inboundSourceLabels || 'No inbound sources configured' }} — currently
-              <strong>{{ n(data.summary.externalMarketplaceLeads) }} leads</strong> ingested this period.
-            </p>
-          </div>
-        </article>
-      </section>
-
-      <section aria-labelledby="breakdowns-title">
-        <div class="marketing-hub__section-head"><h2 id="breakdowns-title">Audience &amp; delivery breakdowns</h2><b>{{ hasAudienceBreakdowns ? 'Synced provider data' : 'Phase 2 · new' }}</b><span /></div>
-        <div class="marketing-hub__preview-note marketing-hub__preview-note--action">
-          <span>{{ hasAudienceBreakdowns
-            ? 'Spend is grouped from the Meta and Google Ads breakdown data stored during platform syncs.'
-            : 'No audience breakdown data is stored for this period. Sync Meta and Google Ads to request age, device and area data.' }}</span>
-          <button v-if="!hasAudienceBreakdowns" type="button" class="marketing-hub__empty-sync ui-button" :disabled="syncing" @click="syncAndRefresh">
-            <RefreshCw :class="{ spinning: syncing }" aria-hidden="true" />
-            {{ syncing ? 'Syncing platforms…' : 'Sync provider data' }}
-          </button>
-        </div>
-        <div class="marketing-hub__split3">
-          <article v-for="card in audienceBreakdownCards" :key="card.key" class="marketing-hub__card marketing-hub__breakdown-card">
-            <header class="marketing-hub__panel-head"><h3>{{ card.title }}</h3><p>Provider-reported spend for this period.</p></header>
-            <div v-if="card.rows.length" class="marketing-hub__pad marketing-hub__provider-breakdowns">
-              <div v-for="row in card.rows" :key="`${row.platform}:${row.value}`" class="marketing-hub__provider-breakdown num">
-                <p><span>{{ row.value }}</span><strong>{{ money(row.spend) }}</strong></p>
-                <small>{{ platformLabel(row.platform) }} · {{ n(row.impressions) }} impressions</small>
-                <span class="marketing-hub__track"><i :style="{ width: `${barPercent(row.spend, card.maxSpend)}%` }" /></span>
+      <section class="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-center gap-2"><Code2 class="h-5 w-5" /><CardTitle>Data Layer Audit</CardTitle><Badge variant="secondary">{{ dataLayerLabel }}</Badge><Button variant="ghost" size="icon" class="h-7 w-7" aria-label="Explain the Data Layer Audit" @click="openExplainer('data-layer-audit')"><CircleHelp class="h-4 w-4" /></Button></div>
+            <CardDescription>Lead-tracking contract and CRM field coverage.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div v-for="item in coverageMetrics" :key="item.label" class="rounded-lg border bg-muted/30 p-3">
+                <small class="text-xs font-medium text-muted-foreground">{{ item.label }}</small>
+                <strong class="mt-1 block text-xl" :class="item.ok ? 'text-emerald-500' : 'text-destructive'">{{ pct(item.value) }}</strong>
               </div>
             </div>
-            <p v-else class="marketing-hub__breakdown-empty">Awaiting provider breakdown sync.</p>
-          </article>
+            <p class="mt-3 text-xs text-muted-foreground">{{ dataLayerHelpText }}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div class="flex flex-wrap items-center gap-2"><ListFilter class="h-5 w-5" /><CardTitle>Lead Source Setup</CardTitle><Badge>{{ inboundEmailData?.configured ? 'Email domain active' : 'Domain not configured' }}</Badge></div>
+            <CardDescription>External lead inboxes used for attribution and lead-quality checks.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="rounded-lg border border-dashed bg-muted/30 p-3"><small class="text-muted-foreground">Configured sources</small><strong class="mt-1 block text-lg">{{ n(inboundEmailData?.addresses?.length || 0) }}</strong></div>
+              <div class="rounded-lg border border-dashed bg-muted/30 p-3"><small class="text-muted-foreground">Active sources</small><strong class="mt-1 block text-lg">{{ n(activeInboundLeadSourceCount) }}</strong></div>
+              <div class="rounded-lg border border-dashed bg-muted/30 p-3"><small class="text-muted-foreground">Inbound domain</small><strong class="mt-1 block break-all font-mono text-sm">{{ inboundEmailData?.domain || 'Not configured' }}</strong></div>
+            </div>
+            <p class="mt-3 text-xs text-muted-foreground">{{ inboundSourceLabels || 'No inbound sources configured' }} — currently <strong>{{ n(data.summary.externalMarketplaceLeads) }} leads</strong> ingested this period.</p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section class="space-y-3" aria-labelledby="breakdowns-title">
+        <div class="flex flex-wrap items-center gap-3"><h2 id="breakdowns-title" class="text-base font-semibold">Audience and delivery breakdowns</h2><Badge variant="secondary">{{ hasAudienceBreakdowns ? 'Synced provider data' : 'Awaiting sync' }}</Badge><Separator class="min-w-8 flex-1" /></div>
+        <Alert>
+          <Database class="h-4 w-4" />
+          <AlertDescription class="flex flex-col items-start justify-between gap-3 min-[701px]:flex-row min-[701px]:items-center">
+            <span>{{ hasAudienceBreakdowns ? 'Spend is grouped from Meta and Google Ads breakdown data stored during platform syncs.' : 'No audience breakdown data is stored for this period. Sync Meta and Google Ads to request age, device and area data.' }}</span>
+            <Button v-if="!hasAudienceBreakdowns" variant="outline" size="sm" :disabled="syncing" @click="syncAndRefresh"><RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />{{ syncing ? 'Syncing platforms…' : 'Sync provider data' }}</Button>
+          </AlertDescription>
+        </Alert>
+        <div class="grid gap-4 lg:grid-cols-3">
+          <Card v-for="card in audienceBreakdownCards" :key="card.key">
+            <CardHeader><CardTitle>{{ card.title }}</CardTitle><CardDescription>Provider-reported spend for this period.</CardDescription></CardHeader>
+            <CardContent v-if="card.rows.length" class="space-y-3">
+              <div v-for="row in card.rows" :key="row.platform + ':' + row.value" class="space-y-1.5">
+                <div class="flex justify-between gap-3 text-sm"><span class="truncate font-medium">{{ row.value }}</span><strong>{{ money(row.spend) }}</strong></div>
+                <small class="text-muted-foreground">{{ platformLabel(row.platform) }} · {{ n(row.impressions) }} impressions</small>
+                <div class="h-2 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-primary" :style="{ width: barPercent(row.spend, card.maxSpend) + '%' }" /></div>
+              </div>
+            </CardContent>
+            <CardContent v-else class="grid min-h-28 place-items-center text-sm text-muted-foreground">Awaiting provider breakdown sync.</CardContent>
+          </Card>
         </div>
       </section>
 
-      <section aria-labelledby="creative-title">
-        <div class="marketing-hub__section-head"><h2 id="creative-title">Ad creative</h2><b>Synced media</b><span /></div>
-        <p class="marketing-hub__preview-note">Actual images and video thumbnails from Meta &amp; Google, matched to campaign spend and CTR for this report period.</p>
-        <div v-if="data.creativeMedia.length" class="marketing-hub__creatives">
-          <article v-for="creative in data.creativeMedia.slice(0, 12)" :key="`${creative.platform}:${creative.id}`" class="marketing-hub__creative">
-            <button
-              type="button"
-              class="marketing-hub__creative-art"
-              :aria-label="`Preview ad: ${creative.title}`"
-              @click="openCreative(creative)"
-            >
-              <img :src="creative.imageUrl" :alt="creative.title" loading="lazy" referrerpolicy="no-referrer" @error="hideBrokenCreativeImage">
-              <span>{{ platformLabel(creative.platform) }}</span>
-              <i v-if="creative.videoUrl" aria-hidden="true">▶</i>
+      <section class="space-y-3" aria-labelledby="creative-title">
+        <div class="flex items-center gap-3"><h2 id="creative-title" class="text-base font-semibold">Ad creative</h2><Badge variant="secondary">Synced media</Badge><Separator class="flex-1" /></div>
+        <p class="rounded-lg border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">Actual images and video thumbnails from Meta and Google, matched to campaign spend and CTR for this report period.</p>
+        <div v-if="data.creativeMedia.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card v-for="creative in data.creativeMedia.slice(0, 12)" :key="creative.platform + ':' + creative.id" class="overflow-hidden">
+            <button type="button" class="relative grid aspect-[1.5/1] w-full place-items-center overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" :aria-label="'Preview ad: ' + creative.title" @click="openCreative(creative)">
+              <img :src="creative.imageUrl" :alt="creative.title" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" @error="hideBrokenCreativeImage">
+              <Badge class="absolute left-2 top-2">{{ platformLabel(creative.platform) }}</Badge>
+              <span v-if="creative.videoUrl" class="absolute grid size-10 place-items-center rounded-full bg-background/75" aria-hidden="true">▶</span>
             </button>
-            <div>
-              <h3 :title="creative.title">{{ creative.title }}</h3>
-              <small v-if="creative.performanceLabel">{{ formatLabel(creative.performanceLabel) }} asset</small>
-              <p>Spend <strong class="num">{{ money(creative.spend) }}</strong><span>CTR <strong class="num">{{ pctOrDash(creative.ctr) }}</strong></span></p>
-            </div>
-          </article>
+            <CardContent class="p-3">
+              <h3 class="truncate text-sm font-semibold" :title="creative.title">{{ creative.title }}</h3>
+              <small v-if="creative.performanceLabel" class="mt-1 block text-muted-foreground">{{ formatLabel(creative.performanceLabel) }} asset</small>
+              <div class="mt-2 flex justify-between text-xs text-muted-foreground"><span>Spend <strong class="text-foreground">{{ money(creative.spend) }}</strong></span><span>CTR <strong class="text-foreground">{{ pctOrDash(creative.ctr) }}</strong></span></div>
+            </CardContent>
+          </Card>
         </div>
-        <article v-else class="marketing-hub__card marketing-hub__creative-empty">
-          <strong>No creative media has been synced for this period.</strong>
-          <span>Sync Meta and Google Ads to refresh active image and video assets for this period.</span>
-          <button type="button" class="marketing-hub__empty-sync ui-button" :disabled="syncing" @click="syncAndRefresh">
-            <RefreshCw :class="{ spinning: syncing }" aria-hidden="true" />
-            {{ syncing ? 'Syncing platforms…' : 'Sync provider data' }}
-          </button>
-        </article>
+        <Card v-else>
+          <CardContent class="grid min-h-40 place-items-center gap-2 p-7 text-center text-muted-foreground">
+            <strong class="text-foreground">No creative media has been synced for this period.</strong>
+            <span class="text-xs">Sync Meta and Google Ads to refresh active image and video assets.</span>
+            <Button variant="outline" size="sm" :disabled="syncing" @click="syncAndRefresh"><RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': syncing }" />{{ syncing ? 'Syncing platforms…' : 'Sync provider data' }}</Button>
+          </CardContent>
+        </Card>
       </section>
 
-      <section aria-labelledby="builder-title">
-        <div class="marketing-hub__section-head"><h2 id="builder-title">Report builder</h2><b class="p3">Live report data</b><span /><p>Build a table from the selected report period</p></div>
-        <article class="marketing-hub__card marketing-hub__pivot">
-          <aside>
-            <p class="marketing-hub__eyebrow">Dimensions</p>
-            <div>
-              <button
-                v-for="dimensionOption in REPORT_BUILDER_DIMENSIONS"
-                :key="dimensionOption.id"
-                type="button"
-                :class="{ on: builderDimensions.includes(dimensionOption.id) }"
-                :aria-pressed="builderDimensions.includes(dimensionOption.id)"
-                :title="dimensionOption.description"
-                @click="toggleBuilderDimension(dimensionOption.id)"
-              >
-                {{ dimensionOption.label }}
-              </button>
+      <section class="space-y-3" aria-labelledby="builder-title">
+        <div class="flex flex-wrap items-center gap-3"><h2 id="builder-title" class="text-base font-semibold">Report builder</h2><Badge variant="secondary">Live report data</Badge><Separator class="min-w-8 flex-1" /><p class="text-xs text-muted-foreground">Build a table from the selected report period</p></div>
+        <Card class="grid overflow-hidden lg:grid-cols-[230px_1fr]">
+          <aside class="border-b bg-muted/30 p-4 lg:border-b-0 lg:border-r">
+            <p class="text-[11px] font-bold uppercase tracking-[.09em] text-muted-foreground">Dimensions</p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <Button v-for="dimensionOption in REPORT_BUILDER_DIMENSIONS" :key="dimensionOption.id" variant="outline" size="sm" :class="builderDimensions.includes(dimensionOption.id) ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''" :aria-pressed="builderDimensions.includes(dimensionOption.id)" :title="dimensionOption.description" @click="toggleBuilderDimension(dimensionOption.id)">{{ dimensionOption.label }}</Button>
             </div>
-            <p class="marketing-hub__eyebrow">Metrics</p>
-            <div>
-              <button
-                v-for="metricOption in REPORT_BUILDER_METRICS"
-                :key="metricOption.id"
-                type="button"
-                :class="{ on: builderMetrics.includes(metricOption.id) }"
-                :aria-pressed="builderMetrics.includes(metricOption.id)"
-                :disabled="!builderAvailableMetrics.includes(metricOption.id)"
-                :title="builderMetricTitle(metricOption.id)"
-                @click="toggleBuilderMetric(metricOption.id)"
-              >
-                {{ metricOption.label }}
-              </button>
+            <p class="mt-4 text-[11px] font-bold uppercase tracking-[.09em] text-muted-foreground">Metrics</p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              <Button v-for="metricOption in REPORT_BUILDER_METRICS" :key="metricOption.id" variant="outline" size="sm" :class="builderMetrics.includes(metricOption.id) ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : ''" :aria-pressed="builderMetrics.includes(metricOption.id)" :disabled="!builderAvailableMetrics.includes(metricOption.id)" :title="builderMetricTitle(metricOption.id)" @click="toggleBuilderMetric(metricOption.id)">{{ metricOption.label }}</Button>
             </div>
           </aside>
-          <div class="marketing-hub__pivot-main">
-            <div class="marketing-hub__wells">
-              <div>
-                <p class="marketing-hub__eyebrow">Rows</p>
-                <button
-                  v-for="dimensionId in builderDimensions"
-                  :key="dimensionId"
-                  type="button"
-                  :aria-label="`Remove ${builderDimensionLabel(dimensionId)}`"
-                  @click="removeBuilderDimension(dimensionId)"
-                >
-                  {{ builderDimensionLabel(dimensionId) }} <span aria-hidden="true">×</span>
-                </button>
+
+          <div class="min-w-0 p-4">
+            <div class="mb-3 grid gap-2 sm:grid-cols-2">
+              <div class="rounded-lg border border-dashed bg-muted/30 p-3">
+                <p class="mb-2 text-[11px] font-bold uppercase tracking-[.09em] text-muted-foreground">Rows</p>
+                <Button v-for="dimensionId in builderDimensions" :key="dimensionId" variant="outline" size="sm" class="mr-1.5 mt-1" :aria-label="'Remove ' + builderDimensionLabel(dimensionId)" @click="removeBuilderDimension(dimensionId)">{{ builderDimensionLabel(dimensionId) }} <span class="ml-1 text-muted-foreground">×</span></Button>
               </div>
-              <div>
-                <p class="marketing-hub__eyebrow">Values</p>
-                <button
-                  v-for="metricId in builderMetrics"
-                  :key="metricId"
-                  type="button"
-                  :aria-label="`Remove ${builderMetricLabel(metricId)}`"
-                  @click="removeBuilderMetric(metricId)"
-                >
-                  {{ builderMetricLabel(metricId) }} <span aria-hidden="true">×</span>
-                </button>
+              <div class="rounded-lg border border-dashed bg-muted/30 p-3">
+                <p class="mb-2 text-[11px] font-bold uppercase tracking-[.09em] text-muted-foreground">Values</p>
+                <Button v-for="metricId in builderMetrics" :key="metricId" variant="outline" size="sm" class="mr-1.5 mt-1" :aria-label="'Remove ' + builderMetricLabel(metricId)" @click="removeBuilderMetric(metricId)">{{ builderMetricLabel(metricId) }} <span class="ml-1 text-muted-foreground">×</span></Button>
               </div>
             </div>
-            <div class="marketing-hub__table-wrap">
-              <table class="num"><thead><tr>
-                <th
-                  v-for="dimensionId in builderDimensions"
-                  :key="dimensionId"
-                  class="dimension"
-                  scope="col"
-                  :aria-sort="builderAriaSort(dimensionId)"
-                >
-                  <button type="button" @click="sortBuilderBy(dimensionId)">
-                    {{ builderDimensionLabel(dimensionId) }} <span aria-hidden="true">{{ builderSortIndicator(dimensionId) }}</span>
-                  </button>
-                </th>
-                <th
-                  v-for="metricId in builderMetrics"
-                  :key="metricId"
-                  scope="col"
-                  :aria-sort="builderAriaSort(metricId)"
-                >
-                  <button type="button" @click="sortBuilderBy(metricId)">
-                    {{ builderMetricLabel(metricId) }} <span aria-hidden="true">{{ builderSortIndicator(metricId) }}</span>
-                  </button>
-                </th>
-              </tr></thead>
-                <tbody>
-                  <tr v-for="row in builderRows" :key="row.key">
-                    <td v-for="dimensionId in builderDimensions" :key="dimensionId" class="dimension">
-                      {{ formatBuilderDimension(dimensionId, row.dimensions[dimensionId]) }}
-                    </td>
-                    <td v-for="metricId in builderMetrics" :key="metricId">
-                      {{ formatBuilderMetric(metricId, row.metrics[metricId]) }}
-                    </td>
-                  </tr>
-                  <tr v-if="!builderRows.length">
-                    <td :colspan="builderDimensions.length + builderMetrics.length" class="marketing-hub__empty-cell">
-                      No real report data is available for this breakdown in {{ rangeLabel }}.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+
+            <div class="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead v-for="dimensionId in builderDimensions" :key="dimensionId" :aria-sort="builderAriaSort(dimensionId)"><Button variant="ghost" size="sm" class="-ml-3" @click="sortBuilderBy(dimensionId)">{{ builderDimensionLabel(dimensionId) }} {{ builderSortIndicator(dimensionId) }}</Button></TableHead>
+                  <TableHead v-for="metricId in builderMetrics" :key="metricId" class="text-right" :aria-sort="builderAriaSort(metricId)"><Button variant="ghost" size="sm" class="-mr-3 float-right" @click="sortBuilderBy(metricId)">{{ builderMetricLabel(metricId) }} {{ builderSortIndicator(metricId) }}</Button></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  <TableRow v-for="row in builderRows" :key="row.key">
+                    <TableCell v-for="dimensionId in builderDimensions" :key="dimensionId">{{ formatBuilderDimension(dimensionId, row.dimensions[dimensionId]) }}</TableCell>
+                    <TableCell v-for="metricId in builderMetrics" :key="metricId" class="text-right">{{ formatBuilderMetric(metricId, row.metrics[metricId]) }}</TableCell>
+                  </TableRow>
+                  <TableRow v-if="!builderRows.length"><TableCell :colspan="builderDimensions.length + builderMetrics.length" class="h-28 text-center text-muted-foreground">No real report data is available for this breakdown in {{ rangeLabel }}.</TableCell></TableRow>
+                </TableBody>
+              </Table>
             </div>
-            <p class="marketing-hub__example" role="status" aria-live="polite">
-              {{ n(builderRows.length) }} {{ builderRows.length === 1 ? 'row' : 'rows' }} from the current report data. Metrics unavailable at the selected grain are disabled.
-              <span v-if="builderDimensions.includes('campaign') && builderMetrics.includes('crm_leads')"> Leads without exact campaign details appear as labelled reconciliation rows.</span>
-            </p>
+            <p class="mt-2.5 text-xs text-muted-foreground" role="status" aria-live="polite">{{ n(builderRows.length) }} {{ builderRows.length === 1 ? 'row' : 'rows' }} from the current report data. Metrics unavailable at the selected grain are disabled.<span v-if="builderDimensions.includes('campaign') && builderMetrics.includes('crm_leads')"> Leads without exact campaign details appear as labelled reconciliation rows.</span></p>
           </div>
-        </article>
+        </Card>
       </section>
 
-      <footer class="marketing-hub__footer">
-        <strong>About this report.</strong> Results reflect the website, advertising and CRM data available for {{ rangeLabel }}.
+      <footer class="border-t pt-4 text-xs leading-relaxed text-muted-foreground">
+        <strong class="text-foreground">About this report.</strong> Results reflect the website, advertising and CRM data available for {{ rangeLabel }}.
         Panels waiting for a platform sync are clearly marked, and unavailable metrics display as “—”.
       </footer>
     </template>
+
     <ExplainerDialog v-model:open="explainerOpen" :topic="explainerTopic" :from="from" :to="to" />
-    <CreativePreviewDialog
-      v-model:open="creativeDialogOpen"
-      :creative="selectedCreative"
-      :platform-label="selectedCreative ? platformLabel(selectedCreative.platform) : ''"
-      :spend-label="selectedCreative ? money(selectedCreative.spend) : '—'"
-      :ctr-label="selectedCreative ? pctOrDash(selectedCreative.ctr) : '—'"
-    />
+    <CreativePreviewDialog v-model:open="creativeDialogOpen" :creative="selectedCreative" :platform-label="selectedCreative ? platformLabel(selectedCreative.platform) : ''" :spend-label="selectedCreative ? money(selectedCreative.spend) : '—'" :ctr-label="selectedCreative ? pctOrDash(selectedCreative.ctr) : '—'" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, defineComponent, h, ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   ArrowRight,
   ChartNoAxesCombined,
@@ -716,6 +561,14 @@ import {
 import ExplainerDialog from '~/components/admin/marketing/ExplainerDialog.vue';
 import CreativePreviewDialog from '~/components/admin/marketing/CreativePreviewDialog.vue';
 import type { ExplainerTopicKey } from '~/components/admin/marketing/explainerContent';
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Label } from '~/components/ui/label';
+import { Separator } from '~/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs';
 
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
@@ -1006,6 +859,30 @@ const googleAdsMetrics = computed<MetricItem[]>(() => {
   ] : [];
 });
 
+const platformMetricPanels = computed(() => [
+  { title: 'GA4 Website', description: 'Engagement quality for the period.', items: ga4Metrics.value },
+  { title: 'Paid Media Efficiency', description: 'Meta and Google blended delivery.', items: paidMediaMetrics.value },
+  { title: 'Google Ads Depth', description: 'Campaign-level metrics from API sync.', items: googleAdsMetrics.value },
+]);
+
+function chartSeriesClass(className: string, mode: 'stroke' | 'fill' | 'background') {
+  const colourKey = ['users', 'conversions'].includes(className)
+    ? 'green'
+    : ['events', 'spend'].includes(className)
+      ? 'orange'
+      : className === 'leads'
+        ? 'violet'
+        : className === 'cpl'
+          ? 'amber'
+          : 'primary';
+  const classes = {
+    stroke: { primary: 'stroke-primary', green: 'stroke-emerald-500', orange: 'stroke-orange-500', violet: 'stroke-violet-500', amber: 'stroke-amber-500' },
+    fill: { primary: 'fill-primary', green: 'fill-emerald-500', orange: 'fill-orange-500', violet: 'fill-violet-500', amber: 'fill-amber-500' },
+    background: { primary: 'bg-primary', green: 'bg-emerald-500', orange: 'bg-orange-500', violet: 'bg-violet-500', amber: 'bg-amber-500' },
+  } as const;
+  return classes[mode][colourKey];
+}
+
 const maxChannelSessions = computed(() => maxBreakdown(data.value?.websiteAnalytics.trafficChannels));
 const websiteTrendRows = computed(() => data.value?.websiteAnalytics.dailyTrend || []);
 const chartStartLabel = computed(() => websiteTrendRows.value[0]?.date ? displayShortDate(websiteTrendRows.value[0].date) : '');
@@ -1236,192 +1113,4 @@ const pctOrDash = (value?: number | null) => value == null ? '—' : pct(value);
 const fractionPct = (value?: number | null) => value == null ? '—' : pct(value * 100);
 const decimal = (value?: number | null) => value == null ? '—' : new Intl.NumberFormat('en-AU', { maximumFractionDigits: 1 }).format(value);
 const roas = (value: number) => `${new Intl.NumberFormat('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}×`;
-
-const BarRow = defineComponent({
-  props: { label: { type: String, required: true }, value: { type: Number, required: true }, max: { type: Number, required: true } },
-  setup: props => () => h('div', { class: 'marketing-hub__bar-row num' }, [
-    h('p', [h('span', props.label), h('strong', n(props.value))]),
-    h('span', { class: 'marketing-hub__track' }, [h('i', { style: { width: `${barPercent(props.value, props.max)}%` } })]),
-  ]),
-});
-const MetricPanel = defineComponent({
-  props: { title: { type: String, required: true }, description: { type: String, required: true }, items: { type: Array as () => MetricItem[], required: true } },
-  setup: props => () => h('article', { class: 'marketing-hub__card' }, [
-    h('header', { class: 'marketing-hub__panel-head' }, [h('h2', props.title), h('p', props.description)]),
-    h('div', { class: 'marketing-hub__metrics num' }, props.items.map(item => h('div', [h('small', item.label), h('strong', item.value)]))),
-  ]),
-});
 </script>
-
-<style scoped>
-.marketing-hub {
-  --ground: #eaeef3; --surface: #ffffff; --surface-2: #f5f8fb; --surface-3: #eef3f8;
-  --ink: #0b1a2b; --ink-2: #39506a; --muted: #6b7d90; --line: #dfe6ee; --line-2: #eaf0f6;
-  --brand: #001e50; --brand-ink: #ffffff; --accent: #0091b8; --accent-soft: rgba(0,145,184,.1);
-  --good: #1a9e5c; --good-soft: rgba(26,158,92,.12); --warn: #c47d1f; --warn-soft: rgba(196,125,31,.13);
-  --crit: #d13b22; --crit-soft: rgba(209,59,34,.11); --meta: #1877f2; --google: #188038; --ga4: #e8710a; --series3: #7c5cff;
-  --radius: 14px; --shadow: 0 1px 2px rgba(11,26,43,.05), 0 8px 24px -14px rgba(11,26,43,.18);
-  color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px; line-height: 1.5; font-variant-numeric: tabular-nums;
-  width: 100vw; margin-top: -2rem; margin-bottom: -2rem; margin-left: calc(50% - 50vw);
-  padding: 24px 22px 64px; min-height: calc(100vh - 64px); overflow-x: clip; background: var(--ground);
-}
-:global(.dark) .marketing-hub, :global(:root[data-theme="dark"]) .marketing-hub {
-  --ground: #080f18; --surface: #101b28; --surface-2: #152232; --surface-3: #1b2a3b;
-  --ink: #e7eef6; --ink-2: #aebdce; --muted: #7c8ea0; --line: #213042; --line-2: #1a2836;
-  --brand: #4d88cc; --brand-ink: #07101b; --accent: #37c4e6; --accent-soft: rgba(55,196,230,.13);
-  --good: #39c682; --good-soft: rgba(57,198,130,.15); --warn: #eab255; --warn-soft: rgba(234,178,85,.15);
-  --crit: #f4674c; --crit-soft: rgba(244,103,76,.15); --meta: #4a9bff; --google: #4dbf72; --ga4: #f5924a; --series3: #a58cff;
-  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
-}
-@media (prefers-color-scheme: dark) {
-  :global(:root:not([data-theme="light"])) .marketing-hub {
-    --ground: #080f18; --surface: #101b28; --surface-2: #152232; --surface-3: #1b2a3b;
-    --ink: #e7eef6; --ink-2: #aebdce; --muted: #7c8ea0; --line: #213042; --line-2: #1a2836;
-    --brand: #4d88cc; --brand-ink: #07101b; --accent: #37c4e6; --accent-soft: rgba(55,196,230,.13);
-    --good: #39c682; --good-soft: rgba(57,198,130,.15); --warn: #eab255; --warn-soft: rgba(234,178,85,.15);
-    --crit: #f4674c; --crit-soft: rgba(244,103,76,.15); --meta: #4a9bff; --google: #4dbf72; --ga4: #f5924a; --series3: #a58cff;
-  }
-}
-.marketing-hub > * { max-width: 1200px; margin-left: auto; margin-right: auto; }
-.marketing-hub section { margin-top: 26px; }
-.marketing-hub h1, .marketing-hub h2, .marketing-hub h3, .marketing-hub p { margin-top: 0; }
-.marketing-hub__header { padding-bottom: 6px; }
-.marketing-hub__header-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.marketing-hub__eyebrow { margin-bottom: 6px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
-.marketing-hub h1 { margin-bottom: 4px; font-size: 29px; font-weight: 750; letter-spacing: -.02em; line-height: 1.05; }
-.marketing-hub__subtitle { margin-bottom: 0; color: var(--ink-2); }
-.marketing-hub__range-wrap { position: relative; }
-.marketing-hub__daterange { display: inline-flex; gap: 2px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); box-shadow: var(--shadow); }
-.marketing-hub__daterange button { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 8px; padding: 7px 13px; background: transparent; color: var(--ink-2); font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.marketing-hub__daterange button svg { width: 13px; }
-.marketing-hub__daterange button.on { background: var(--brand); color: var(--brand-ink); }
-.marketing-hub__custom-range { position: absolute; z-index: 5; top: 47px; right: 0; display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
-.marketing-hub__custom-range > div { color: var(--muted); font-size: 11px; font-weight: 700; }
-.marketing-hub__custom-range input { display: block; margin-top: 4px; border: 1px solid var(--line); border-radius: 7px; padding: 6px; background: var(--surface-2); color: var(--ink); }
-.marketing-hub__custom-range :deep([data-slot="button"]) { min-width: 160px; margin-top: 4px; background: var(--surface-2); color: var(--ink); }
-.marketing-hub__synced { display: flex; align-items: center; justify-content: flex-end; gap: 7px; margin: 9px 0 0; color: var(--muted); font-size: 12px; }
-.marketing-hub__synced button { display: inline-grid; place-items: center; border: 0; background: none; color: var(--muted); cursor: pointer; }
-.marketing-hub__synced.error { color: var(--crit); }
-.marketing-hub__synced.error .marketing-hub__live { background: var(--crit); box-shadow: 0 0 0 3px var(--crit-soft); }
-.marketing-hub__synced svg { width: 14px; }
-.marketing-hub__live { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
-.spinning { animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.marketing-hub__insight { display: flex; align-items: flex-start; gap: 14px; margin-top: 18px; padding: 15px 18px; border: 1px solid var(--line); border-left: 3px solid var(--crit); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
-.marketing-hub__insight-icon { flex: 0 0 auto; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: var(--crit-soft); color: var(--crit); }
-.marketing-hub__insight.observed { border-left-color: var(--warn); }.marketing-hub__insight.observed .marketing-hub__insight-icon { background: var(--warn-soft); color: var(--warn); }
-.marketing-hub__insight-icon svg { width: 18px; }
-.marketing-hub__insight h2 { margin-bottom: 3px; font-size: 14.5px; }
-.marketing-hub__insight p { max-width: 80ch; margin-bottom: 0; color: var(--ink-2); font-size: 13.5px; }
-.marketing-hub__action { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; border: 1px solid var(--line); border-radius: 9px; padding: 8px 13px; background: var(--surface-2); color: var(--ink); font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer; }
-.marketing-hub__action svg { width: 14px; }
-.marketing-hub__state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 180px; margin-top: 26px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--muted); }
-.marketing-hub__state svg { width: 18px; }.marketing-hub__state--error { color: var(--crit); }
-.marketing-hub__kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.marketing-hub__kpi, .marketing-hub__card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
-.marketing-hub__kpi { padding: 15px; }
-.marketing-hub__kpi-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-.marketing-hub__kpi-label svg { width: 15px; opacity: .7; }
-.marketing-hub__kpi-value { margin-top: 9px; font-size: 26px; font-weight: 750; letter-spacing: -.02em; line-height: 1; }
-.marketing-hub__kpi.alert .marketing-hub__kpi-value { color: var(--crit); }
-.marketing-hub__kpi p { margin: 7px 0 0; color: var(--muted); font-size: 11.5px; }
-.marketing-hub :deep(.marketing-hub__panel-head) { padding: 15px 16px 0; }
-.marketing-hub :deep(.marketing-hub__panel-head h2) { display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 14px; letter-spacing: -.01em; }
-.marketing-hub :deep(.marketing-hub__panel-head h2 > svg) { width: 16px; color: var(--accent); }
-.marketing-hub :deep(.marketing-hub__panel-head p) { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
-.marketing-hub__kpi-trailing { display: inline-flex; align-items: center; gap: 6px; }
-.marketing-hub__explain { display: inline-flex; align-items: center; padding: 5px; border: 0; background: none; color: var(--muted); cursor: pointer; }
-.marketing-hub__explain:hover { color: var(--accent); }
-.marketing-hub__explain svg { width: 14px; height: 14px; }
-.marketing-hub__section-head h2 .marketing-hub__explain { margin-left: 8px; }
-.marketing-hub__explain-link { margin-top: 6px; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; font-size: 12.5px; font-weight: 600; text-decoration: underline; }
-.marketing-hub__help { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: none; color: inherit; cursor: pointer; font-size: 12.5px; font-weight: 600; }
-.marketing-hub__help svg { width: 14px; height: 14px; }
-.marketing-hub :deep(.marketing-hub__pad) { padding: 16px; }
-.marketing-hub__quality { margin-left: auto; border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
-.marketing-hub__quality.bad { color: var(--crit); background: var(--crit-soft); }.marketing-hub__quality.mid { color: var(--warn); background: var(--warn-soft); }.marketing-hub__quality.ok { color: var(--good); background: var(--good-soft); }
-.marketing-hub__funnel { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
-.marketing-hub__funnel-stage { padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
-.marketing-hub__funnel-stage p { margin-bottom: 5px; color: var(--muted); font-size: 11px; font-weight: 600; }
-.marketing-hub__funnel-stage strong { display: block; margin-bottom: 8px; font-size: 22px; }
-.marketing-hub :deep(.marketing-hub__track) { position: relative; display: block; height: 7px; overflow: hidden; border-radius: 5px; background: var(--surface-3); }
-.marketing-hub :deep(.marketing-hub__track i) { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
-.marketing-hub :deep(.marketing-hub__track i.poor) { background: var(--crit); }.marketing-hub :deep(.marketing-hub__track i.watch) { background: var(--warn); }.marketing-hub :deep(.marketing-hub__track i.good) { background: var(--good); }
-.marketing-hub :deep(.marketing-hub__track b) { position: absolute; top: -2px; width: 2px; height: 11px; background: var(--ink-2); opacity: .45; }
-.marketing-hub__split, .marketing-hub__split2, .marketing-hub__split3 { display: grid; gap: 14px; }
-.marketing-hub__split { grid-template-columns: 1.45fr 1fr; }.marketing-hub__split2 { grid-template-columns: 1fr 1fr; }.marketing-hub__split3 { grid-template-columns: repeat(3, 1fr); }
-.marketing-hub__split--start { align-items: start; }
-.marketing-hub__executive-detail > div > .marketing-hub__eyebrow { margin-bottom: 12px; }
-.marketing-hub__health-row { margin-bottom: 13px; }.marketing-hub__health-row > div:first-child { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12.5px; }
-.marketing-hub__health-row > div:first-child span { border-radius: 999px; padding: 2px 8px; font-size: 11px; }.marketing-hub__health-row span.good { color: var(--good); background: var(--good-soft); }.marketing-hub__health-row span.poor { color: var(--crit); background: var(--crit-soft); }.marketing-hub__health-row span.watch { color: var(--warn); background: var(--warn-soft); }
-.marketing-hub__health-row small { color: var(--muted); font-size: 11px; }
-.marketing-hub__opportunities article { margin-bottom: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); }
-.marketing-hub__opportunities h3 { margin-bottom: 3px; font-size: 13px; }.marketing-hub__opportunities p { margin-bottom: 8px; color: var(--muted); font-size: 11.5px; }.marketing-hub__opportunities span { display: inline-block; padding: 4px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 11px; }
-.marketing-hub__connection { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; font-weight: 600; }
-.marketing-hub__connection span, .marketing-hub__status-pill { border-radius: 999px; padding: 4px 11px; background: var(--brand); color: var(--brand-ink); font-size: 11px; font-weight: 700; }.marketing-hub__connection span.disconnected, .marketing-hub__status-pill.disconnected { background: var(--crit-soft); color: var(--crit); }.marketing-hub__connection span.stored { background: var(--warn-soft); color: var(--warn); }
-.marketing-hub__inset { padding: 11px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); min-width: 0; }
-.marketing-hub__inset small { display: block; color: var(--muted); font-weight: 600; }.marketing-hub__inset strong { display: block; margin-top: 2px; font-size: 17px; overflow-wrap: anywhere; }
-.marketing-hub :deep(.marketing-hub__bar-row) { margin-bottom: 11px; }.marketing-hub :deep(.marketing-hub__bar-row:last-child) { margin-bottom: 0; }.marketing-hub :deep(.marketing-hub__bar-row p) { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 13px; }.marketing-hub :deep(.marketing-hub__bar-row p span) { color: var(--ink-2); font-weight: 600; }
-.marketing-hub__empty { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
-.marketing-hub__section-head { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }.marketing-hub__section-head h2 { margin-bottom: 0; font-size: 15px; }.marketing-hub__section-head > span { flex: 1; height: 1px; background: var(--line); }.marketing-hub__section-head p { margin-bottom: 0; color: var(--muted); font-size: 12px; }.marketing-hub__section-head b { padding: 3px 8px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }.marketing-hub__section-head b.p3 { color: var(--series3); background: color-mix(in srgb, var(--series3) 12%, transparent); border-color: color-mix(in srgb, var(--series3) 30%, transparent); }
-.marketing-hub__table-wrap { overflow-x: auto; }.marketing-hub table { width: 100%; border-collapse: collapse; font-size: 12.5px; }.marketing-hub th { padding: 12px 13px; border-bottom: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 10.5px; letter-spacing: .03em; text-align: right; text-transform: uppercase; white-space: nowrap; }.marketing-hub th:first-child, .marketing-hub td:first-child { text-align: left; }.marketing-hub td { padding: 12px 13px; border-bottom: 1px solid var(--line-2); text-align: right; white-space: nowrap; }.marketing-hub tbody tr:last-child td { border-bottom: 0; }
-.marketing-hub__campaign-name { display: block; max-width: 300px; overflow: hidden; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; font-weight: 600; text-overflow: ellipsis; }.marketing-hub__platform-pill { display: inline-block; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); font-size: 11px; font-weight: 650; }.marketing-hub__platform-pill.meta_ads { border-color: var(--meta); }.marketing-hub__platform-pill.google_ads { border-color: var(--google); }.marketing-hub td.zero { color: var(--crit); font-weight: 700; }.marketing-hub td.muted { color: var(--muted); }.marketing-hub__empty-cell { padding: 28px !important; color: var(--muted); text-align: center !important; }
-.marketing-hub :deep(.marketing-hub__metrics) { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 18px; padding: 12px 16px 16px; }.marketing-hub :deep(.marketing-hub__metrics small) { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub :deep(.marketing-hub__metrics strong) { display: block; margin-top: 2px; font-size: 17px; }.marketing-hub__roas-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub a { color: var(--accent); }
-.marketing-hub__analytics-card { overflow: hidden; }
-.marketing-hub__analytics-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 16px; border-bottom: 1px solid var(--line-2); }
-.marketing-hub__analytics-head h2 { margin-bottom: 2px; font-size: 15px; }.marketing-hub__analytics-head p { margin-bottom: 0; color: var(--muted); font-size: 12px; }
-.marketing-hub__chart-tabs { display: inline-flex; flex: 0 0 auto; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); }
-.marketing-hub__chart-tabs button { border: 0; border-radius: 6px; padding: 6px 12px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 650; cursor: pointer; }.marketing-hub__chart-tabs button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(11,26,43,.1); }
-.marketing-hub__analytics-panel { padding: 16px; }
-.marketing-hub__chart-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-bottom: 16px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--line); }
-.marketing-hub__chart-kpis article { padding: 11px 13px; background: var(--surface-2); }.marketing-hub__chart-kpis small, .marketing-hub__chart-kpis span { display: block; color: var(--muted); }.marketing-hub__chart-kpis small { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }.marketing-hub__chart-kpis strong { display: block; margin: 3px 0 1px; font-size: 20px; }.marketing-hub__chart-kpis span { font-size: 10.5px; }
-.marketing-hub__chart-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 28px; }.marketing-hub__chart-toolbar > p { margin-bottom: 0; color: var(--muted); font-size: 10.5px; }
-.marketing-hub__legend { display: flex; flex-wrap: wrap; gap: 5px; color: var(--ink-2); font-size: 11.5px; font-weight: 600; }.marketing-hub__legend button { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 6px; padding: 4px 7px; background: transparent; color: inherit; font: inherit; cursor: pointer; }.marketing-hub__legend button:hover { background: var(--surface-2); }.marketing-hub__legend button.muted { opacity: .38; text-decoration: line-through; }.marketing-hub__legend i, .marketing-hub__chart-tooltip i { width: 11px; height: 3px; border-radius: 2px; }
-.marketing-hub__legend .sessions, .marketing-hub__chart-tooltip .sessions { background: var(--accent); }.marketing-hub__legend .users, .marketing-hub__chart-tooltip .users { background: var(--google); }.marketing-hub__legend .events, .marketing-hub__chart-tooltip .events { background: var(--ga4); }.marketing-hub__legend .clicks, .marketing-hub__chart-tooltip .clicks { background: var(--accent); }.marketing-hub__legend .conversions, .marketing-hub__chart-tooltip .conversions { background: var(--google); }.marketing-hub__legend .spend, .marketing-hub__chart-tooltip .spend { background: var(--ga4); }.marketing-hub__legend .leads, .marketing-hub__chart-tooltip .leads { background: var(--series3); }.marketing-hub__legend .paid-leads, .marketing-hub__chart-tooltip .paid-leads { background: var(--accent); }.marketing-hub__legend .cpl, .marketing-hub__chart-tooltip .cpl { background: var(--warn); }
-.marketing-hub__chart { position: relative; outline: none; }.marketing-hub__chart:focus-visible { border-radius: 8px; box-shadow: 0 0 0 3px var(--accent-soft); }
-.marketing-hub__chart svg { display: block; width: 100%; height: 250px; overflow: visible; }.marketing-hub__chart line { stroke: var(--line); }.marketing-hub__chart text { fill: var(--muted); font-size: 9px; }.marketing-hub__chart path { fill: none; stroke-width: 2.4; vector-effect: non-scaling-stroke; }.marketing-hub__chart path.sessions { stroke: var(--accent); }.marketing-hub__chart path.users { stroke: var(--google); }.marketing-hub__chart path.events { stroke: var(--ga4); }.marketing-hub__chart path.clicks { stroke: var(--accent); }.marketing-hub__chart path.conversions { stroke: var(--google); }.marketing-hub__chart path.spend { stroke: var(--ga4); }.marketing-hub__chart path.leads { stroke: var(--series3); }.marketing-hub__chart path.paid-leads { stroke: var(--accent); }.marketing-hub__chart path.cpl { stroke: var(--warn); }
-.marketing-hub__chart circle.sessions { fill: var(--accent); }.marketing-hub__chart circle.users { fill: var(--google); }.marketing-hub__chart circle.events { fill: var(--ga4); }.marketing-hub__chart circle.clicks { fill: var(--accent); }.marketing-hub__chart circle.conversions { fill: var(--google); }.marketing-hub__chart circle.spend { fill: var(--ga4); }.marketing-hub__chart circle.leads { fill: var(--series3); }.marketing-hub__chart circle.paid-leads { fill: var(--accent); }.marketing-hub__chart circle.cpl { fill: var(--warn); }
-.marketing-hub__chart-hit rect { fill: transparent; pointer-events: all; }.marketing-hub__chart-crosshair { stroke: var(--ink-2) !important; stroke-dasharray: 3 3; opacity: .45; }
-.marketing-hub__chart-dates { display: flex; justify-content: space-between; margin: -16px 4.6% 0; color: var(--muted); font-size: 10px; }
-.marketing-hub__chart-tooltip { position: absolute; z-index: 2; top: 40px; display: grid; min-width: 178px; gap: 4px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; background: var(--surface); box-shadow: var(--shadow); pointer-events: none; }.marketing-hub__chart-tooltip > strong { margin-bottom: 2px; font-size: 11.5px; }.marketing-hub__chart-tooltip > span { display: grid; grid-template-columns: 11px 1fr auto; align-items: center; gap: 6px; color: var(--muted); font-size: 10.5px; }.marketing-hub__chart-tooltip b { color: var(--ink); font-weight: 700; }
-.marketing-hub__chart-empty { min-height: 220px; padding-top: 88px; text-align: center; }
-.marketing-hub__lead-funnel-card { margin-top: 14px; }.marketing-hub__lead-funnel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin: 0; padding: 16px; list-style: none; }.marketing-hub__lead-funnel li { position: relative; min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__lead-funnel li:not(:last-child)::after { content: "→"; position: absolute; top: 50%; right: -18px; width: 13px; color: var(--muted); font-weight: 700; text-align: center; transform: translateY(-50%); }.marketing-hub__lead-funnel small { display: block; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }.marketing-hub__lead-funnel strong { display: block; margin-top: 3px; font-size: 22px; }.marketing-hub__lead-funnel > li > span { display: block; margin-bottom: 8px; color: var(--ink-2); font-size: 12px; font-weight: 650; }.marketing-hub__lead-funnel p { margin: 6px 0 0; color: var(--muted); font-size: 10.5px; }
-.marketing-hub__website-detail { margin-top: 14px; }.marketing-hub__source-medium-card { margin-top: 14px; }.marketing-hub__breakdown-empty { display: grid; place-items: center; min-height: 112px; margin-bottom: 0; padding: 20px; color: var(--muted); font-size: 12px; text-align: center; }
-.marketing-hub__ga4-credential-note { margin-top: 14px; margin-bottom: 0; }
-.marketing-hub__coverage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.marketing-hub__coverage article { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__coverage small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; }.marketing-hub__coverage strong { display: block; margin-top: 3px; font-size: 20px; }.marketing-hub__coverage .bad strong { color: var(--crit); }.marketing-hub__coverage .ok strong { color: var(--good); }.marketing-hub__audit-note, .marketing-hub__source-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; }.marketing-hub__domain { font-family: ui-monospace, Menlo, monospace; font-size: 13px !important; }
-.marketing-hub__preview-note { margin-bottom: 13px; padding: 10px 13px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 12px; }.marketing-hub__preview-note--action { display: flex; align-items: center; justify-content: space-between; gap: 12px; }.marketing-hub__preview-note--action > span { min-width: 0; }.marketing-hub__empty-sync { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; background: var(--surface); color: var(--ink-2); font-size: 11.5px; font-weight: 650; white-space: nowrap; cursor: pointer; }.marketing-hub__empty-sync:disabled { cursor: wait; opacity: .65; }.marketing-hub__empty-sync svg { width: 14px; height: 14px; }.marketing-hub__planned-card { display: grid; place-items: center; min-height: 132px; padding: 22px; text-align: center; }.marketing-hub__planned-card h3 { margin-bottom: 5px; font-size: 12.5px; }.marketing-hub__planned-card p { margin-bottom: 0; color: var(--muted); font-size: 11.5px; }
-.marketing-hub__breakdown-card { overflow: hidden; }.marketing-hub__provider-breakdowns { min-height: 132px; }.marketing-hub__provider-breakdown { margin-bottom: 13px; }.marketing-hub__provider-breakdown:last-child { margin-bottom: 0; }.marketing-hub__provider-breakdown p { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 2px; font-size: 12px; }.marketing-hub__provider-breakdown p span { overflow: hidden; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__provider-breakdown small { display: block; margin-bottom: 6px; color: var(--muted); font-size: 10.5px; }
-.marketing-hub__creatives { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }.marketing-hub__creative { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }.marketing-hub__creative-art { position: relative; display: grid; place-items: center; aspect-ratio: 1.5 / 1; overflow: hidden; background: linear-gradient(135deg,#334155,#64748b); color: white !important; }.marketing-hub__creative-art img { width: 100%; height: 100%; object-fit: cover; }.marketing-hub__creative-art > span { position: absolute; top: 9px; left: 9px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.55); color: white; font-size: 10.5px; }.marketing-hub__creative-art > i { position: absolute; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgba(0,0,0,.58); color: white; font-style: normal; }.marketing-hub__creative > div:last-child { padding: 11px 13px; }.marketing-hub__creative h3 { overflow: hidden; margin-bottom: 4px; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.marketing-hub__creative > div:last-child > small { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; }.marketing-hub__creative p { display: flex; justify-content: space-between; margin-bottom: 0; color: var(--muted); font-size: 11.5px; }.marketing-hub__creative p span { margin-left: auto; }.marketing-hub__creative-empty { display: grid; place-items: center; min-height: 150px; padding: 28px; color: var(--muted); text-align: center; }.marketing-hub__creative-empty strong { color: var(--ink-2); }.marketing-hub__creative-empty span { font-size: 12px; }
-.marketing-hub__creative-art { width: 100%; border: 0; padding: 0; font: inherit; cursor: zoom-in; }.marketing-hub__creative-art:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
-.marketing-hub__pivot { display: grid; grid-template-columns: 230px 1fr; overflow: hidden; }.marketing-hub__pivot aside { padding: 15px; border-right: 1px solid var(--line); background: var(--surface-2); }.marketing-hub__pivot aside .marketing-hub__eyebrow:not(:first-child) { margin-top: 15px; }.marketing-hub__pivot aside div { display: flex; flex-wrap: wrap; gap: 7px; }.marketing-hub__pivot aside button, .marketing-hub__wells button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }.marketing-hub__pivot aside button.on { border-color: color-mix(in srgb, var(--accent) 40%, transparent); background: var(--accent-soft); color: var(--ink); }.marketing-hub__pivot aside button:disabled { border-style: dashed; background: transparent; color: var(--muted); cursor: not-allowed; opacity: .58; }.marketing-hub__pivot button:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }.marketing-hub__pivot-main { min-width: 0; padding: 15px; }.marketing-hub__wells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 13px; }.marketing-hub__wells > div { padding: 9px 11px; border: 1px dashed var(--line); border-radius: 10px; background: var(--surface-2); }.marketing-hub__wells button { display: inline-flex; align-items: center; gap: 4px; margin: 0 3px 3px 0; }.marketing-hub__wells button span { color: var(--muted); }.marketing-hub__pivot th.dimension, .marketing-hub__pivot td.dimension { text-align: left; }.marketing-hub__pivot th > button { display: inline-flex; align-items: center; gap: 4px; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }.marketing-hub__pivot th:not(.dimension) > button { justify-content: flex-end; }.marketing-hub__example { margin: 10px 0 0; color: var(--muted); font-size: 11.5px; }
-.marketing-hub__footer { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.65; }.marketing-hub__footer strong { color: var(--ink-2); }
-@media (max-width: 960px) {
-  .marketing-hub__kpis { grid-template-columns: repeat(2, 1fr); }
-  .marketing-hub__chart-kpis { grid-template-columns: repeat(2, 1fr); }
-  .marketing-hub__split, .marketing-hub__split2, .marketing-hub__split3 { grid-template-columns: 1fr; }
-  .marketing-hub__creatives { grid-template-columns: repeat(2, 1fr); }
-  .marketing-hub__funnel { grid-template-columns: repeat(2, 1fr); }
-  .marketing-hub__pivot { grid-template-columns: 1fr; }.marketing-hub__pivot aside { border-right: 0; border-bottom: 1px solid var(--line); }
-}
-@media (max-width: 700px) {
-  .marketing-hub { padding: 20px 16px 48px; }
-  .marketing-hub__range-wrap, .marketing-hub__daterange { width: 100%; }.marketing-hub__daterange { overflow-x: auto; }.marketing-hub__daterange button { flex: 0 0 auto; }
-  .marketing-hub__insight { flex-wrap: wrap; }.marketing-hub__action { margin-left: 48px; }
-  .marketing-hub__section-head { flex-wrap: wrap; }.marketing-hub__section-head > span { min-width: 30px; }
-  .marketing-hub__analytics-head { align-items: stretch; flex-direction: column; }.marketing-hub__chart-tabs { align-self: flex-start; max-width: 100%; overflow-x: auto; }
-  .marketing-hub__chart-toolbar { align-items: flex-start; flex-direction: column; }.marketing-hub__chart-toolbar > p { display: none; }
-  .marketing-hub__chart svg { height: 220px; }.marketing-hub__chart-tooltip { top: 34px; }
-  .marketing-hub__lead-funnel { grid-template-columns: 1fr; gap: 10px; }.marketing-hub__lead-funnel li:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -14px; transform: translateX(50%); }
-  .marketing-hub__preview-note--action { align-items: flex-start; flex-direction: column; }
-}
-@media (max-width: 430px) {
-  .marketing-hub__kpis, .marketing-hub__creatives, .marketing-hub__funnel, .marketing-hub__coverage, .marketing-hub__wells { grid-template-columns: 1fr; }
-  .marketing-hub__chart-kpis { grid-template-columns: repeat(2, 1fr); }.marketing-hub__chart-kpis strong { font-size: 17px; }
-  .marketing-hub__action { margin-left: 0; }.marketing-hub__custom-range { left: 0; right: auto; flex-direction: column; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .marketing-hub :deep(.marketing-hub__track i) { transition: width .6s cubic-bezier(.2,.7,.2,1); }
-}
-@media (prefers-reduced-motion: reduce) { .spinning { animation: none; } }
-</style>

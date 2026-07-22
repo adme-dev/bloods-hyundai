@@ -291,8 +291,8 @@ const formDefinitions = [
     name: 'Parts Enquiry',
     description: 'Parts requests and availability',
     icon: Package,
-    iconBg: 'bg-gray-100',
-    iconColor: 'text-gray-600',
+    iconBg: 'bg-muted',
+    iconColor: 'text-muted-foreground',
     isActive: false,
   },
   {
@@ -362,7 +362,6 @@ const previewForm = (form: any) => {
   window.open(routes[form.slug] || '/', '_blank');
 };
 </script>
-
 
 
 

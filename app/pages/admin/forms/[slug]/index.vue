@@ -513,12 +513,12 @@ const formConfigs: Record<string, any> = {
   finance: { name: 'Finance Enquiry', description: 'Finance applications', icon: DollarSign, iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
   service: { name: 'Service Enquiry', description: 'Service bookings', icon: Wrench, iconBg: 'bg-orange-100', iconColor: 'text-orange-600' },
   sell_car: { name: 'Sell My Car', description: 'Trade-in valuations', icon: Car, iconBg: 'bg-teal-100', iconColor: 'text-teal-600' },
-  parts: { name: 'Parts Enquiry', description: 'Parts requests', icon: Package, iconBg: 'bg-gray-100', iconColor: 'text-gray-600' },
+  parts: { name: 'Parts Enquiry', description: 'Parts requests', icon: Package, iconBg: 'bg-muted', iconColor: 'text-muted-foreground' },
   accessories: { name: 'Accessories', description: 'Accessories orders', icon: ShoppingCart, iconBg: 'bg-pink-100', iconColor: 'text-pink-600' },
   test_drive: { name: 'Test Drive', description: 'Test drive bookings', icon: Car, iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600' },
 };
 
-const formConfig = computed(() => formConfigs[slug] || { name: slug, description: '', icon: MessageSquare, iconBg: 'bg-gray-100', iconColor: 'text-gray-600' });
+const formConfig = computed(() => formConfigs[slug] || { name: slug, description: '', icon: MessageSquare, iconBg: 'bg-muted', iconColor: 'text-muted-foreground' });
 
 const activeTab = ref(getInitialTab());
 
@@ -925,4 +925,3 @@ const handleSaveNotification = async (notificationData: NotificationConfig) => {
   await saveSettings();
 };
 </script>
-

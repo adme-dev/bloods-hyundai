@@ -30,6 +30,7 @@
                   required
                 />
               </div>
+              <div v-if="phoneError" class="uk-text-small uk-text-danger">{{ phoneError }}</div>
 
               <div class="uk-width-1-2@m uk-inline">
                 <span class="uk-form-icon" uk-icon="icon: user"></span>
@@ -60,6 +61,7 @@
                   class="uk-input uk-form-large" 
                   type="tel" 
                   placeholder="Phone Number"
+                  required
                 />
               </div>
 
@@ -196,6 +198,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 const mainStore = useMainStore();
 const { trackPartsEnquiry } = useAnalytics();
 const { getUtmParams } = useUtmParams();
@@ -221,10 +224,13 @@ const form = reactive({
 const isSubmitting = ref(false);
 const isSubmitted = ref(false);
 const hasErrors = ref(false);
+const phoneError = ref('');
 
 // Submit form
 const submitForm = async () => {
-  if (!form.firstName || !form.lastName || !form.email || !form.partDescription) {
+  const phoneValidation = validateRequiredCustomerPhone(form.phone);
+  phoneError.value = phoneValidation.ok ? '' : phoneValidation.error;
+  if (!form.firstName || !form.lastName || !form.email || !phoneValidation.ok || !form.partDescription) {
     hasErrors.value = true;
     return;
   }
@@ -241,7 +247,7 @@ const submitForm = async () => {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
-        phone: form.phone || undefined,
+        phone: phoneValidation.phone,
         message: `Part Request: ${form.partDescription}${form.partNumber ? `\nPart Number: ${form.partNumber}` : ''}`,
         vehicleInfo: {
           make: form.vehicleMake,
@@ -289,8 +295,6 @@ const submitForm = async () => {
   }
 }
 </style>
-
-
 
 
 

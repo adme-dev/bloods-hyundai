@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const layoutSource = readFileSync(resolve(__dirname, '../app/layouts/admin.vue'), 'utf8');
+const globalStyles = readFileSync(resolve(__dirname, '../app/assets/styles/main.scss'), 'utf8');
 const notificationsSource = readFileSync(
   resolve(__dirname, '../app/components/admin/NotificationBell.vue'),
   'utf8',
@@ -13,16 +14,18 @@ const notificationsSource = readFileSync(
 
 describe('admin header theme contract', () => {
   it('themes the header and every portalled header surface in dark mode', () => {
-    assert.match(layoutSource, /\.admin-layout,\s*\.admin-theme-surface\s*\{/);
-    assert.match(layoutSource, /class="admin-theme-surface admin-mobile-sheet/);
-    assert.match(layoutSource, /class="admin-theme-surface w-64 p-1\.5"/);
-    assert.match(notificationsSource, /class="admin-theme-surface admin-notifications-dropdown/);
+    assert.match(layoutSource, /['"]data-admin-theme['"]:\s*['"]true['"]/);
+    assert.match(globalStyles, /:root\[data-admin-theme\]/);
+    assert.match(layoutSource, /<SheetContent[^>]*class="w-64 p-0"/);
+    assert.match(layoutSource, /<DropdownMenuContent[^>]*class="w-64 p-1\.5"/);
+    assert.doesNotMatch(layoutSource, /admin-theme-surface/);
+    assert.doesNotMatch(notificationsSource, /admin-theme-surface/);
   });
 
   it('lets explicit theme selection override the operating-system preference', () => {
-    assert.match(layoutSource, /:root:not\(\[data-theme="light"\]\)/);
-    assert.match(layoutSource, /:is\(\.dark,\s*:root\[data-theme="dark"\]\)\s*:is\(\.admin-layout,\s*\.admin-theme-surface\)/);
-    assert.match(layoutSource, /:root\[data-theme="light"\]/);
+    assert.match(globalStyles, /:root\[data-admin-theme\]:not\(\[data-theme="light"\]\)/);
+    assert.match(globalStyles, /:root\.dark\[data-admin-theme\]/);
+    assert.match(globalStyles, /:root\[data-admin-theme\]\[data-theme="dark"\]/);
   });
 
   it('uses theme tokens instead of fixed light notification surfaces', () => {
@@ -31,8 +34,8 @@ describe('admin header theme contract', () => {
     assert.match(notificationsSource, /bg-muted\/40/);
   });
 
-  it('uses a contrast-safe foreground for dark brand controls', () => {
-    assert.match(layoutSource, /--admin-brand-ink:\s*#07101b/);
-    assert.match(layoutSource, /color:\s*var\(--admin-brand-ink\)/);
+  it('uses semantic shadcn foregrounds for brand controls', () => {
+    assert.match(layoutSource, /bg-primary[^"\n]*text-primary-foreground/);
+    assert.doesNotMatch(layoutSource, /--admin-brand|#[0-9a-f]{3,8}/i);
   });
 });

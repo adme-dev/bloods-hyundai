@@ -949,13 +949,13 @@ const getActivityIconClass = (type: string) => {
     sms_sent: 'bg-purple-100 text-purple-600',
     sms_received: 'bg-purple-100 text-purple-600',
     meeting: 'bg-orange-100 text-orange-600',
-    note: 'bg-gray-100 text-gray-600',
+    note: 'bg-muted text-muted-foreground',
     status_change: 'bg-yellow-100 text-yellow-600',
     task_completed: 'bg-green-100 text-green-600',
     service_completed: 'bg-blue-100 text-blue-600',
     purchase: 'bg-green-100 text-green-600',
     vehicle_added: 'bg-blue-100 text-blue-600',
   };
-  return classes[type] || 'bg-gray-100 text-gray-600';
+  return classes[type] || 'bg-muted text-muted-foreground';
 };
 </script>
