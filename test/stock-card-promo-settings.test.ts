@@ -343,7 +343,7 @@ describe('resolveCardScroller', () => {
   const scroller = (overrides = {}) => ({
     scroller: {
       enabled: true, text: 'EOFY SALE*', color: '#e11d48',
-      make: '', model: '', variant: '', condition: '' as const,
+      make: '', model: '', variant: '', conditions: [] as ('new' | 'demo' | 'used')[],
       ...overrides,
     },
   });
@@ -355,8 +355,14 @@ describe('resolveCardScroller', () => {
   it('filters by make/model/variant/condition, slug-insensitively', () => {
     assert.ok(resolveCardScroller(scroller({ make: 'HYUNDAI', model: 'tucson' }), tucson));
     assert.equal(resolveCardScroller(scroller({ model: 'i30 Sedan' }), tucson), null);
-    assert.ok(resolveCardScroller(scroller({ condition: 'used' }), tucson));
-    assert.equal(resolveCardScroller(scroller({ condition: 'new' }), tucson), null);
+    assert.ok(resolveCardScroller(scroller({ conditions: ['used'] }), tucson));
+    assert.equal(resolveCardScroller(scroller({ conditions: ['new'] }), tucson), null);
+  });
+
+  it('supports multiple conditions at once (e.g. new + demo)', () => {
+    assert.equal(resolveCardScroller(scroller({ conditions: ['new', 'demo'] }), tucson), null);
+    assert.ok(resolveCardScroller(scroller({ conditions: ['new', 'demo', 'used'] }), tucson));
+    assert.ok(resolveCardScroller(scroller({ conditions: ['demo', 'used'] }), tucson));
   });
 
   it('returns null when disabled or empty', () => {
@@ -364,16 +370,22 @@ describe('resolveCardScroller', () => {
     assert.equal(resolveCardScroller(scroller({ text: '' }), tucson), null);
   });
 
-  it('round-trips targeting through parse and read', () => {
+  it('round-trips targeting through parse and read, accepting legacy single condition', () => {
     const parsed = parseStockCardPromoInput({
       ...validInput,
-      scroller: { enabled: true, text: 'SALE', color: '#e11d48', make: 'Hyundai', model: 'Tucson', variant: '', condition: 'Demonstrator' },
+      scroller: { enabled: true, text: 'SALE', color: '#e11d48', make: 'Hyundai', model: 'Tucson', variant: '', conditions: ['Demonstrator', 'NEW', 'demo'] },
     }, { allowedImageHosts });
     assert.equal(parsed.ok, true);
     if (!parsed.ok) return;
-    assert.equal(parsed.value.scroller.condition, 'demo');
+    assert.deepEqual(parsed.value.scroller.conditions, ['demo', 'new']);
     const read = readStockCardPromoSettings({ stockCardPromo: parsed.value });
     assert.equal(read?.scroller.make, 'Hyundai');
+
+    // Legacy stored payloads used a single `condition` string.
+    const legacy = readStockCardPromoSettings({
+      stockCardPromo: { version: 1, scroller: { enabled: true, text: 'SALE', color: '#e11d48', condition: 'used' } },
+    });
+    assert.deepEqual(legacy?.scroller.conditions, ['used']);
   });
 });
 

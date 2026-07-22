@@ -673,11 +673,13 @@
             class="grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(320px,1fr))]"
           >
             <div
-              v-for="vehicle in vehicles"
-              :key="vehicle.identifier || vehicle.id || vehicle.stockid"
+              v-for="item in carSalesGridItems"
+              :key="item.key"
               class="h-full"
             >
-              <ModernVehicleCard class="h-full" :vehicle="vehicle" :view-mode="viewMode" />
+              <!-- Admin-managed promo graphics interleaved between stock cards -->
+              <StockPromoGraphicCard v-if="item.type === 'graphic'" :graphic="item.graphic" class="h-full" />
+              <ModernVehicleCard v-else class="h-full" :vehicle="item.vehicle" :view-mode="viewMode" />
             </div>
           </div>
 
@@ -820,6 +822,10 @@ const initialData = initializeFiltersFromCache();
 
 const loading = ref(false);
 const vehicles = ref<any[]>([]);
+
+// Admin-managed promo graphics interleaved between stock cards (grid view)
+const { gridItemsFor } = useStockCardPromo();
+const carSalesGridItems = computed(() => gridItemsFor(vehicles.value));
 const totalCount = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(36);

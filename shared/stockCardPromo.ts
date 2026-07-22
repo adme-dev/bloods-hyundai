@@ -6,6 +6,8 @@ export const STOCK_CARD_PROMO_MIN_INTERVAL = 2;
 export const STOCK_CARD_PROMO_MAX_INTERVAL = 10;
 export const STOCK_CARD_PROMO_DEFAULT_INTERVAL = 3;
 
+export type PromoCondition = 'new' | 'demo' | 'used';
+
 export interface StockCardOffer {
   stockNumber: string;
   wasPrice: number | null;
@@ -67,7 +69,8 @@ export interface StockCardPromoSettings {
     make: string;
     model: string;
     variant: string;
-    condition: '' | 'new' | 'demo' | 'used';
+    /** Multi-select; empty means every condition. */
+    conditions: PromoCondition[];
   };
   offers: StockCardOffer[];
   groups: StockGroupRule[];
@@ -108,7 +111,7 @@ export function defaultStockCardPromoSettings(): StockCardPromoSettings {
     wasNowEnabled: false,
     commentsEnabled: false,
     badgesEnabled: false,
-    scroller: { enabled: false, text: '', color: DEFAULT_SCROLLER_COLOR, make: '', model: '', variant: '', condition: '' },
+    scroller: { enabled: false, text: '', color: DEFAULT_SCROLLER_COLOR, make: '', model: '', variant: '', conditions: [] },
     offers: [],
     groups: [],
     graphics: { enabled: false, interval: STOCK_CARD_PROMO_DEFAULT_INTERVAL, items: [] },
@@ -136,7 +139,7 @@ export function parseStockCardPromoInput(
     make: stringValue(scrollerInput.make).slice(0, 60),
     model: stringValue(scrollerInput.model).slice(0, 60),
     variant: stringValue(scrollerInput.variant).slice(0, 60),
-    condition: normalizeCondition(scrollerInput.condition),
+    conditions: parseConditionList(scrollerInput.conditions ?? scrollerInput.condition),
   };
   if (scroller.enabled && !scroller.text) {
     errors.push('Scrolling banner text is required when the banner is enabled.');
@@ -222,7 +225,7 @@ export function readStockCardPromoSettings(settings: unknown): StockCardPromoSet
       make: stringValue(scroller.make),
       model: stringValue(scroller.model),
       variant: stringValue(scroller.variant),
-      condition: normalizeCondition(scroller.condition),
+      conditions: parseConditionList(scroller.conditions ?? scroller.condition),
     },
     offers: (Array.isArray(stored.offers) ? stored.offers : [])
       .filter(isRecord)
@@ -360,7 +363,10 @@ export interface PromoTarget {
   make: string;
   model: string;
   variant: string;
-  condition: '' | 'new' | 'demo' | 'used';
+  /** Single condition (group offers). */
+  condition?: '' | PromoCondition;
+  /** Multi-select conditions (scrolling banner); empty means all. */
+  conditions?: readonly PromoCondition[];
 }
 
 /**
@@ -373,11 +379,15 @@ export function matchesPromoTarget(target: PromoTarget, attrs: VehiclePromoAttrs
   const matches = (wanted: string, actual: string) =>
     !wanted || fingerprint(wanted) === fingerprint(actual);
 
+  const wantedConditions = target.conditions?.length
+    ? target.conditions
+    : target.condition ? [target.condition] : [];
+
   return (
     matches(target.make, attrs.make)
     && matches(target.model, attrs.model)
     && matches(target.variant, attrs.variant)
-    && (!target.condition || target.condition === normalizeCondition(attrs.condition))
+    && (!wantedConditions.length || wantedConditions.includes(normalizeCondition(attrs.condition) as PromoCondition))
   );
 }
 
@@ -505,6 +515,17 @@ function parseStockHeader(
     alt: plainTextValue(header.alt, MAX_COPY_LENGTHS.heading, `${label} alt text`, errors),
     ...parseDateWindow(header, label, errors),
   };
+}
+
+/** Accepts a single value or an array; legacy stored `condition` strings load fine. */
+function parseConditionList(value: unknown): PromoCondition[] {
+  const raw = Array.isArray(value) ? value : value ? [value] : [];
+  const out: PromoCondition[] = [];
+  for (const item of raw) {
+    const condition = normalizeCondition(item);
+    if (condition && !out.includes(condition)) out.push(condition);
+  }
+  return out;
 }
 
 function normalizeCondition(value: unknown): StockGroupRule['condition'] {
