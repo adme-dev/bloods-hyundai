@@ -94,6 +94,11 @@ describe('Marketing Hub UI', () => {
     }
   });
 
+  it('renders chart series with an explicit SVG stroke width', () => {
+    assert.match(pageSource, /<path[^>]*stroke-width="2\.4"/);
+    assert.doesNotMatch(pageSource, /\[&_path\]:stroke-\[2\.4\]/);
+  });
+
   it('keeps the website acquisition breakdowns together with explicit unavailable states', () => {
     assert.match(pageSource, /Top landing pages[\s\S]*Pages that started website sessions/);
     assert.match(pageSource, /Traffic channels/);
