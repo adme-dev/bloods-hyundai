@@ -4,9 +4,14 @@ import {
   resolveCardScroller,
   type ResolvedCardPromo,
   type StockCardPromoSettings,
+  type StockPromoGraphic,
 } from '~~/shared/stockCardPromo';
 
 type PromoResponse = { success: boolean; settings: StockCardPromoSettings };
+
+export type PromoGridItem =
+  | { type: 'vehicle'; key: string; vehicle: any }
+  | { type: 'graphic'; key: string; graphic: StockPromoGraphic };
 
 /**
  * Shared access to the dealer's stock card promotion settings
@@ -43,7 +48,39 @@ export function useStockCardPromo() {
     return resolveCardScroller(current, vehicleAttrs(vehicle));
   };
 
-  return { settings, promoFor, scrollerFor };
+  /**
+   * Interleaves the admin-managed promo graphics between vehicles at the
+   * configured interval. Used by the homepage Stock Specials slider and the
+   * /car-sales grid so both behave identically.
+   */
+  const gridItemsFor = (vehicles: any[]): PromoGridItem[] => {
+    const items: PromoGridItem[] = (vehicles || []).map((vehicle: any, index: number) => ({
+      type: 'vehicle',
+      key: String(vehicle?.stockid || vehicle?.identifier || vehicle?.id || `vehicle-${index}`),
+      vehicle,
+    }));
+
+    const graphics = settings.value?.graphics;
+    const slots = graphics?.enabled
+      ? graphics.items.filter((item) => item.enabled && item.image)
+      : [];
+    if (!slots.length) return items;
+
+    const interval = Math.max(2, graphics?.interval || 3);
+    const out: PromoGridItem[] = [];
+    let graphicIndex = 0;
+    items.forEach((item, index) => {
+      out.push(item);
+      if ((index + 1) % interval === 0 && index < items.length - 1) {
+        const slot = slots[graphicIndex % slots.length]!;
+        out.push({ type: 'graphic', key: `graphic-${graphicIndex}-${slot.id}`, graphic: slot });
+        graphicIndex++;
+      }
+    });
+    return out;
+  };
+
+  return { settings, promoFor, scrollerFor, gridItemsFor };
 }
 
 function vehicleAttrs(vehicle: any) {

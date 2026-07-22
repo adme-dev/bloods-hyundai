@@ -420,7 +420,7 @@
         <CardHeader class="gap-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
           <div class="space-y-1.5">
             <CardTitle>Graphics between cards</CardTitle>
-            <CardDescription>Emotional promo graphics inserted between stock cards in the homepage Stock Specials slider. Graphics rotate if you add more than one.</CardDescription>
+            <CardDescription>Emotional promo graphics inserted between stock cards — in the homepage Stock Specials slider and the Cars for Sale grid. Graphics rotate if you add more than one.</CardDescription>
           </div>
           <Button :disabled="saving || form.graphics.items.length >= maxGraphics" @click="addGraphic">
             <Plus class="mr-2 h-4 w-4" /> Add graphic

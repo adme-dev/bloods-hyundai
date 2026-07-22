@@ -135,7 +135,6 @@
 <script setup lang="ts">
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Navigation, Pagination } from 'swiper/modules';
-import type { StockPromoGraphic } from '~~/shared/stockCardPromo';
 import StockPromoGraphicCard from '~/components/page-elements/StockPromoGraphicCard.vue';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -186,38 +185,8 @@ const displayedVehicles = computed(() => {
 });
 
 // Admin-managed promo graphics interleaved between stock cards
-const { settings: promoSettings } = useStockCardPromo();
-
-type SlideItem =
-  | { type: 'vehicle'; key: string; vehicle: any }
-  | { type: 'graphic'; key: string; graphic: StockPromoGraphic };
-
-const slideItems = computed<SlideItem[]>(() => {
-  const items: SlideItem[] = displayedVehicles.value.map((vehicle: any, index: number) => ({
-    type: 'vehicle',
-    key: String(vehicle.stockid || vehicle.identifier || vehicle.id || `vehicle-${index}`),
-    vehicle,
-  }));
-
-  const graphics = promoSettings.value?.graphics;
-  const slots = graphics?.enabled
-    ? graphics.items.filter((item) => item.enabled && item.image)
-    : [];
-  if (!slots.length) return items;
-
-  const interval = Math.max(2, graphics?.interval || 3);
-  const out: SlideItem[] = [];
-  let graphicIndex = 0;
-  items.forEach((item, index) => {
-    out.push(item);
-    if ((index + 1) % interval === 0 && index < items.length - 1) {
-      const slot = slots[graphicIndex % slots.length]!;
-      out.push({ type: 'graphic', key: `graphic-${graphicIndex}-${slot.id}`, graphic: slot });
-      graphicIndex++;
-    }
-  });
-  return out;
-});
+const { gridItemsFor } = useStockCardPromo();
+const slideItems = computed(() => gridItemsFor(displayedVehicles.value));
 </script>
 
 <style scoped>
