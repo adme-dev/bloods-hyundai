@@ -128,19 +128,21 @@
               <div class="space-y-2">
                 <Label>Condition (tick one or more; none = all)</Label>
                 <div class="flex h-10 items-center gap-5 rounded-md border border-input px-3">
-                  <label
+                  <div
                     v-for="conditionOption in CONDITION_OPTIONS"
                     :key="conditionOption"
-                    class="flex cursor-pointer items-center gap-1.5 text-sm capitalize"
+                    class="flex items-center gap-1.5"
                   >
                     <Checkbox
+                      :id="`scroller-condition-${conditionOption}`"
                       :model-value="form.scroller.conditions.includes(conditionOption)"
                       :disabled="saving"
-                      :aria-label="`Show banner on ${conditionOption} vehicles`"
                       @update:model-value="toggleScrollerCondition(conditionOption, $event === true)"
                     />
-                    {{ conditionOption }}
-                  </label>
+                    <Label :for="`scroller-condition-${conditionOption}`" class="cursor-pointer text-sm font-normal capitalize">
+                      {{ conditionOption }}
+                    </Label>
+                  </div>
                 </div>
               </div>
             </div>
