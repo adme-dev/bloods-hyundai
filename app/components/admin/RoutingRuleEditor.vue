@@ -38,8 +38,7 @@
           
           <div class="flex items-center space-x-2">
             <Switch
-              :checked="form.enabled"
-              @update:checked="form.enabled = $event"
+              v-model="form.enabled"
               class="shrink-0"
             />
             <Label>{{ form.enabled ? 'Enabled' : 'Disabled' }}</Label>

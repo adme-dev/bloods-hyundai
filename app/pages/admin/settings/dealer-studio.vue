@@ -349,8 +349,8 @@
             <div v-if="form.sandboxMode" class="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
               <Checkbox
                 id="sandbox-confirmed"
-                :checked="form.sandboxConfirmed"
-                @update:checked="(checked) => (form.sandboxConfirmed = checked === true)"
+                :model-value="form.sandboxConfirmed"
+                @update:model-value="(checked) => (form.sandboxConfirmed = checked === true)"
               />
               <div class="space-y-1">
                 <Label for="sandbox-confirmed">I confirm this is a Dealer Studio-provided test dealership</Label>
