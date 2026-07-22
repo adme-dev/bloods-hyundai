@@ -356,8 +356,8 @@
                   <div class="space-y-3">
                     <div class="flex items-center space-x-3">
                       <Switch 
-                        :checked="form.hasHailDamage" 
-                        @update:checked="form.hasHailDamage = $event"
+                        :model-value="form.hasHailDamage" 
+                        @update:model-value="form.hasHailDamage = $event"
                       />
                       <Label>Previous Hail Damage?</Label>
                     </div>
@@ -373,8 +373,8 @@
                   <div class="space-y-3">
                     <div class="flex items-center space-x-3">
                       <Switch 
-                        :checked="form.hasFinance" 
-                        @update:checked="form.hasFinance = $event"
+                        :model-value="form.hasFinance" 
+                        @update:model-value="form.hasFinance = $event"
                       />
                       <Label>Finance Owing?</Label>
                     </div>
@@ -390,8 +390,8 @@
                   <div class="space-y-3">
                     <div class="flex items-center space-x-3">
                       <Switch 
-                        :checked="form.hasKnownFaults" 
-                        @update:checked="form.hasKnownFaults = $event"
+                        :model-value="form.hasKnownFaults" 
+                        @update:model-value="form.hasKnownFaults = $event"
                       />
                       <Label>Known Faults?</Label>
                     </div>

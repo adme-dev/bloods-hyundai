@@ -99,22 +99,22 @@
               <div class="flex flex-col gap-2 pt-1">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <Checkbox
-                    :checked="form.enabledConditions.includes('new')"
-                    @update:checked="(v: boolean | 'indeterminate') => toggleCondition('new', v)"
+                    :model-value="form.enabledConditions.includes('new')"
+                    @update:model-value="(v: boolean | 'indeterminate') => toggleCondition('new', v)"
                   />
                   <span class="text-sm">New</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <Checkbox
-                    :checked="form.enabledConditions.includes('demo')"
-                    @update:checked="(v: boolean | 'indeterminate') => toggleCondition('demo', v)"
+                    :model-value="form.enabledConditions.includes('demo')"
+                    @update:model-value="(v: boolean | 'indeterminate') => toggleCondition('demo', v)"
                   />
                   <span class="text-sm">Demo</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <Checkbox
-                    :checked="form.enabledConditions.includes('used')"
-                    @update:checked="(v: boolean | 'indeterminate') => toggleCondition('used', v)"
+                    :model-value="form.enabledConditions.includes('used')"
+                    @update:model-value="(v: boolean | 'indeterminate') => toggleCondition('used', v)"
                   />
                   <span class="text-sm">Used</span>
                 </label>

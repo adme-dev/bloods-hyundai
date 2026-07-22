@@ -27,8 +27,8 @@
           <CardHeader class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex flex-1 items-start gap-3 min-w-0">
               <Switch
-                :checked="rule.enabled"
-                @update:checked="(value: boolean | 'indeterminate') => toggleRule(rule, value)"
+                :model-value="rule.enabled"
+                @update:model-value="(value: boolean | 'indeterminate') => toggleRule(rule, value)"
                 class="shrink-0"
               />
               <div>

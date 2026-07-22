@@ -153,8 +153,8 @@
             <TableRow>
               <TableHead class="w-[40px]">
                 <Checkbox
-                  :checked="allSelected"
-                  @update:checked="toggleSelectAll"
+                  :model-value="allSelected"
+                  @update:model-value="toggleSelectAll"
                 />
               </TableHead>
               <TableHead>Customer</TableHead>
@@ -169,8 +169,8 @@
             <TableRow v-for="customer in customers" :key="customer.id" class="group">
               <TableCell>
                 <Checkbox
-                  :checked="selectedCustomers.includes(customer.id)"
-                  @update:checked="(checked) => toggleSelect(customer.id, checked)"
+                  :model-value="selectedCustomers.includes(customer.id)"
+                  @update:model-value="(checked) => toggleSelect(customer.id, checked)"
                 />
               </TableCell>
               <TableCell>

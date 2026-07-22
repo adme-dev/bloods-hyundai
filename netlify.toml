@@ -90,5 +90,8 @@
     "https://driveAgentMedia.b-cdn.net/.*",
     "https://driveagent.b-cdn.net/.*",
     "https://www.hyundai.com/.*",
-    "https://carsales.pxcrush.net/.*"
+    "https://carsales.pxcrush.net/.*",
+    # Media library / promo assets on Cloudflare R2. NuxtImg routes through
+    # the Netlify Image CDN in production, which 400s any host not listed here.
+    "https://pub-2b8337ab6f87485088d38cc01ca2ae80.r2.dev/.*"
   ]
