@@ -1,13 +1,13 @@
 <template>
-  <Card class="compact-metric-card" v-bind="$attrs">
-    <CardHeader class="grid auto-rows-min grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-start gap-1.5">
-      <CardDescription class="compact-metric-card__label"><slot name="label" /></CardDescription>
-      <CardTitle class="compact-metric-card__value"><slot name="value" /></CardTitle>
+  <Card class="min-w-0" v-bind="$attrs">
+    <CardHeader class="grid auto-rows-min grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] items-start gap-1.5 px-3.5 min-[701px]:px-6">
+      <CardDescription class="text-xs min-[701px]:text-[13px]"><slot name="label" /></CardDescription>
+      <CardTitle class="text-[1.65rem] font-bold leading-[1.1] tracking-[-.025em] min-[701px]:text-[1.75rem]"><slot name="value" /></CardTitle>
       <CardAction class="col-start-2 row-span-2 row-start-1 self-start justify-self-end">
         <slot name="action" />
       </CardAction>
     </CardHeader>
-    <CardFooter class="compact-metric-card__footer mt-auto flex-col items-start gap-1.5">
+    <CardFooter class="mt-auto flex-col items-start gap-1.5 px-3.5 pb-3.5 text-[11.5px] text-muted-foreground min-[701px]:px-6 min-[701px]:pb-6 min-[701px]:text-xs [&_p]:m-0">
       <slot name="footer" />
     </CardFooter>
   </Card>
@@ -18,17 +18,3 @@ import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } 
 
 defineOptions({ inheritAttrs: false })
 </script>
-
-<style scoped>
-.compact-metric-card { min-width: 0; }
-.compact-metric-card__label { font-size: 13px; }
-.compact-metric-card__value { font-size: 1.75rem; font-weight: 700; letter-spacing: -.025em; line-height: 1.1; }
-.compact-metric-card__footer { color: var(--dashboard-muted, hsl(var(--muted-foreground))); font-size: 12px; }
-.compact-metric-card__footer :deep(p) { margin: 0; }
-@media (max-width: 700px) {
-  .compact-metric-card :deep([data-slot="card-header"]), .compact-metric-card :deep([data-slot="card-footer"]) { padding-inline: 14px; }
-  .compact-metric-card__label { font-size: 12px; }
-  .compact-metric-card__value { font-size: 1.65rem; }
-  .compact-metric-card__footer { padding-bottom: 14px; font-size: 11.5px; }
-}
-</style>

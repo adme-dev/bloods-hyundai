@@ -11,14 +11,13 @@ const props = defineProps<{
   <div
     data-slot="card"
     :class="cn(
-      'rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm',
+      'rounded-xl border bg-card text-card-foreground shadow',
       props.class,
     )"
   >
     <slot />
   </div>
 </template>
-
 
 
 

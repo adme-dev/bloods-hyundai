@@ -233,8 +233,8 @@
                   <div class="text-lg font-bold text-yellow-600">{{ data.customerRetention.taskBreakdown?.byPriority?.medium || 0 }}</div>
                   <div class="text-[10px] text-muted-foreground">Medium</div>
                 </div>
-                <div class="rounded bg-gray-100 dark:bg-gray-800 p-2 text-center">
-                  <div class="text-lg font-bold text-gray-600">{{ data.customerRetention.taskBreakdown?.byPriority?.low || 0 }}</div>
+                <div class="rounded bg-muted p-2 text-center">
+                  <div class="text-lg font-bold text-muted-foreground">{{ data.customerRetention.taskBreakdown?.byPriority?.low || 0 }}</div>
                   <div class="text-[10px] text-muted-foreground">Low</div>
                 </div>
               </div>
@@ -407,12 +407,12 @@ const lifecycleColors: Record<string, string> = {
   service_customer: 'bg-teal-500',
   at_risk: 'bg-orange-500',
   churning: 'bg-red-500',
-  inactive: 'bg-gray-400',
+  inactive: 'bg-muted-foreground',
   lost: 'bg-zinc-400',
 };
 
 function getLifecycleColor(stage: string): string {
-  return lifecycleColors[stage] || 'bg-gray-400';
+  return lifecycleColors[stage] || 'bg-muted-foreground';
 }
 
 function getLifecycleCount(stage: string): number {
@@ -428,14 +428,14 @@ function getLifecyclePercent(stage: string): number {
 }
 
 function getEngagementScoreColor(score: number | undefined): string {
-  if (!score) return 'text-gray-600';
+  if (!score) return 'text-muted-foreground';
   if (score >= 70) return 'text-green-600';
   if (score >= 40) return 'text-yellow-600';
   return 'text-red-600';
 }
 
 function getRiskScoreColor(score: number | undefined): string {
-  if (!score) return 'text-gray-600';
+  if (!score) return 'text-muted-foreground';
   if (score >= 70) return 'text-red-600';
   if (score >= 40) return 'text-orange-600';
   return 'text-green-600';

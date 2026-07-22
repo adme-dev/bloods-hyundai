@@ -4,9 +4,12 @@
       <Label>{{ label }}</Label>
       <span class="text-xs text-muted-foreground">Required</span>
     </div>
-    <div :class="['slider-image', `slider-image--${variant}`]">
-      <img v-if="src" :src="src" :alt="`${label} preview`" />
-      <div v-else class="slider-image__empty">
+    <div
+      class="grid place-items-center overflow-hidden rounded-xl border bg-muted"
+      :class="variant === 'desktop' ? 'aspect-[8/3]' : 'aspect-[767/975] max-w-[210px]'"
+    >
+      <img v-if="src" :src="src" :alt="`${label} preview`" class="h-full w-full object-cover" />
+      <div v-else class="grid place-items-center gap-2 text-xs text-muted-foreground">
         <ImageIcon class="h-6 w-6" />
         <span>No image selected</span>
       </div>
@@ -32,24 +35,3 @@ defineProps<{
 }>();
 defineEmits<{ (event: 'choose'): void }>();
 </script>
-
-<style scoped>
-.slider-image {
-  display: grid;
-  overflow: hidden;
-  place-items: center;
-  border: 1px solid var(--admin-line);
-  border-radius: 12px;
-  background: var(--admin-surface-2);
-}
-.slider-image--desktop { aspect-ratio: 8 / 3; }
-.slider-image--mobile { aspect-ratio: 767 / 975; max-width: 210px; }
-.slider-image img { width: 100%; height: 100%; object-fit: cover; }
-.slider-image__empty {
-  display: grid;
-  gap: 8px;
-  place-items: center;
-  color: var(--admin-muted);
-  font-size: 12px;
-}
-</style>

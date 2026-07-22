@@ -76,7 +76,7 @@
           <!-- Phone Field -->
           <div class="space-y-2">
             <Label for="phone">
-              Phone Number
+              Phone Number <span class="text-red-500">*</span>
             </Label>
             <div class="input-icon-wrapper">
               <Phone class="form-input-icon" />
@@ -85,13 +85,14 @@
                 :value="formattedPhone"
                 @input="handlePhoneInput"
                 type="tel"
+                required
                 placeholder="0400 000 000"
                 class="pl-10"
-                :class="{ 'border-red-500': form.phone && !isPhoneValid }"
+                :class="{ 'border-red-500': submitted && !isPhoneValid }"
               />
             </div>
-            <p v-if="form.phone && !isPhoneValid" class="text-sm text-red-500">
-              Please enter a valid phone number
+            <p v-if="submitted && !isPhoneValid" class="text-sm text-red-500">
+              {{ phoneError }}
             </p>
           </div>
 
@@ -205,6 +206,7 @@
 </template>
 
 <script setup lang="ts">
+import { validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 import { 
   User, 
   Mail, 
@@ -294,13 +296,9 @@ const formattedPhone = computed(() => {
   }
 });
 
-const isPhoneValid = computed(() => {
-  if (!form.phone) return true;
-  const phone = formattedPhone.value;
-  const mobileRegex = /^04\d{2}\s?\d{3}\s?\d{3}$/;
-  const landlineRegex = /^\(0\d\)\s?\d{4}\s?\d{4}$/;
-  return mobileRegex.test(phone) || landlineRegex.test(phone);
-});
+const phoneValidation = computed(() => validateRequiredCustomerPhone(form.phone));
+const isPhoneValid = computed(() => phoneValidation.value.ok);
+const phoneError = computed(() => phoneValidation.value.ok ? '' : phoneValidation.value.error);
 
 // Methods
 const handlePhoneInput = (event: Event) => {
@@ -316,7 +314,7 @@ const validateAndNext = () => {
   if (!form.lastName) errors.value.push('Last name is required');
   if (!form.email) errors.value.push('Email is required');
   else if (!isValidEmail.value) errors.value.push('Please enter a valid email');
-  if (form.phone && !isPhoneValid.value) errors.value.push('Please enter a valid phone number');
+  if (!phoneValidation.value.ok) errors.value.push(phoneValidation.value.error);
   if (props.showRegistration && !form.registration) errors.value.push('Vehicle registration is required');
 
   if (errors.value.length === 0) {

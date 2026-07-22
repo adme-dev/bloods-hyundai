@@ -31,7 +31,7 @@ const forwarded = useForwardPropsEmits(props, emits)
       data-slot="select-content"
       v-bind="{ ...forwarded, class: undefined }"
       :class="cn(
-        'relative z-[100] max-h-96 min-w-[8rem] overflow-hidden rounded-md border border-gray-200 bg-white text-gray-900 shadow-lg',
+        'relative z-[100] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md',
         position === 'popper'
           && 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
         props.class,
@@ -52,7 +52,6 @@ const forwarded = useForwardPropsEmits(props, emits)
     </SelectContent>
   </SelectPortal>
 </template>
-
 
 
 

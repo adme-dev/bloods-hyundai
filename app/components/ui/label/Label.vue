@@ -11,14 +11,13 @@ const props = defineProps<LabelProps & { class?: HTMLAttributes['class'] }>()
     data-slot="label"
     v-bind="props"
     :class="cn(
-      'text-sm font-medium leading-none text-gray-700 peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+      'text-sm font-medium leading-none text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
       props.class,
     )"
   >
     <slot />
   </Label>
 </template>
-
 
 
 

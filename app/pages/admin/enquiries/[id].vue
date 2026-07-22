@@ -14,7 +14,7 @@
     </Button>
   </div>
   
-  <div v-else-if="enquiry" class="enquiry-detail space-y-6">
+  <div v-else-if="enquiry" class="min-w-0 space-y-4 sm:space-y-6 [&_.rounded-xl.border]:min-w-0 [&_.rounded-xl.border]:max-w-full [&_a]:[overflow-wrap:anywhere] [&_dd]:[overflow-wrap:anywhere] [&_p]:[overflow-wrap:anywhere]">
     <!-- Header -->
     <Card class="shadow-sm">
       <CardContent class="space-y-4 p-6">
@@ -31,9 +31,9 @@
             </NuxtLink>
           </div>
           <template #actions>
-          <div class="enquiry-detail__header-actions flex flex-wrap items-center gap-3">
+          <div class="flex w-full flex-wrap items-center gap-3 sm:w-auto">
             <Select :model-value="statusDraft" @update:model-value="onStatusSelect">
-              <SelectTrigger class="w-[200px]">
+              <SelectTrigger class="w-full sm:w-[200px]">
                 <SelectValue placeholder="Set status" />
               </SelectTrigger>
               <SelectContent>
@@ -619,12 +619,12 @@
       <div class="space-y-6">
         <Card>
           <CardHeader class="space-y-1">
-            <div class="crm-card__header flex items-start justify-between gap-3">
+            <div class="flex flex-col items-start justify-between gap-3 sm:flex-row">
               <div class="min-w-0">
                 <CardTitle>Dealer Studio LMS</CardTitle>
                 <CardDescription>Automatic lead delivery and provider acknowledgement.</CardDescription>
               </div>
-              <Badge :class="crmBadgeClass" class="crm-card__status shrink-0 gap-1 text-xs">
+              <Badge :class="crmBadgeClass" class="shrink-0 self-start gap-1 text-xs">
                 <component :is="crmStatusIcon" class="h-3.5 w-3.5" />
                 {{ crmStatusLabel }}
               </Badge>
@@ -664,8 +664,38 @@
               <AlertTriangle class="h-4 w-4" />
               <AlertDescription>{{ dealerStudioDelivery.lastError }}</AlertDescription>
             </Alert>
+            <form
+              v-if="needsDealerStudioPhone"
+              class="space-y-3 rounded-lg border bg-muted/30 p-4"
+              @submit.prevent="savePhoneAndRetry"
+            >
+              <div class="space-y-1.5">
+                <Label for="dealer-studio-customer-phone">Customer phone</Label>
+                <Input
+                  id="dealer-studio-customer-phone"
+                  v-model="phoneDraft"
+                  type="tel"
+                  inputmode="tel"
+                  autocomplete="tel"
+                  placeholder="0412 345 678"
+                  aria-describedby="dealer-studio-phone-help dealer-studio-phone-error"
+                  :aria-invalid="Boolean(phoneError)"
+                  :class="{ 'border-destructive': phoneError }"
+                />
+                <p id="dealer-studio-phone-help" class="text-xs text-muted-foreground">
+                  Enter the customer's real Australian mobile or landline number.
+                </p>
+                <p v-if="phoneError" id="dealer-studio-phone-error" class="text-xs text-destructive" role="alert">
+                  {{ phoneError }}
+                </p>
+              </div>
+              <Button class="w-full" type="submit" :disabled="retryingCrm">
+                <RefreshCcw class="mr-2 h-4 w-4" :class="{ 'animate-spin': retryingCrm }" />
+                {{ retryingCrm ? 'Saving and retrying…' : 'Save phone & retry' }}
+              </Button>
+            </form>
             <Button
-              v-if="canRetryDealerStudio"
+              v-if="canRetryDealerStudio && !needsDealerStudioPhone"
               class="w-full"
               variant="default"
               :disabled="retryingCrm"
@@ -674,7 +704,7 @@
               <RefreshCcw class="mr-2 h-4 w-4" :class="{ 'animate-spin': retryingCrm }" />
               {{ retryingCrm ? 'Retrying…' : 'Retry delivery' }}
             </Button>
-            <Button v-else class="w-full" variant="outline" as-child>
+            <Button v-else-if="!needsDealerStudioPhone" class="w-full" variant="outline" as-child>
               <NuxtLink to="/admin/settings/dealer-studio">View integration health</NuxtLink>
             </Button>
             <p v-if="!dealerStudioDelivery" class="text-xs text-muted-foreground">
@@ -836,6 +866,7 @@ import {
   LOST_REASON_LABELS,
   type EnquiryStatus,
 } from '~~/shared/constants/salesFunnel';
+import { normalizeAustralianPhone, validateRequiredCustomerPhone } from '~~/shared/utils/customerPhone';
 
 definePageMeta({
   layout: 'admin',
@@ -955,6 +986,7 @@ const formatDate = (date: string) => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'Australia/Melbourne',
   });
 };
 
@@ -1299,7 +1331,46 @@ const canRetryDealerStudio = computed(() => [
   'failed_retryable',
   'failed_permanent',
 ].includes(dealerStudioDelivery.value?.status));
+const needsDealerStudioPhone = computed(() =>
+  dealerStudioDelivery.value?.status === 'failed_validation'
+  && !normalizeAustralianPhone(enquiry.value?.phone),
+);
 const retryingCrm = ref(false);
+const phoneDraft = ref('');
+const phoneError = ref('');
+
+watch(enquiry, (value) => {
+  phoneDraft.value = value?.phone || '';
+  phoneError.value = '';
+}, { immediate: true });
+
+const savePhoneAndRetry = async () => {
+  const phoneValidation = validateRequiredCustomerPhone(phoneDraft.value);
+  if (!phoneValidation.ok) {
+    phoneError.value = phoneValidation.error;
+    return;
+  }
+
+  retryingCrm.value = true;
+  phoneError.value = '';
+  try {
+    await $fetch(`/api/admin/enquiries/${enquiryId}/phone`, {
+      method: 'PATCH',
+      body: { phone: phoneValidation.phone },
+    });
+    await $fetch(`/api/admin/integrations/dealer-studio/${enquiryId}/retry`, {
+      method: 'POST',
+    });
+    toast.success('Phone saved and Dealer Studio delivery retried');
+    await refresh();
+  } catch (err: any) {
+    console.error('Dealer Studio phone recovery failed', err);
+    phoneError.value = err?.data?.message || err?.message || 'Unable to save the phone and retry delivery';
+    toast.error(phoneError.value);
+  } finally {
+    retryingCrm.value = false;
+  }
+};
 
 const retryDealerStudioDelivery = async () => {
   retryingCrm.value = true;
@@ -1317,40 +1388,3 @@ const retryDealerStudioDelivery = async () => {
   }
 };
 </script>
-
-<style scoped>
-.enquiry-detail {
-  min-width: 0;
-}
-
-.enquiry-detail :deep(.rounded-xl.border) {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.enquiry-detail :deep(dd),
-.enquiry-detail :deep(p),
-.enquiry-detail :deep(a) {
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 639px) {
-  .enquiry-detail {
-    gap: 1rem;
-  }
-
-  .enquiry-detail__header-actions,
-  .enquiry-detail__header-actions :deep(button[role="combobox"]) {
-    width: 100%;
-  }
-
-  .crm-card__header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .crm-card__status {
-    align-self: flex-start;
-  }
-}
-</style>
