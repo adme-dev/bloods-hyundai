@@ -197,8 +197,11 @@
                     <p v-if="offerPreview(offer)" class="m-0 text-xs font-medium text-slate-600">
                       Card will show: {{ offerPreview(offer) }}
                     </p>
-                    <p v-else-if="offer.stockNumber && stockLoaded" class="m-0 text-xs text-amber-600">
+                    <p v-else-if="offer.stockNumber && stockLoaded && !matchedVehicle(offer.stockNumber)" class="m-0 text-xs text-amber-600">
                       Not found in the current stock feed — check the stock number.
+                    </p>
+                    <p v-else-if="isPoaVehicle(offer)" class="m-0 text-xs text-amber-600">
+                      This car is POA in the stock feed, so Was/Now pricing won't display on its card. A badge or comment still will.
                     </p>
                   </div>
                 </div>
@@ -946,6 +949,11 @@ function vehiclePrice(vehicle: any): string {
 function vehicleLabel(vehicle: any): string {
   if (!vehicle) return '';
   return `${vehicleTitle(vehicle)} — Now ${vehiclePrice(vehicle)}`;
+}
+
+function isPoaVehicle(offer: OfferForm): boolean {
+  const vehicle = matchedVehicle(offer.stockNumber);
+  return !!vehicle && !(typeof vehicle.price === 'number' && vehicle.price > 0);
 }
 
 function offerPreview(offer: OfferForm): string {
