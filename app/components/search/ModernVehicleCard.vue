@@ -432,8 +432,9 @@ const priceDisplay = computed(() => {
 });
 
 // Admin-managed stock card promotions (was/now, badge, comment, scroller)
-const { settings: promoSettings, promoFor } = useStockCardPromo();
+const { settings: promoSettings, promoFor, scrollerFor } = useStockCardPromo();
 const promoOffer = computed(() => promoFor(props.vehicle));
+const cardScroller = computed(() => scrollerFor(props.vehicle));
 
 const wasPriceDisplay = computed(() => {
   if (!promoSettings.value?.wasNowEnabled) return '';
@@ -459,16 +460,15 @@ const marqueeText = computed(() => {
   const settings = promoSettings.value;
   if (!settings) return '';
   if (settings.commentsEnabled && promoOffer.value?.comment) return promoOffer.value.comment;
-  if (settings.scroller.enabled && settings.scroller.text) return settings.scroller.text;
-  return '';
+  return cardScroller.value?.text || '';
 });
 
 const marqueeColor = computed(() => {
   const settings = promoSettings.value;
   if (settings?.commentsEnabled && promoOffer.value?.comment) {
-    return promoOffer.value.badgeColor || settings.scroller.color;
+    return promoOffer.value.badgeColor || cardScroller.value?.color || '#e11d48';
   }
-  return settings?.scroller.color || '#e11d48';
+  return cardScroller.value?.color || '#e11d48';
 });
 
 const perWeekDisplay = computed(() => {

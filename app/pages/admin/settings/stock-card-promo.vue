@@ -69,25 +69,74 @@
           <CardTitle>Scrolling banner</CardTitle>
           <CardDescription>A site-wide scrolling ticker shown along the bottom of every vehicle card image. A per-vehicle comment overrides it on that card.</CardDescription>
         </CardHeader>
-        <CardContent class="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)_220px]">
-          <div class="space-y-2">
-            <Label for="scroller-enabled">Status</Label>
-            <div class="flex h-10 items-center justify-between gap-3 rounded-md border border-input px-3">
-              <span class="text-sm font-medium">{{ form.scroller.enabled ? 'On' : 'Off' }}</span>
-              <Switch id="scroller-enabled" v-model="form.scroller.enabled" :disabled="saving" aria-label="Enable scrolling banner" />
+        <CardContent class="space-y-4">
+          <div class="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)_220px]">
+            <div class="space-y-2">
+              <Label for="scroller-enabled">Status</Label>
+              <div class="flex h-10 items-center justify-between gap-3 rounded-md border border-input px-3">
+                <span class="text-sm font-medium">{{ form.scroller.enabled ? 'On' : 'Off' }}</span>
+                <Switch id="scroller-enabled" v-model="form.scroller.enabled" :disabled="saving" aria-label="Enable scrolling banner" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Label for="scroller-text">Banner text</Label>
+              <Input
+                id="scroller-text"
+                v-model="form.scroller.text"
+                maxlength="160"
+                placeholder="e.g. MASSIVE EOFY SALE — THIS WEEKEND ONLY*"
+                :disabled="saving"
+              />
+            </div>
+            <AdminColorField id="scroller-color" v-model="form.scroller.color" label="Banner colour" :disabled="saving" />
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-medium text-muted-foreground">Show on (leave as "Any" for every vehicle card)</p>
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div class="space-y-2">
+                <Label for="scroller-make">Make</Label>
+                <Select :model-value="form.scroller.make || ANY" :disabled="saving" @update:model-value="form.scroller.make = fromAny($event)">
+                  <SelectTrigger id="scroller-make" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any make</SelectItem>
+                    <SelectItem v-for="make in makeOptions" :key="make" :value="make">{{ make }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label for="scroller-model">Model</Label>
+                <Select :model-value="form.scroller.model || ANY" :disabled="saving" @update:model-value="form.scroller.model = fromAny($event)">
+                  <SelectTrigger id="scroller-model" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any model</SelectItem>
+                    <SelectItem v-for="model in modelOptions(form.scroller.make)" :key="model" :value="model">{{ model }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label for="scroller-variant">Variant</Label>
+                <Select :model-value="form.scroller.variant || ANY" :disabled="saving" @update:model-value="form.scroller.variant = fromAny($event)">
+                  <SelectTrigger id="scroller-variant" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any variant</SelectItem>
+                    <SelectItem v-for="variant in variantOptions(form.scroller.make, form.scroller.model)" :key="variant" :value="variant">{{ variant }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label for="scroller-condition">Condition</Label>
+                <Select :model-value="form.scroller.condition || ANY" :disabled="saving" @update:model-value="form.scroller.condition = fromAny($event)">
+                  <SelectTrigger id="scroller-condition" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any condition</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="demo">Demo</SelectItem>
+                    <SelectItem value="used">Used</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-          <div class="space-y-2">
-            <Label for="scroller-text">Banner text</Label>
-            <Input
-              id="scroller-text"
-              v-model="form.scroller.text"
-              maxlength="160"
-              placeholder="e.g. MASSIVE EOFY SALE — THIS WEEKEND ONLY*"
-              :disabled="saving"
-            />
-          </div>
-          <AdminColorField id="scroller-color" v-model="form.scroller.color" label="Banner colour" :disabled="saving" />
         </CardContent>
       </Card>
 
@@ -134,6 +183,9 @@
                     <p v-if="matchedVehicle(offer.stockNumber)" class="m-0 truncate text-xs text-emerald-600">
                       ✓ {{ vehicleLabel(matchedVehicle(offer.stockNumber)) }}
                     </p>
+                    <p v-if="offerPreview(offer)" class="m-0 text-xs font-medium text-slate-600">
+                      Card will show: {{ offerPreview(offer) }}
+                    </p>
                     <p v-else-if="offer.stockNumber && stockLoaded" class="m-0 text-xs text-amber-600">
                       Not found in the current stock feed — check the stock number.
                     </p>
@@ -171,6 +223,7 @@
                 <div class="space-y-2">
                   <Label :for="`offer-was-${index}`">Was price ($)</Label>
                   <Input :id="`offer-was-${index}`" v-model="offer.wasPriceInput" type="number" min="1" inputmode="numeric" placeholder="e.g. 39990" :disabled="saving" />
+                  <p class="text-xs text-muted-foreground">The car's live feed price is the "Now" price automatically.</p>
                 </div>
                 <div class="space-y-2">
                   <Label :for="`offer-badge-${index}`">Badge text</Label>
@@ -741,7 +794,7 @@ interface PromoForm {
   wasNowEnabled: boolean;
   commentsEnabled: boolean;
   badgesEnabled: boolean;
-  scroller: { enabled: boolean; text: string; color: string };
+  scroller: { enabled: boolean; text: string; color: string; make: string; model: string; variant: string; condition: string };
   offers: OfferForm[];
   groups: GroupForm[];
   graphics: { enabled: boolean; interval: number; items: GraphicForm[] };
@@ -872,6 +925,15 @@ function vehicleLabel(vehicle: any): string {
   return `${vehicleTitle(vehicle)} — Now ${vehiclePrice(vehicle)}`;
 }
 
+function offerPreview(offer: OfferForm): string {
+  const vehicle = matchedVehicle(offer.stockNumber);
+  const wasPrice = Number(offer.wasPriceInput);
+  const nowPrice = typeof vehicle?.price === 'number' ? vehicle.price : 0;
+  if (!vehicle || !Number.isFinite(wasPrice) || wasPrice <= 0 || !nowPrice) return '';
+  if (wasPrice <= nowPrice) return `Was price must be above the live price ($${nowPrice.toLocaleString()}) to display.`;
+  return `Was $${wasPrice.toLocaleString()} · Save $${(wasPrice - nowPrice).toLocaleString()} · Now $${nowPrice.toLocaleString()}`;
+}
+
 // Cascading target options for group offers
 const makeOptions = computed(() => uniqueSorted(stockOptions.value.map((option) => fieldValue(option.vehicle?.make))));
 
@@ -938,6 +1000,10 @@ function toForm(settings?: StockCardPromoSettings | null): PromoForm {
       enabled: settings?.scroller.enabled === true,
       text: settings?.scroller.text || '',
       color: settings?.scroller.color || '#e11d48',
+      make: settings?.scroller.make || '',
+      model: settings?.scroller.model || '',
+      variant: settings?.scroller.variant || '',
+      condition: settings?.scroller.condition || '',
     },
     offers: (settings?.offers || []).map((offer) => ({
       stockNumber: offer.stockNumber,
