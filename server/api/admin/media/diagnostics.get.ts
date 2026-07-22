@@ -35,6 +35,11 @@ export default defineEventHandler(async (event) => {
     ['env.R2_BUCKET_NAME', process.env.R2_BUCKET_NAME],
     ['env.CLOUDFLARE_R2_BUCKET', process.env.CLOUDFLARE_R2_BUCKET],
   ]);
+  const publicUrl = firstOf([
+    ['runtimeConfig.r2PublicUrl', config.r2PublicUrl],
+    ['env.R2_PUBLIC_URL', process.env.R2_PUBLIC_URL],
+    ['env.CLOUDFLARE_R2_PUBLIC_URL', process.env.CLOUDFLARE_R2_PUBLIC_URL],
+  ]);
 
   const summary = {
     accountId: mask(accountId.value),
@@ -46,6 +51,10 @@ export default defineEventHandler(async (event) => {
     secretSource: secretAccessKey.source,
     bucket: bucket.value,
     bucketSource: bucket.source,
+    // Not masked: this is the public asset URL. It also feeds the promo
+    // settings image-host allowlist, so a stale value here 422s every save.
+    publicUrl: publicUrl.value || '(empty)',
+    publicUrlSource: publicUrl.source,
     endpoint: accountId.value ? `https://${mask(accountId.value)}.r2.cloudflarestorage.com` : '(no account id)',
     nodeVersion: process.version,
   };
