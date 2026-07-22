@@ -366,7 +366,7 @@ body {
 // ============================================
 
 // Headings use Hyundai Sans Head with OEM-style sizing
-:root:not([data-admin-theme]) :where(h1, h2, h3, h4, h5, h6, .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6) {
+:where(:root:not([data-admin-theme])) :is(h1, h2, h3, h4, h5, h6, .uk-h1, .uk-h2, .uk-h3, .uk-h4, .uk-h5, .uk-h6) {
   font-family: var(--font-family-head);
   font-weight: 500; // Hyundai uses medium weight for headings
   letter-spacing: -0.02em; // Tighter tracking like OEM
@@ -375,32 +375,32 @@ body {
 }
 
 // Specific heading sizes - Hyundai OEM scale
-:root:not([data-admin-theme]) :where(h1, .uk-h1) {
+:where(:root:not([data-admin-theme])) :is(h1, .uk-h1) {
   font-size: clamp(2rem, 5vw, 3rem); // 32px to 48px
   font-weight: 500;
 }
 
-:root:not([data-admin-theme]) :where(h2, .uk-h2) {
+:where(:root:not([data-admin-theme])) :is(h2, .uk-h2) {
   font-size: clamp(1.75rem, 4vw, 2.5rem); // 28px to 40px
   font-weight: 500;
 }
 
-:root:not([data-admin-theme]) :where(h3, .uk-h3) {
+:where(:root:not([data-admin-theme])) :is(h3, .uk-h3) {
   font-size: clamp(1.5rem, 3vw, 2rem); // 24px to 32px
   font-weight: 500;
 }
 
-:root:not([data-admin-theme]) :where(h4, .uk-h4) {
+:where(:root:not([data-admin-theme])) :is(h4, .uk-h4) {
   font-size: clamp(1.25rem, 2.5vw, 1.5rem); // 20px to 24px
   font-weight: 500;
 }
 
-:root:not([data-admin-theme]) :where(h5, .uk-h5) {
+:where(:root:not([data-admin-theme])) :is(h5, .uk-h5) {
   font-size: clamp(1.125rem, 2vw, 1.25rem); // 18px to 20px
   font-weight: 500;
 }
 
-:root:not([data-admin-theme]) :where(h6, .uk-h6) {
+:where(:root:not([data-admin-theme])) :is(h6, .uk-h6) {
   font-size: 1rem; // 16px
   font-weight: 600;
 }
@@ -1033,5 +1033,4 @@ a[style*="backgroundImage"],
     }
   }
 }
-
 
