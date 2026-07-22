@@ -410,17 +410,17 @@ body, p, span, li, td, th, label, input, textarea, select, button {
   font-family: var(--font-family-base);
 }
 
-// Links - Hyundai accent blue
-// Added underline for accessibility (links must not rely on color alone)
+// Links - Hyundai accent blue. Navigation and linked controls already have
+// non-colour affordances, so a global underline would visually corrupt them.
+// Prose components can opt into underlines where they are useful.
 :root:not([data-admin-theme]) a {
   color: var(--color-primary-light);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
+  text-decoration: none;
   transition: color 0.2s ease, text-decoration-color 0.2s ease;
 
   &:hover {
     color: var(--color-primary);
+    text-decoration: none;
   }
 }
 
@@ -504,6 +504,22 @@ a:has(.uk-card) {
 
 // Apply border-box and prevent horizontal overflow
 * {
+  border-color: hsl(var(--border));
+}
+
+// UnoCSS Wind's preflight is emitted after this stylesheet and uses the
+// `border: 0 solid` shorthand, which resets border colour to currentColor.
+// Class specificity keeps generic utility borders on the semantic token while
+// later explicit utilities such as `.border-destructive` still take priority.
+.border,
+.border-x,
+.border-y,
+.border-t,
+.border-r,
+.border-b,
+.border-l,
+.border-s,
+.border-e {
   border-color: hsl(var(--border));
 }
 
@@ -1017,6 +1033,5 @@ a[style*="backgroundImage"],
     }
   }
 }
-
 
 
