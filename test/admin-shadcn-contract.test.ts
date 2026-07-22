@@ -42,6 +42,16 @@ describe('admin shadcn foundation', () => {
     assert.match(mainStyles, /:root\[data-admin-theme\] a:not\(\[class\*="text-"\]\)/);
   });
 
+  it('restores the semantic border colour after the UnoCSS preflight reset', () => {
+    assert.match(mainStyles, /\.border,\s*\.border-x,\s*\.border-y,/);
+    assert.match(mainStyles, /border-color:\s*hsl\(var\(--border\)\)/);
+  });
+
+  it('does not underline every link on the public website', () => {
+    const publicLinkRule = mainStyles.match(/:root:not\(\[data-admin-theme\]\) a\s*\{([\s\S]*?)\n\}/)?.[1] || '';
+    assert.doesNotMatch(publicLinkRule, /text-decoration:\s*underline/);
+  });
+
   it('keeps the current migration slice free of route-level style blocks', () => {
     const remainingLegacyStyles: string[] = [];
     const styledAdminFiles = adminRoots
