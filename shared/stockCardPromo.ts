@@ -64,6 +64,10 @@ export interface StockCardPromoSettings {
     enabled: boolean;
     text: string;
     color: string;
+    make: string;
+    model: string;
+    variant: string;
+    condition: '' | 'new' | 'demo' | 'used';
   };
   offers: StockCardOffer[];
   groups: StockGroupRule[];
@@ -104,7 +108,7 @@ export function defaultStockCardPromoSettings(): StockCardPromoSettings {
     wasNowEnabled: false,
     commentsEnabled: false,
     badgesEnabled: false,
-    scroller: { enabled: false, text: '', color: DEFAULT_SCROLLER_COLOR },
+    scroller: { enabled: false, text: '', color: DEFAULT_SCROLLER_COLOR, make: '', model: '', variant: '', condition: '' },
     offers: [],
     groups: [],
     graphics: { enabled: false, interval: STOCK_CARD_PROMO_DEFAULT_INTERVAL, items: [] },
@@ -129,6 +133,10 @@ export function parseStockCardPromoInput(
     enabled: scrollerInput.enabled === true,
     text: scrollerText,
     color: parseHexColor(scrollerInput.color, 'Scrolling banner colour', DEFAULT_SCROLLER_COLOR, errors),
+    make: stringValue(scrollerInput.make).slice(0, 60),
+    model: stringValue(scrollerInput.model).slice(0, 60),
+    variant: stringValue(scrollerInput.variant).slice(0, 60),
+    condition: normalizeCondition(scrollerInput.condition),
   };
   if (scroller.enabled && !scroller.text) {
     errors.push('Scrolling banner text is required when the banner is enabled.');
@@ -211,6 +219,10 @@ export function readStockCardPromoSettings(settings: unknown): StockCardPromoSet
       enabled: scroller.enabled === true,
       text: stringValue(scroller.text),
       color: HEX_COLOR_PATTERN.test(stringValue(scroller.color)) ? stringValue(scroller.color) : DEFAULT_SCROLLER_COLOR,
+      make: stringValue(scroller.make),
+      model: stringValue(scroller.model),
+      variant: stringValue(scroller.variant),
+      condition: normalizeCondition(scroller.condition),
     },
     offers: (Array.isArray(stored.offers) ? stored.offers : [])
       .filter(isRecord)
@@ -331,7 +343,7 @@ export function resolveCardPromo(
     (candidate) =>
       candidate.enabled
       && isPromoWindowActive(candidate.start, candidate.end, now)
-      && groupRuleMatches(candidate, attrs),
+      && matchesPromoTarget(candidate, attrs),
   );
   if (!rule) return null;
 
@@ -344,19 +356,43 @@ export function resolveCardPromo(
   };
 }
 
-function groupRuleMatches(rule: StockGroupRule, attrs: VehiclePromoAttrs): boolean {
-  // Slug-insensitive: the feed stores "i30-sedan" in value[] but "i30 Sedan"
-  // in displayValue[], and admin rules are saved from display strings.
+export interface PromoTarget {
+  make: string;
+  model: string;
+  variant: string;
+  condition: '' | 'new' | 'demo' | 'used';
+}
+
+/**
+ * Empty target fields match everything. Slug-insensitive: the feed stores
+ * "i30-sedan" in value[] but "i30 Sedan" in displayValue[], and admin rules
+ * are saved from display strings.
+ */
+export function matchesPromoTarget(target: PromoTarget, attrs: VehiclePromoAttrs): boolean {
   const fingerprint = (value: string) => (value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const matches = (target: string, actual: string) =>
-    !target || fingerprint(target) === fingerprint(actual);
+  const matches = (wanted: string, actual: string) =>
+    !wanted || fingerprint(wanted) === fingerprint(actual);
 
   return (
-    matches(rule.make, attrs.make)
-    && matches(rule.model, attrs.model)
-    && matches(rule.variant, attrs.variant)
-    && (!rule.condition || rule.condition === normalizeCondition(attrs.condition))
+    matches(target.make, attrs.make)
+    && matches(target.model, attrs.model)
+    && matches(target.variant, attrs.variant)
+    && (!target.condition || target.condition === normalizeCondition(attrs.condition))
   );
+}
+
+/**
+ * The site-wide scrolling banner, filtered to the vehicles it targets.
+ * Returns null when disabled, empty, or the vehicle doesn't match.
+ */
+export function resolveCardScroller(
+  settings: Pick<StockCardPromoSettings, 'scroller'>,
+  attrs: VehiclePromoAttrs,
+): { text: string; color: string } | null {
+  const scroller = settings.scroller;
+  if (!scroller?.enabled || !scroller.text) return null;
+  if (!matchesPromoTarget(scroller, attrs)) return null;
+  return { text: scroller.text, color: scroller.color };
 }
 
 function groupWasPrice(rule: StockGroupRule, price: number): number | null {

@@ -343,7 +343,8 @@ export default {
     '/api/finance-widget-settings':  { swr: 300 },
     '/api/service-booking-settings': { swr: 300 },
     '/api/popup-settings':           { swr: 300 },
-    '/api/stock-card-promo-settings': { swr: 60 },
+    // /api/stock-card-promo-settings manages its own tenant cache; the admin
+    // PUT invalidates it on save so promotions publish instantly.
     '/api/header-settings':          { swr: 600 },
     // /api/site-config manages its own tenant cache and explicit refresh.
     // Do not wrap it in a second edge cache that varies by query string.

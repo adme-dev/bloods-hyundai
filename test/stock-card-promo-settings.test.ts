@@ -7,6 +7,7 @@ import {
   parseStockCardPromoInput,
   readStockCardPromoSettings,
   resolveCardPromo,
+  resolveCardScroller,
 } from '../shared/stockCardPromo.ts';
 
 const allowedImageHosts = new Set([
@@ -332,6 +333,47 @@ describe('resolveCardPromo', () => {
     const resolved = resolveCardPromo({ offers: [], groups: [baseGroup] }, { ...tucson, price: 0 });
     assert.equal(resolved?.wasPrice, null);
     assert.equal(resolved?.badgeText, 'SALE');
+  });
+});
+
+describe('resolveCardScroller', () => {
+  const tucson = {
+    stockNumber: 'U100', make: 'Hyundai', model: 'Tucson', variant: 'Elite', condition: 'Used', price: 40000,
+  };
+  const scroller = (overrides = {}) => ({
+    scroller: {
+      enabled: true, text: 'EOFY SALE*', color: '#e11d48',
+      make: '', model: '', variant: '', condition: '' as const,
+      ...overrides,
+    },
+  });
+
+  it('shows on every card when no filters are set', () => {
+    assert.equal(resolveCardScroller(scroller(), tucson)?.text, 'EOFY SALE*');
+  });
+
+  it('filters by make/model/variant/condition, slug-insensitively', () => {
+    assert.ok(resolveCardScroller(scroller({ make: 'HYUNDAI', model: 'tucson' }), tucson));
+    assert.equal(resolveCardScroller(scroller({ model: 'i30 Sedan' }), tucson), null);
+    assert.ok(resolveCardScroller(scroller({ condition: 'used' }), tucson));
+    assert.equal(resolveCardScroller(scroller({ condition: 'new' }), tucson), null);
+  });
+
+  it('returns null when disabled or empty', () => {
+    assert.equal(resolveCardScroller(scroller({ enabled: false }), tucson), null);
+    assert.equal(resolveCardScroller(scroller({ text: '' }), tucson), null);
+  });
+
+  it('round-trips targeting through parse and read', () => {
+    const parsed = parseStockCardPromoInput({
+      ...validInput,
+      scroller: { enabled: true, text: 'SALE', color: '#e11d48', make: 'Hyundai', model: 'Tucson', variant: '', condition: 'Demonstrator' },
+    }, { allowedImageHosts });
+    assert.equal(parsed.ok, true);
+    if (!parsed.ok) return;
+    assert.equal(parsed.value.scroller.condition, 'demo');
+    const read = readStockCardPromoSettings({ stockCardPromo: parsed.value });
+    assert.equal(read?.scroller.make, 'Hyundai');
   });
 });
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="stock-card-promo-admin space-y-6">
+  <div class="mx-auto max-w-[1200px] space-y-6 text-foreground">
     <AdminPageHeader
       eyebrow="Website content"
       title="Stock card promotions"
@@ -69,25 +69,74 @@
           <CardTitle>Scrolling banner</CardTitle>
           <CardDescription>A site-wide scrolling ticker shown along the bottom of every vehicle card image. A per-vehicle comment overrides it on that card.</CardDescription>
         </CardHeader>
-        <CardContent class="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)_220px]">
-          <div class="space-y-2">
-            <Label for="scroller-enabled">Status</Label>
-            <div class="flex h-10 items-center justify-between gap-3 rounded-md border border-input px-3">
-              <span class="text-sm font-medium">{{ form.scroller.enabled ? 'On' : 'Off' }}</span>
-              <Switch id="scroller-enabled" v-model="form.scroller.enabled" :disabled="saving" aria-label="Enable scrolling banner" />
+        <CardContent class="space-y-4">
+          <div class="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)_220px]">
+            <div class="space-y-2">
+              <Label for="scroller-enabled">Status</Label>
+              <div class="flex h-10 items-center justify-between gap-3 rounded-md border border-input px-3">
+                <span class="text-sm font-medium">{{ form.scroller.enabled ? 'On' : 'Off' }}</span>
+                <Switch id="scroller-enabled" v-model="form.scroller.enabled" :disabled="saving" aria-label="Enable scrolling banner" />
+              </div>
+            </div>
+            <div class="space-y-2">
+              <Label for="scroller-text">Banner text</Label>
+              <Input
+                id="scroller-text"
+                v-model="form.scroller.text"
+                maxlength="160"
+                placeholder="e.g. MASSIVE EOFY SALE — THIS WEEKEND ONLY*"
+                :disabled="saving"
+              />
+            </div>
+            <AdminColorField id="scroller-color" v-model="form.scroller.color" label="Banner colour" :disabled="saving" />
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-medium text-muted-foreground">Show on (leave as "Any" for every vehicle card)</p>
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div class="space-y-2">
+                <Label for="scroller-make">Make</Label>
+                <Select :model-value="form.scroller.make || ANY" :disabled="saving" @update:model-value="form.scroller.make = fromAny($event)">
+                  <SelectTrigger id="scroller-make" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any make</SelectItem>
+                    <SelectItem v-for="make in makeOptions" :key="make" :value="make">{{ make }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label for="scroller-model">Model</Label>
+                <Select :model-value="form.scroller.model || ANY" :disabled="saving" @update:model-value="form.scroller.model = fromAny($event)">
+                  <SelectTrigger id="scroller-model" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any model</SelectItem>
+                    <SelectItem v-for="model in modelOptions(form.scroller.make)" :key="model" :value="model">{{ model }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label for="scroller-variant">Variant</Label>
+                <Select :model-value="form.scroller.variant || ANY" :disabled="saving" @update:model-value="form.scroller.variant = fromAny($event)">
+                  <SelectTrigger id="scroller-variant" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any variant</SelectItem>
+                    <SelectItem v-for="variant in variantOptions(form.scroller.make, form.scroller.model)" :key="variant" :value="variant">{{ variant }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-2">
+                <Label for="scroller-condition">Condition</Label>
+                <Select :model-value="form.scroller.condition || ANY" :disabled="saving" @update:model-value="form.scroller.condition = fromAny($event)">
+                  <SelectTrigger id="scroller-condition" class="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="ANY">Any condition</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="demo">Demo</SelectItem>
+                    <SelectItem value="used">Used</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-          <div class="space-y-2">
-            <Label for="scroller-text">Banner text</Label>
-            <Input
-              id="scroller-text"
-              v-model="form.scroller.text"
-              maxlength="160"
-              placeholder="e.g. MASSIVE EOFY SALE — THIS WEEKEND ONLY*"
-              :disabled="saving"
-            />
-          </div>
-          <AdminColorField id="scroller-color" v-model="form.scroller.color" label="Banner colour" :disabled="saving" />
         </CardContent>
       </Card>
 
@@ -120,7 +169,7 @@
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                       <p class="m-0 text-sm font-semibold">Offer {{ index + 1 }}</p>
-                      <span class="status-chip" :class="windowStatus(offer.start, offer.end).class">
+                      <span :class="[CHIP_BASE, windowStatus(offer.start, offer.end).class]">
                         {{ windowStatus(offer.start, offer.end).label }}
                       </span>
                       <span
@@ -133,6 +182,9 @@
                     </div>
                     <p v-if="matchedVehicle(offer.stockNumber)" class="m-0 truncate text-xs text-emerald-600">
                       ✓ {{ vehicleLabel(matchedVehicle(offer.stockNumber)) }}
+                    </p>
+                    <p v-if="offerPreview(offer)" class="m-0 text-xs font-medium text-slate-600">
+                      Card will show: {{ offerPreview(offer) }}
                     </p>
                     <p v-else-if="offer.stockNumber && stockLoaded" class="m-0 text-xs text-amber-600">
                       Not found in the current stock feed — check the stock number.
@@ -171,6 +223,7 @@
                 <div class="space-y-2">
                   <Label :for="`offer-was-${index}`">Was price ($)</Label>
                   <Input :id="`offer-was-${index}`" v-model="offer.wasPriceInput" type="number" min="1" inputmode="numeric" placeholder="e.g. 39990" :disabled="saving" />
+                  <p class="text-xs text-muted-foreground">The car's live feed price is the "Now" price automatically.</p>
                 </div>
                 <div class="space-y-2">
                   <Label :for="`offer-badge-${index}`">Badge text</Label>
@@ -237,7 +290,7 @@
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     <p class="m-0 text-sm font-semibold">Group offer {{ index + 1 }}</p>
-                    <span class="status-chip" :class="group.enabled ? windowStatus(group.start, group.end).class : 'status-chip--off'">
+                    <span :class="[CHIP_BASE, group.enabled ? windowStatus(group.start, group.end).class : CHIP_OFF]">
                       {{ group.enabled ? windowStatus(group.start, group.end).label : 'Off' }}
                     </span>
                     <span
@@ -410,7 +463,7 @@
             <div class="flex items-start justify-between gap-3">
               <div class="flex flex-wrap items-center gap-2">
                 <p class="m-0 text-sm font-semibold">Graphic {{ index + 1 }}</p>
-                <span class="status-chip" :class="graphic.enabled ? windowStatus(graphic.start, graphic.end).class : 'status-chip--off'">
+                <span :class="[CHIP_BASE, graphic.enabled ? windowStatus(graphic.start, graphic.end).class : CHIP_OFF]">
                   {{ graphic.enabled ? windowStatus(graphic.start, graphic.end).label : 'Hidden' }}
                 </span>
               </div>
@@ -421,9 +474,9 @@
             <div class="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
               <div class="space-y-2">
                 <Label>Graphic image</Label>
-                <div class="graphic-preview">
-                  <img v-if="graphic.image" :src="graphic.image" :alt="`Promo graphic ${index + 1} preview`" />
-                  <div v-else class="graphic-preview__empty">
+                <div class="grid aspect-[4/3] place-items-center overflow-hidden rounded-xl border bg-muted">
+                  <img v-if="graphic.image" :src="graphic.image" :alt="`Promo graphic ${index + 1} preview`" class="h-full w-full object-cover" />
+                  <div v-else class="grid place-items-center gap-2 text-xs text-muted-foreground">
                     <Images class="h-6 w-6" />
                     <span>No image selected</span>
                   </div>
@@ -510,7 +563,7 @@
         <CardHeader>
           <div class="flex flex-wrap items-center gap-2">
             <CardTitle>Stock page header</CardTitle>
-            <span class="status-chip" :class="form.stockHeader.enabled ? windowStatus(form.stockHeader.start, form.stockHeader.end).class : 'status-chip--off'">
+            <span :class="[CHIP_BASE, form.stockHeader.enabled ? windowStatus(form.stockHeader.start, form.stockHeader.end).class : CHIP_OFF]">
               {{ form.stockHeader.enabled ? windowStatus(form.stockHeader.start, form.stockHeader.end).label : 'Off' }}
             </span>
           </div>
@@ -552,9 +605,9 @@
           <div class="grid gap-4 lg:grid-cols-2">
             <div class="space-y-2">
               <Label>Desktop image</Label>
-              <div class="header-preview header-preview--desktop">
-                <img v-if="form.stockHeader.desktop" :src="form.stockHeader.desktop" alt="Stock page header desktop preview" />
-                <div v-else class="graphic-preview__empty">
+              <div class="grid aspect-[4/1] place-items-center overflow-hidden rounded-xl border bg-muted">
+                <img v-if="form.stockHeader.desktop" :src="form.stockHeader.desktop" alt="Stock page header desktop preview" class="h-full w-full object-cover" />
+                <div v-else class="grid place-items-center gap-2 text-xs text-muted-foreground">
                   <Images class="h-6 w-6" />
                   <span>No image selected</span>
                 </div>
@@ -566,9 +619,9 @@
             </div>
             <div class="space-y-2">
               <Label>Mobile image (optional)</Label>
-              <div class="header-preview header-preview--mobile">
-                <img v-if="form.stockHeader.mobile" :src="form.stockHeader.mobile" alt="Stock page header mobile preview" />
-                <div v-else class="graphic-preview__empty">
+              <div class="grid aspect-[2/1] place-items-center overflow-hidden rounded-xl border bg-muted">
+                <img v-if="form.stockHeader.mobile" :src="form.stockHeader.mobile" alt="Stock page header mobile preview" class="h-full w-full object-cover" />
+                <div v-else class="grid place-items-center gap-2 text-xs text-muted-foreground">
                   <Images class="h-6 w-6" />
                   <span>Falls back to desktop image</span>
                 </div>
@@ -602,7 +655,7 @@
         </AlertDescription>
       </Alert>
 
-      <div class="promo-savebar">
+      <div class="sticky bottom-2 z-20 flex flex-col items-stretch gap-5 rounded-xl border bg-card/95 px-4 py-3.5 shadow-xl backdrop-blur-xl min-[701px]:bottom-4 min-[701px]:flex-row min-[701px]:items-center min-[701px]:justify-between">
         <div>
           <p class="text-sm font-semibold">Ready to publish?</p>
           <p class="text-xs text-muted-foreground">Changes go live on the website within about a minute of saving.</p>
@@ -670,6 +723,11 @@ import { Switch } from '~/components/ui/switch';
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
 const ANY = '__any__';
+
+const CHIP_BASE = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider';
+const CHIP_LIVE = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+const CHIP_SCHEDULED = 'bg-blue-500/10 text-blue-700 dark:text-blue-400';
+const CHIP_OFF = 'bg-slate-500/15 text-slate-600 dark:text-slate-400';
 
 type SettingsResponse = {
   source: 'custom' | 'default';
@@ -741,7 +799,7 @@ interface PromoForm {
   wasNowEnabled: boolean;
   commentsEnabled: boolean;
   badgesEnabled: boolean;
-  scroller: { enabled: boolean; text: string; color: string };
+  scroller: { enabled: boolean; text: string; color: string; make: string; model: string; variant: string; condition: string };
   offers: OfferForm[];
   groups: GroupForm[];
   graphics: { enabled: boolean; interval: number; items: GraphicForm[] };
@@ -823,11 +881,11 @@ function windowStatus(start: string, end: string): { label: string; class: strin
   // uses, so the chip agrees with what visitors actually see.
   const now = promoNow();
   if (isPromoWindowActive(toAuDate(start), toAuDate(end), now)) {
-    return { label: 'Live now', class: 'status-chip--live' };
+    return { label: 'Live now', class: CHIP_LIVE };
   }
   const startDate = start ? new Date(`${start}T00:00:00`) : null;
-  if (startDate && startDate > now) return { label: 'Scheduled', class: 'status-chip--scheduled' };
-  return { label: 'Expired', class: 'status-chip--off' };
+  if (startDate && startDate > now) return { label: 'Scheduled', class: CHIP_SCHEDULED };
+  return { label: 'Expired', class: CHIP_OFF };
 }
 
 function toAuDate(value: string) {
@@ -870,6 +928,15 @@ function vehiclePrice(vehicle: any): string {
 function vehicleLabel(vehicle: any): string {
   if (!vehicle) return '';
   return `${vehicleTitle(vehicle)} — Now ${vehiclePrice(vehicle)}`;
+}
+
+function offerPreview(offer: OfferForm): string {
+  const vehicle = matchedVehicle(offer.stockNumber);
+  const wasPrice = Number(offer.wasPriceInput);
+  const nowPrice = typeof vehicle?.price === 'number' ? vehicle.price : 0;
+  if (!vehicle || !Number.isFinite(wasPrice) || wasPrice <= 0 || !nowPrice) return '';
+  if (wasPrice <= nowPrice) return `Was price must be above the live price ($${nowPrice.toLocaleString()}) to display.`;
+  return `Was $${wasPrice.toLocaleString()} · Save $${(wasPrice - nowPrice).toLocaleString()} · Now $${nowPrice.toLocaleString()}`;
 }
 
 // Cascading target options for group offers
@@ -938,6 +1005,10 @@ function toForm(settings?: StockCardPromoSettings | null): PromoForm {
       enabled: settings?.scroller.enabled === true,
       text: settings?.scroller.text || '',
       color: settings?.scroller.color || '#e11d48',
+      make: settings?.scroller.make || '',
+      model: settings?.scroller.model || '',
+      variant: settings?.scroller.variant || '',
+      condition: settings?.scroller.condition || '',
     },
     offers: (settings?.offers || []).map((offer) => ({
       stockNumber: offer.stockNumber,
@@ -1162,65 +1233,3 @@ function toIsoDate(value: string) {
 }
 </script>
 
-<style scoped>
-.stock-card-promo-admin { max-width: 1200px; margin: 0 auto; color: var(--admin-ink); }
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-.status-chip--live { background: rgba(16, 185, 129, .12); color: #047857; }
-.status-chip--scheduled { background: rgba(59, 130, 246, .12); color: #1d4ed8; }
-.status-chip--off { background: rgba(100, 116, 139, .14); color: #475569; }
-.graphic-preview {
-  display: grid;
-  overflow: hidden;
-  place-items: center;
-  aspect-ratio: 4 / 3;
-  border: 1px solid var(--admin-line);
-  border-radius: 12px;
-  background: var(--admin-surface-2);
-}
-.graphic-preview img { width: 100%; height: 100%; object-fit: cover; }
-.graphic-preview__empty {
-  display: grid;
-  gap: 8px;
-  place-items: center;
-  color: var(--admin-muted);
-  font-size: 12px;
-}
-.header-preview {
-  display: grid;
-  overflow: hidden;
-  place-items: center;
-  border: 1px solid var(--admin-line);
-  border-radius: 12px;
-  background: var(--admin-surface-2);
-}
-.header-preview--desktop { aspect-ratio: 8 / 2; }
-.header-preview--mobile { aspect-ratio: 4 / 2; }
-.header-preview img { width: 100%; height: 100%; object-fit: cover; }
-.promo-savebar {
-  position: sticky;
-  z-index: 20;
-  bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  border: 1px solid var(--admin-line);
-  border-radius: 14px;
-  padding: 14px 16px;
-  background: color-mix(in srgb, var(--admin-surface) 94%, transparent);
-  box-shadow: 0 1px 2px rgba(11, 26, 43, .05), 0 8px 24px -14px rgba(11, 26, 43, .18);
-  backdrop-filter: blur(12px);
-}
-@media (max-width: 700px) {
-  .promo-savebar { align-items: stretch; flex-direction: column; bottom: 8px; }
-}
-</style>

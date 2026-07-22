@@ -1,6 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { dealers } from '../../../database/schema';
+import { invalidateNitroFunctionCache } from '../../../utils/cache-refresh';
 import { db } from '../../../utils/db';
+import { resolveTenantCacheKey } from '../../../utils/tenant';
 import { parseStockCardPromoInput } from '../../../../shared/stockCardPromo';
 
 const EDITOR_ROLES = ['admin', 'dealer_admin', 'manager'];
@@ -47,11 +49,17 @@ export default defineEventHandler(async (event) => {
       })
       .where(eq(dealers.id, dealerId));
 
+    // Cache-bust the public endpoint so the new promotions are live at once.
+    await invalidateNitroFunctionCache(
+      useStorage('cache'),
+      'stock-card-promo',
+      resolveTenantCacheKey(event, 'stock-card-promo-data:v1'),
+    );
     setResponseHeader(event, 'Cache-Control', 'no-store');
 
     return {
       success: true,
-      message: 'Stock card promotions saved successfully',
+      message: 'Stock card promotions saved and published',
       settings: parsed.value,
     };
   } catch (error: any) {

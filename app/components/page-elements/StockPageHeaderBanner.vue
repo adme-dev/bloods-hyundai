@@ -5,14 +5,14 @@
       v-bind="wrapperProps"
       class="block"
     >
-      <!-- Fixed aspect ratios reserve the banner's space before the image
-           decodes, so enabling the header never shifts the page content. -->
-      <picture class="banner-frame block">
+      <!-- Natural sizing: the artwork renders full-width at its own aspect
+           ratio, never cropped, on both desktop and mobile. -->
+      <picture class="block">
         <source v-if="header.mobile" media="(max-width: 639px)" :srcset="header.mobile" />
         <img
           :src="header.desktop"
           :alt="header.alt || 'Current promotion'"
-          class="block h-full w-full object-cover"
+          class="block h-auto w-full"
           loading="eager"
           fetchpriority="high"
         />
@@ -20,17 +20,6 @@
     </component>
   </div>
 </template>
-
-<style scoped>
-.banner-frame {
-  aspect-ratio: 4 / 1;
-}
-@media (max-width: 639px) {
-  .banner-frame {
-    aspect-ratio: 2 / 1;
-  }
-}
-</style>
 
 <script setup lang="ts">
 const { settings } = useStockCardPromo();

@@ -1,6 +1,7 @@
 import {
   promoNow,
   resolveCardPromo,
+  resolveCardScroller,
   type ResolvedCardPromo,
   type StockCardPromoSettings,
 } from '~~/shared/stockCardPromo';
@@ -36,7 +37,13 @@ export function useStockCardPromo() {
     return resolveCardPromo(current, vehicleAttrs(vehicle), promoNow());
   };
 
-  return { settings, promoFor };
+  const scrollerFor = (vehicle: any): { text: string; color: string } | null => {
+    const current = settings.value;
+    if (!current) return null;
+    return resolveCardScroller(current, vehicleAttrs(vehicle));
+  };
+
+  return { settings, promoFor, scrollerFor };
 }
 
 function vehicleAttrs(vehicle: any) {
