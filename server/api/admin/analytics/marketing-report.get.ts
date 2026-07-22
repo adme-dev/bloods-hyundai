@@ -10,7 +10,13 @@ import {
 } from '../../../utils/metrics/crmReport';
 import type { MarketingIntegrations } from '../../../utils/metrics/types';
 import { inferLeadAttribution, type CampaignAttributionCandidate } from '../../../utils/metrics/attribution';
-import { aggregateStoredGa4Breakdowns, fetchGa4WebsiteAnalytics, type Ga4WebsiteAnalytics, type Ga4WebsiteTrendRow } from '../../../utils/metrics/ga4';
+import {
+  aggregateStoredGa4Breakdowns,
+  fetchGa4WebsiteAnalytics,
+  readStoredGa4Metric,
+  type Ga4WebsiteAnalytics,
+  type Ga4WebsiteTrendRow,
+} from '../../../utils/metrics/ga4';
 import { buildMarketingReportInsights } from '../../../utils/metrics/reportInsights';
 import { roasBasis, computeRoas } from '../../../utils/metrics/roas';
 import { buildMarketingTrend } from '../../../utils/metrics/marketingTrend';
@@ -493,8 +499,7 @@ function buildAdPlatformMetrics(
 }
 
 function ga4Metric(row: MarketingMetricsDaily, index: number) {
-  const metric = (row.raw as any)?.metricValues?.[index]?.value;
-  return metric == null ? 0 : Number(metric) || 0;
+  return readStoredGa4Metric(row.raw, index);
 }
 
 function weightedGa4Metric(rows: MarketingMetricsDaily[], metricIndex: number, weightIndex: number) {
