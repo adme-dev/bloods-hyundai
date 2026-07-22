@@ -124,6 +124,19 @@ Env changes only apply after a **redeploy**. `GET /api/admin/media/diagnostics`
 (admin login, temporary endpoint) reports which source each value resolved
 from plus a live bucket check.
 
+The production Netlify project is
+[**bloodhyundai**](https://app.netlify.com/projects/bloodhyundai/deploys)
+(bloodhyundai.com.au). A similarly named `bloods-hyundai` site
+(bloods-hyundai.netlify.app) also exists on the ADME team and is **not**
+production — check env vars and deploys on the right one.
+
+**Netlify Image CDN allowlist:** thumbnails in the media library (and anything
+else rendered with `<NuxtImg>`) are proxied through the Netlify Image CDN in
+production. Every remote image host — including the R2 public URL — must be
+listed in `netlify.toml` under `[images] remote_images`, or the CDN answers
+400 `"url (…) is not an allowed pattern"` and previews render broken. Locally
+the provider is ipx, so this failure is production-only.
+
 ## Testing
 
 ```bash
@@ -150,6 +163,11 @@ Do **not** run `npm run build` locally — it runs production DB migrations.
   say `runtimeConfig.*`, the bucket check should be `ok: true`, and
   `publicUrl` should be the `pub-…r2.dev` URL. Remember env edits do nothing
   until the site is redeployed.
+- **Preview/thumbnail images broken in production only, and the image URL
+  itself opens fine in a new tab** — the Netlify Image CDN is rejecting the
+  host: 400 `"url (…) is not an allowed pattern"` in the network tab. Add the
+  host to `[images] remote_images` in `netlify.toml` (the R2 public URL was
+  added 2026-07-22) and redeploy.
 - **Promo not on a card** — per-vehicle: stock number must match the feed
   (green ✓ confirms); group: check the "matches N cars" count and date window;
   feature toggles at the top of the page must be on.
