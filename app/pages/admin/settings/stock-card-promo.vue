@@ -9,8 +9,8 @@
         <Button variant="outline" :disabled="loading || saving" @click="reloadFromServer">
           <RefreshCw class="mr-2 h-4 w-4" /> Refresh data
         </Button>
-        <Button variant="outline" @click="previewHomepage">
-          <ExternalLink class="mr-2 h-4 w-4" /> Preview homepage
+        <Button variant="outline" @click="previewStockPage">
+          <ExternalLink class="mr-2 h-4 w-4" /> Preview stock page
         </Button>
       </template>
     </AdminPageHeader>
@@ -37,6 +37,7 @@
         <CardHeader>
           <CardTitle>Card features</CardTitle>
           <CardDescription>These switches control what vehicle cards can display across the website. Everything stays hidden until switched on.</CardDescription>
+          <p class="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Info class="h-3.5 w-3.5 shrink-0" /> Shown on: every vehicle card — stock page, homepage slider, favourites and vehicle pages.</p>
         </CardHeader>
         <CardContent class="grid gap-4 md:grid-cols-3">
           <div class="flex items-center justify-between gap-3 rounded-lg border p-4">
@@ -68,6 +69,7 @@
         <CardHeader>
           <CardTitle>Scrolling banner</CardTitle>
           <CardDescription>A site-wide scrolling ticker shown along the bottom of every vehicle card image. A per-vehicle comment overrides it on that card.</CardDescription>
+          <p class="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Info class="h-3.5 w-3.5 shrink-0" /> Shown on: vehicle cards matching the filters below, everywhere cards appear.</p>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)_220px]">
@@ -124,16 +126,22 @@
                 </Select>
               </div>
               <div class="space-y-2">
-                <Label for="scroller-condition">Condition</Label>
-                <Select :model-value="form.scroller.condition || ANY" :disabled="saving" @update:model-value="form.scroller.condition = fromAny($event)">
-                  <SelectTrigger id="scroller-condition" class="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem :value="ANY">Any condition</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="demo">Demo</SelectItem>
-                    <SelectItem value="used">Used</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Condition (tick one or more; none = all)</Label>
+                <div class="flex h-10 items-center gap-5 rounded-md border border-input px-3">
+                  <label
+                    v-for="conditionOption in CONDITION_OPTIONS"
+                    :key="conditionOption"
+                    class="flex cursor-pointer items-center gap-1.5 text-sm capitalize"
+                  >
+                    <Checkbox
+                      :model-value="form.scroller.conditions.includes(conditionOption)"
+                      :disabled="saving"
+                      :aria-label="`Show banner on ${conditionOption} vehicles`"
+                      @update:model-value="toggleScrollerCondition(conditionOption, $event === true)"
+                    />
+                    {{ conditionOption }}
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -146,6 +154,7 @@
           <div class="space-y-1.5">
             <CardTitle>Per-vehicle offers</CardTitle>
             <CardDescription>Promote specific cars. The live feed price becomes the "Now" price. Dates are optional and inclusive. Per-vehicle offers always beat group offers.</CardDescription>
+          <p class="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Info class="h-3.5 w-3.5 shrink-0" /> Shown on: that car’s card everywhere it appears — stock page, homepage slider, favourites and vehicle pages.</p>
           </div>
           <Button :disabled="saving || form.offers.length >= maxOffers" @click="openPicker({ type: 'add' })">
             <Plus class="mr-2 h-4 w-4" /> Add vehicle
@@ -274,6 +283,7 @@
           <div class="space-y-1.5">
             <CardTitle>Group offers</CardTitle>
             <CardDescription>Campaign rules that apply to every matching vehicle — e.g. all Hyundai Tucson, or all Used stock. New arrivals matching the rule are covered automatically. The first matching rule applies.</CardDescription>
+            <p class="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Info class="h-3.5 w-3.5 shrink-0" /> Shown on: every matching car’s card, everywhere cards appear.</p>
           </div>
           <Button :disabled="saving || form.groups.length >= maxGroups" @click="addGroup">
             <Plus class="mr-2 h-4 w-4" /> Add group offer
@@ -421,6 +431,7 @@
           <div class="space-y-1.5">
             <CardTitle>Graphics between cards</CardTitle>
             <CardDescription>Emotional promo graphics inserted between stock cards — in the homepage Stock Specials slider and the Cars for Sale grid. Graphics rotate if you add more than one.</CardDescription>
+            <p class="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Info class="h-3.5 w-3.5 shrink-0" /> Shown on: the Cars for Sale grid and the homepage Stock Specials slider. Each graphic has its own optional date range.</p>
           </div>
           <Button :disabled="saving || form.graphics.items.length >= maxGraphics" @click="addGraphic">
             <Plus class="mr-2 h-4 w-4" /> Add graphic
@@ -568,6 +579,7 @@
             </span>
           </div>
           <CardDescription>A promotional banner across the top of the Cars for Sale page, with separate desktop and mobile artwork and an optional campaign window. Recommended sizes: 1600×400 desktop, 800×400 mobile.</CardDescription>
+          <p class="mt-1 flex items-center gap-1.5 text-xs font-medium text-primary"><Info class="h-3.5 w-3.5 shrink-0" /> Shown on: the top of the Cars for Sale page only.</p>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="grid items-start gap-4 md:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)]">
@@ -690,6 +702,7 @@ import {
   Car,
   ExternalLink,
   Images,
+  Info,
   Layers,
   Loader2,
   Plus,
@@ -715,6 +728,7 @@ import MediaLibraryDialog from '~/components/media/MediaLibraryDialog.vue';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { Checkbox } from '~/components/ui/checkbox';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
@@ -723,6 +737,8 @@ import { Switch } from '~/components/ui/switch';
 definePageMeta({ layout: 'admin', middleware: 'auth' });
 
 const ANY = '__any__';
+
+const CONDITION_OPTIONS = ['new', 'demo', 'used'] as const;
 
 const CHIP_BASE = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider';
 const CHIP_LIVE = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
@@ -799,7 +815,7 @@ interface PromoForm {
   wasNowEnabled: boolean;
   commentsEnabled: boolean;
   badgesEnabled: boolean;
-  scroller: { enabled: boolean; text: string; color: string; make: string; model: string; variant: string; condition: string };
+  scroller: { enabled: boolean; text: string; color: string; make: string; model: string; variant: string; conditions: string[] };
   offers: OfferForm[];
   groups: GroupForm[];
   graphics: { enabled: boolean; interval: number; items: GraphicForm[] };
@@ -965,6 +981,12 @@ function uniqueSorted(values: string[]) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
+function toggleScrollerCondition(condition: string, checked: boolean) {
+  const conditions = form.value.scroller.conditions;
+  if (checked && !conditions.includes(condition)) conditions.push(condition);
+  if (!checked) form.value.scroller.conditions = conditions.filter((entry) => entry !== condition);
+}
+
 function fromAny(value: unknown) {
   const selected = String(value ?? '');
   return selected === ANY ? '' : selected;
@@ -1008,7 +1030,7 @@ function toForm(settings?: StockCardPromoSettings | null): PromoForm {
       make: settings?.scroller.make || '',
       model: settings?.scroller.model || '',
       variant: settings?.scroller.variant || '',
-      condition: settings?.scroller.condition || '',
+      conditions: [...(settings?.scroller.conditions || [])],
     },
     offers: (settings?.offers || []).map((offer) => ({
       stockNumber: offer.stockNumber,
@@ -1221,8 +1243,8 @@ async function reloadFromServer() {
   saveErrors.value = [];
 }
 
-function previewHomepage() {
-  window.open('/?refresh=true', '_blank', 'noopener,noreferrer');
+function previewStockPage() {
+  window.open('/car-sales?refresh=true', '_blank', 'noopener,noreferrer');
 }
 
 function toIsoDate(value: string) {

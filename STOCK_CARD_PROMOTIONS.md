@@ -11,13 +11,18 @@ Card Promotions** (`/admin/settings/stock-card-promo`) and defaults to **off**.
 | **Was / Now pricing** | Strikethrough was-price, red "Save $X", "Now" price | Every vehicle card, site-wide |
 | **Vehicle badges** | Coloured badge chip (e.g. "HOT DEAL") on the card image | Every vehicle card, site-wide |
 | **Vehicle comments** | Per-vehicle scrolling strip on the card image | Every vehicle card, site-wide |
-| **Scrolling banner** | Site-wide scrolling ticker along the bottom of card images, filterable by make / model / variant / condition | Matching vehicle cards |
+| **Scrolling banner** | Site-wide scrolling ticker along the bottom of card images, filterable by make / model / variant and **any combination of conditions** (e.g. New + Demo) | Matching vehicle cards |
 | **Group offers** | Campaign rules (badge, comment, $-off or %-off) applied to every matching vehicle | Matching vehicle cards |
 | **Graphics between cards** | Emotional promo tiles inserted after every Nth stock card | Homepage Stock Specials slider **and** the /car-sales grid |
 | **Stock page header** | Full-width promotional banner (desktop + mobile artwork) | Top of /car-sales |
 
 "Vehicle cards" means `ModernVehicleCard`, used on the homepage Stock Specials
 slider, /car-sales grid, favourites, and related-vehicle strips.
+
+Every section in the admin carries a **"Shown on:"** line telling the dealer
+exactly where that content appears on the website, and the page header's
+**Preview stock page** button opens /car-sales (cache-refreshed) — the page
+where everything comes together.
 
 ## Key concepts
 
@@ -31,17 +36,18 @@ live price, or the car is POA. Group offers express pricing as **$ off** or
 ### Matching
 - **Per-vehicle offers** match by stock number (case-insensitive). Duplicates
   keep the last entry. Per-vehicle offers always beat group offers.
-- **Group offers / banner filters** match make, model, variant and condition
-  (new / demo / used). Matching is slug-insensitive (`"i30 Sedan"` matches the
-  feed's internal `"i30-sedan"`). Empty fields match everything. The first
-  matching group rule wins.
+- **Group offers / banner filters** match make, model, variant and condition.
+  The scrolling banner's condition filter is **multi-select** — tick any
+  combination of New / Demo / Used; none ticked means all. Matching is
+  slug-insensitive (`"i30 Sedan"` matches the feed's internal `"i30-sedan"`).
+  Empty fields match everything. The first matching group rule wins.
 - The admin shows a live "matches N cars right now" count per group rule and a
   green ✓ with the car's title/price per offer.
 
 ### Scheduling
-Offers, group rules, graphics and the stock page header all take optional
-start/end dates — inclusive, evaluated in **Australia/Melbourne** time on both
-server and client. Expired or future-dated content is stripped by the public
+Offers, group rules, **each individual graphic between cards**, and the stock
+page header all take optional start/end dates — inclusive, evaluated in
+**Australia/Melbourne** time on both server and client. Expired or future-dated content is stripped by the public
 API, so it can never linger on cached pages. Status chips in the admin show
 Live now / Scheduled / Expired / Off per item.
 
