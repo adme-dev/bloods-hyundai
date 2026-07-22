@@ -110,6 +110,20 @@ token pasted in the wrong slot, and the media API will answer 503
 "Media storage credentials are invalid" for any credential-shaped failure.
 Pasting a direct image URL is always available as a fallback in the admin.
 
+**Netlify env precedence gotcha (bit us in production, 2026-07-22):** Nuxt
+maps `NUXT_`-prefixed env vars onto `runtimeConfig` at **runtime**, and they
+beat everything the plain `R2_*` / `CLOUDFLARE_R2_*` vars set at build time.
+The ADME Netlify **team** carries shared `NUXT_R2_ACCESS_KEY_ID` /
+`NUXT_R2_SECRET_ACCESS_KEY` / `NUXT_R2_BUCKET_NAME` / `NUXT_R2_PUBLIC_URL`
+values that do **not** appear in the site's own env listing yet silently
+override it. The fix is to create **site-level** `NUXT_R2_*` +
+`NUXT_CLOUDFLARE_ACCOUNT_ID` vars with the working values (site beats team) —
+including `NUXT_R2_PUBLIC_URL`, which also feeds the promo save's image-host
+allowlist, so a stale value makes every save containing an R2 image fail 422.
+Env changes only apply after a **redeploy**. `GET /api/admin/media/diagnostics`
+(admin login, temporary endpoint) reports which source each value resolved
+from plus a live bucket check.
+
 ## Testing
 
 ```bash
@@ -127,6 +141,15 @@ Do **not** run `npm run build` locally — it runs production DB migrations.
   the graphic is Visible with an image, and hard-refresh after saving.
 - **Save rejected (422)** — the red "Review the promotion settings" alert lists
   the exact reasons (missing image, unapproved host, HTML in text, bad dates).
+  If every save fails with an "unapproved host" error on an image the media
+  library itself produced, the server's `r2PublicUrl` is stale — see the
+  Netlify env precedence gotcha above and redeploy.
+- **Media library works locally but not in production** — almost certainly the
+  Netlify env precedence gotcha above. Check
+  `/api/admin/media/diagnostics` while logged in: every `*Source` field should
+  say `runtimeConfig.*`, the bucket check should be `ok: true`, and
+  `publicUrl` should be the `pub-…r2.dev` URL. Remember env edits do nothing
+  until the site is redeployed.
 - **Promo not on a card** — per-vehicle: stock number must match the feed
   (green ✓ confirms); group: check the "matches N cars" count and date window;
   feature toggles at the top of the page must be on.
