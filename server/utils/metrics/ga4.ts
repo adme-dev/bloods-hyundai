@@ -115,6 +115,21 @@ export function attachGa4Breakdowns(rows: NormalizedRow[], breakdowns: CachedGa4
   }));
 }
 
+export function readStoredGa4Metric(raw: unknown, index: number): number {
+  type StoredGa4Row = {
+    daily?: { metricValues?: Array<{ value?: string }> };
+    metricValues?: Array<{ value?: string }>;
+  };
+
+  const stored = raw as StoredGa4Row | null;
+  const metric = stored?.daily?.metricValues?.[index]?.value
+    ?? stored?.metricValues?.[index]?.value;
+  if (metric == null) return 0;
+
+  const value = Number(metric);
+  return Number.isFinite(value) ? value : 0;
+}
+
 export function aggregateStoredGa4Breakdowns(rows: Array<{ raw: unknown }>): CachedGa4Breakdowns {
   return {
     topLandingPages: aggregateCachedRows(rows, 'topLandingPages', 'landingPagePlusQueryString', 12),

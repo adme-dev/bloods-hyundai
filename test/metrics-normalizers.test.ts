@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { aggregateStoredGa4Breakdowns, attachGa4Breakdowns, normalizeGa4BreakdownResponse, normalizeGa4Response } from '../server/utils/metrics/ga4.ts';
+import {
+  aggregateStoredGa4Breakdowns,
+  attachGa4Breakdowns,
+  normalizeGa4BreakdownResponse,
+  normalizeGa4Response,
+  readStoredGa4Metric,
+} from '../server/utils/metrics/ga4.ts';
 import { normalizeMetaBreakdownInsights, normalizeMetaCreatives, normalizeMetaInsights } from '../server/utils/metrics/metaAds.ts';
 import {
   buildAgeBreakdownGaql,
@@ -79,6 +85,44 @@ describe('normalizeGa4BreakdownResponse', () => {
 });
 
 describe('GA4 stored breakdown cache', () => {
+  it('reads report metrics from the nested daily row after breakdowns are cached', () => {
+    const [cached] = attachGa4Breakdowns([{
+      platform: 'ga4',
+      date: '2026-07-01',
+      campaignId: '',
+      campaignName: null,
+      spend: null,
+      impressions: null,
+      clicks: null,
+      platformLeads: null,
+      sessions: 120,
+      users: 95,
+      conversions: 7,
+      raw: {
+        metricValues: [
+          { value: '120' },
+          { value: '95' },
+          { value: '7' },
+          { value: '0.64' },
+          { value: '91.5' },
+          { value: '245' },
+          { value: '630' },
+          { value: '5.25' },
+        ],
+      },
+    }], { topLandingPages: [], trafficChannels: [], sourceMedium: [], deviceCategories: [] });
+
+    assert.equal(readStoredGa4Metric(cached?.raw, 3), 0.64);
+    assert.equal(readStoredGa4Metric(cached?.raw, 4), 91.5);
+    assert.equal(readStoredGa4Metric(cached?.raw, 5), 245);
+    assert.equal(readStoredGa4Metric(cached?.raw, 6), 630);
+    assert.equal(readStoredGa4Metric(cached?.raw, 7), 5.25);
+  });
+
+  it('continues to read legacy rows stored before the breakdown cache change', () => {
+    assert.equal(readStoredGa4Metric({ metricValues: [{ value: '42' }] }, 0), 42);
+  });
+
   it('attaches daily dimension rows and aggregates them across the report range', () => {
     const daily = [
       { platform: 'ga4' as const, date: '2026-07-01', campaignId: '', campaignName: null, spend: null, impressions: null, clicks: null, platformLeads: null, sessions: 10, users: 8, conversions: 2, raw: {} },
