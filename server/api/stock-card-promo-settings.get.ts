@@ -79,12 +79,17 @@ function toPublicSettings(settings: StockCardPromoSettings): StockCardPromoSetti
 
   return {
     ...settings,
+    scrollers: settings.scrollers.filter(
+      (banner) => banner.enabled && banner.text && isPromoWindowActive(banner.start, banner.end, now),
+    ),
     offers: settings.offers.filter((offer) => isPromoWindowActive(offer.start, offer.end, now)),
     groups: settings.groups.filter(
       (rule) => rule.enabled && isPromoWindowActive(rule.start, rule.end, now),
     ),
     graphics: {
       ...settings.graphics,
+      enabled: settings.graphics.enabled
+        && isPromoWindowActive(settings.graphics.start, settings.graphics.end, now),
       items: settings.graphics.items.filter(
         (item) => item.enabled && item.image && isPromoWindowActive(item.start, item.end, now),
       ),

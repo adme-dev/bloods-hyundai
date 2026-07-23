@@ -33,9 +33,9 @@
               <ModernVehicleCard :vehicle="option.vehicle" disable-link />
             </div>
             <span
-              class="pointer-events-none absolute inset-0 flex items-end justify-center rounded-2xl bg-primary/0 pb-4 opacity-0 ring-primary transition-all group-hover:bg-primary/5 group-hover:opacity-100 group-hover:ring-2"
+              class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-black/0 opacity-0 ring-blue-500 transition-all group-hover:bg-black/25 group-hover:opacity-100 group-hover:ring-2"
             >
-              <span class="rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-lg">
+              <span class="rounded-full bg-blue-600 px-5 py-2 text-sm font-bold uppercase tracking-wide text-white shadow-lg">
                 Select this car
               </span>
             </span>

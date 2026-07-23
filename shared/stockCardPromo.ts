@@ -1,6 +1,7 @@
 export const STOCK_CARD_PROMO_MAX_OFFERS = 200;
 export const STOCK_CARD_PROMO_MAX_GROUPS = 20;
 export const STOCK_CARD_PROMO_MAX_GRAPHICS = 6;
+export const STOCK_CARD_PROMO_MAX_SCROLLERS = 10;
 export const STOCK_CARD_PROMO_MAX_PERCENT_OFF = 75;
 export const STOCK_CARD_PROMO_MIN_INTERVAL = 2;
 export const STOCK_CARD_PROMO_MAX_INTERVAL = 10;
@@ -8,10 +9,15 @@ export const STOCK_CARD_PROMO_DEFAULT_INTERVAL = 3;
 
 export type PromoCondition = 'new' | 'demo' | 'used';
 
+export const PROMO_FUEL_TYPES = ['petrol', 'diesel', 'hybrid', 'electric'] as const;
+export type PromoFuelType = (typeof PROMO_FUEL_TYPES)[number];
+
 export interface StockCardOffer {
   stockNumber: string;
   wasPrice: number | null;
   comment: string;
+  /** Background of the scrolling comment strip; separate from the badge colour. */
+  commentColor: string;
   badgeText: string;
   badgeColor: string;
   start: string;
@@ -37,9 +43,12 @@ export interface StockGroupRule {
   model: string;
   variant: string;
   condition: '' | 'new' | 'demo' | 'used';
+  fuelType: '' | PromoFuelType;
   discountType: '' | 'amount' | 'percent';
   discountValue: number | null;
   comment: string;
+  /** Background of the scrolling comment strip; separate from the badge colour. */
+  commentColor: string;
   badgeText: string;
   badgeColor: string;
   start: string;
@@ -56,27 +65,38 @@ export interface StockPageHeader {
   end: string;
 }
 
+export interface StockScrollerBanner {
+  id: string;
+  enabled: boolean;
+  text: string;
+  color: string;
+  make: string;
+  model: string;
+  variant: string;
+  /** Multi-select; empty means every condition. */
+  conditions: PromoCondition[];
+  /** Multi-select; empty means every fuel type. */
+  fuelTypes: PromoFuelType[];
+  start: string;
+  end: string;
+}
+
 export interface StockCardPromoSettings {
   version: 1;
   updatedAt: string | null;
   wasNowEnabled: boolean;
   commentsEnabled: boolean;
   badgesEnabled: boolean;
-  scroller: {
-    enabled: boolean;
-    text: string;
-    color: string;
-    make: string;
-    model: string;
-    variant: string;
-    /** Multi-select; empty means every condition. */
-    conditions: PromoCondition[];
-  };
+  /** Ordered scrolling banners; the first banner matching a vehicle shows on its card. */
+  scrollers: StockScrollerBanner[];
   offers: StockCardOffer[];
   groups: StockGroupRule[];
   graphics: {
     enabled: boolean;
     interval: number;
+    /** One campaign window for the whole rotating set. */
+    start: string;
+    end: string;
     items: StockPromoGraphic[];
   };
   stockHeader: StockPageHeader;
@@ -111,10 +131,10 @@ export function defaultStockCardPromoSettings(): StockCardPromoSettings {
     wasNowEnabled: false,
     commentsEnabled: false,
     badgesEnabled: false,
-    scroller: { enabled: false, text: '', color: DEFAULT_SCROLLER_COLOR, make: '', model: '', variant: '', conditions: [] },
+    scrollers: [],
     offers: [],
     groups: [],
-    graphics: { enabled: false, interval: STOCK_CARD_PROMO_DEFAULT_INTERVAL, items: [] },
+    graphics: { enabled: false, interval: STOCK_CARD_PROMO_DEFAULT_INTERVAL, start: '', end: '', items: [] },
     stockHeader: defaultStockPageHeader(),
   };
 }
@@ -130,20 +150,16 @@ export function parseStockCardPromoInput(
   const errors: string[] = [];
   const body = isRecord(input) ? input : {};
 
-  const scrollerInput = isRecord(body.scroller) ? body.scroller : {};
-  const scrollerText = plainTextValue(scrollerInput.text, MAX_COPY_LENGTHS.scrollerText, 'Scrolling banner text', errors);
-  const scroller = {
-    enabled: scrollerInput.enabled === true,
-    text: scrollerText,
-    color: parseHexColor(scrollerInput.color, 'Scrolling banner colour', DEFAULT_SCROLLER_COLOR, errors),
-    make: stringValue(scrollerInput.make).slice(0, 60),
-    model: stringValue(scrollerInput.model).slice(0, 60),
-    variant: stringValue(scrollerInput.variant).slice(0, 60),
-    conditions: parseConditionList(scrollerInput.conditions ?? scrollerInput.condition),
-  };
-  if (scroller.enabled && !scroller.text) {
-    errors.push('Scrolling banner text is required when the banner is enabled.');
+  // Legacy payloads sent a single `scroller` object; wrap it as a one-banner list.
+  const scrollersInput = Array.isArray(body.scrollers)
+    ? body.scrollers
+    : isRecord(body.scroller) ? [body.scroller] : [];
+  if (scrollersInput.length > STOCK_CARD_PROMO_MAX_SCROLLERS) {
+    errors.push(`A maximum of ${STOCK_CARD_PROMO_MAX_SCROLLERS} scrolling banners is allowed.`);
   }
+  const scrollers = scrollersInput
+    .slice(0, STOCK_CARD_PROMO_MAX_SCROLLERS)
+    .map((value, index) => parseScrollerBanner(value, index, errors));
 
   const offersInput = Array.isArray(body.offers) ? body.offers : [];
   if (offersInput.length > STOCK_CARD_PROMO_MAX_OFFERS) {
@@ -177,6 +193,7 @@ export function parseStockCardPromoInput(
   const graphics = {
     enabled: graphicsInput.enabled === true,
     interval: parseInterval(graphicsInput.interval, errors),
+    ...parseDateWindow(graphicsInput, 'Graphics between cards', errors),
     items: graphicItemsInput
       .slice(0, STOCK_CARD_PROMO_MAX_GRAPHICS)
       .map((value, index) => parseGraphic(value, index, options.allowedImageHosts, errors)),
@@ -195,7 +212,7 @@ export function parseStockCardPromoInput(
       wasNowEnabled: body.wasNowEnabled === true,
       commentsEnabled: body.commentsEnabled === true,
       badgesEnabled: body.badgesEnabled === true,
-      scroller,
+      scrollers,
       offers,
       groups,
       graphics,
@@ -209,8 +226,13 @@ export function readStockCardPromoSettings(settings: unknown): StockCardPromoSet
   const stored = settings.stockCardPromo;
   if (stored.version !== 1) return null;
 
-  const scroller = isRecord(stored.scroller) ? stored.scroller : {};
   const graphics = isRecord(stored.graphics) ? stored.graphics : {};
+  // Legacy stored settings held a single `scroller` object; read it as a one-banner list.
+  const storedScrollers = Array.isArray(stored.scrollers)
+    ? stored.scrollers
+    : isRecord(stored.scroller) && (stored.scroller.enabled === true || stringValue(stored.scroller.text))
+      ? [stored.scroller]
+      : [];
 
   return {
     version: 1,
@@ -218,21 +240,29 @@ export function readStockCardPromoSettings(settings: unknown): StockCardPromoSet
     wasNowEnabled: stored.wasNowEnabled === true,
     commentsEnabled: stored.commentsEnabled === true,
     badgesEnabled: stored.badgesEnabled === true,
-    scroller: {
-      enabled: scroller.enabled === true,
-      text: stringValue(scroller.text),
-      color: HEX_COLOR_PATTERN.test(stringValue(scroller.color)) ? stringValue(scroller.color) : DEFAULT_SCROLLER_COLOR,
-      make: stringValue(scroller.make),
-      model: stringValue(scroller.model),
-      variant: stringValue(scroller.variant),
-      conditions: parseConditionList(scroller.conditions ?? scroller.condition),
-    },
+    scrollers: storedScrollers
+      .filter(isRecord)
+      .slice(0, STOCK_CARD_PROMO_MAX_SCROLLERS)
+      .map((banner, index) => ({
+        id: cleanBannerId(banner.id, index),
+        enabled: banner.enabled !== false,
+        text: stringValue(banner.text),
+        color: HEX_COLOR_PATTERN.test(stringValue(banner.color)) ? stringValue(banner.color) : DEFAULT_SCROLLER_COLOR,
+        make: stringValue(banner.make),
+        model: stringValue(banner.model),
+        variant: stringValue(banner.variant),
+        conditions: parseConditionList(banner.conditions ?? banner.condition),
+        fuelTypes: parseFuelList(banner.fuelTypes),
+        start: normalizeDate(stringValue(banner.start)),
+        end: normalizeDate(stringValue(banner.end)),
+      })),
     offers: (Array.isArray(stored.offers) ? stored.offers : [])
       .filter(isRecord)
       .map((offer) => ({
         stockNumber: stringValue(offer.stockNumber),
         wasPrice: normalizeStoredPrice(offer.wasPrice),
         comment: stringValue(offer.comment),
+        commentColor: HEX_COLOR_PATTERN.test(stringValue(offer.commentColor)) ? stringValue(offer.commentColor) : DEFAULT_BADGE_COLOR,
         badgeText: stringValue(offer.badgeText),
         badgeColor: HEX_COLOR_PATTERN.test(stringValue(offer.badgeColor)) ? stringValue(offer.badgeColor) : DEFAULT_BADGE_COLOR,
         start: normalizeDate(stringValue(offer.start)),
@@ -248,9 +278,11 @@ export function readStockCardPromoSettings(settings: unknown): StockCardPromoSet
         model: stringValue(rule.model),
         variant: stringValue(rule.variant),
         condition: normalizeCondition(rule.condition),
+        fuelType: normalizeFuelType(rule.fuelType),
         discountType: rule.discountType === 'amount' || rule.discountType === 'percent' ? rule.discountType : '' as const,
         discountValue: normalizeStoredDiscount(rule.discountType, rule.discountValue),
         comment: stringValue(rule.comment),
+        commentColor: HEX_COLOR_PATTERN.test(stringValue(rule.commentColor)) ? stringValue(rule.commentColor) : DEFAULT_BADGE_COLOR,
         badgeText: stringValue(rule.badgeText),
         badgeColor: HEX_COLOR_PATTERN.test(stringValue(rule.badgeColor)) ? stringValue(rule.badgeColor) : DEFAULT_BADGE_COLOR,
         start: normalizeDate(stringValue(rule.start)),
@@ -259,6 +291,8 @@ export function readStockCardPromoSettings(settings: unknown): StockCardPromoSet
     graphics: {
       enabled: graphics.enabled === true,
       interval: normalizeStoredInterval(graphics.interval),
+      start: normalizeDate(stringValue(graphics.start)),
+      end: normalizeDate(stringValue(graphics.end)),
       items: (Array.isArray(graphics.items) ? graphics.items : [])
         .filter(isRecord)
         .map((item, index) => ({
@@ -303,15 +337,30 @@ export interface VehiclePromoAttrs {
   model: string;
   variant: string;
   condition: string;
+  /** Raw feed fuel value (e.g. "Petrol - Unleaded ULP"); optional for callers that don't filter on it. */
+  fuel?: string;
   price: number;
 }
 
 export interface ResolvedCardPromo {
   wasPrice: number | null;
   comment: string;
+  commentColor: string;
   badgeText: string;
   badgeColor: string;
   source: 'stock' | 'group';
+}
+
+/**
+ * Unsaved promo state for rendering a live admin preview on ModernVehicleCard,
+ * bypassing the saved settings the card normally fetches.
+ */
+export interface CardPromoPreview {
+  offer: ResolvedCardPromo | null;
+  scroller: { text: string; color: string } | null;
+  wasNowEnabled: boolean;
+  commentsEnabled: boolean;
+  badgesEnabled: boolean;
 }
 
 /**
@@ -335,6 +384,7 @@ export function resolveCardPromo(
       return {
         wasPrice: offer.wasPrice,
         comment: offer.comment,
+        commentColor: offer.commentColor,
         badgeText: offer.badgeText,
         badgeColor: offer.badgeColor,
         source: 'stock',
@@ -353,6 +403,7 @@ export function resolveCardPromo(
   return {
     wasPrice: groupWasPrice(rule, attrs.price),
     comment: rule.comment,
+    commentColor: rule.commentColor,
     badgeText: rule.badgeText,
     badgeColor: rule.badgeColor,
     source: 'group',
@@ -367,6 +418,10 @@ export interface PromoTarget {
   condition?: '' | PromoCondition;
   /** Multi-select conditions (scrolling banner); empty means all. */
   conditions?: readonly PromoCondition[];
+  /** Single fuel type (group offers). */
+  fuelType?: '' | PromoFuelType;
+  /** Multi-select fuel types (scrolling banner); empty means all. */
+  fuelTypes?: readonly PromoFuelType[];
 }
 
 /**
@@ -383,26 +438,36 @@ export function matchesPromoTarget(target: PromoTarget, attrs: VehiclePromoAttrs
     ? target.conditions
     : target.condition ? [target.condition] : [];
 
+  const wantedFuels = target.fuelTypes?.length
+    ? target.fuelTypes
+    : target.fuelType ? [target.fuelType] : [];
+
   return (
     matches(target.make, attrs.make)
     && matches(target.model, attrs.model)
     && matches(target.variant, attrs.variant)
     && (!wantedConditions.length || wantedConditions.includes(normalizeCondition(attrs.condition) as PromoCondition))
+    && (!wantedFuels.length || wantedFuels.includes(normalizeFuelType(attrs.fuel) as PromoFuelType))
   );
 }
 
 /**
- * The site-wide scrolling banner, filtered to the vehicles it targets.
- * Returns null when disabled, empty, or the vehicle doesn't match.
+ * The scrolling banner for a vehicle card. Banners are ordered; the first
+ * enabled, in-window banner whose target matches the vehicle wins.
+ * Returns null when no banner applies.
  */
 export function resolveCardScroller(
-  settings: Pick<StockCardPromoSettings, 'scroller'>,
+  settings: Pick<StockCardPromoSettings, 'scrollers'>,
   attrs: VehiclePromoAttrs,
+  now: Date = new Date(),
 ): { text: string; color: string } | null {
-  const scroller = settings.scroller;
-  if (!scroller?.enabled || !scroller.text) return null;
-  if (!matchesPromoTarget(scroller, attrs)) return null;
-  return { text: scroller.text, color: scroller.color };
+  for (const banner of settings.scrollers || []) {
+    if (!banner.enabled || !banner.text) continue;
+    if (!isPromoWindowActive(banner.start || '', banner.end || '', now)) continue;
+    if (!matchesPromoTarget(banner, attrs)) continue;
+    return { text: banner.text, color: banner.color };
+  }
+  return null;
 }
 
 function groupWasPrice(rule: StockGroupRule, price: number): number | null {
@@ -428,6 +493,7 @@ function parseOffer(value: unknown, index: number, errors: string[]): StockCardO
     stockNumber: stockNumber.slice(0, MAX_COPY_LENGTHS.stockNumber),
     wasPrice: parseWasPrice(offer.wasPrice, label, errors),
     comment: plainTextValue(offer.comment, MAX_COPY_LENGTHS.comment, `${label} comment`, errors),
+    commentColor: parseHexColor(offer.commentColor, `${label} comment colour`, DEFAULT_BADGE_COLOR, errors),
     badgeText: plainTextValue(offer.badgeText, MAX_COPY_LENGTHS.badgeText, `${label} badge text`, errors),
     badgeColor: parseHexColor(offer.badgeColor, `${label} badge colour`, DEFAULT_BADGE_COLOR, errors),
     ...parseDateWindow(offer, label, errors),
@@ -454,9 +520,10 @@ function parseGroupRule(value: unknown, index: number, errors: string[]): StockG
   const model = stringValue(rule.model);
   const variant = stringValue(rule.variant);
   const condition = normalizeCondition(rule.condition);
+  const fuelType = normalizeFuelType(rule.fuelType);
 
-  if (!make && !model && !variant && !condition) {
-    errors.push(`${label} needs at least one target (make, model, variant or condition).`);
+  if (!make && !model && !variant && !condition && !fuelType) {
+    errors.push(`${label} needs at least one target (make, model, variant, condition or fuel type).`);
   }
 
   const discountType = rule.discountType === 'amount' || rule.discountType === 'percent' ? rule.discountType : '';
@@ -481,13 +548,45 @@ function parseGroupRule(value: unknown, index: number, errors: string[]): StockG
     model: model.slice(0, 60),
     variant: variant.slice(0, 60),
     condition,
+    fuelType,
     discountType,
     discountValue,
     comment: plainTextValue(rule.comment, MAX_COPY_LENGTHS.comment, `${label} comment`, errors),
+    commentColor: parseHexColor(rule.commentColor, `${label} comment colour`, DEFAULT_BADGE_COLOR, errors),
     badgeText: plainTextValue(rule.badgeText, MAX_COPY_LENGTHS.badgeText, `${label} badge text`, errors),
     badgeColor: parseHexColor(rule.badgeColor, `${label} badge colour`, DEFAULT_BADGE_COLOR, errors),
     ...parseDateWindow(rule, label, errors),
   };
+}
+
+function parseScrollerBanner(value: unknown, index: number, errors: string[]): StockScrollerBanner {
+  const banner = isRecord(value) ? value : {};
+  const label = `Scrolling banner ${index + 1}`;
+  const enabled = banner.enabled !== false;
+  const text = plainTextValue(banner.text, MAX_COPY_LENGTHS.scrollerText, `${label} text`, errors);
+
+  // A disabled banner may be saved as a textless draft; a live one may not.
+  if (enabled && !text) {
+    errors.push(`${label} needs banner text (or switch it off).`);
+  }
+
+  return {
+    id: cleanBannerId(banner.id, index),
+    enabled,
+    text,
+    color: parseHexColor(banner.color, `${label} colour`, DEFAULT_SCROLLER_COLOR, errors),
+    make: stringValue(banner.make).slice(0, 60),
+    model: stringValue(banner.model).slice(0, 60),
+    variant: stringValue(banner.variant).slice(0, 60),
+    conditions: parseConditionList(banner.conditions ?? banner.condition),
+    fuelTypes: parseFuelList(banner.fuelTypes),
+    ...parseDateWindow(banner, label, errors),
+  };
+}
+
+function cleanBannerId(value: unknown, index: number) {
+  const id = stringValue(value);
+  return /^[a-zA-Z0-9_-]{1,80}$/.test(id) ? id : `banner-${index + 1}`;
 }
 
 function parseStockHeader(
@@ -526,6 +625,31 @@ function parseConditionList(value: unknown): PromoCondition[] {
     if (condition && !out.includes(condition)) out.push(condition);
   }
   return out;
+}
+
+/** Accepts a single value or an array; unknown fuels are dropped. */
+function parseFuelList(value: unknown): PromoFuelType[] {
+  const raw = Array.isArray(value) ? value : value ? [value] : [];
+  const out: PromoFuelType[] = [];
+  for (const item of raw) {
+    const fuel = normalizeFuelType(item);
+    if (fuel && !out.includes(fuel)) out.push(fuel);
+  }
+  return out;
+}
+
+/**
+ * Buckets the feed's granular fuel strings ("Petrol - Unleaded ULP",
+ * "Hybrid-Electric (HEV)") into the four admin-facing fuel types.
+ * Hybrid is checked first so HEV/PHEV values don't land in "electric".
+ */
+export function normalizeFuelType(value: unknown): '' | PromoFuelType {
+  const fuel = stringValue(value).toLowerCase();
+  if (fuel.includes('hybrid') || fuel.includes('phev') || fuel.includes('plug')) return 'hybrid';
+  if (fuel.includes('electric') || fuel === 'ev' || fuel.includes('bev')) return 'electric';
+  if (fuel.includes('diesel')) return 'diesel';
+  if (fuel.includes('petrol') || fuel.includes('unleaded') || fuel.includes('ulp')) return 'petrol';
+  return '';
 }
 
 function normalizeCondition(value: unknown): StockGroupRule['condition'] {

@@ -44,8 +44,9 @@ export function useStockCardPromo() {
 
   const scrollerFor = (vehicle: any): { text: string; color: string } | null => {
     const current = settings.value;
-    if (!current) return null;
-    return resolveCardScroller(current, vehicleAttrs(vehicle));
+    if (!current?.scrollers?.length) return null;
+    // Windows are evaluated in the dealer's timezone, matching the server filter.
+    return resolveCardScroller(current, vehicleAttrs(vehicle), promoNow());
   };
 
   /**
@@ -95,6 +96,7 @@ function vehicleAttrs(vehicle: any) {
     model: first(vehicle?.model),
     variant: first(vehicle?.badge) || first(vehicle?.variant),
     condition: first(vehicle?.condition),
+    fuel: first(vehicle?.fuel),
     price: Number.isFinite(price) ? price : 0,
   };
 }

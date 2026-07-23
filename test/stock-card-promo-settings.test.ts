@@ -19,7 +19,7 @@ const validInput = {
   wasNowEnabled: true,
   commentsEnabled: true,
   badgesEnabled: true,
-  scroller: { enabled: true, text: 'EOFY SALE ON NOW*', color: '#E11D48' },
+  scrollers: [{ id: 'banner-1', enabled: true, text: 'EOFY SALE ON NOW*', color: '#E11D48' }],
   offers: [
     {
       stockNumber: 'U12345',
@@ -32,6 +32,8 @@ const validInput = {
   graphics: {
     enabled: true,
     interval: 3,
+    start: '2026-07-01',
+    end: '31-07-2026',
     items: [
       {
         id: 'graphic-1',
@@ -52,10 +54,13 @@ describe('parseStockCardPromoInput', () => {
     assert.equal(result.ok, true);
     if (!result.ok) return;
     assert.equal(result.value.wasNowEnabled, true);
-    assert.equal(result.value.scroller.color, '#e11d48');
+    assert.equal(result.value.scrollers[0]?.color, '#e11d48');
     assert.equal(result.value.offers[0]?.wasPrice, 39990);
     assert.equal(result.value.graphics.items[0]?.id, 'graphic-1');
     assert.equal(result.value.graphics.interval, 3);
+    // The graphics set shares one section-level campaign window.
+    assert.equal(result.value.graphics.start, '01-07-2026');
+    assert.equal(result.value.graphics.end, '31-07-2026');
   });
 
   it('rejects images on unapproved hosts', () => {
@@ -71,18 +76,37 @@ describe('parseStockCardPromoInput', () => {
     assert.ok(result.errors.some((message) => message.includes('approved media host')));
   });
 
-  it('rejects an enabled scroller without text', () => {
+  it('rejects an enabled banner without text but allows a disabled draft', () => {
     const result = parseStockCardPromoInput({
       ...validInput,
-      scroller: { enabled: true, text: '', color: '#e11d48' },
+      scrollers: [{ enabled: true, text: '', color: '#e11d48' }],
     }, { allowedImageHosts });
     assert.equal(result.ok, false);
+
+    const draft = parseStockCardPromoInput({
+      ...validInput,
+      scrollers: [{ enabled: false, text: '', color: '#e11d48' }],
+    }, { allowedImageHosts });
+    assert.equal(draft.ok, true);
+  });
+
+  it('accepts a legacy single `scroller` payload as a one-banner list', () => {
+    const { scrollers: _ignored, ...withoutScrollers } = validInput;
+    const result = parseStockCardPromoInput({
+      ...withoutScrollers,
+      scroller: { enabled: true, text: 'SALE', color: '#e11d48', conditions: ['new'] },
+    }, { allowedImageHosts });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.value.scrollers.length, 1);
+    assert.equal(result.value.scrollers[0]?.text, 'SALE');
+    assert.deepEqual(result.value.scrollers[0]?.conditions, ['new']);
   });
 
   it('rejects invalid colours, prices and intervals', () => {
     const result = parseStockCardPromoInput({
       ...validInput,
-      scroller: { enabled: true, text: 'SALE', color: 'red' },
+      scrollers: [{ enabled: true, text: 'SALE', color: 'red' }],
       offers: [{ stockNumber: 'U1', wasPrice: -5, comment: '', badgeText: '', badgeColor: '#fff' }],
       graphics: { ...validInput.graphics, interval: 1 },
     }, { allowedImageHosts });
@@ -199,7 +223,9 @@ describe('readStockCardPromoSettings', () => {
     });
     assert.ok(read);
     assert.equal(read?.wasNowEnabled, false);
-    assert.equal(read?.scroller.color, '#e11d48');
+    // Legacy single `scroller` reads as a one-banner list with a safe colour.
+    assert.equal(read?.scrollers.length, 1);
+    assert.equal(read?.scrollers[0]?.color, '#e11d48');
     assert.equal(read?.offers.length, 1);
     assert.equal(read?.offers[0]?.wasPrice, null);
     assert.equal(read?.graphics.interval, 3);
@@ -212,14 +238,23 @@ describe('group offers and stock header parsing', () => {
       ...validInput,
       groups: [{
         id: 'group-1', enabled: true, make: 'Hyundai', model: 'Tucson', variant: '',
-        condition: 'Demonstrator', discountType: 'amount', discountValue: 3000,
+        condition: 'Demonstrator', fuelType: 'Petrol - Unleaded ULP', discountType: 'amount', discountValue: 3000,
         comment: '', badgeText: 'EOFY', badgeColor: '#0EA5E9',
       }],
     }, { allowedImageHosts });
     assert.equal(result.ok, true);
     if (!result.ok) return;
     assert.equal(result.value.groups[0]?.condition, 'demo');
+    assert.equal(result.value.groups[0]?.fuelType, 'petrol');
     assert.equal(result.value.groups[0]?.discountValue, 3000);
+  });
+
+  it('accepts a group rule targeting fuel type alone', () => {
+    const result = parseStockCardPromoInput({
+      ...validInput,
+      groups: [{ make: '', model: '', variant: '', condition: '', fuelType: 'hybrid', badgeText: 'HYBRID SALE' }],
+    }, { allowedImageHosts });
+    assert.equal(result.ok, true);
   });
 
   it('rejects a group rule with no target and out-of-range discounts', () => {
@@ -277,17 +312,23 @@ describe('resolveCardPromo', () => {
   };
   const baseGroup = {
     id: 'g1', enabled: true, make: 'Hyundai', model: 'Tucson', variant: '', condition: '' as const,
-    discountType: 'amount' as const, discountValue: 3000,
-    comment: 'Group comment', badgeText: 'SALE', badgeColor: '#e11d48', start: '', end: '',
+    fuelType: '' as const, discountType: 'amount' as const, discountValue: 3000,
+    comment: 'Group comment', commentColor: '#0ea5e9', badgeText: 'SALE', badgeColor: '#e11d48', start: '', end: '',
   };
 
   it('lets a per-vehicle offer beat a matching group rule', () => {
     const resolved = resolveCardPromo({
-      offers: [{ stockNumber: 'u100', wasPrice: 44990, comment: 'Stock comment', badgeText: 'HOT', badgeColor: '#000000', start: '', end: '' }],
+      offers: [{ stockNumber: 'u100', wasPrice: 44990, comment: 'Stock comment', commentColor: '#000000', badgeText: 'HOT', badgeColor: '#000000', start: '', end: '' }],
       groups: [baseGroup],
     }, tucson);
     assert.equal(resolved?.source, 'stock');
     assert.equal(resolved?.wasPrice, 44990);
+  });
+
+  it('carries the comment colour through, separate from the badge colour', () => {
+    const resolved = resolveCardPromo({ offers: [], groups: [baseGroup] }, tucson);
+    assert.equal(resolved?.commentColor, '#0ea5e9');
+    assert.equal(resolved?.badgeColor, '#e11d48');
   });
 
   it('computes group was-prices from $-off and %-off', () => {
@@ -313,6 +354,18 @@ describe('resolveCardPromo', () => {
       groups: [{ ...baseGroup, variant: 'ELITE' }],
     }, tucson);
     assert.equal(variantHit?.source, 'group');
+
+    const fuelMiss = resolveCardPromo({
+      offers: [],
+      groups: [{ ...baseGroup, fuelType: 'diesel' as const }],
+    }, { ...tucson, fuel: 'Petrol - Unleaded ULP' });
+    assert.equal(fuelMiss, null);
+
+    const fuelHit = resolveCardPromo({
+      offers: [],
+      groups: [{ ...baseGroup, fuelType: 'diesel' as const }],
+    }, { ...tucson, fuel: 'Diesel' });
+    assert.equal(fuelHit?.source, 'group');
 
     const expired = resolveCardPromo({
       offers: [],
@@ -340,13 +393,14 @@ describe('resolveCardScroller', () => {
   const tucson = {
     stockNumber: 'U100', make: 'Hyundai', model: 'Tucson', variant: 'Elite', condition: 'Used', price: 40000,
   };
-  const scroller = (overrides = {}) => ({
-    scroller: {
-      enabled: true, text: 'EOFY SALE*', color: '#e11d48',
-      make: '', model: '', variant: '', conditions: [] as ('new' | 'demo' | 'used')[],
-      ...overrides,
-    },
+  const banner = (overrides = {}) => ({
+    id: 'b1', enabled: true, text: 'EOFY SALE*', color: '#e11d48',
+    make: '', model: '', variant: '', conditions: [] as ('new' | 'demo' | 'used')[],
+    fuelTypes: [] as ('petrol' | 'diesel' | 'hybrid' | 'electric')[],
+    start: '', end: '',
+    ...overrides,
   });
+  const scroller = (overrides = {}) => ({ scrollers: [banner(overrides)] });
 
   it('shows on every card when no filters are set', () => {
     assert.equal(resolveCardScroller(scroller(), tucson)?.text, 'EOFY SALE*');
@@ -365,27 +419,79 @@ describe('resolveCardScroller', () => {
     assert.ok(resolveCardScroller(scroller({ conditions: ['demo', 'used'] }), tucson));
   });
 
-  it('returns null when disabled or empty', () => {
-    assert.equal(resolveCardScroller(scroller({ enabled: false }), tucson), null);
-    assert.equal(resolveCardScroller(scroller({ text: '' }), tucson), null);
+  it('filters by fuel type, bucketing the feed\'s granular values', () => {
+    const petrolTucson = { ...tucson, fuel: 'Petrol - Unleaded ULP' };
+    assert.ok(resolveCardScroller(scroller({ fuelTypes: ['petrol'] }), petrolTucson));
+    assert.equal(resolveCardScroller(scroller({ fuelTypes: ['diesel'] }), petrolTucson), null);
+    assert.ok(resolveCardScroller(scroller({ fuelTypes: ['diesel', 'petrol'] }), petrolTucson));
+
+    // HEV/PHEV values bucket to hybrid, not electric.
+    const hev = { ...tucson, fuel: 'Hybrid-Electric (HEV)' };
+    assert.ok(resolveCardScroller(scroller({ fuelTypes: ['hybrid'] }), hev));
+    assert.equal(resolveCardScroller(scroller({ fuelTypes: ['electric'] }), hev), null);
+    assert.ok(resolveCardScroller(scroller({ fuelTypes: ['electric'] }), { ...tucson, fuel: 'Electric' }));
   });
 
-  it('round-trips targeting through parse and read, accepting legacy single condition', () => {
+  it('hides from vehicles with unknown fuel when a fuel filter is set, but shows without one', () => {
+    assert.equal(resolveCardScroller(scroller({ fuelTypes: ['petrol'] }), tucson), null);
+    assert.ok(resolveCardScroller(scroller(), tucson));
+  });
+
+  it('returns null when disabled, empty, or outside the campaign window', () => {
+    assert.equal(resolveCardScroller(scroller({ enabled: false }), tucson), null);
+    assert.equal(resolveCardScroller(scroller({ text: '' }), tucson), null);
+    assert.equal(resolveCardScroller(scroller({ end: '01-01-2020' }), tucson), null);
+    assert.ok(resolveCardScroller(scroller({ start: '01-01-2020' }), tucson));
+  });
+
+  it('shows the first matching banner when several run at once', () => {
+    const settings = {
+      scrollers: [
+        banner({ id: 'new-only', text: 'NEW CAR SALE*', conditions: ['new' as const] }),
+        banner({ id: 'used-only', text: 'USED CAR SALE*', conditions: ['used' as const] }),
+      ],
+    };
+    assert.equal(resolveCardScroller(settings, tucson)?.text, 'USED CAR SALE*');
+    assert.equal(resolveCardScroller(settings, { ...tucson, condition: 'New' })?.text, 'NEW CAR SALE*');
+
+    // An earlier expired banner falls through to the next matching one.
+    const expiredFirst = {
+      scrollers: [
+        banner({ id: 'ended', text: 'OLD SALE*', end: '01-01-2020' }),
+        banner({ id: 'current', text: 'CURRENT SALE*' }),
+      ],
+    };
+    assert.equal(resolveCardScroller(expiredFirst, tucson)?.text, 'CURRENT SALE*');
+  });
+
+  it('round-trips targeting through parse and read, accepting legacy shapes', () => {
     const parsed = parseStockCardPromoInput({
       ...validInput,
-      scroller: { enabled: true, text: 'SALE', color: '#e11d48', make: 'Hyundai', model: 'Tucson', variant: '', conditions: ['Demonstrator', 'NEW', 'demo'] },
+      scrollers: [{ enabled: true, text: 'SALE', color: '#e11d48', make: 'Hyundai', model: 'Tucson', variant: '', conditions: ['Demonstrator', 'NEW', 'demo'], fuelTypes: ['Diesel', 'HYBRID', 'diesel', 'kerosene'], start: '2026-07-01' }],
     }, { allowedImageHosts });
     assert.equal(parsed.ok, true);
     if (!parsed.ok) return;
-    assert.deepEqual(parsed.value.scroller.conditions, ['demo', 'new']);
+    assert.deepEqual(parsed.value.scrollers[0]?.conditions, ['demo', 'new']);
+    assert.deepEqual(parsed.value.scrollers[0]?.fuelTypes, ['diesel', 'hybrid']);
+    assert.equal(parsed.value.scrollers[0]?.start, '01-07-2026');
     const read = readStockCardPromoSettings({ stockCardPromo: parsed.value });
-    assert.equal(read?.scroller.make, 'Hyundai');
+    assert.equal(read?.scrollers[0]?.make, 'Hyundai');
+    assert.deepEqual(read?.scrollers[0]?.fuelTypes, ['diesel', 'hybrid']);
+    assert.equal(read?.scrollers[0]?.start, '01-07-2026');
 
-    // Legacy stored payloads used a single `condition` string.
+    // Legacy stored payloads used a single `scroller` object with a single `condition` string.
     const legacy = readStockCardPromoSettings({
       stockCardPromo: { version: 1, scroller: { enabled: true, text: 'SALE', color: '#e11d48', condition: 'used' } },
     });
-    assert.deepEqual(legacy?.scroller.conditions, ['used']);
+    assert.equal(legacy?.scrollers.length, 1);
+    assert.deepEqual(legacy?.scrollers[0]?.conditions, ['used']);
+    assert.deepEqual(legacy?.scrollers[0]?.fuelTypes, []);
+
+    // A legacy scroller that was never configured doesn't become a phantom banner.
+    const empty = readStockCardPromoSettings({
+      stockCardPromo: { version: 1, scroller: { enabled: false, text: '' } },
+    });
+    assert.deepEqual(empty?.scrollers, []);
   });
 });
 
@@ -417,7 +523,7 @@ describe('defaultStockCardPromoSettings', () => {
     assert.equal(defaults.wasNowEnabled, false);
     assert.equal(defaults.commentsEnabled, false);
     assert.equal(defaults.badgesEnabled, false);
-    assert.equal(defaults.scroller.enabled, false);
+    assert.deepEqual(defaults.scrollers, []);
     assert.equal(defaults.graphics.enabled, false);
   });
 });
