@@ -16,7 +16,7 @@ describe('stock card promotions admin UI', () => {
 
   it('keeps every field in a labelled stacked group so rows stay aligned', () => {
     assert.doesNotMatch(page(), /<Label[^>]*>Colour<\/Label>\s*<input/);
-    assert.match(page(), /class="space-y-2">\s*<Label for="scroller-text">/);
+    assert.match(page(), /class="space-y-2">\s*<Label :for="`banner-text-\$\{index\}`">/);
   });
 
   it('lets the user pick vehicles from live stock', () => {
@@ -30,9 +30,19 @@ describe('stock card promotions admin UI', () => {
     assert.doesNotMatch(page(), /type=["']date["']/);
   });
 
-  it('offers a URL fallback so graphics never depend solely on the media library', () => {
-    assert.match(page(), /paste an image URL/);
+  // Raw URL inputs were removed deliberately (2026-07-23): dealers pick images
+  // from the media library only, so the allowed-host validation can't be fought.
+  it('sources images from the media library, with no raw URL fallback', () => {
+    assert.doesNotMatch(page(), /paste an image URL/);
     assert.match(page(), /MediaLibraryDialog/);
+    assert.match(page(), /Choose from media library/);
+  });
+
+  it('renders live card previews for offers and groups', () => {
+    assert.match(page(), /offerPreviews\[index\]/);
+    assert.match(page(), /groupPreviews\[index\]/);
+    assert.match(page(), /<ModernVehicleCard\b[^>]*promo-preview/);
+    assert.match(page(), /<BannerMarqueePreview\b/);
   });
 
   it('is linked from the settings hub and never renders raw HTML', () => {

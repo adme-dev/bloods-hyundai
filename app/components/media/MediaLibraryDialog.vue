@@ -19,7 +19,7 @@ import {
 } from '~/components/ui/alert-dialog';
 import { Button } from '~/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import { Image, FileText, Upload, Trash2, Check, Loader2 } from 'lucide-vue-next';
+import { Image, FileText, Upload, Trash2, Check, LayoutGrid, List, Loader2 } from 'lucide-vue-next';
 
 interface MediaFile {
   key: string;
@@ -50,6 +50,8 @@ const isOpen = computed({
 });
 
 const activeTab = ref<'all' | 'logos' | 'images' | 'documents'>('all');
+// Remembered across sessions; shared by every media library dialog.
+const viewMode = useLocalStorage<'grid' | 'list'>('media-library-view', 'grid');
 const files = ref<MediaFile[]>([]);
 const loading = ref(false);
 const uploading = ref(false);
@@ -240,6 +242,30 @@ const acceptTypes = computed(() => {
           </Tabs>
 
           <div class="flex items-center gap-2">
+            <div class="flex items-center rounded-md border p-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="viewMode === 'grid' ? 'bg-muted' : 'text-muted-foreground'"
+                aria-label="Grid view"
+                title="Grid view"
+                @click="viewMode = 'grid'"
+              >
+                <LayoutGrid class="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-7 w-7"
+                :class="viewMode === 'list' ? 'bg-muted' : 'text-muted-foreground'"
+                aria-label="List view"
+                title="List view"
+                @click="viewMode = 'list'"
+              >
+                <List class="h-4 w-4" />
+              </Button>
+            </div>
             <input
               ref="fileInputRef"
               type="file"
@@ -272,6 +298,49 @@ const acceptTypes = computed(() => {
             <Button variant="link" size="sm" @click="fileInputRef?.click()">
               Upload your first file
             </Button>
+          </div>
+
+          <div v-else-if="viewMode === 'list'" class="divide-y overflow-hidden rounded-lg border bg-background">
+            <div
+              v-for="file in files"
+              :key="file.key"
+              class="flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors hover:bg-muted/60"
+              :class="{ 'bg-primary/5': selectedFile?.key === file.key }"
+              @click="handleSelect(file)"
+            >
+              <div class="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
+                <NuxtImg
+                  v-if="isImage(file)"
+                  :src="file.url"
+                  :alt="file.filename"
+                  class="h-full w-full object-cover"
+                  width="80"
+                  height="80"
+                  loading="lazy"
+                  format="webp"
+                  quality="80"
+                />
+                <component :is="getFileIcon(file)" v-else class="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium" :title="file.filename">{{ file.filename }}</p>
+                <p class="text-xs text-muted-foreground">
+                  {{ file.category }} · {{ formatSize(file.size) }} · {{ formatDate(file.lastModified) }}
+                </p>
+              </div>
+              <Check v-if="selectedFile?.key === file.key" class="h-4 w-4 shrink-0 text-primary" />
+              <Button
+                v-if="!selectMode"
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 shrink-0"
+                :disabled="deleting"
+                :aria-label="`Delete ${file.filename}`"
+                @click.stop="confirmDelete(file)"
+              >
+                <Trash2 class="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
           </div>
 
           <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

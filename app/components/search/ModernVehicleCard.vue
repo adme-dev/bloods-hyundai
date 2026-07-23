@@ -191,15 +191,20 @@
 </template>
 
 <script setup lang="ts">
+import type { CardPromoPreview } from '~~/shared/stockCardPromo';
+
 interface Props {
   vehicle: any;
   viewMode?: 'grid' | 'list';
   disableLink?: boolean;
+  /** Admin-only: render this unsaved promo state instead of the saved settings. */
+  promoPreview?: CardPromoPreview | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   viewMode: 'grid',
   disableLink: false,
+  promoPreview: null,
 });
 
 // Need to resolve NuxtLink for dynamic component usage
@@ -431,13 +436,15 @@ const priceDisplay = computed(() => {
   return `$${numericPrice.value.toLocaleString()}`;
 });
 
-// Admin-managed stock card promotions (was/now, badge, comment, scroller)
+// Admin-managed stock card promotions (was/now, badge, comment, scroller).
+// A promoPreview prop (admin preview of unsaved edits) overrides the saved settings.
 const { settings: promoSettings, promoFor, scrollerFor } = useStockCardPromo();
-const promoOffer = computed(() => promoFor(props.vehicle));
-const cardScroller = computed(() => scrollerFor(props.vehicle));
+const promoFlags = computed(() => props.promoPreview ?? promoSettings.value);
+const promoOffer = computed(() => props.promoPreview ? props.promoPreview.offer : promoFor(props.vehicle));
+const cardScroller = computed(() => props.promoPreview ? props.promoPreview.scroller : scrollerFor(props.vehicle));
 
 const wasPriceDisplay = computed(() => {
-  if (!promoSettings.value?.wasNowEnabled) return '';
+  if (!promoFlags.value?.wasNowEnabled) return '';
   const wasPrice = promoOffer.value?.wasPrice;
   if (!wasPrice || !numericPrice.value || wasPrice <= numericPrice.value) return '';
   return `$${wasPrice.toLocaleString()}`;
@@ -450,23 +457,23 @@ const saveDisplay = computed(() => {
 });
 
 const promoBadge = computed(() => {
-  if (!promoSettings.value?.badgesEnabled) return null;
+  if (!promoFlags.value?.badgesEnabled) return null;
   const offer = promoOffer.value;
   if (!offer?.badgeText) return null;
   return { text: offer.badgeText, color: offer.badgeColor };
 });
 
 const marqueeText = computed(() => {
-  const settings = promoSettings.value;
-  if (!settings) return '';
-  if (settings.commentsEnabled && promoOffer.value?.comment) return promoOffer.value.comment;
+  const flags = promoFlags.value;
+  if (!flags) return '';
+  if (flags.commentsEnabled && promoOffer.value?.comment) return promoOffer.value.comment;
   return cardScroller.value?.text || '';
 });
 
 const marqueeColor = computed(() => {
-  const settings = promoSettings.value;
-  if (settings?.commentsEnabled && promoOffer.value?.comment) {
-    return promoOffer.value.badgeColor || cardScroller.value?.color || '#e11d48';
+  const flags = promoFlags.value;
+  if (flags?.commentsEnabled && promoOffer.value?.comment) {
+    return promoOffer.value.commentColor || promoOffer.value.badgeColor || cardScroller.value?.color || '#e11d48';
   }
   return cardScroller.value?.color || '#e11d48';
 });
