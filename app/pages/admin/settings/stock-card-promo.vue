@@ -158,9 +158,11 @@
                       <SelectContent>
                         <SelectItem v-if="banner.conditions.length > 1" :value="MULTI">{{ banner.conditions.map(conditionLabel).join(' + ') }}</SelectItem>
                         <SelectItem :value="ANY">Any condition</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="demo">Demo</SelectItem>
-                        <SelectItem value="used">Used</SelectItem>
+                        <SelectItem
+                          v-for="conditionOption in withSaved(conditionOptions(banner.make, banner.model, banner.variant), banner.conditions.length === 1 ? banner.conditions[0]! : '')"
+                          :key="conditionOption"
+                          :value="conditionOption"
+                        >{{ optionLabel(conditionOption, conditionOptions(banner.make, banner.model, banner.variant), conditionLabel) }}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -171,7 +173,11 @@
                       <SelectContent>
                         <SelectItem v-if="banner.fuelTypes.length > 1" :value="MULTI">{{ banner.fuelTypes.map(fuelTypeLabel).join(' + ') }}</SelectItem>
                         <SelectItem :value="ANY">Any fuel type</SelectItem>
-                        <SelectItem v-for="fuelOption in FUEL_TYPE_ORDER" :key="fuelOption" :value="fuelOption">{{ fuelTypeLabel(fuelOption) }}</SelectItem>
+                        <SelectItem
+                          v-for="fuelOption in withSaved(fuelOptions(banner.make, banner.model, banner.variant), banner.fuelTypes.length === 1 ? banner.fuelTypes[0]! : '')"
+                          :key="fuelOption"
+                          :value="fuelOption"
+                        >{{ optionLabel(fuelOption, fuelOptions(banner.make, banner.model, banner.variant), fuelTypeLabel) }}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -733,9 +739,11 @@
                     <SelectTrigger :id="`group-condition-${index}`" class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem :value="ANY">Any condition</SelectItem>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="demo">Demo</SelectItem>
-                      <SelectItem value="used">Used</SelectItem>
+                      <SelectItem
+                        v-for="conditionOption in withSaved(conditionOptions(group.make, group.model, group.variant), group.condition)"
+                        :key="conditionOption"
+                        :value="conditionOption"
+                      >{{ optionLabel(conditionOption, conditionOptions(group.make, group.model, group.variant), conditionLabel) }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -745,7 +753,11 @@
                     <SelectTrigger :id="`group-fuel-${index}`" class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem :value="ANY">Any fuel type</SelectItem>
-                      <SelectItem v-for="fuelOption in FUEL_TYPE_ORDER" :key="fuelOption" :value="fuelOption">{{ fuelTypeLabel(fuelOption) }}</SelectItem>
+                      <SelectItem
+                        v-for="fuelOption in withSaved(fuelOptions(group.make, group.model, group.variant), group.fuelType)"
+                        :key="fuelOption"
+                        :value="fuelOption"
+                      >{{ optionLabel(fuelOption, fuelOptions(group.make, group.model, group.variant), fuelTypeLabel) }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -871,6 +883,7 @@ import {
   STOCK_CARD_PROMO_MAX_SCROLLERS,
   STOCK_CARD_PROMO_MIN_INTERVAL,
   isPromoWindowActive,
+  normalizeCondition,
   normalizeFuelType,
   promoNow,
   resolveCardPromo,
@@ -880,6 +893,7 @@ import {
   type PromoFuelType,
   type StockCardPromoSettings,
 } from '~~/shared/stockCardPromo';
+import { invalidateStockCardPromoCache } from '~/composables/useStockCardPromo';
 import ModernVehicleCard from '~/components/search/ModernVehicleCard.vue';
 import BannerMarqueePreview from '~/components/admin/settings/BannerMarqueePreview.vue';
 import AdminColorField from '~/components/admin/settings/AdminColorField.vue';
@@ -903,6 +917,7 @@ const ANY = '__any__';
 const MULTI = '__multi__';
 
 const FUEL_TYPE_ORDER = ['petrol', 'diesel', 'hybrid', 'electric'] as const;
+const CONDITION_ORDER = ['new', 'demo', 'used'] as const;
 
 const CHIP_BASE = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider';
 const CHIP_LIVE = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
@@ -1318,6 +1333,56 @@ function variantOptions(make: string, model: string) {
   );
 }
 
+/**
+ * Vehicles left after the target's other filters are applied. Fuel and
+ * condition options are built from this so the dropdowns can only offer
+ * combinations that actually match stock — picking "Hybrid" when the feed
+ * has no hybrids silently matched zero cars.
+ */
+function narrowedStock(make: string, model: string, variant: string) {
+  const same = (wanted: string, actual: string) =>
+    !wanted || wanted.toLowerCase() === (actual || '').toLowerCase();
+
+  return stockOptions.value.filter((option) =>
+    same(make, fieldValue(option.vehicle?.make))
+    && same(model, fieldValue(option.vehicle?.model))
+    && same(variant, fieldValue(option.vehicle?.badge) || fieldValue(option.vehicle?.variant)));
+}
+
+/** Fuel buckets present in the narrowed stock, in the canonical display order. */
+function fuelOptions(make: string, model: string, variant: string) {
+  const present = new Set(
+    narrowedStock(make, model, variant)
+      .map((option) => normalizeFuelType(fieldValue(option.vehicle?.fuel)))
+      .filter(Boolean),
+  );
+  return FUEL_TYPE_ORDER.filter((fuel) => present.has(fuel));
+}
+
+/** Conditions present in the narrowed stock, in the canonical display order. */
+function conditionOptions(make: string, model: string, variant: string) {
+  const present = new Set(
+    narrowedStock(make, model, variant)
+      .map((option) => normalizeCondition(fieldValue(option.vehicle?.condition)))
+      .filter(Boolean),
+  );
+  return CONDITION_ORDER.filter((condition) => present.has(condition));
+}
+
+/**
+ * Keeps an already-saved selection in its dropdown even once no stock matches
+ * it, so an existing rule shows "Hybrid (no stock)" rather than rendering blank
+ * and looking unset. Only the saved value is added back — it stays unpickable
+ * again once cleared.
+ */
+function withSaved(options: readonly string[], saved: string) {
+  return saved && !options.includes(saved) ? [...options, saved] : [...options];
+}
+
+function optionLabel(option: string, options: readonly string[], label: (value: string) => string) {
+  return options.includes(option) ? label(option) : `${label(option)} (no stock)`;
+}
+
 function uniqueSorted(values: string[]) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
@@ -1679,6 +1744,9 @@ async function saveSettings() {
       { method: 'PUT', body: toPayload() },
     );
     form.value = toForm(response.settings);
+    // The server cache is cleared by the PUT; drop the client payload too so
+    // the stock pages pick the change up on the next view, not after the TTL.
+    invalidateStockCardPromoCache();
     toast.success(response.message);
   } catch (error: any) {
     saveErrors.value = Array.isArray(error?.data?.data?.errors)

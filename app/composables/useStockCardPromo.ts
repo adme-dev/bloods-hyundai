@@ -9,6 +9,25 @@ import {
 
 type PromoResponse = { success: boolean; settings: StockCardPromoSettings };
 
+/**
+ * How long a fetched settings payload may be reused for client-side
+ * navigations before it is refetched. Short enough that a promotion saved in
+ * the admin shows up on the next page view, long enough that browsing the
+ * stock grid doesn't refetch on every card render.
+ */
+const PROMO_CACHE_TTL_MS = 60_000;
+
+/** Fetch timestamps per tenant cache key, for the TTL check above. */
+const promoFetchedAt = new Map<string, number>();
+
+/**
+ * Drops the client-side payload so the next read refetches. Call after saving
+ * in the admin, where waiting out the TTL would look like the save failed.
+ */
+export function invalidateStockCardPromoCache() {
+  promoFetchedAt.clear();
+}
+
 export type PromoGridItem =
   | { type: 'vehicle'; key: string; vehicle: any }
   | { type: 'graphic'; key: string; graphic: StockPromoGraphic };
@@ -26,12 +45,24 @@ export function useStockCardPromo() {
     key,
     () => $fetch<PromoResponse>('/api/stock-card-promo-settings'),
     {
-      getCachedData: (cacheKey, nuxtApp) => nuxtApp.payload.data[cacheKey] || nuxtApp.static.data[cacheKey],
+      // Reuse the payload only while it is fresh. Returning it unconditionally
+      // pinned the settings for the whole SPA session, so a banner saved in the
+      // admin never appeared on /car-sales without a full page reload.
+      getCachedData: (cacheKey, nuxtApp) => {
+        const cached = nuxtApp.payload.data[cacheKey] || nuxtApp.static.data[cacheKey];
+        if (!cached) return undefined;
+        const fetchedAt = promoFetchedAt.get(cacheKey);
+        return fetchedAt && Date.now() - fetchedAt < PROMO_CACHE_TTL_MS ? cached : undefined;
+      },
       server: false,
       lazy: true,
       default: () => null,
     },
   );
+
+  watch(data, (value) => {
+    if (value) promoFetchedAt.set(key, Date.now());
+  }, { immediate: true });
 
   const settings = computed<StockCardPromoSettings | null>(() => data.value?.settings ?? null);
 

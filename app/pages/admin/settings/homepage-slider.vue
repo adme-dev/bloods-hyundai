@@ -84,6 +84,7 @@
           :disabled="saving"
           @update:slide="updateSlide(index, $event)"
           @choose-image="chooseImage(index, $event)"
+          @crop-image="cropImage(index, $event)"
           @move="moveSlide(index, $event)"
           @remove="removeSlide(index)"
         />
@@ -120,6 +121,14 @@
       :allowed-types="acceptedImageTypes"
       @select="selectMedia"
     />
+
+    <ImageCropDialog
+      v-if="cropTarget"
+      v-model:open="cropDialogOpen"
+      :src="cropSource"
+      :variant="cropTarget.field"
+      @cropped="applyCrop"
+    />
   </div>
 </template>
 
@@ -144,6 +153,7 @@ import {
   type HomepageSliderSettings,
 } from '~~/shared/homepageSlider';
 import HomepageSlideEditor from '~/components/admin/settings/HomepageSlideEditor.vue';
+import ImageCropDialog from '~/components/admin/settings/ImageCropDialog.vue';
 import MediaLibraryDialog from '~/components/media/MediaLibraryDialog.vue';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
@@ -181,6 +191,9 @@ const saving = ref(false);
 const saveErrors = ref<string[]>([]);
 const mediaLibraryOpen = ref(false);
 const imageTarget = ref<ImageTarget | null>(null);
+const cropDialogOpen = ref(false);
+const cropTarget = ref<ImageTarget | null>(null);
+const cropSource = ref('');
 
 const enabledSlides = computed(() => slides.value.filter((slide) => slide.enabled));
 const enabledSlideCount = computed(() => enabledSlides.value.length);
@@ -265,6 +278,29 @@ function removeSlide(index: number) {
 function chooseImage(index: number, field: 'desktop' | 'mobile') {
   imageTarget.value = { index, field };
   mediaLibraryOpen.value = true;
+}
+
+function cropImage(index: number, field: 'desktop' | 'mobile') {
+  const source = slides.value[index]?.[field];
+  if (!source) return;
+  cropTarget.value = { index, field };
+  cropSource.value = source;
+  cropDialogOpen.value = true;
+}
+
+/**
+ * The dialog uploads the cropped file itself and hands back its URL, so this
+ * only has to point the slide at the new image. The original stays in the
+ * media library untouched, making the crop repeatable from the source.
+ */
+function applyCrop(url: string) {
+  const target = cropTarget.value;
+  const slide = target ? slides.value[target.index] : null;
+  if (!target || !slide) return;
+  const next = { ...slide, [target.field]: url };
+  if (target.field === 'mobile') next.tablet = url;
+  slides.value[target.index] = next;
+  cropTarget.value = null;
 }
 
 function selectMedia(file: MediaFile) {
