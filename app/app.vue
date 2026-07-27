@@ -14,6 +14,7 @@
 <script setup lang="ts">
 import { runWhenIdleOrInteraction } from '~/utils/deferThirdParty';
 import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
+import { isSiteConfigFresh, markSiteConfigFetched } from '~/utils/siteConfigFreshness';
 
 // Stores are auto-imported from /stores directory
 // Initialize stores and fetch initial data
@@ -105,11 +106,19 @@ const { data: siteConfigData } = await useFetch<{ config: any }>('/api/site-conf
   key: computed(() => shouldRefreshSiteConfig.value ? `${siteConfigCacheKey}:refresh` : siteConfigCacheKey),
   query: computed(() => shouldRefreshSiteConfig.value ? { refresh: 'true' } : {}),
   dedupe: 'defer',
+  // Reuse the payload only while it is fresh. Returning it unconditionally
+  // pinned the config — and so the homepage sliders — for the whole SPA
+  // session, so newly published slides only appeared after a hard reload.
   getCachedData: (key, nuxtApp) => {
     if (shouldRefreshSiteConfig.value) return undefined;
-    return nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+    const cached = nuxtApp.payload.data[key] || nuxtApp.static.data[key];
+    return isSiteConfigFresh(key, cached) ? cached : undefined;
   },
 });
+
+watch(siteConfigData, (value) => {
+  if (value) markSiteConfigFetched(siteConfigCacheKey);
+}, { immediate: true });
 
 // Populate Pinia store with site config from SSR data
 if (siteConfigData.value?.config) {

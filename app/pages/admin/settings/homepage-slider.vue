@@ -146,6 +146,8 @@ import {
 } from 'lucide-vue-next';
 import type { FrontSlide } from '~/utils/frontSlides';
 import { getConfiguredFrontSlides } from '~/utils/frontSlides';
+import { invalidateSiteConfigCache } from '~/utils/siteConfigFreshness';
+import { refreshDealerConfig } from '~/composables/useDealerConfig';
 import { isDateInRangeAt } from '~/utils/date';
 import {
   HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS,
@@ -322,6 +324,13 @@ async function saveSettings() {
       { method: 'PUT', body: { enabled: true, slides: slides.value } },
     );
     slides.value = response.settings.slides.map(toEditorSlide);
+
+    // The PUT clears the server cache; also drop the client payload and warm
+    // a fresh one so the new slides are live on the site immediately rather
+    // than after the client TTL expires.
+    invalidateSiteConfigCache();
+    await refreshDealerConfig().catch(() => { /* the save already succeeded */ });
+
     toast.success(response.message);
   } catch (error: any) {
     saveErrors.value = Array.isArray(error?.data?.data?.errors)
