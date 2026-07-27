@@ -55,20 +55,25 @@ describe('FrontSlider component', () => {
 describe('front slider banner framing', () => {
   const component = () => readFileSync('app/components/page-elements/FrontSlider.vue', 'utf8');
 
-  // The banner is supplied at the exact slide ratio, so a forced 2.2/1 box with
-  // object-fit: cover trimmed the edges off every image the dealer uploaded.
-  it('shows the banner at its natural ratio, full width and uncropped', () => {
+  // Any fixed ratio forces artwork into a box it was not made for: the old
+  // 2.2/1 + object-fit: cover cropped every 1920x720 banner, and hardcoding
+  // 1920/720 would do the same to a slide of any other size.
+  it('renders the banner at the uploaded image\'s own dimensions', () => {
     const source = component();
+    const start = source.indexOf('\n.slide-image {');
+    const slideImage = source.slice(start, source.indexOf('}', start));
 
-    assert.match(source, /aspect-ratio: 1920 \/ 720/);
-    assert.match(source, /object-fit: contain/);
-    assert.doesNotMatch(source, /aspect-ratio: 2\.2 \/ 1/);
+    assert.match(slideImage, /width: 100%/);
+    assert.match(slideImage, /height: auto/);
+    assert.doesNotMatch(slideImage, /aspect-ratio/);
+    assert.doesNotMatch(slideImage, /object-fit/);
   });
 
-  it('requests mobile artwork at the square crop the admin exports', () => {
-    const source = component();
+  it('does not pin the slide image to fixed width/height attributes', () => {
+    const template = component().split('<script')[0];
+    const img = template.slice(template.indexOf('<img'), template.indexOf('</picture>'));
 
-    assert.match(source, /optimizedSlideImage\(slide\.mobile, 1080, 1080\)/);
-    assert.doesNotMatch(source, /optimizedSlideImage\(slide\.mobile, 767, 975\)/);
+    assert.doesNotMatch(img, /\bwidth="\d+"/);
+    assert.doesNotMatch(img, /\bheight="\d+"/);
   });
 });
