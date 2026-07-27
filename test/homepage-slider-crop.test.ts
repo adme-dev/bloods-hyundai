@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { CROP_TARGETS, cropTargetLabel } from '../app/utils/imageCrop';
+import {
+  CROP_MAX_DIMENSION,
+  CROP_MIN_DIMENSION,
+  CROP_TARGETS,
+  cropTargetLabel,
+  normalizeCropDimension,
+} from '../app/utils/imageCrop';
 
 describe('homepage slider crop targets', () => {
   it('exports desktop slides at 1920 × 720 and mobile at a square', () => {
@@ -137,5 +143,50 @@ describe('media proxy endpoint', () => {
   it('refuses non-images and oversized payloads', () => {
     assert.match(proxy(), /ALLOWED_CONTENT_TYPES\.has\(contentType\)/);
     assert.match(proxy(), /MAX_IMAGE_BYTES/);
+  });
+});
+
+describe('custom crop sizes', () => {
+  it('offers a default for every croppable slot', () => {
+    for (const key of ['desktop', 'mobile', 'headerDesktop', 'headerMobile'] as const) {
+      const size = CROP_TARGETS[key];
+      assert.ok(size.width >= CROP_MIN_DIMENSION && size.width <= CROP_MAX_DIMENSION);
+      assert.ok(size.height >= CROP_MIN_DIMENSION && size.height <= CROP_MAX_DIMENSION);
+    }
+  });
+
+  it('falls back to the slot default for unusable input', () => {
+    for (const bad of ['', null, undefined, 'abc', NaN]) {
+      assert.equal(normalizeCropDimension(bad, 720), 720);
+    }
+  });
+
+  it('clamps hand-entered sizes into an exportable range', () => {
+    assert.equal(normalizeCropDimension(0, 720), CROP_MIN_DIMENSION);
+    assert.equal(normalizeCropDimension(-50, 720), CROP_MIN_DIMENSION);
+    assert.equal(normalizeCropDimension(99999, 720), CROP_MAX_DIMENSION);
+    assert.equal(normalizeCropDimension('800', 720), 800);
+    assert.equal(normalizeCropDimension(1080.4, 720), 1080);
+  });
+});
+
+describe('crop tool reach', () => {
+  const promo = () => readFileSync('app/pages/admin/settings/stock-card-promo.vue', 'utf8');
+  const dialog = () => readFileSync('app/components/admin/settings/ImageCropDialog.vue', 'utf8');
+
+  it('offers cropping on the stock page header and promo graphics', () => {
+    const source = promo();
+    assert.match(source, /cropImage\(form\.stockHeader\.desktop, 'headerDesktop'/);
+    assert.match(source, /cropImage\(form\.stockHeader\.mobile, 'headerMobile'/);
+    assert.match(source, /cropImage\(graphic\.image, 'desktop'/);
+    assert.match(source, /<ImageCropDialog/);
+  });
+
+  it('lets the export size be edited rather than fixing it', () => {
+    const source = dialog();
+    assert.match(source, /const target = ref<CropSize>/);
+    assert.match(source, /setSize\('width'/);
+    assert.match(source, /setSize\('height'/);
+    assert.match(source, /CROP_PRESETS/);
   });
 });

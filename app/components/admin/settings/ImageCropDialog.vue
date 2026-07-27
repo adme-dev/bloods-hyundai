@@ -5,7 +5,8 @@
         <DialogTitle>Crop {{ variantLabel }} image</DialogTitle>
         <DialogDescription>
           Drag to reposition and use the zoom slider to frame the shot. The exported image is
-          always {{ target.width }} × {{ target.height }} px.
+          {{ target.width }} × {{ target.height }} px — change the size below to crop to any
+          dimensions you need.
         </DialogDescription>
       </DialogHeader>
 
@@ -35,6 +36,59 @@
           <!-- Rule-of-thirds guides, purely visual. -->
           <div class="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3">
             <div v-for="cell in 9" :key="cell" class="border border-white/20" />
+          </div>
+        </div>
+
+        <!-- Export size. The frame follows these numbers, so the preview above
+             always shows exactly what will be produced. -->
+        <div class="space-y-2">
+          <Label>Export size</Label>
+          <div class="flex flex-wrap items-end gap-2">
+            <div class="space-y-1">
+              <Label :for="`${zoomId}-w`" class="text-xs font-normal text-muted-foreground">Width</Label>
+              <Input
+                :id="`${zoomId}-w`"
+                :model-value="target.width"
+                type="number"
+                inputmode="numeric"
+                :min="CROP_MIN_DIMENSION"
+                :max="CROP_MAX_DIMENSION"
+                class="w-28"
+                :disabled="working"
+                @update:model-value="setSize('width', $event)"
+              />
+            </div>
+            <span class="pb-2 text-muted-foreground">×</span>
+            <div class="space-y-1">
+              <Label :for="`${zoomId}-h`" class="text-xs font-normal text-muted-foreground">Height</Label>
+              <Input
+                :id="`${zoomId}-h`"
+                :model-value="target.height"
+                type="number"
+                inputmode="numeric"
+                :min="CROP_MIN_DIMENSION"
+                :max="CROP_MAX_DIMENSION"
+                class="w-28"
+                :disabled="working"
+                @update:model-value="setSize('height', $event)"
+              />
+            </div>
+            <span class="pb-2 text-xs text-muted-foreground">px</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <Button
+              v-for="preset in CROP_PRESETS"
+              :key="preset.label"
+              type="button"
+              variant="outline"
+              size="sm"
+              class="h-7 text-xs"
+              :class="{ 'border-primary text-primary': isCurrentSize(preset.size) }"
+              :disabled="working"
+              @click="applyPreset(preset.size)"
+            >
+              {{ preset.label }}
+            </Button>
           </div>
         </div>
 
@@ -77,8 +131,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { AlertTriangle, Loader2 } from 'lucide-vue-next';
-import { CROP_TARGETS, type CropVariant } from '~/utils/imageCrop';
+import {
+  CROP_MAX_DIMENSION,
+  CROP_MIN_DIMENSION,
+  CROP_PRESETS,
+  CROP_TARGETS,
+  normalizeCropDimension,
+  type CropSize,
+  type CropVariant,
+} from '~/utils/imageCrop';
 import { Button } from '~/components/ui/button';
+import { Input } from '~/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -110,8 +173,36 @@ const isOpen = computed({
   set: (value) => emit('update:open', value),
 });
 
-const target = computed(() => CROP_TARGETS[props.variant]);
-const variantLabel = computed(() => (props.variant === 'desktop' ? 'desktop' : 'mobile'));
+/**
+ * Export size, seeded from the slot's default but freely editable so a dealer
+ * can crop to whatever the placement needs.
+ */
+const target = ref<CropSize>({ ...CROP_TARGETS[props.variant] });
+
+const variantLabel = computed(() => (props.variant.toLowerCase().includes('mobile') ? 'mobile' : 'desktop'));
+
+function isCurrentSize(size: CropSize) {
+  return target.value.width === size.width && target.value.height === size.height;
+}
+
+function setSize(axis: 'width' | 'height', value: unknown) {
+  target.value = {
+    ...target.value,
+    [axis]: normalizeCropDimension(value, CROP_TARGETS[props.variant][axis]),
+  };
+}
+
+function applyPreset(size: CropSize) {
+  target.value = { ...size };
+}
+
+// Changing the export size changes the frame, so re-fit the image to it.
+watch(target, async () => {
+  if (!naturalWidth.value) return;
+  await measureStage();
+  zoom.value = Math.max(minZoom.value, zoom.value);
+  offset.value = clamp(offset.value);
+}, { deep: true });
 
 const objectUrl = ref('');
 const naturalWidth = ref(0);
@@ -141,7 +232,10 @@ const imageStyle = computed(() => ({
 }));
 
 watch(() => [props.open, props.src] as const, ([open]) => {
-  if (open && props.src) void loadImage();
+  if (!open || !props.src) return;
+  // Reopening starts from the slot's default rather than the last size used.
+  target.value = { ...CROP_TARGETS[props.variant] };
+  void loadImage();
 }, { immediate: true });
 
 async function loadImage() {

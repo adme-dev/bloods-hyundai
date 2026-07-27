@@ -251,9 +251,22 @@
                   <span>No image</span>
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'header', field: 'desktop' })">
-                <Upload class="mr-2 h-4 w-4" /> Choose from media library
-              </Button>
+              <div class="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'header', field: 'desktop' })">
+                  <Upload class="mr-2 h-4 w-4" /> Choose from media library
+                </Button>
+                <Button
+                  v-if="form.stockHeader.desktop"
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="shrink-0"
+                  :disabled="saving"
+                  @click="cropImage(form.stockHeader.desktop, 'headerDesktop', (url) => { form.stockHeader.desktop = url; })"
+                >
+                  <Crop class="mr-2 h-4 w-4" /> Crop
+                </Button>
+              </div>
             </div>
             <div class="space-y-2">
               <Label>Mobile image (optional)</Label>
@@ -275,6 +288,17 @@
               <div class="flex items-center gap-2">
                 <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'header', field: 'mobile' })">
                   <Upload class="mr-2 h-4 w-4" /> Choose from media library
+                </Button>
+                <Button
+                  v-if="form.stockHeader.mobile"
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="shrink-0"
+                  :disabled="saving"
+                  @click="cropImage(form.stockHeader.mobile, 'headerMobile', (url) => { form.stockHeader.mobile = url; })"
+                >
+                  <Crop class="mr-2 h-4 w-4" /> Crop
                 </Button>
                 <Button
                   v-if="form.stockHeader.mobile"
@@ -402,9 +426,22 @@
                     <span>No image</span>
                   </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'graphic', index, field: 'image' })">
-                  <Upload class="mr-2 h-4 w-4" /> Choose from media library
-                </Button>
+                <div class="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'graphic', index, field: 'image' })">
+                    <Upload class="mr-2 h-4 w-4" /> Choose from media library
+                  </Button>
+                  <Button
+                    v-if="graphic.image"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0"
+                    :disabled="saving"
+                    @click="cropImage(graphic.image, 'desktop', (url) => { graphic.image = url; })"
+                  >
+                    <Crop class="mr-2 h-4 w-4" /> Crop
+                  </Button>
+                </div>
               </div>
               <div class="grid content-start gap-4 md:grid-cols-2">
                 <div class="space-y-2">
@@ -839,6 +876,13 @@
       @select="selectMedia"
     />
 
+    <ImageCropDialog
+      v-model:open="cropDialogOpen"
+      :src="cropSource"
+      :variant="cropVariant"
+      @cropped="onCropped"
+    />
+
     <Dialog :open="!!imagePreview" @update:open="imagePreview = null">
       <DialogContent class="sm:max-w-4xl">
         <DialogHeader>
@@ -862,6 +906,7 @@ import {
   ArrowDown,
   ArrowUp,
   Car,
+  Crop,
   ExternalLink,
   Images,
   Info,
@@ -894,6 +939,8 @@ import {
   type StockCardPromoSettings,
 } from '~~/shared/stockCardPromo';
 import { invalidateStockCardPromoCache } from '~/composables/useStockCardPromo';
+import { type CropVariant } from '~/utils/imageCrop';
+import ImageCropDialog from '~/components/admin/settings/ImageCropDialog.vue';
 import ModernVehicleCard from '~/components/search/ModernVehicleCard.vue';
 import BannerMarqueePreview from '~/components/admin/settings/BannerMarqueePreview.vue';
 import AdminColorField from '~/components/admin/settings/AdminColorField.vue';
@@ -1047,6 +1094,10 @@ const saving = ref(false);
 const saveErrors = ref<string[]>([]);
 const mediaLibraryOpen = ref(false);
 const imageTarget = ref<ImageTarget | null>(null);
+const cropDialogOpen = ref(false);
+const cropSource = ref('');
+const cropVariant = ref<CropVariant>('headerDesktop');
+const cropApply = ref<((url: string) => void) | null>(null);
 const imagePreview = ref<{ url: string; alt: string } | null>(null);
 const pickerOpen = ref(false);
 const pickerTarget = ref<PickerTarget | null>(null);
@@ -1665,6 +1716,25 @@ function onVehiclePicked(option: StockPickerOption) {
 function chooseImage(target: ImageTarget) {
   imageTarget.value = target;
   mediaLibraryOpen.value = true;
+}
+
+/**
+ * Opens the crop dialog for an already-chosen image. The caller supplies the
+ * setter so this works for any slot (header, graphic) without the dialog
+ * needing to know the form shape. The variant only seeds the default export
+ * size — it stays editable in the dialog.
+ */
+function cropImage(src: string, variant: CropVariant, apply: (url: string) => void) {
+  if (!src) return;
+  cropSource.value = src;
+  cropVariant.value = variant;
+  cropApply.value = apply;
+  cropDialogOpen.value = true;
+}
+
+function onCropped(url: string) {
+  cropApply.value?.(url);
+  cropApply.value = null;
 }
 
 function selectMedia(file: MediaFile) {
