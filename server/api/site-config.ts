@@ -48,8 +48,12 @@ interface DealerRow {
   settings?: Record<string, any> | null;
 }
 
-const CACHE_MAX_AGE = 60 * 10; // 10 minutes
-const CACHE_STALE_MAX_AGE = 60 * 30; // Serve stale for 30 minutes while revalidating
+// The homepage web slides come from this config, and dealers expect a slide
+// published in DriveAgent to appear straight away. The upstream CDN copy is
+// itself only cached for 180s, so holding it here for 10 minutes (plus a
+// 30-minute stale window) was the dominant source of delay.
+const CACHE_MAX_AGE = 60; // 1 minute
+const CACHE_STALE_MAX_AGE = 60 * 5; // Serve stale for 5 minutes while revalidating
 
 function loadLocalFallback(dealerSlug?: string): SiteConfig | null {
   try {

@@ -69,12 +69,31 @@ export function getDocumentCacheHeaders(path: string): HeaderMap {
     };
   }
 
+  // The homepage carries the promotional web slides, which the dealer expects
+  // live the moment they publish in DriveAgent. A 5-minute edge cache with an
+  // hour-long stale window meant a new slide could take up to an hour to
+  // appear, so this route is served uncached.
+  if (isSlideBearingRoute(path)) {
+    return {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Netlify-CDN-Cache-Control': 'no-store',
+      'CDN-Cache-Control': 'no-store',
+      Vary: 'Accept, Accept-Encoding',
+    };
+  }
+
   return {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     'Netlify-CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
     'CDN-Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
     Vary: 'Accept, Accept-Encoding',
   };
+}
+
+/** Routes rendering the homepage web slides. */
+function isSlideBearingRoute(path: string): boolean {
+  const normalized = (path || '/').split('?')[0]!.replace(/\/+$/, '') || '/';
+  return normalized === '/';
 }
 
 export function buildDealerSchema(input: DealerSchemaInput) {

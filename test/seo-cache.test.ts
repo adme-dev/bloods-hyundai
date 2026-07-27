@@ -10,11 +10,23 @@ import {
 
 describe('SEO and cache helpers', () => {
   it('prevents browser storage while allowing short CDN caching for public document routes', () => {
-    const headers = getDocumentCacheHeaders('/');
+    const headers = getDocumentCacheHeaders('/car-sales');
 
     assert.equal(headers['Cache-Control'], 'no-cache, no-store, must-revalidate');
     assert.match(headers['Netlify-CDN-Cache-Control'], /max-age=300/);
     assert.match(headers['CDN-Cache-Control'], /stale-while-revalidate=3600/);
+  });
+
+  // The homepage renders the promotional web slides, which must go live the
+  // moment they are published rather than after the edge cache expires.
+  it('serves the slide-bearing homepage uncached at the edge', () => {
+    for (const path of ['/', '', '/?utm_source=x']) {
+      const headers = getDocumentCacheHeaders(path);
+
+      assert.equal(headers['Cache-Control'], 'no-cache, no-store, must-revalidate');
+      assert.equal(headers['Netlify-CDN-Cache-Control'], 'no-store', `edge cache for "${path}"`);
+      assert.equal(headers['CDN-Cache-Control'], 'no-store', `edge cache for "${path}"`);
+    }
   });
 
   it('keeps private and user-specific document routes out of caches', () => {
