@@ -652,7 +652,7 @@ export function normalizeFuelType(value: unknown): '' | PromoFuelType {
   return '';
 }
 
-function normalizeCondition(value: unknown): StockGroupRule['condition'] {
+export function normalizeCondition(value: unknown): StockGroupRule['condition'] {
   const condition = stringValue(value).toLowerCase();
   if (condition.includes('demo')) return 'demo';
   if (condition.includes('new')) return 'new';

@@ -183,3 +183,58 @@ describe('homepage slider settings API wiring', () => {
     assert.match(api, /invalidateNitroFunctionCache/);
   });
 });
+
+describe('falling back to upstream DriveAgent slides', () => {
+  const upstream = () => ({
+    promotional: [{
+      slides: [{ desktop: 'https://driveagentmedia.b-cdn.net/driveagent-slide.jpg' }],
+      thumbs: [{ image: 'https://driveagentmedia.b-cdn.net/thumb.jpg' }],
+    }],
+  });
+
+  // An empty local slider used to win and blank the hero, leaving no way to
+  // hand the slider back to DriveAgent short of a database edit.
+  it('keeps upstream slides when the local slider has none enabled', () => {
+    const settings = readHomepageSliderSettings({
+      homepageSlider: {
+        version: 1,
+        updatedAt: '2026-07-27T01:00:00.000Z',
+        slides: [{ ...validSlide, enabled: false }],
+      },
+    });
+
+    const result = applyHomepageSliderOverride(upstream(), settings);
+    const promotional = result.promotional as Array<Record<string, unknown>>;
+
+    assert.equal(promotional[0]?.homepageSliderManaged, undefined);
+    assert.deepEqual(
+      promotional[0]?.slides,
+      [{ desktop: 'https://driveagentmedia.b-cdn.net/driveagent-slide.jpg' }],
+    );
+  });
+
+  it('keeps upstream slides when the local slider is empty', () => {
+    const settings = readHomepageSliderSettings({
+      homepageSlider: { version: 1, updatedAt: '2026-07-27T01:00:00.000Z', slides: [] },
+    });
+
+    const result = applyHomepageSliderOverride(upstream(), settings);
+    const promotional = result.promotional as Array<Record<string, unknown>>;
+    assert.equal(promotional[0]?.homepageSliderManaged, undefined);
+  });
+
+  it('still lets a configured dashboard slider win', () => {
+    const settings = readHomepageSliderSettings({
+      homepageSlider: {
+        version: 1,
+        updatedAt: '2026-07-27T01:00:00.000Z',
+        slides: [validSlide],
+      },
+    });
+
+    const result = applyHomepageSliderOverride(upstream(), settings);
+    const promotional = result.promotional as Array<Record<string, unknown>>;
+    assert.equal(promotional[0]?.homepageSliderManaged, true);
+    assert.equal((promotional[0]?.slides as unknown[]).length, 1);
+  });
+});

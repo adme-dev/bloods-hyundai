@@ -158,9 +158,11 @@
                       <SelectContent>
                         <SelectItem v-if="banner.conditions.length > 1" :value="MULTI">{{ banner.conditions.map(conditionLabel).join(' + ') }}</SelectItem>
                         <SelectItem :value="ANY">Any condition</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="demo">Demo</SelectItem>
-                        <SelectItem value="used">Used</SelectItem>
+                        <SelectItem
+                          v-for="conditionOption in withSaved(conditionOptions(banner.make, banner.model, banner.variant), banner.conditions.length === 1 ? banner.conditions[0]! : '')"
+                          :key="conditionOption"
+                          :value="conditionOption"
+                        >{{ optionLabel(conditionOption, conditionOptions(banner.make, banner.model, banner.variant), conditionLabel) }}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -171,7 +173,11 @@
                       <SelectContent>
                         <SelectItem v-if="banner.fuelTypes.length > 1" :value="MULTI">{{ banner.fuelTypes.map(fuelTypeLabel).join(' + ') }}</SelectItem>
                         <SelectItem :value="ANY">Any fuel type</SelectItem>
-                        <SelectItem v-for="fuelOption in FUEL_TYPE_ORDER" :key="fuelOption" :value="fuelOption">{{ fuelTypeLabel(fuelOption) }}</SelectItem>
+                        <SelectItem
+                          v-for="fuelOption in withSaved(fuelOptions(banner.make, banner.model, banner.variant), banner.fuelTypes.length === 1 ? banner.fuelTypes[0]! : '')"
+                          :key="fuelOption"
+                          :value="fuelOption"
+                        >{{ optionLabel(fuelOption, fuelOptions(banner.make, banner.model, banner.variant), fuelTypeLabel) }}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -245,9 +251,22 @@
                   <span>No image</span>
                 </div>
               </div>
-              <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'header', field: 'desktop' })">
-                <Upload class="mr-2 h-4 w-4" /> Choose from media library
-              </Button>
+              <div class="flex items-center gap-2">
+                <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'header', field: 'desktop' })">
+                  <Upload class="mr-2 h-4 w-4" /> Choose from media library
+                </Button>
+                <Button
+                  v-if="form.stockHeader.desktop"
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="shrink-0"
+                  :disabled="saving"
+                  @click="cropImage(form.stockHeader.desktop, 'headerDesktop', (url) => { form.stockHeader.desktop = url; })"
+                >
+                  <Crop class="mr-2 h-4 w-4" /> Crop
+                </Button>
+              </div>
             </div>
             <div class="space-y-2">
               <Label>Mobile image (optional)</Label>
@@ -269,6 +288,17 @@
               <div class="flex items-center gap-2">
                 <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'header', field: 'mobile' })">
                   <Upload class="mr-2 h-4 w-4" /> Choose from media library
+                </Button>
+                <Button
+                  v-if="form.stockHeader.mobile"
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="shrink-0"
+                  :disabled="saving"
+                  @click="cropImage(form.stockHeader.mobile, 'headerMobile', (url) => { form.stockHeader.mobile = url; })"
+                >
+                  <Crop class="mr-2 h-4 w-4" /> Crop
                 </Button>
                 <Button
                   v-if="form.stockHeader.mobile"
@@ -396,9 +426,22 @@
                     <span>No image</span>
                   </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'graphic', index, field: 'image' })">
-                  <Upload class="mr-2 h-4 w-4" /> Choose from media library
-                </Button>
+                <div class="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" class="w-full" :disabled="saving" @click="chooseImage({ kind: 'graphic', index, field: 'image' })">
+                    <Upload class="mr-2 h-4 w-4" /> Choose from media library
+                  </Button>
+                  <Button
+                    v-if="graphic.image"
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="shrink-0"
+                    :disabled="saving"
+                    @click="cropImage(graphic.image, 'desktop', (url) => { graphic.image = url; })"
+                  >
+                    <Crop class="mr-2 h-4 w-4" /> Crop
+                  </Button>
+                </div>
               </div>
               <div class="grid content-start gap-4 md:grid-cols-2">
                 <div class="space-y-2">
@@ -733,9 +776,11 @@
                     <SelectTrigger :id="`group-condition-${index}`" class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem :value="ANY">Any condition</SelectItem>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="demo">Demo</SelectItem>
-                      <SelectItem value="used">Used</SelectItem>
+                      <SelectItem
+                        v-for="conditionOption in withSaved(conditionOptions(group.make, group.model, group.variant), group.condition)"
+                        :key="conditionOption"
+                        :value="conditionOption"
+                      >{{ optionLabel(conditionOption, conditionOptions(group.make, group.model, group.variant), conditionLabel) }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -745,7 +790,11 @@
                     <SelectTrigger :id="`group-fuel-${index}`" class="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem :value="ANY">Any fuel type</SelectItem>
-                      <SelectItem v-for="fuelOption in FUEL_TYPE_ORDER" :key="fuelOption" :value="fuelOption">{{ fuelTypeLabel(fuelOption) }}</SelectItem>
+                      <SelectItem
+                        v-for="fuelOption in withSaved(fuelOptions(group.make, group.model, group.variant), group.fuelType)"
+                        :key="fuelOption"
+                        :value="fuelOption"
+                      >{{ optionLabel(fuelOption, fuelOptions(group.make, group.model, group.variant), fuelTypeLabel) }}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -827,6 +876,13 @@
       @select="selectMedia"
     />
 
+    <ImageCropDialog
+      v-model:open="cropDialogOpen"
+      :src="cropSource"
+      :variant="cropVariant"
+      @cropped="onCropped"
+    />
+
     <Dialog :open="!!imagePreview" @update:open="imagePreview = null">
       <DialogContent class="sm:max-w-4xl">
         <DialogHeader>
@@ -850,6 +906,7 @@ import {
   ArrowDown,
   ArrowUp,
   Car,
+  Crop,
   ExternalLink,
   Images,
   Info,
@@ -871,6 +928,7 @@ import {
   STOCK_CARD_PROMO_MAX_SCROLLERS,
   STOCK_CARD_PROMO_MIN_INTERVAL,
   isPromoWindowActive,
+  normalizeCondition,
   normalizeFuelType,
   promoNow,
   resolveCardPromo,
@@ -880,6 +938,9 @@ import {
   type PromoFuelType,
   type StockCardPromoSettings,
 } from '~~/shared/stockCardPromo';
+import { invalidateStockCardPromoCache } from '~/composables/useStockCardPromo';
+import { type CropVariant } from '~/utils/imageCrop';
+import ImageCropDialog from '~/components/admin/settings/ImageCropDialog.vue';
 import ModernVehicleCard from '~/components/search/ModernVehicleCard.vue';
 import BannerMarqueePreview from '~/components/admin/settings/BannerMarqueePreview.vue';
 import AdminColorField from '~/components/admin/settings/AdminColorField.vue';
@@ -903,6 +964,7 @@ const ANY = '__any__';
 const MULTI = '__multi__';
 
 const FUEL_TYPE_ORDER = ['petrol', 'diesel', 'hybrid', 'electric'] as const;
+const CONDITION_ORDER = ['new', 'demo', 'used'] as const;
 
 const CHIP_BASE = 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider';
 const CHIP_LIVE = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
@@ -1032,6 +1094,10 @@ const saving = ref(false);
 const saveErrors = ref<string[]>([]);
 const mediaLibraryOpen = ref(false);
 const imageTarget = ref<ImageTarget | null>(null);
+const cropDialogOpen = ref(false);
+const cropSource = ref('');
+const cropVariant = ref<CropVariant>('headerDesktop');
+const cropApply = ref<((url: string) => void) | null>(null);
 const imagePreview = ref<{ url: string; alt: string } | null>(null);
 const pickerOpen = ref(false);
 const pickerTarget = ref<PickerTarget | null>(null);
@@ -1318,6 +1384,56 @@ function variantOptions(make: string, model: string) {
   );
 }
 
+/**
+ * Vehicles left after the target's other filters are applied. Fuel and
+ * condition options are built from this so the dropdowns can only offer
+ * combinations that actually match stock — picking "Hybrid" when the feed
+ * has no hybrids silently matched zero cars.
+ */
+function narrowedStock(make: string, model: string, variant: string) {
+  const same = (wanted: string, actual: string) =>
+    !wanted || wanted.toLowerCase() === (actual || '').toLowerCase();
+
+  return stockOptions.value.filter((option) =>
+    same(make, fieldValue(option.vehicle?.make))
+    && same(model, fieldValue(option.vehicle?.model))
+    && same(variant, fieldValue(option.vehicle?.badge) || fieldValue(option.vehicle?.variant)));
+}
+
+/** Fuel buckets present in the narrowed stock, in the canonical display order. */
+function fuelOptions(make: string, model: string, variant: string) {
+  const present = new Set(
+    narrowedStock(make, model, variant)
+      .map((option) => normalizeFuelType(fieldValue(option.vehicle?.fuel)))
+      .filter(Boolean),
+  );
+  return FUEL_TYPE_ORDER.filter((fuel) => present.has(fuel));
+}
+
+/** Conditions present in the narrowed stock, in the canonical display order. */
+function conditionOptions(make: string, model: string, variant: string) {
+  const present = new Set(
+    narrowedStock(make, model, variant)
+      .map((option) => normalizeCondition(fieldValue(option.vehicle?.condition)))
+      .filter(Boolean),
+  );
+  return CONDITION_ORDER.filter((condition) => present.has(condition));
+}
+
+/**
+ * Keeps an already-saved selection in its dropdown even once no stock matches
+ * it, so an existing rule shows "Hybrid (no stock)" rather than rendering blank
+ * and looking unset. Only the saved value is added back — it stays unpickable
+ * again once cleared.
+ */
+function withSaved(options: readonly string[], saved: string) {
+  return saved && !options.includes(saved) ? [...options, saved] : [...options];
+}
+
+function optionLabel(option: string, options: readonly string[], label: (value: string) => string) {
+  return options.includes(option) ? label(option) : `${label(option)} (no stock)`;
+}
+
 function uniqueSorted(values: string[]) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
@@ -1602,6 +1718,25 @@ function chooseImage(target: ImageTarget) {
   mediaLibraryOpen.value = true;
 }
 
+/**
+ * Opens the crop dialog for an already-chosen image. The caller supplies the
+ * setter so this works for any slot (header, graphic) without the dialog
+ * needing to know the form shape. The variant only seeds the default export
+ * size — it stays editable in the dialog.
+ */
+function cropImage(src: string, variant: CropVariant, apply: (url: string) => void) {
+  if (!src) return;
+  cropSource.value = src;
+  cropVariant.value = variant;
+  cropApply.value = apply;
+  cropDialogOpen.value = true;
+}
+
+function onCropped(url: string) {
+  cropApply.value?.(url);
+  cropApply.value = null;
+}
+
 function selectMedia(file: MediaFile) {
   const target = imageTarget.value;
   if (!target || !file.url) return;
@@ -1679,6 +1814,9 @@ async function saveSettings() {
       { method: 'PUT', body: toPayload() },
     );
     form.value = toForm(response.settings);
+    // The server cache is cleared by the PUT; drop the client payload too so
+    // the stock pages pick the change up on the next view, not after the TTL.
+    invalidateStockCardPromoCache();
     toast.success(response.message);
   } catch (error: any) {
     saveErrors.value = Array.isArray(error?.data?.data?.errors)

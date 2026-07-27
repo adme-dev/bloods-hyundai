@@ -54,19 +54,21 @@
       <div class="grid gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(190px,.7fr)]">
         <ImageField
           label="Desktop image"
-          help="Recommended 1920 × 720 px · JPG, PNG or WebP · maximum 10 MB"
+          :help="`Cropped to ${cropTargetLabel('desktop')} · JPG, PNG or WebP · maximum 10 MB`"
           :src="slide.desktop"
           variant="desktop"
           :disabled="disabled"
           @choose="$emit('choose-image', 'desktop')"
+          @crop="$emit('crop-image', 'desktop')"
         />
         <ImageField
           label="Mobile image"
-          help="Recommended 767 × 975 px · portrait artwork"
+          :help="`Cropped to ${cropTargetLabel('mobile')} · square artwork`"
           :src="slide.mobile"
           variant="mobile"
           :disabled="disabled"
           @choose="$emit('choose-image', 'mobile')"
+          @crop="$emit('crop-image', 'mobile')"
         />
       </div>
 
@@ -205,6 +207,7 @@
 import { computed } from 'vue';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-vue-next';
 import type { HomepageSlide } from '~~/shared/homepageSlider';
+import { cropTargetLabel } from '~/utils/imageCrop';
 import ImageField from './HomepageSliderImageField.vue';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -226,6 +229,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:slide', slide: HomepageSlide): void;
   (event: 'choose-image', field: 'desktop' | 'mobile'): void;
+  (event: 'crop-image', field: 'desktop' | 'mobile'): void;
   (event: 'move', direction: -1 | 1): void;
   (event: 'remove'): void;
 }>();

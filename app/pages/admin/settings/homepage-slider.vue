@@ -84,6 +84,7 @@
           :disabled="saving"
           @update:slide="updateSlide(index, $event)"
           @choose-image="chooseImage(index, $event)"
+          @crop-image="cropImage(index, $event)"
           @move="moveSlide(index, $event)"
           @remove="removeSlide(index)"
         />
@@ -120,6 +121,14 @@
       :allowed-types="acceptedImageTypes"
       @select="selectMedia"
     />
+
+    <ImageCropDialog
+      v-if="cropTarget"
+      v-model:open="cropDialogOpen"
+      :src="cropSource"
+      :variant="cropTarget.field"
+      @cropped="applyCrop"
+    />
   </div>
 </template>
 
@@ -137,6 +146,8 @@ import {
 } from 'lucide-vue-next';
 import type { FrontSlide } from '~/utils/frontSlides';
 import { getConfiguredFrontSlides } from '~/utils/frontSlides';
+import { invalidateSiteConfigCache } from '~/utils/siteConfigFreshness';
+import { refreshDealerConfig } from '~/composables/useDealerConfig';
 import { isDateInRangeAt } from '~/utils/date';
 import {
   HOMEPAGE_SLIDE_DEFAULT_DURATION_SECONDS,
@@ -144,6 +155,7 @@ import {
   type HomepageSliderSettings,
 } from '~~/shared/homepageSlider';
 import HomepageSlideEditor from '~/components/admin/settings/HomepageSlideEditor.vue';
+import ImageCropDialog from '~/components/admin/settings/ImageCropDialog.vue';
 import MediaLibraryDialog from '~/components/media/MediaLibraryDialog.vue';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
@@ -181,6 +193,9 @@ const saving = ref(false);
 const saveErrors = ref<string[]>([]);
 const mediaLibraryOpen = ref(false);
 const imageTarget = ref<ImageTarget | null>(null);
+const cropDialogOpen = ref(false);
+const cropTarget = ref<ImageTarget | null>(null);
+const cropSource = ref('');
 
 const enabledSlides = computed(() => slides.value.filter((slide) => slide.enabled));
 const enabledSlideCount = computed(() => enabledSlides.value.length);
@@ -267,6 +282,29 @@ function chooseImage(index: number, field: 'desktop' | 'mobile') {
   mediaLibraryOpen.value = true;
 }
 
+function cropImage(index: number, field: 'desktop' | 'mobile') {
+  const source = slides.value[index]?.[field];
+  if (!source) return;
+  cropTarget.value = { index, field };
+  cropSource.value = source;
+  cropDialogOpen.value = true;
+}
+
+/**
+ * The dialog uploads the cropped file itself and hands back its URL, so this
+ * only has to point the slide at the new image. The original stays in the
+ * media library untouched, making the crop repeatable from the source.
+ */
+function applyCrop(url: string) {
+  const target = cropTarget.value;
+  const slide = target ? slides.value[target.index] : null;
+  if (!target || !slide) return;
+  const next = { ...slide, [target.field]: url };
+  if (target.field === 'mobile') next.tablet = url;
+  slides.value[target.index] = next;
+  cropTarget.value = null;
+}
+
 function selectMedia(file: MediaFile) {
   const target = imageTarget.value;
   const slide = target ? slides.value[target.index] : null;
@@ -286,6 +324,13 @@ async function saveSettings() {
       { method: 'PUT', body: { enabled: true, slides: slides.value } },
     );
     slides.value = response.settings.slides.map(toEditorSlide);
+
+    // The PUT clears the server cache; also drop the client payload and warm
+    // a fresh one so the new slides are live on the site immediately rather
+    // than after the client TTL expires.
+    invalidateSiteConfigCache();
+    await refreshDealerConfig().catch(() => { /* the save already succeeded */ });
+
     toast.success(response.message);
   } catch (error: any) {
     saveErrors.value = Array.isArray(error?.data?.data?.errors)

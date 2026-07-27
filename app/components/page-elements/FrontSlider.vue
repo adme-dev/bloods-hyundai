@@ -14,20 +14,21 @@
             >
               <!-- Image slide with art direction -->
               <div v-if="slide.desktop || slide.mobile" class="slide-media">
+                <!--
+                  No width/height attributes: they would impose a fixed ratio on
+                  artwork of any other size. The image reports its own
+                  dimensions, so the slide always renders at the uploaded shape.
+                -->
                 <picture class="slide-image-wrapper">
                   <source
                     v-if="slide.mobile"
                     media="(max-width: 768px)"
-                    :srcset="optimizedSlideImage(slide.mobile, 767, 975)"
-                    width="767"
-                    height="975"
+                    :srcset="optimizedSlideImage(slide.mobile, 1080, 1080)"
                   />
                   <img
                     :src="optimizedSlideImage(slide.desktop || slide.mobile, 1920, 720)"
                     :alt="strippedHeadingContent(slide.heading_content) || siteName"
                     class="slide-image"
-                    width="1920"
-                    height="720"
                     :loading="index === 0 ? 'eager' : 'lazy'"
                     :fetchpriority="index === 0 ? 'high' : 'auto'"
                     :decoding="index === 0 ? 'sync' : 'async'"
@@ -413,23 +414,21 @@ onUnmounted(() => {
   width: 100%;
 }
 
+/*
+ * The banner is shown exactly as uploaded: full width, whole image, no crop
+ * and no letterbox bars.
+ *
+ * No aspect-ratio and no object-fit is deliberate. Any fixed ratio here forces
+ * artwork into a box it was not made for — the old 2.2/1 with object-fit:
+ * cover trimmed the edges off every 1920x720 banner, and hardcoding 1920/720
+ * would simply do the same to any slide of another size. Letting the image set
+ * its own height means the rendered shape always matches the uploaded file,
+ * whatever its dimensions, on desktop and mobile alike.
+ */
 .slide-image {
   width: 100%;
   height: auto;
-  aspect-ratio: 2.2 / 1;
   display: block;
-  object-fit: cover;
-  object-position: center top;
-}
-
-@media (max-width: 768px) {
-  .slide-image {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 767 / 975;
-    object-fit: cover;
-    object-position: center center;
-  }
 }
 
 .slide-video video {

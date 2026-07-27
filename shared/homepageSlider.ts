@@ -105,19 +105,32 @@ export function readHomepageSliderSettings(settings: unknown): HomepageSliderSet
   };
 }
 
+/**
+ * Replaces the upstream (DriveAgent) slides with the locally managed ones.
+ *
+ * The dashboard intentionally wins whenever it has slides (see b23a0f5). But
+ * an empty local slider used to win too, blanking the hero and permanently
+ * shadowing DriveAgent: clearing every slide in the admin left no way for the
+ * upstream slides to come back. With no visible local slide we now fall back
+ * to upstream, which is also how a dealer "hands the slider back" to
+ * DriveAgent.
+ */
 export function applyHomepageSliderOverride<T extends Record<string, unknown>>(
   siteConfig: T,
   settings: HomepageSliderSettings | null,
 ): T {
   if (!settings) return siteConfig;
 
+  const publicSlides = settings.slides
+    .filter((slide) => slide.enabled)
+    .map(toPublicSlide);
+
+  if (!publicSlides.length) return siteConfig;
+
   const currentPromotional = Array.isArray(siteConfig.promotional)
     ? siteConfig.promotional.filter(isRecord)
     : [];
   const firstEntry = currentPromotional[0] || {};
-  const publicSlides = settings.slides
-    .filter((slide) => slide.enabled)
-    .map(toPublicSlide);
   const promotional = [
     { ...firstEntry, homepageSliderManaged: true, slides: publicSlides },
     ...currentPromotional.slice(1),

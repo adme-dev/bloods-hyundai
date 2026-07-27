@@ -6,7 +6,7 @@
     </div>
     <div
       class="grid place-items-center overflow-hidden rounded-xl border bg-muted"
-      :class="variant === 'desktop' ? 'aspect-[8/3]' : 'aspect-[767/975] max-w-[210px]'"
+      :class="variant === 'desktop' ? 'aspect-[8/3]' : 'aspect-square max-w-[210px]'"
     >
       <img v-if="src" :src="src" :alt="`${label} preview`" class="h-full w-full object-cover" />
       <div v-else class="grid place-items-center gap-2 text-xs text-muted-foreground">
@@ -15,14 +15,26 @@
       </div>
     </div>
     <p class="min-h-8 text-xs leading-relaxed text-muted-foreground">{{ help }}</p>
-    <Button type="button" variant="outline" size="sm" :disabled="disabled" @click="$emit('choose')">
-      <Upload class="mr-2 h-4 w-4" /> Upload or choose image
-    </Button>
+    <div class="flex flex-wrap gap-2">
+      <Button type="button" variant="outline" size="sm" :disabled="disabled" @click="$emit('choose')">
+        <Upload class="mr-2 h-4 w-4" /> Upload or choose image
+      </Button>
+      <Button
+        v-if="src"
+        type="button"
+        variant="outline"
+        size="sm"
+        :disabled="disabled"
+        @click="$emit('crop')"
+      >
+        <Crop class="mr-2 h-4 w-4" /> Crop
+      </Button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Image as ImageIcon, Upload } from 'lucide-vue-next';
+import { Crop, Image as ImageIcon, Upload } from 'lucide-vue-next';
 import { Button } from '~/components/ui/button';
 import { Label } from '~/components/ui/label';
 
@@ -33,5 +45,5 @@ defineProps<{
   variant: 'desktop' | 'mobile';
   disabled?: boolean;
 }>();
-defineEmits<{ (event: 'choose'): void }>();
+defineEmits<{ (event: 'choose'): void; (event: 'crop'): void }>();
 </script>
