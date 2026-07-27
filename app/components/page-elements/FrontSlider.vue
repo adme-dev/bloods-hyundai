@@ -18,9 +18,9 @@
                   <source
                     v-if="slide.mobile"
                     media="(max-width: 768px)"
-                    :srcset="optimizedSlideImage(slide.mobile, 767, 975)"
-                    width="767"
-                    height="975"
+                    :srcset="optimizedSlideImage(slide.mobile, 1080, 1080)"
+                    width="1080"
+                    height="1080"
                   />
                   <img
                     :src="optimizedSlideImage(slide.desktop || slide.mobile, 1920, 720)"
@@ -413,22 +413,30 @@ onUnmounted(() => {
   width: 100%;
 }
 
+/*
+ * Full-bleed and uncropped: the artwork is supplied at the exact slide ratio
+ * (1920x720 desktop), so forcing a 2.2/1 box and object-fit: cover trimmed the
+ * edges off every banner. `contain` plus the natural aspect-ratio shows the
+ * image exactly as the dealer prepared it, edge to edge.
+ */
 .slide-image {
   width: 100%;
   height: auto;
-  aspect-ratio: 2.2 / 1;
+  aspect-ratio: 1920 / 720;
   display: block;
-  object-fit: cover;
-  object-position: center top;
+  object-fit: contain;
+  object-position: center;
 }
 
 @media (max-width: 768px) {
   .slide-image {
     width: 100%;
     height: auto;
-    aspect-ratio: 767 / 975;
-    object-fit: cover;
-    object-position: center center;
+    /* Mobile artwork is square (1080x1080); older portrait assets letterbox
+       rather than crop. */
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    object-position: center;
   }
 }
 

@@ -51,3 +51,24 @@ describe('FrontSlider component', () => {
     assert.match(componentSource, /<div v-if="slide\.button_text" class="slide-cta">/);
   });
 });
+
+describe('front slider banner framing', () => {
+  const component = () => readFileSync('app/components/page-elements/FrontSlider.vue', 'utf8');
+
+  // The banner is supplied at the exact slide ratio, so a forced 2.2/1 box with
+  // object-fit: cover trimmed the edges off every image the dealer uploaded.
+  it('shows the banner at its natural ratio, full width and uncropped', () => {
+    const source = component();
+
+    assert.match(source, /aspect-ratio: 1920 \/ 720/);
+    assert.match(source, /object-fit: contain/);
+    assert.doesNotMatch(source, /aspect-ratio: 2\.2 \/ 1/);
+  });
+
+  it('requests mobile artwork at the square crop the admin exports', () => {
+    const source = component();
+
+    assert.match(source, /optimizedSlideImage\(slide\.mobile, 1080, 1080\)/);
+    assert.doesNotMatch(source, /optimizedSlideImage\(slide\.mobile, 767, 975\)/);
+  });
+});
