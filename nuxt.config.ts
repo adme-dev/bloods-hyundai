@@ -21,7 +21,7 @@ const devConnectSources = process.env.NODE_ENV === 'production'
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://connect.facebook.net https://www.gstatic.com https://maps.googleapis.com https://cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.xeroflow.io https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://connect.facebook.net https://www.gstatic.com https://maps.googleapis.com https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
   "img-src 'self' data: blob: https: http:",
   "font-src 'self' data: https://fonts.gstatic.com",
@@ -167,6 +167,8 @@ export default {
       facebookPixelId: process.env.NUXT_PUBLIC_FACEBOOK_PIXEL_ID || '',
       // Google Tag Manager ID, loaded after initial render by analytics-lazy.client.ts
       gtmId: googleTagManagerId,
+      // XeroFlow first-party audience tracking
+      xeroflowWriteKey: process.env.NUXT_PUBLIC_XEROFLOW_WRITE_KEY || '',
       adminRealtimeUrl: process.env.NUXT_PUBLIC_ADMIN_REALTIME_URL || '',
     },
   },
