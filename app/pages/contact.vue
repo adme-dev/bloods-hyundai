@@ -156,7 +156,7 @@ const pageContent = computed(() => {
   return null
 })
 
-const lmct = computed(() => mainStore.site?.lmct || '6106');
+const lmct = computed(() => mainStore.site?.lmct || '');
 const departments = computed(() => mainStore.site?.departments || {});
 
 // Tab state
