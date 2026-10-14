@@ -27,7 +27,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data: https://fonts.gstatic.com",
   `connect-src 'self' https: wss:${devConnectSources}`,
   "media-src 'self' blob: data: https://hyundaioem.b-cdn.net",
-  "frame-src 'self' https://www.googletagmanager.com https://www.google.com https://maps.google.com https://www.google.com.au https://www.youtube.com https://player.vimeo.com https://apply.youxpowered.com.au https://consumer.xtime.net.au https://consumer.vela.net.au https://hyundaioem.b-cdn.net https://td.doubleclick.net",
+  "frame-src 'self' https://www.googletagmanager.com https://www.google.com https://maps.google.com https://www.google.com.au https://www.youtube.com https://player.vimeo.com https://apply.youxpowered.com.au https://consumer.xtime.net.au https://consumer.vela.net.au https://hyundaioem.b-cdn.net https://td.doubleclick.net https://adme-landing-pages.netlify.app",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
