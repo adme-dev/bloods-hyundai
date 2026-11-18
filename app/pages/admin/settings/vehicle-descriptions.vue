@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto w-full max-w-[1200px] space-y-6 text-foreground">
-    <AdminPageHeader title="Vehicle Descriptions" description="Choose how dealer comments and descriptions appear on vehicle listings.">
+    <AdminPageHeader title="Vehicle Descriptions" description="Choose how dealer comments and AI descriptions appear on vehicle listings.">
       <template #actions>
         <Button variant="ghost" size="sm" as-child><NuxtLink to="/admin/settings"><ChevronLeft class="mr-2 h-4 w-4" /> Settings</NuxtLink></Button>
       </template>
@@ -28,7 +28,7 @@
               </span>
             </label>
           </fieldset>
-          <p class="mt-4 text-sm text-muted-foreground">Specifications, safety ratings and features continue to work independently of this setting.</p>
+          <p class="mt-4 text-sm text-muted-foreground">AI specifications, safety ratings and features continue to work independently of this setting.</p>
           <p v-if="!canEdit" class="mt-3 text-sm text-muted-foreground">An administrator or manager can change this setting.</p>
         </CardContent>
         <CardFooter class="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
@@ -58,9 +58,9 @@ const saving = ref(false);
 const saved = ref(false);
 const saveError = ref('');
 const options: { value: VehicleDescriptionMode; label: string; help: string }[] = [
-  { value: 'dealer_only', label: 'Dealer comments only', help: 'Show only the comments supplied in your inventory feed.' },
-  { value: 'both', label: 'Dealer comments + description', help: 'Show dealer comments first, followed by a separate description. This is the default.' },
-  { value: 'ai_fallback', label: 'Description only when dealer comments are blank', help: 'Show dealer comments when available. Use a description only if no dealer comments were supplied.' },
+  { value: 'dealer_only', label: 'Dealer comments only', help: 'Show the comments supplied in your inventory feed. Hide AI descriptions.' },
+  { value: 'both', label: 'Dealer comments + AI description', help: 'Show dealer comments first, followed by a separate vehicle description. This is the default.' },
+  { value: 'ai_fallback', label: 'AI only when dealer comments are blank', help: 'Show dealer comments when available. Use an AI description only if no dealer comments were supplied.' },
 ];
 watch(data, (value) => {
   if (value?.settings) mode.value = savedMode.value = value.settings.mode;
