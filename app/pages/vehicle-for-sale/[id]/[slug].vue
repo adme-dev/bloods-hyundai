@@ -290,10 +290,10 @@
             </ClientOnly>
 
             <!-- Description -->
-            <div v-if="vehicleDescription" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h2 class="text-lg font-semibold text-slate-900">Description</h2>
+            <div v-for="section in vehicleDescriptionSections" :key="section.title" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h2 class="text-lg font-semibold text-slate-900">{{ section.title }}</h2>
               <div class="prose prose-sm prose-slate mt-2 whitespace-pre-line text-slate-700">
-                {{ vehicleDescription }}
+                {{ section.text }}
               </div>
             </div>
             
@@ -469,6 +469,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveVehicleDescriptionSections } from '~~/shared/vehicleDescriptions';
 import { getRuntimeTenantCacheKey } from '~/utils/tenantCacheKey';
 
 const route = useRoute();
@@ -570,10 +571,12 @@ const hasEnrichedFeatures = computed(() => {
   );
 });
 
-// Vehicle description - prefer AI-generated if available, fallback to feed
-const vehicleDescription = computed(() => {
-  return enrichment.value?.description || vehicle.value?.Comments || vehicle.value?.description || '';
-});
+const { data: descriptionSettings } = await useFetch('/api/vehicle-description-settings');
+const vehicleDescriptionSections = computed(() => resolveVehicleDescriptionSections(
+  vehicle.value,
+  enrichment.value?.description,
+  descriptionSettings.value?.settings.mode || 'dealer_only',
+));
 
 // Helper function for extracting display values - defined early for use in computed properties
 const getDisplay = (field: any) => {
