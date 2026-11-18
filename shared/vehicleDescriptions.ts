@@ -28,7 +28,7 @@ export function resolveVehicleDescriptionSections(
   if (comments) sections.push({ title: 'Dealer Comments', text: comments });
   const normalized = (text: string) => text.trim().replace(/\s+/g, ' ');
   if (ai && mode !== 'dealer_only' && (mode === 'both' || !comments) && normalized(ai) !== normalized(comments)) {
-    sections.push({ title: 'Vehicle Description', text: ai });
+    sections.push({ title: 'Description', text: ai });
   }
   return sections;
 }

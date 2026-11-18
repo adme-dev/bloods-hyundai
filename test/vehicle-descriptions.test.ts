@@ -10,7 +10,7 @@ describe('vehicle description display', () => {
     const before = resolveVehicleDescriptionSections({ Comments: comments }, undefined, 'both');
     const after = resolveVehicleDescriptionSections({ Comments: comments }, ai, 'both');
     assert.deepEqual(before, [{ title: 'Dealer Comments', text: comments }]);
-    assert.deepEqual(after, [...before, { title: 'Vehicle Description', text: ai }]);
+    assert.deepEqual(after, [...before, { title: 'Description', text: ai }]);
   });
 
   it('never shows AI in dealer-only mode', () => {
@@ -20,7 +20,7 @@ describe('vehicle description display', () => {
 
   it('uses AI only for missing or whitespace-only dealer content in fallback mode', () => {
     assert.equal(resolveVehicleDescriptionSections({ Comments: comments }, ai, 'ai_fallback').length, 1);
-    assert.deepEqual(resolveVehicleDescriptionSections({ Comments: ' \r\n', description: ' ' }, ai, 'ai_fallback'), [{ title: 'Vehicle Description', text: ai }]);
+    assert.deepEqual(resolveVehicleDescriptionSections({ Comments: ' \r\n', description: ' ' }, ai, 'ai_fallback'), [{ title: 'Description', text: ai }]);
     assert.deepEqual(resolveVehicleDescriptionSections({ Comments: ' ', description: 'Feed description' }, ai, 'ai_fallback'), [{ title: 'Dealer Comments', text: 'Feed description' }]);
   });
 

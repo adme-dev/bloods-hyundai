@@ -210,7 +210,7 @@
             </div>
             <div>
               <h3 class="font-semibold">Vehicle Descriptions</h3>
-              <p class="text-sm text-muted-foreground">Dealer comments &amp; AI descriptions</p>
+              <p class="text-sm text-muted-foreground">Dealer comments &amp; descriptions</p>
             </div>
           </CardContent>
         </Card>
