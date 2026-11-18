@@ -202,6 +202,19 @@
           </CardContent>
         </Card>
       </NuxtLink>
+      <NuxtLink to="/admin/settings/vehicle-descriptions" class="group">
+        <Card class="h-full transition-shadow hover:shadow-md">
+          <CardContent class="flex items-center gap-4 p-6">
+            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20">
+              <MessageSquare class="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 class="font-semibold">Vehicle Descriptions</h3>
+              <p class="text-sm text-muted-foreground">Dealer comments &amp; AI descriptions</p>
+            </div>
+          </CardContent>
+        </Card>
+      </NuxtLink>
       <NuxtLink to="/admin/settings/stock-card-promo" class="group">
         <Card class="h-full transition-shadow hover:shadow-md">
           <CardContent class="flex items-center gap-4 p-6">
